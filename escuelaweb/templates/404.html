@@ -1,0 +1,38 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Página no encontrada</title>
+    <link rel="stylesheet" href="{% static 'css/bootstrap.min.css' %}">
+    <style>
+        body {
+            background-color: #f9f9f9;
+            font-family: Arial, sans-serif;
+            text-align: center;
+            padding-top: 10%;
+        }
+        h1 {
+            font-size: 5em;
+            color: #e74c3c;
+        }
+        p {
+            font-size: 1.3em;
+            color: #555;
+        }
+        a {
+            color: #3498db;
+            text-decoration: none;
+            font-weight: bold;
+        }
+        a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <h1>404</h1>
+    <p>Ups... la página que buscas no existe o fue movida.</p>
+    <a href="/">Volver al inicio</a>
+</body>
+</html>

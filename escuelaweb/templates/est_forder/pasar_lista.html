@@ -1,0 +1,160 @@
+{% extends 'website/base.html' %}
+
+{% block title %}{{ titulo }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <div>
+            <h3>{{ titulo }}</h3>
+            <span class="badge bg-success">
+                <i class="fas fa-calendar-alt"></i> Año Escolar: {{ anho_escolar.nombre }}
+            </span>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="{% url 'seleccionar_materia_asistencia' %}" class="btn btn-secondary">
+                <i class="fas fa-arrow-left"></i> Volver
+            </a>
+            <a href="{% url 'historial_asistencia' %}?materia={{ materia.id }}" class="btn btn-info">
+                <i class="fas fa-history"></i> Ver Historial
+            </a>
+        </div>
+    </div>
+
+    <div class="card mb-3">
+        <div class="card-body">
+            <h5 class="card-title">{{ materia.nombre }}</h5>
+            <p class="card-text text-muted">
+                <i class="fas fa-graduation-cap"></i> {{ materia.curso.nombre }} 
+                | <i class="fas fa-user"></i> {{ materia.profesor.get_full_name }}
+                | <i class="fas fa-calendar"></i> {{ materia.curso.anho_escolar.nombre }}
+            </p>
+        </div>
+    </div>
+
+    <form method="post" id="asistenciaForm">
+        {% csrf_token %}
+        <input type="hidden" name="fecha" value="{{ fecha|date:'Y-m-d' }}" id="fecha_hidden">
+        
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0"><i class="fas fa-clipboard-list"></i> Lista de Asistencia</h5>
+                <div class="d-flex align-items-center gap-3">
+                    <label for="fecha_selector" class="mb-0 me-2"><i class="fas fa-calendar"></i> Fecha:</label>
+                    <input type="date" class="form-control form-control-sm" id="fecha_selector" value="{{ fecha|date:'Y-m-d' }}" onchange="cambiarFecha()">
+                </div>
+            </div>
+            <div class="card-body">
+                {% if estudiantes_con_asistencia %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th style="width: 5%;">#</th>
+                                <th style="width: 30%;">Estudiante</th>
+                                <th style="width: 15%;">Presente</th>
+                                <th style="width: 15%;">Ausente</th>
+                                <th style="width: 15%;">Tardanza</th>
+                                <th style="width: 20%;">Observaciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in estudiantes_con_asistencia %}
+                            <tr>
+                                <td>{{ forloop.counter }}</td>
+                                <td>
+                                    <strong>{{ item.estudiante.get_full_name }}</strong>
+                                    <br><small class="text-muted">{{ item.estudiante.email }}</small>
+                                </td>
+                                <td class="text-center">
+                                    <div class="form-check form-check-inline">
+                                        <input class="form-check-input" type="radio" 
+                                               name="estado_{{ item.estudiante.id }}" 
+                                               id="presente_{{ item.estudiante.id }}" 
+                                               value="presente"
+                                               {% if item.asistencia and item.asistencia.estado == 'presente' %}checked{% endif %}>
+                                        <label class="form-check-label" for="presente_{{ item.estudiante.id }}">
+                                            <i class="fas fa-check-circle text-success"></i>
+                                        </label>
+                                    </div>
+                                </td>
+                                <td class="text-center">
+                                    <div class="form-check form-check-inline">
+                                        <input class="form-check-input" type="radio" 
+                                               name="estado_{{ item.estudiante.id }}" 
+                                               id="ausente_{{ item.estudiante.id }}" 
+                                               value="ausente"
+                                               {% if item.asistencia and item.asistencia.estado == 'ausente' %}checked{% endif %}>
+                                        <label class="form-check-label" for="ausente_{{ item.estudiante.id }}">
+                                            <i class="fas fa-times-circle text-danger"></i>
+                                        </label>
+                                    </div>
+                                </td>
+                                <td class="text-center">
+                                    <div class="form-check form-check-inline">
+                                        <input class="form-check-input" type="radio" 
+                                               name="estado_{{ item.estudiante.id }}" 
+                                               id="tardanza_{{ item.estudiante.id }}" 
+                                               value="tardanza"
+                                               {% if item.asistencia and item.asistencia.estado == 'tardanza' %}checked{% endif %}>
+                                        <label class="form-check-label" for="tardanza_{{ item.estudiante.id }}">
+                                            <i class="fas fa-clock text-warning"></i>
+                                        </label>
+                                    </div>
+                                </td>
+                                <td>
+                                    <input type="text" class="form-control form-control-sm" 
+                                           name="observaciones_{{ item.estudiante.id }}" 
+                                           placeholder="Observaciones..."
+                                           value="{% if item.asistencia %}{{ item.asistencia.observaciones }}{% endif %}">
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="d-flex justify-content-between mt-3">
+                    <div>
+                        <button type="button" class="btn btn-outline-success btn-sm" onclick="marcarTodos('presente')">
+                            <i class="fas fa-check-double"></i> Marcar Todos Presentes
+                        </button>
+                        <button type="button" class="btn btn-outline-danger btn-sm" onclick="marcarTodos('ausente')">
+                            <i class="fas fa-times"></i> Marcar Todos Ausentes
+                        </button>
+                    </div>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save"></i> Guardar Asistencia
+                    </button>
+                </div>
+                {% else %}
+                <div class="alert alert-warning">
+                    <i class="fas fa-exclamation-triangle"></i> No hay estudiantes matriculados en esta materia.
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </form>
+</div>
+
+<script>
+function cambiarFecha() {
+    const fechaSelector = document.getElementById('fecha_selector');
+    const nuevaFecha = fechaSelector.value;
+    window.location.href = `?fecha=${nuevaFecha}`;
+}
+
+function marcarTodos(estado) {
+    const radios = document.querySelectorAll(`input[type="radio"][value="${estado}"]`);
+    radios.forEach(radio => {
+        radio.checked = true;
+    });
+}
+</script>
+
+<style>
+.form-check-input:checked + .form-check-label i {
+    transform: scale(1.2);
+}
+</style>
+{% endblock %}

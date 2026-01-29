@@ -1,0 +1,875 @@
+{% extends 'website/base.html' %}
+{% load custom_filters %}
+{% load humanize %}
+
+{% block title %}{{ titulo }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h2><i class="fas fa-chart-line me-2"></i>{{ titulo }}</h2>
+                    <p class="text-muted mb-0">{{ titulo_periodo }}</p>
+                </div>
+                <div>
+                    <a href="?{{ request.GET.urlencode }}&export=pdf" class="btn btn-danger me-2" target="_blank">
+                        <i class="fas fa-file-pdf me-2"></i>Exportar PDF
+                    </a>
+                    <a href="{% url 'cobros_dashboard' %}" class="btn btn-secondary">
+                        <i class="fas fa-arrow-left me-2"></i>Volver
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filtros de Período -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-body">
+            <form method="get" class="row g-3 align-items-end">
+                <div class="col-md-3">
+                    <label class="form-label"><strong>Período</strong></label>
+                    <select name="periodo" id="periodoSelect" class="form-select" onchange="toggleFechasPersonalizadas()">
+                        <option value="dia" {% if periodo == 'dia' %}selected{% endif %}>Hoy</option>
+                        <option value="semana" {% if periodo == 'semana' %}selected{% endif %}>Esta Semana</option>
+                        <option value="mes" {% if periodo == 'mes' %}selected{% endif %}>Este Mes</option>
+                        <option value="anio" {% if periodo == 'anio' %}selected{% endif %}>Este Año</option>
+                        <option value="personalizado" {% if periodo == 'personalizado' %}selected{% endif %}>Personalizado</option>
+                    </select>
+                </div>
+                
+                <div class="col-md-3" id="fechaInicioDiv" style="{% if periodo != 'personalizado' %}display: none;{% endif %}">
+                    <label class="form-label"><strong>Fecha Inicio</strong></label>
+                    <input type="date" name="fecha_inicio" class="form-control" 
+                           value="{{ request.GET.fecha_inicio }}">
+                </div>
+                
+                <div class="col-md-3" id="fechaFinDiv" style="{% if periodo != 'personalizado' %}display: none;{% endif %}">
+                    <label class="form-label"><strong>Fecha Fin</strong></label>
+                    <input type="date" name="fecha_fin" class="form-control" 
+                           value="{{ request.GET.fecha_fin }}">
+                </div>
+                
+                <div class="col-md-3">
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="fas fa-filter me-2"></i>Filtrar
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Tarjetas de Estadísticas -->
+    <div class="row mb-4">
+        <div class="col-md-3 mb-3">
+            <div class="card shadow-sm h-100 border-start border-primary border-4">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <p class="text-muted mb-1 small">Total Ventas</p>
+                            <h3 class="mb-0">RD${{ total_ventas|floatformat:2|intcomma }}</h3>
+                            {% if variacion_porcentual > 0 %}
+                                <small class="text-success">
+                                    <i class="fas fa-arrow-up"></i> +{{ variacion_porcentual|floatformat:1 }}%
+                                </small>
+                            {% elif variacion_porcentual < 0 %}
+                                <small class="text-danger">
+                                    <i class="fas fa-arrow-down"></i> {{ variacion_porcentual|floatformat:1 }}%
+                                </small>
+                            {% endif %}
+                        </div>
+                        <div class="text-primary">
+                            <i class="fas fa-dollar-sign fa-3x opacity-50"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3 mb-3">
+            <div class="card shadow-sm h-100 border-start border-success border-4">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <p class="text-muted mb-1 small">Total Facturas</p>
+                            <h3 class="mb-0">{{ total_facturas }}</h3>
+                            <small class="text-muted">
+                                Promedio: RD${{ promedio_venta|floatformat:2|intcomma }}
+                            </small>
+                        </div>
+                        <div class="text-success">
+                            <i class="fas fa-file-invoice fa-3x opacity-50"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3 mb-3">
+            <div class="card shadow-sm h-100 border-start border-warning border-4">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <p class="text-muted mb-1 small">Facturas Pagadas</p>
+                            <h3 class="mb-0">{{ facturas_pagadas }}</h3>
+                            <small class="text-muted">
+                                Pendientes: {{ facturas_pendientes }} | Parcial: {{ facturas_parciales }}
+                            </small>
+                        </div>
+                        <div class="text-warning">
+                            <i class="fas fa-check-circle fa-3x opacity-50"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3 mb-3">
+            <div class="card shadow-sm h-100 border-start border-info border-4">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <p class="text-muted mb-1 small">Total Descuentos</p>
+                            <h3 class="mb-0">RD${{ total_descuentos|floatformat:2|intcomma }}</h3>
+                            {% if total_ventas > 0 %}
+                            <small class="text-muted">
+                                {{ total_descuentos|multiply:100|divide:total_ventas|floatformat:1 }}% del total
+                            </small>
+                            {% endif %}
+                        </div>
+                        <div class="text-info">
+                            <i class="fas fa-percentage fa-3x opacity-50"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Gráficos -->
+    <div class="row mb-4">
+        <!-- Gráfico de Ventas por Día -->
+        <div class="col-md-8 mb-3">
+            <div class="card shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <strong><i class="fas fa-chart-bar me-2"></i>Ventas por Día</strong>
+                </div>
+                <div class="card-body">
+                    <canvas id="ventasPorDiaChart" height="80"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Distribución por Estado -->
+        <div class="col-md-4 mb-3">
+            <div class="card shadow-sm">
+                <div class="card-header bg-success text-white">
+                    <strong><i class="fas fa-chart-pie me-2"></i>Facturas por Estado</strong>
+                </div>
+                <div class="card-body">
+                    <canvas id="estadoFacturasChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tablas de Top -->
+    <div class="row mb-4">
+        <!-- Top Artículos -->
+        <div class="col-md-6 mb-3">
+            <div class="card shadow-sm">
+                <div class="card-header bg-info text-white">
+                    <strong><i class="fas fa-trophy me-2"></i>Top 10 Artículos Más Vendidos</strong>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover table-sm mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>#</th>
+                                    <th>Artículo</th>
+                                    <th class="text-center">Cantidad</th>
+                                    <th class="text-end">Ingresos</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for item in top_articulos %}
+                                <tr>
+                                    <td>{{ forloop.counter }}</td>
+                                    <td>
+                                        <strong>{{ item.articulo__nombre }}</strong>
+                                        <br><small class="text-muted">{{ item.articulo__codigo_barras }}</small>
+                                    </td>
+                                    <td class="text-center">
+                                        <span class="badge bg-primary">{{ item.total_vendido }}</span>
+                                    </td>
+                                    <td class="text-end">
+                                        <strong>RD${{ item.ingresos|floatformat:2|intcomma }}</strong>
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="4" class="text-center text-muted py-3">
+                                        No hay artículos vendidos en este período
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Top Conceptos -->
+        <div class="col-md-6 mb-3">
+            <div class="card shadow-sm">
+                <div class="card-header bg-warning text-dark">
+                    <strong><i class="fas fa-list me-2"></i>Top 10 Conceptos</strong>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover table-sm mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>#</th>
+                                    <th>Concepto</th>
+                                    <th class="text-center">Ventas</th>
+                                    <th class="text-end">Ingresos</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for item in top_conceptos %}
+                                <tr>
+                                    <td>{{ forloop.counter }}</td>
+                                    <td>
+                                        <strong>{{ item.concepto__nombre }}</strong>
+                                        <br><small class="text-muted">{{ item.concepto__tipo }}</small>
+                                    </td>
+                                    <td class="text-center">
+                                        <span class="badge bg-success">{{ item.cantidad_ventas }}</span>
+                                    </td>
+                                    <td class="text-end">
+                                        <strong>RD${{ item.ingresos|floatformat:2|intcomma }}</strong>
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="4" class="text-center text-muted py-3">
+                                        No hay conceptos facturados en este período
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Top Estudiantes -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card shadow-sm">
+                <div class="card-header bg-secondary text-white">
+                    <strong><i class="fas fa-users me-2"></i>Top 10 Clientes (Estudiantes)</strong>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover table-sm mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>#</th>
+                                    <th>Estudiante</th>
+                                    <th>Código</th>
+                                    <th class="text-center">Facturas</th>
+                                    <th class="text-end">Total Gastado</th>
+                                    <th class="text-end">Promedio</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for item in top_estudiantes %}
+                                <tr>
+                                    <td>{{ forloop.counter }}</td>
+                                    <td>
+                                        <strong>{{ item.cliente__first_name }} {{ item.cliente__last_name }}</strong>
+                                    </td>
+                                    <td>
+                                        <code>{{ item.cliente__codigo_barras|default:"-" }}</code>
+                                    </td>
+                                    <td class="text-center">
+                                        <span class="badge bg-info">{{ item.num_facturas }}</span>
+                                    </td>
+                                    <td class="text-end">
+                                        <strong>RD${{ item.total_gastado|floatformat:2|intcomma }}</strong>
+                                    </td>
+                                    <td class="text-end text-muted">
+                                        RD${{ item.total_gastado|divide:item.num_facturas|floatformat:2|intcomma }}
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="6" class="text-center text-muted py-3">
+                                        No hay datos de clientes en este período
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- NUEVAS SECCIONES DE ANÁLISIS AVANZADO -->
+    
+    <!-- Análisis de Flujo de Caja -->
+    <div class="row mb-4">
+        <div class="col-md-4 mb-3">
+            <div class="card shadow-sm h-100 border-start border-success border-4">
+                <div class="card-body">
+                    <h6 class="text-muted mb-2"><i class="fas fa-money-bill-wave me-2"></i>Total Cobrado</h6>
+                    <h3 class="text-success mb-1">RD${{ total_cobrado|floatformat:2|intcomma }}</h3>
+                    <small class="text-muted">Facturas pagadas completamente</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4 mb-3">
+            <div class="card shadow-sm h-100 border-start border-warning border-4">
+                <div class="card-body">
+                    <h6 class="text-muted mb-2"><i class="fas fa-exclamation-triangle me-2"></i>Pendiente de Cobro</h6>
+                    <h3 class="text-warning mb-1">RD${{ total_pendiente_cobro|floatformat:2|intcomma }}</h3>
+                    <small class="text-muted">Saldo por cobrar</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4 mb-3">
+            <div class="card shadow-sm h-100 border-start border-info border-4">
+                <div class="card-body">
+                    <h6 class="text-muted mb-2"><i class="fas fa-percentage me-2"></i>Tasa de Pago</h6>
+                    <h3 class="text-info mb-1">{{ tasa_pago|floatformat:1 }}%</h3>
+                    <small class="text-muted">{{ facturas_pagadas }} de {{ total_facturas }} pagadas</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Análisis de Productos vs Servicios -->
+    <div class="row mb-4">
+        <div class="col-md-6 mb-3">
+            <div class="card shadow-sm h-100">
+                <div class="card-header bg-info text-white">
+                    <strong><i class="fas fa-box me-2"></i>Ingresos por Tipo</strong>
+                </div>
+                <div class="card-body">
+                    <canvas id="productoServicioChart" style="max-height: 250px;"></canvas>
+                    <hr>
+                    <div class="row text-center">
+                        <div class="col-6">
+                            <h6 class="text-muted">Productos</h6>
+                            <h4 class="text-primary">RD${{ ingresos_productos|floatformat:2|intcomma }}</h4>
+                        </div>
+                        <div class="col-6">
+                            <h6 class="text-muted">Servicios</h6>
+                            <h4 class="text-success">RD${{ ingresos_servicios|floatformat:2|intcomma }}</h4>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-6 mb-3">
+            <div class="card shadow-sm h-100">
+                <div class="card-header bg-warning text-dark">
+                    <strong><i class="fas fa-tag me-2"></i>Análisis de Descuentos</strong>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between mb-2">
+                            <span>Total Descuentos:</span>
+                            <strong class="text-danger">RD${{ total_descuentos|floatformat:2|intcomma }}</strong>
+                        </div>
+                        <div class="d-flex justify-content-between mb-2">
+                            <span>Facturas con Descuento:</span>
+                            <strong>{{ facturas_con_descuento }} de {{ total_facturas }}</strong>
+                        </div>
+                        <div class="d-flex justify-content-between mb-2">
+                            <span>% Promedio de Descuento:</span>
+                            <strong>{{ porcentaje_descuento_promedio|floatformat:2 }}%</strong>
+                        </div>
+                    </div>
+                    <div class="progress" style="height: 25px;">
+                        <div class="progress-bar bg-warning" role="progressbar" 
+                             style="width: {{ porcentaje_descuento_promedio }}%"
+                             aria-valuenow="{{ porcentaje_descuento_promedio }}" 
+                             aria-valuemin="0" aria-valuemax="100">
+                            {{ porcentaje_descuento_promedio|floatformat:1 }}%
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Ventas por Método de Pago -->
+    {% if ventas_por_metodo %}
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card shadow-sm">
+                <div class="card-header bg-success text-white">
+                    <strong><i class="fas fa-credit-card me-2"></i>Ventas por Método de Pago</strong>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        {% for metodo in ventas_por_metodo %}
+                        <div class="col-md-3 mb-3">
+                            <div class="card border-success">
+                                <div class="card-body text-center">
+                                    <h6 class="text-muted">{{ metodo.metodo_pago|title }}</h6>
+                                    <h4 class="text-success">RD${{ metodo.total|floatformat:2|intcomma }}</h4>
+                                    <small class="text-muted">{{ metodo.cantidad }} facturas</small>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Análisis de Mensualidades -->
+    {% if cantidad_mensualidades > 0 %}
+    <div class="row mb-4">
+        <div class="col-md-6 mb-3">
+            <div class="card shadow-sm border-start border-primary border-4">
+                <div class="card-body">
+                    <h6 class="text-muted mb-2"><i class="fas fa-calendar-alt me-2"></i>Ingresos por Mensualidades</h6>
+                    <h3 class="text-primary mb-1">RD${{ ingresos_mensualidades|floatformat:2|intcomma }}</h3>
+                    <small class="text-muted">{{ cantidad_mensualidades }} mensualidades cobradas</small>
+                    <div class="progress mt-2" style="height: 10px;">
+                        {% widthratio ingresos_mensualidades total_ventas 100 as porcentaje_mensualidades %}
+                        <div class="progress-bar bg-primary" role="progressbar" 
+                             style="width: {{ porcentaje_mensualidades }}%"
+                             aria-valuenow="{{ porcentaje_mensualidades }}" 
+                             aria-valuemin="0" aria-valuemax="100">
+                        </div>
+                    </div>
+                    <small class="text-muted">{{ porcentaje_mensualidades }}% del total de ventas</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6 mb-3">
+            <div class="card shadow-sm border-start border-info border-4">
+                <div class="card-body">
+                    <h6 class="text-muted mb-2"><i class="fas fa-user-tie me-2"></i>Ticket Promedio por Cliente</h6>
+                    <h3 class="text-info mb-1">RD${{ ticket_promedio_cliente|floatformat:2|intcomma }}</h3>
+                    <small class="text-muted">Gasto promedio por cliente</small>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Ventas por Día de la Semana -->
+    {% if ventas_por_dia_semana %}
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card shadow-sm">
+                <div class="card-header bg-dark text-white">
+                    <strong><i class="fas fa-calendar-week me-2"></i>Ventas por Día de la Semana</strong>
+                </div>
+                <div class="card-body">
+                    <canvas id="ventasDiaSeemanaChart" height="80"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Ventas por Hora (Solo para día y semana) -->
+    {% if ventas_por_hora %}
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <strong><i class="fas fa-clock me-2"></i>Ventas por Hora del Día</strong>
+                </div>
+                <div class="card-body">
+                    <canvas id="ventasHoraChart" height="80"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Top Clientes Frecuentes -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card shadow-sm">
+                <div class="card-header bg-info text-white">
+                    <strong><i class="fas fa-star me-2"></i>Clientes Más Frecuentes</strong>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover table-sm mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>#</th>
+                                    <th>Cliente</th>
+                                    <th class="text-center">Visitas</th>
+                                    <th class="text-end">Total Gastado</th>
+                                    <th class="text-end">Ticket Promedio</th>
+                                    <th class="text-center">Frecuencia</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for cliente in clientes_frecuentes %}
+                                <tr>
+                                    <td>{{ forloop.counter }}</td>
+                                    <td>
+                                        <strong>{{ cliente.cliente__first_name }} {{ cliente.cliente__last_name }}</strong>
+                                    </td>
+                                    <td class="text-center">
+                                        <span class="badge bg-primary">{{ cliente.num_compras }}</span>
+                                    </td>
+                                    <td class="text-end">
+                                        <strong>RD${{ cliente.total_gastado|floatformat:2|intcomma }}</strong>
+                                    </td>
+                                    <td class="text-end text-muted">
+                                        RD${{ cliente.ticket_promedio|floatformat:2|intcomma }}
+                                    </td>
+                                    <td class="text-center">
+                                        {% if cliente.num_compras >= 10 %}
+                                            <span class="badge bg-success">⭐ VIP</span>
+                                        {% elif cliente.num_compras >= 5 %}
+                                            <span class="badge bg-info">Regular</span>
+                                        {% else %}
+                                            <span class="badge bg-secondary">Nuevo</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="6" class="text-center text-muted py-3">
+                                        No hay datos disponibles
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Botones de Exportación -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card shadow-sm">
+                <div class="card-body text-center">
+                    <button class="btn btn-success me-2" onclick="exportarExcel()">
+                        <i class="fas fa-file-excel me-2"></i>Exportar a Excel
+                    </button>
+                    <button class="btn btn-danger me-2" onclick="exportarPDF()">
+                        <i class="fas fa-file-pdf me-2"></i>Exportar a PDF
+                    </button>
+                    <button class="btn btn-info" onclick="window.print()">
+                        <i class="fas fa-print me-2"></i>Imprimir
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+
+<script>
+// Toggle fechas personalizadas
+function toggleFechasPersonalizadas() {
+    const periodo = document.getElementById('periodoSelect').value;
+    const fechaInicioDiv = document.getElementById('fechaInicioDiv');
+    const fechaFinDiv = document.getElementById('fechaFinDiv');
+    
+    if (periodo === 'personalizado') {
+        fechaInicioDiv.style.display = 'block';
+        fechaFinDiv.style.display = 'block';
+    } else {
+        fechaInicioDiv.style.display = 'none';
+        fechaFinDiv.style.display = 'none';
+    }
+}
+
+// Datos para gráficos
+const ventasPorDia = {{ ventas_por_dia|safe }};
+
+// Gráfico de Ventas por Día
+const ctxVentas = document.getElementById('ventasPorDiaChart').getContext('2d');
+const ventasChart = new Chart(ctxVentas, {
+    type: 'bar',
+    data: {
+        labels: ventasPorDia.map(v => {
+            const fecha = new Date(v.dia);
+            return fecha.toLocaleDateString('es-DO', { day: '2-digit', month: 'short' });
+        }),
+        datasets: [{
+            label: 'Ventas (RD$)',
+            data: ventasPorDia.map(v => v.total),
+            backgroundColor: 'rgba(54, 162, 235, 0.5)',
+            borderColor: 'rgba(54, 162, 235, 1)',
+            borderWidth: 1
+        }, {
+            label: 'Cantidad de Facturas',
+            data: ventasPorDia.map(v => v.cantidad),
+            type: 'line',
+            backgroundColor: 'rgba(255, 99, 132, 0.2)',
+            borderColor: 'rgba(255, 99, 132, 1)',
+            borderWidth: 2,
+            yAxisID: 'y1'
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: true,
+        interaction: {
+            mode: 'index',
+            intersect: false,
+        },
+        scales: {
+            y: {
+                type: 'linear',
+                display: true,
+                position: 'left',
+                title: {
+                    display: true,
+                    text: 'Ventas (RD$)'
+                }
+            },
+            y1: {
+                type: 'linear',
+                display: true,
+                position: 'right',
+                title: {
+                    display: true,
+                    text: 'Cantidad'
+                },
+                grid: {
+                    drawOnChartArea: false,
+                }
+            }
+        },
+        plugins: {
+            legend: {
+                display: true,
+                position: 'top'
+            },
+            tooltip: {
+                callbacks: {
+                    label: function(context) {
+                        let label = context.dataset.label || '';
+                        if (label) {
+                            label += ': ';
+                        }
+                        if (context.parsed.y !== null) {
+                            if (context.datasetIndex === 0) {
+                                label += 'RD$' + context.parsed.y.toFixed(2).replace(/\d(?=(\d{3})+\.)/g, '$&,');
+                            } else {
+                                label += context.parsed.y;
+                            }
+                        }
+                        return label;
+                    }
+                }
+            }
+        }
+    }
+});
+
+// Gráfico de Estado de Facturas
+const ctxEstado = document.getElementById('estadoFacturasChart').getContext('2d');
+const estadoChart = new Chart(ctxEstado, {
+    type: 'doughnut',
+    data: {
+        labels: ['Pagadas', 'Pendientes', 'Parciales'],
+        datasets: [{
+            data: [{{ facturas_pagadas }}, {{ facturas_pendientes }}, {{ facturas_parciales }}],
+            backgroundColor: [
+                'rgba(75, 192, 192, 0.6)',
+                'rgba(255, 99, 132, 0.6)',
+                'rgba(255, 206, 86, 0.6)'
+            ],
+            borderColor: [
+                'rgba(75, 192, 192, 1)',
+                'rgba(255, 99, 132, 1)',
+                'rgba(255, 206, 86, 1)'
+            ],
+            borderWidth: 1
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: true,
+        plugins: {
+            legend: {
+                position: 'bottom'
+            }
+        }
+    }
+});
+
+// Gráfico de Producto vs Servicio
+const ctxProdServ = document.getElementById('productoServicioChart').getContext('2d');
+const prodServChart = new Chart(ctxProdServ, {
+    type: 'pie',
+    data: {
+        labels: ['Productos', 'Servicios'],
+        datasets: [{
+            data: [{{ ingresos_productos }}, {{ ingresos_servicios }}],
+            backgroundColor: [
+                'rgba(54, 162, 235, 0.6)',
+                'rgba(75, 192, 192, 0.6)'
+            ],
+            borderColor: [
+                'rgba(54, 162, 235, 1)',
+                'rgba(75, 192, 192, 1)'
+            ],
+            borderWidth: 2
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: {
+                position: 'bottom'
+            },
+            tooltip: {
+                callbacks: {
+                    label: function(context) {
+                        let label = context.label || '';
+                        let value = context.parsed || 0;
+                        let total = context.dataset.data.reduce((a, b) => a + b, 0);
+                        let percentage = ((value / total) * 100).toFixed(1);
+                        return label + ': RD$' + value.toFixed(2).replace(/\d(?=(\d{3})+\.)/g, '$&,') + ' (' + percentage + '%)';
+                    }
+                }
+            }
+        }
+    }
+});
+
+{% if ventas_por_dia_semana %}
+// Gráfico de Ventas por Día de la Semana
+const ctxDiaSemana = document.getElementById('ventasDiaSeemanaChart').getContext('2d');
+const diaSemanaChart = new Chart(ctxDiaSemana, {
+    type: 'bar',
+    data: {
+        labels: [{% for venta in ventas_por_dia_semana %}'{{ venta.nombre_dia }}'{% if not forloop.last %}, {% endif %}{% endfor %}],
+        datasets: [{
+            label: 'Ventas',
+            data: [{% for venta in ventas_por_dia_semana %}{{ venta.total }}{% if not forloop.last %}, {% endif %}{% endfor %}],
+            backgroundColor: 'rgba(153, 102, 255, 0.6)',
+            borderColor: 'rgba(153, 102, 255, 1)',
+            borderWidth: 1
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+            y: {
+                beginAtZero: true,
+                title: {
+                    display: true,
+                    text: 'Ventas (RD$)'
+                }
+            }
+        },
+        plugins: {
+            tooltip: {
+                callbacks: {
+                    label: function(context) {
+                        return 'RD$' + context.parsed.y.toFixed(2).replace(/\d(?=(\d{3})+\.)/g, '$&,');
+                    }
+                }
+            }
+        }
+    }
+});
+{% endif %}
+
+{% if ventas_por_hora %}
+// Gráfico de Ventas por Hora
+const ctxHora = document.getElementById('ventasHoraChart').getContext('2d');
+const horaChart = new Chart(ctxHora, {
+    type: 'line',
+    data: {
+        labels: [{% for venta in ventas_por_hora %}'{{ venta.hora }}:00'{% if not forloop.last %}, {% endif %}{% endfor %}],
+        datasets: [{
+            label: 'Ventas por Hora',
+            data: [{% for venta in ventas_por_hora %}{{ venta.total }}{% if not forloop.last %}, {% endif %}{% endfor %}],
+            backgroundColor: 'rgba(255, 159, 64, 0.2)',
+            borderColor: 'rgba(255, 159, 64, 1)',
+            borderWidth: 2,
+            fill: true,
+            tension: 0.4
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+            y: {
+                beginAtZero: true,
+                title: {
+                    display: true,
+                    text: 'Ventas (RD$)'
+                }
+            },
+            x: {
+                title: {
+                    display: true,
+                    text: 'Hora del Día'
+                }
+            }
+        },
+        plugins: {
+            tooltip: {
+                callbacks: {
+                    label: function(context) {
+                        return 'RD$' + context.parsed.y.toFixed(2).replace(/\d(?=(\d{3})+\.)/g, '$&,');
+                    }
+                }
+            }
+        }
+    }
+});
+{% endif %}
+
+// Funciones de exportación (placeholders)
+function exportarExcel() {
+    alert('Funcionalidad de exportar a Excel en desarrollo');
+}
+
+function exportarPDF() {
+    alert('Funcionalidad de exportar a PDF en desarrollo');
+}
+</script>
+
+<style>
+@media print {
+    .btn, .card-header, nav, footer {
+        display: none !important;
+    }
+}
+</style>
+{% endblock %}

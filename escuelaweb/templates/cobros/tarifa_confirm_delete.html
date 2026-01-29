@@ -1,0 +1,12 @@
+{% extends 'website/base.html' %}
+{% block content %}
+<div class="container mt-3">
+  <h4>Confirmar eliminación</h4>
+  <p>¿Eliminar la tarifa de <strong>{{ tarifa.estudiante.get_full_name }}</strong> - {{ tarifa.get_tipo_display }} - {{ tarifa.monto }}?</p>
+  <form method="post">
+    {% csrf_token %}
+    <button class="btn btn-danger">Eliminar</button>
+    <a href="{% url 'tarifas_list' %}" class="btn btn-secondary">Cancelar</a>
+  </form>
+</div>
+{% endblock %}

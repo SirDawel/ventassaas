@@ -1,0 +1,166 @@
+{% extends 'website/base.html' %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="text-center">Registro de Usuario</h3>
+                </div>
+                <div class="card-body">
+                    {% if messages %}
+                        {% for message in messages %}
+                            <div class="alert alert-{{ message.tags }}">
+                                {{ message }}
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+                    
+                    <form method="POST" enctype="multipart/form-data">
+                        {% csrf_token %}
+                        
+                        <div class="row">
+                            <!-- InformaciÃ³n bÃ¡sica -->
+                            <div class="col-md-6 mb-3">
+                                <label for="email">Correo ElectrÃ³nico *</label>
+                                <input type="email" class="form-control" id="email" name="email" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="password">ContraseÃ±a *</label>
+                                <input type="password" class="form-control" id="password" name="password" required>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="first_name">Nombre *</label>
+                                <input type="text" class="form-control" id="first_name" name="first_name" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="last_name">Apellido *</label>
+                                <input type="text" class="form-control" id="last_name" name="last_name" required>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="fecha_nacimiento">Fecha de Nacimiento</label>
+                                <input type="date" class="form-control" id="fecha_nacimiento" name="fecha_nacimiento">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="genero">GÃ©nero</label>
+                                <select class="form-control" id="genero" name="genero">
+                                    <option value="">Seleccione...</option>
+                                    <option value="Masculino">Masculino</option>
+                                    <option value="Femenino">Femenino</option>
+                                    <option value="Otro">Otro</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="telefono">TelÃ©fono</label>
+                                <input type="tel" class="form-control" id="telefono" name="telefono">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="cedula">CÃ©dula</label>
+                                <input type="text" class="form-control" id="cedula" name="cedula">
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="direccion">DirecciÃ³n</label>
+                            <textarea class="form-control" id="direccion" name="direccion" rows="2"></textarea>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="rol">Rol *</label>
+                            <select class="form-control" id="rol" name="rol" required>
+                                <option value="">Seleccione...</option>
+                                <option value="Estudiante">Estudiante</option>
+                                <option value="Profesor">Profesor</option>
+                                <option value="Director">Director</option>
+                                <option value="Secretaria">Secretaria</option>
+                                <option value="Administrador">Administrador</option>
+                                <option value="Coordinador">Coordinador</option>
+                                <option value="Bibliotecario">Bibliotecario</option>
+                                <option value="Psicologo">PsicÃ³logo</option>
+                                <option value="Otro">Otro</option>
+                            </select>
+                        </div>
+
+                        <!-- Campos especÃ­ficos por rol -->
+                        <div id="campos-estudiante" class="d-none">
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="grado">Grado</label>
+                                    <input type="text" class="form-control" id="grado" name="grado">
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="seccion">SecciÃ³n</label>
+                                    <input type="text" class="form-control" id="seccion" name="seccion">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div id="campos-profesor" class="d-none">
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="especialidad">Especialidad</label>
+                                    <input type="text" class="form-control" id="especialidad" name="especialidad">
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="departamento">Departamento</label>
+                                    <input type="text" class="form-control" id="departamento" name="departamento">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- InformaciÃ³n de contacto de emergencia -->
+                        <h4 class="mt-4">Contacto de Emergencia</h4>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="contacto_emergencia_nombre">Nombre</label>
+                                <input type="text" class="form-control" id="contacto_emergencia_nombre" name="contacto_emergencia_nombre">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="contacto_emergencia_telefono">TelÃ©fono</label>
+                                <input type="tel" class="form-control" id="contacto_emergencia_telefono" name="contacto_emergencia_telefono">
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="contacto_emergencia_parentesco">Parentesco</label>
+                            <input type="text" class="form-control" id="contacto_emergencia_parentesco" name="contacto_emergencia_parentesco">
+                        </div>
+
+                        <div class="text-center mt-4">
+                            <button type="submit" class="btn btn-primary">Registrarse</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.getElementById('rol').addEventListener('change', function() {
+    const rol = this.value;
+    const camposEstudiante = document.getElementById('campos-estudiante');
+    const camposProfesor = document.getElementById('campos-profesor');
+    
+    // Ocultar todos los campos especÃ­ficos
+    camposEstudiante.classList.add('d-none');
+    camposProfesor.classList.add('d-none');
+    
+    // Mostrar campos segÃºn el rol seleccionado
+    if (rol === 'Estudiante') {
+        camposEstudiante.classList.remove('d-none');
+    } else if (rol === 'Profesor') {
+        camposProfesor.classList.remove('d-none');
+    }
+});
+</script>
+{% endblock %} 

@@ -1,0 +1,173 @@
+{% extends 'website/base.html' %}
+
+{% block title %}
+{{ titulo }}
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-12 col-md-8 col-lg-6">
+            <div class="card shadow rounded-3 border-0">
+                <div class="card-header bg-primary text-white text-center text-md-start">
+                    <h3 class="card-title mb-0">{{ titulo }}</h3>
+                </div>
+                <div class="card-body">
+                    <form method="post" class="needs-validation" novalidate>
+                        {% csrf_token %}
+
+                        <!-- Mostrar Año Escolar como texto -->
+                        {% if anho %}
+                        <div class="mb-3">
+                            <label class="form-label">Año Escolar</label>
+                            <input type="text" class="form-control" value="{{ anho.nombre }}" disabled>
+                            <!-- Campo oculto que sí se envía -->
+                            <input type="hidden" name="anho_escolar" value="{{ anho.id }}">
+                        </div>
+
+                        <!-- Mostrar el año como solo lectura -->
+                        <div class="mb-3">
+                            <label class="form-label">Año</label>
+                            <input type="text" class="form-control" value="{{ anho.nombre }}" readonly>
+                            <!-- Campo oculto para enviar el id -->
+                            <input type="hidden" name="anho" value="{{ anho.id }}">
+                        </div>
+                        {% endif %}
+
+                        <!-- Selección de grado y sección -->
+                        <div class="row g-2 mb-3">
+                            <div class="col-12 col-md-6">
+                                <label class="form-label">Grado</label>
+                                <select name="grade" id="id_grade" class="form-select">
+                                    <option value="">-- Seleccionar grado --</option>
+                                    {% for g in grados %}
+                                    <option value="{{ g }}" {% if g == grade_selected %}selected{% endif %}>{{ g }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-12 col-md-6">
+                                <label class="form-label">Sección</label>
+                                <select name="section" id="id_section" class="form-select">
+                                    <option value="AUTO" {% if section_selected == 'AUTO' %}selected{% endif %}>AUTO</option>
+                                    {% for s in secciones %}
+                                    <option value="{{ s }}" {% if s == section_selected %}selected{% endif %}>{{ s }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="mb-3" id="custom_name_group" style="{% if grade_selected == 'Otros' or custom_name %}display:block;{% else %}display:none;{% endif %}">
+                            <label class="form-label">Nombre personalizado (si eliges Otros)</label>
+                            <input type="text" name="custom_name" id="id_custom_name" class="form-control" placeholder="Ej: Aula de Robótica" value="{% if custom_name %}{{ custom_name }}{% endif %}" />
+                        </div>
+
+                        <!-- Hidden field where we'll put the final nombre antes de enviar -->
+                        <input type="hidden" name="nombre" id="id_nombre_hidden" value="" />
+
+                        {% for field in form %}
+                            {% if field.name != 'anho_escolar' and field.name != 'nombre' %}
+                            <div class="mb-3">
+                                <label for="{{ field.id_for_label }}" class="form-label">
+                                    {{ field.label }}
+                                    {% if field.field.required %}
+                                    <span class="text-danger">*</span>
+                                    {% endif %}
+                                </label>
+
+                                {% if field.errors %}
+                                <div class="alert alert-danger py-1 mb-2">
+                                    {{ field.errors }}
+                                </div>
+                                {% endif %}
+
+                                {{ field }}
+
+                                {% if field.help_text %}
+                                <div class="form-text">{{ field.help_text }}</div>
+                                {% endif %}
+                            </div>
+                            {% endif %}
+                        {% endfor %}
+
+                        <div class="d-flex flex-column flex-md-row justify-content-between gap-2 mt-4">
+                            <a href="{% url 'lista_cursos' %}?anho={{ anho.id }}" class="btn btn-secondary w-100 w-md-auto">
+                                <i class="fas fa-arrow-left me-1"></i> Cancelar
+                            </a>
+                            <button type="submit" class="btn btn-primary w-100 w-md-auto">
+                                <i class="fas fa-save me-1"></i> Guardar
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% block extra_js %}
+<script>
+    // Validación de formulario Bootstrap
+    (function () {
+        'use strict';
+        const forms = document.querySelectorAll('.needs-validation');
+        Array.prototype.slice.call(forms).forEach(form => {
+            form.addEventListener('submit', event => {
+                // Antes de enviar, rellenar el campo oculto 'nombre'
+                const grade = document.getElementById('id_grade').value;
+                const section = document.getElementById('id_section').value;
+                const custom = document.getElementById('id_custom_name').value.trim();
+                let finalName = '';
+                if (grade === 'Otros' || custom) {
+                    finalName = custom || 'Otros';
+                } else if (grade) {
+                    if (section && section !== 'AUTO') finalName = grade + ' ' + section;
+                    else finalName = grade;
+                }
+                if (finalName) document.getElementById('id_nombre_hidden').value = finalName;
+
+                if (!form.checkValidity()) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                }
+                form.classList.add('was-validated');
+            }, false);
+        });
+    })();
+
+    // Mostrar/ocultar campo nombre personalizado si se elige Otros
+    const gradeEl = document.getElementById('id_grade');
+    const sectionEl = document.getElementById('id_section');
+    const customEl = document.getElementById('id_custom_name');
+    const hiddenName = document.getElementById('id_nombre_hidden');
+
+    function computeName() {
+        const grade = gradeEl.value;
+        const section = sectionEl.value;
+        const custom = (customEl && customEl.value || '').trim();
+        if (grade === 'Otros' || custom) return custom || 'Otros';
+        if (grade) {
+            if (section && section !== 'AUTO') return grade + ' ' + section;
+            return grade;
+        }
+        return '';
+    }
+
+    // Inicializar hidden al cargar
+    document.addEventListener('DOMContentLoaded', function() {
+        if (hiddenName) hiddenName.value = computeName();
+    });
+
+    gradeEl.addEventListener('change', function() {
+        const el = document.getElementById('custom_name_group');
+        if (this.value === 'Otros') el.style.display = 'block'; else el.style.display = 'none';
+        if (hiddenName) hiddenName.value = computeName();
+    });
+    sectionEl.addEventListener('change', function() {
+        if (hiddenName) hiddenName.value = computeName();
+    });
+    if (customEl) customEl.addEventListener('input', function() {
+        if (hiddenName) hiddenName.value = computeName();
+    });
+</script>
+{% endblock %}
+{% endblock %}

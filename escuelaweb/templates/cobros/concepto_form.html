@@ -1,0 +1,118 @@
+{% extends 'website/base.html' %}
+
+{% block title %}{{ titulo }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8 col-lg-6">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-{% if concepto %}edit{% else %}plus{% endif %} me-2"></i>
+                        {{ titulo }}
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <form method="post">
+                        {% csrf_token %}
+                        
+                        <div class="mb-3">
+                            <label for="{{ form.tipo.id_for_label }}" class="form-label">
+                                <i class="fas fa-tag me-1"></i>Tipo <span class="text-danger">*</span>
+                            </label>
+                            {{ form.tipo }}
+                            {% if form.tipo.errors %}
+                                <div class="text-danger small mt-1">{{ form.tipo.errors }}</div>
+                            {% endif %}
+                            <small class="text-muted d-block mt-1">
+                                Seleccione el tipo de concepto de pago
+                            </small>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="{{ form.nombre.id_for_label }}" class="form-label">
+                                <i class="fas fa-file-alt me-1"></i>Nombre <span class="text-danger">*</span>
+                            </label>
+                            {{ form.nombre }}
+                            {% if form.nombre.errors %}
+                                <div class="text-danger small mt-1">{{ form.nombre.errors }}</div>
+                            {% endif %}
+                            <small class="text-muted d-block mt-1">
+                                Ejemplo: "Mensualidad 2025", "Inscripción Año Escolar", etc.
+                            </small>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="{{ form.monto.id_for_label }}" class="form-label">
+                                <i class="fas fa-dollar-sign me-1"></i>Monto Base <span class="text-danger">*</span>
+                            </label>
+                            <div class="input-group">
+                                <span class="input-group-text">RD$</span>
+                                {{ form.monto }}
+                            </div>
+                            {% if form.monto.errors %}
+                                <div class="text-danger small mt-1">{{ form.monto.errors }}</div>
+                            {% endif %}
+                            <small class="text-muted d-block mt-1">
+                                Monto estándar para este concepto (puede modificarse por estudiante)
+                            </small>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="{{ form.descripcion.id_for_label }}" class="form-label">
+                                <i class="fas fa-align-left me-1"></i>Descripción
+                            </label>
+                            {{ form.descripcion }}
+                            {% if form.descripcion.errors %}
+                                <div class="text-danger small mt-1">{{ form.descripcion.errors }}</div>
+                            {% endif %}
+                            <small class="text-muted d-block mt-1">
+                                Información adicional sobre este concepto (opcional)
+                            </small>
+                        </div>
+
+                        <div class="form-check mb-4">
+                            {{ form.activo }}
+                            <label class="form-check-label" for="{{ form.activo.id_for_label }}">
+                                {{ form.activo.label }}
+                            </label>
+                            {% if form.activo.errors %}
+                                <div class="text-danger small mt-1">{{ form.activo.errors }}</div>
+                            {% endif %}
+                            <small class="text-muted d-block mt-1">
+                                Solo los conceptos activos aparecerán al crear tarifas
+                            </small>
+                        </div>
+
+                        <div class="form-check mb-4">
+                            {{ form.es_estandar }}
+                            <label class="form-check-label" for="{{ form.es_estandar.id_for_label }}">
+                                <i class="fas fa-star text-warning me-1"></i>{{ form.es_estandar.label }}
+                            </label>
+                            {% if form.es_estandar.errors %}
+                                <div class="text-danger small mt-1">{{ form.es_estandar.errors }}</div>
+                            {% endif %}
+                            <small class="text-muted d-block mt-1">
+                                <i class="fas fa-info-circle me-1"></i>
+                                Si marca esta opción, esta tarifa se asignará automáticamente a todos los nuevos estudiantes.
+                                <strong>Solo debe haber una tarifa estándar por tipo</strong> (mensualidad, inscripción, transporte).
+                            </small>
+                        </div>
+
+                        <div class="d-flex gap-2">
+                            <button type="submit" class="btn btn-primary flex-fill">
+                                <i class="fas fa-save me-1"></i>
+                                {% if concepto %}Actualizar{% else %}Crear{% endif %} Concepto
+                            </button>
+                            <a href="{% url 'conceptos_list' %}" class="btn btn-secondary">
+                                <i class="fas fa-times me-1"></i>Cancelar
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

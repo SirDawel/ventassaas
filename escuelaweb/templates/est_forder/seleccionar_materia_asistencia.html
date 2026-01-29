@@ -1,0 +1,90 @@
+{% extends 'website/base.html' %}
+
+{% block title %}{{ titulo }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between mb-3">
+        <h3>{{ titulo }}</h3>
+        <div class="d-flex gap-2">
+            <a href="{% url 'plataform' %}" class="btn btn-secondary">
+                <i class="fas fa-arrow-left"></i> Volver
+            </a>
+            <a href="{% url 'historial_asistencia' %}" class="btn btn-info">
+                <i class="fas fa-history"></i> Ver Historial
+            </a>
+        </div>
+    </div>
+
+    {% if anho_actual %}
+    <div class="alert alert-info">
+        <i class="fas fa-calendar"></i> Año Escolar: <strong>{{ anho_actual.nombre }}</strong>
+    </div>
+    {% endif %}
+
+    {% if total_materias > 0 %}
+    <div class="alert alert-info mb-3">
+        <i class="fas fa-info-circle"></i> 
+        {% if user.rol == 'Profesor' %}
+        Tienes <strong>{{ total_materias }}</strong> materia(s) asignada(s).
+        {% else %}
+        Hay <strong>{{ total_materias }}</strong> materia(s) en el sistema.
+        {% endif %}
+    </div>
+    {% endif %}
+
+    {% if materias_por_anho %}
+    {% for anho, materias_anho in materias_por_anho.items %}
+    <div class="card mb-3">
+        <div class="card-header bg-primary text-white">
+            <h5 class="mb-0">
+                <i class="fas fa-calendar"></i> {{ anho.nombre }}
+                <span class="badge bg-light text-dark float-end">{{ materias_anho|length }} materia(s)</span>
+            </h5>
+        </div>
+        <div class="card-body p-0">
+            <div class="list-group list-group-flush">
+                {% for materia in materias_anho %}
+                <a href="{% url 'pasar_lista' materia.id %}" class="list-group-item list-group-item-action">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="mb-1">
+                                <i class="fas fa-book"></i> {{ materia.nombre }}
+                                {% if materia.codigo %}
+                                <small class="text-muted">({{ materia.codigo }})</small>
+                                {% endif %}
+                            </h6>
+                            <p class="mb-0 text-muted small">
+                                <i class="fas fa-graduation-cap"></i> {{ materia.curso.nombre }}
+                                {% if user.rol == 'Administrador' %}
+                                | <i class="fas fa-user"></i> Prof. {{ materia.profesor.get_full_name }}
+                                {% endif %}
+                            </p>
+                        </div>
+                        <span class="badge bg-primary rounded-pill">
+                            <i class="fas fa-users"></i> {{ materia.matriculas.count }} estudiante(s)
+                        </span>
+                    </div>
+                </a>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+    {% else %}
+    <div class="card">
+        <div class="card-body text-center py-5">
+            <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
+            <h5 class="text-muted">No hay materias disponibles</h5>
+            <p class="text-muted">
+                {% if user.rol == 'Profesor' %}
+                No tienes materias asignadas actualmente. Contacta al administrador si crees que esto es un error.
+                {% else %}
+                No hay materias creadas en el sistema. <a href="{% url 'lista_cursos' %}" class="btn btn-link">Crear materias</a>
+                {% endif %}
+            </p>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

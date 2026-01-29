@@ -1,0 +1,224 @@
+{% extends 'website/base.html' %}
+{% load static %}
+{% load custom_filters %}
+
+{% block title %}{{ titulo }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <div class="row mb-4">
+        <div class="col">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h2 class="mb-2"><i class="fas fa-clipboard-list me-2"></i>{{ titulo }}</h2>
+                    <div class="alert alert-info d-inline-flex align-items-center mb-0">
+                        <i class="fas fa-info-circle me-2"></i>
+                        <strong>Módulo Formativo</strong> - Cada RA vale %. Total: 100%
+                    </div>
+                    <p class="text-muted mt-2">
+                        <strong>Módulo:</strong> {{ materia.nombre }}<br>
+                                <div class="table-responsive">
+                        <strong>Código:</strong> {{ materia.codigo|default:"N/A" }}
+                    </p>
+                </div>
+                <div>
+                    <a href="{% url 'lista_materias' %}?curso={{ materia.curso.id }}" class="btn btn-secondary">
+                        <i class="fas fa-arrow-left"></i> Volver
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card shadow mb-4">
+        <div class="card-header bg-info text-white">
+            <h5 class="mb-0"><i class="fas fa-cogs me-2"></i>Configuración de Resultados de Aprendizaje (RA)</h5>
+        </div>
+        <div class="card-body">
+            <form method="post" id="form-config-ra" class="row g-2 align-items-end">
+                {% csrf_token %}
+                <input type="hidden" name="guardar_config_ra" value="1">
+                <div class="col-md-3">
+                    <label for="cantidad_ra" class="form-label">Cantidad de RA</label>
+                    <input type="number" min="1" max="10" class="form-control" name="cantidad_ra" id="cantidad_ra" value="{{ cantidad_ra }}" onchange="mostrarCamposRA()">
+                </div>
+                <div class="col-md-7" id="valores-ra-section" style="display: none;">
+                    <label class="form-label">Valor de cada RA (%)</label>
+                    <div class="d-flex flex-wrap gap-2" id="inputs-valores-ra">
+                        <!-- Los inputs se generan por JS -->
+                    </div>
+                    <div class="mt-2">
+                        <span class="fw-bold">Suma actual: <span id="suma-ra" class="text-primary">0</span>%</span>
+                    </div>
+                </div>
+                <div class="col-md-2 d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary w-100" id="btn-guardar-ra" disabled>
+                        <i class="fas fa-save me-1"></i>Guardar Configuración
+                    </button>
+                </div>
+                <div class="col-12 mt-2">
+                    <div class="alert alert-warning py-2 mb-0">
+                        1. Elige la cantidad de RA y presiona Enter o cambia el campo.<br>
+                        2. Ingresa el valor de cada RA (la suma debe ser <b>100%</b> para poder guardar).
+                    </div>
+                </div>
+            </form>
+            <script>
+            function mostrarCamposRA() {
+                var cantidad = parseInt(document.getElementById('cantidad_ra').value) || 0;
+                var section = document.getElementById('valores-ra-section');
+                var inputsDiv = document.getElementById('inputs-valores-ra');
+                inputsDiv.innerHTML = '';
+                if (cantidad > 0 && cantidad <= 10) {
+                    section.style.display = '';
+                    for (let i = 1; i <= cantidad; i++) {
+                        let input = document.createElement('input');
+                        input.type = 'number';
+                        input.step = '0.01';
+                        input.min = '1';
+                        input.max = '100';
+                        input.name = 'valor_ra_' + i;
+                        input.className = 'form-control text-center';
+                        input.style.width = '80px';
+                        input.required = true;
+                        input.placeholder = 'RA ' + i;
+                        input.oninput = calcularSumaRA;
+                        // Valor inicial si existe
+                        let valores = {{ valores_ra|safe }};
+                        if (valores && valores.length >= i) input.value = Number(valores[i-1]);
+                        inputsDiv.appendChild(input);
+                    }
+                    calcularSumaRA();
+                } else {
+                    section.style.display = 'none';
+                }
+            }
+            function calcularSumaRA() {
+                var inputs = document.querySelectorAll('#inputs-valores-ra input');
+                var suma = 0;
+                for (let inp of inputs) {
+                    suma += parseFloat(inp.value) || 0;
+                }
+                document.getElementById('suma-ra').innerText = suma.toFixed(2);
+                console.log('Suma actual de RA:', suma);
+                document.getElementById('btn-guardar-ra').disabled = (Math.round(suma*100)/100 !== 100);
+            }
+            document.addEventListener('DOMContentLoaded', function() {
+                mostrarCamposRA();
+            });
+            </script>
+        </div>
+    </div>
+
+    <div class="card shadow">
+        <div class="card-header bg-primary text-white">
+            <h5 class="mb-0"><i class="fas fa-chart-bar me-2"></i>Calificaciones del Módulo Formativo</h5>
+        </div>
+        <div class="card-body p-0">
+            <form method="post">
+                {% csrf_token %}
+                <input type="hidden" name="guardar_notas_modular" value="1">
+
+                <div class="table-responsive">
+                    <table class="table table-bordered table-hover align-middle mb-0">
+                        <thead class="table-light text-center sticky-top">
+                            <tr>
+                                <th style="width: 40px;" class="bg-secondary text-white">#</th>
+                                <th style="width: 250px;" class="bg-secondary text-white">Estudiante</th>
+                                {% for i in cantidad_ra|range_filter %}
+                                <th style="width: 80px;">RA {{ forloop.counter }}<br><span class="badge bg-info">{{ valores_ra|index:i }}%</span></th>
+                                {% endfor %}
+                                <th style="width: 90px;" class="bg-success text-white">TOTAL</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for m in matriculas %}
+                            <tr>
+                                <td class="text-center fw-bold bg-light">{{ m.numero }}</td>
+                                <td class="bg-light">
+                                    <strong>{{ m.estudiante.get_full_name }}</strong>
+                                </td>
+                                {% for i in cantidad_ra|range_filter %}
+                                <td>
+                                    <input type="number"
+                                           name="ra_{{ i|add:1 }}_{{ m.id }}"
+                                           value="{{ m|get_ra:i }}"
+                                           class="form-control form-control-sm text-center"
+                                           step="0.01"
+                                           min="0"
+                                           max="{{ valores_ra|index:i }}"
+                                           placeholder="0-{{ valores_ra|index:i }}"
+                                           autocomplete="off">
+                                    <script>console.log('Estudiante: {{ m.estudiante.get_full_name }} | RA_{{ i|add:1 }} =', '{{ m|get_ra:i }}');</script>
+                                </td>
+                                {% endfor %}
+                                <td class="text-center fw-bold fs-6 bg-success text-white">
+                                    {% if m.total_ra %}
+                                        {{ m.total_ra }}
+                                    {% else %}
+                                        -
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="13" class="text-center text-muted py-4">
+                                    <i class="fas fa-users-slash fa-2x mb-2"></i><br>
+                                    No hay estudiantes matriculados en esta materia
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="card-footer bg-light">
+                    <div class="row align-items-center">
+                        <div class="col-md-8">
+                            <div class="alert alert-warning mb-0">
+                                <i class="fas fa-exclamation-triangle me-2"></i>
+                                <strong>Importante:</strong> Cada Resultado de Aprendizaje (RA) tiene un valor de 0 a 10%.
+                                La suma de los 10 RA debe totalizar aproximadamente 100% (calificación final).
+                            </div>
+                        </div>
+                        <div class="col-md-4 text-end">
+                            <button type="submit" class="btn btn-primary btn-lg">
+                                <i class="fas fa-save me-2"></i>Guardar Calificaciones
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<style>
+    .sticky-top {
+        position: sticky;
+        top: 0;
+        z-index: 10;
+    }
+    
+    input[type="number"].form-control-sm {
+        padding: 0.25rem 0.5rem;
+        font-size: 0.875rem;
+        min-width: 70px;
+    }
+    
+    .table td {
+        vertical-align: middle;
+    }
+    
+    .table input:focus {
+        border-color: #0d6efd;
+        box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+    }
+
+    /* Remove spinner arrows from number inputs */
+    input[type="number"]::-webkit-inner-spin-button,
+    input[type="number"]::-webkit-outer-spin-button {
+        opacity: 1;
+    }
+</style>
+{% endblock %}

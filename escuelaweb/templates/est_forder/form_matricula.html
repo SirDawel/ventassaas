@@ -1,0 +1,141 @@
+{% extends 'website/base.html' %}
+
+{% block title %}
+{{ titulo }}
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h2 mb-0">{{ titulo }}</h1>
+            <p class="text-muted">Complete el formulario para {{ titulo|lower }}</p>
+        </div>
+        <div>
+            <a href="{% url 'lista_matriculas' %}" class="btn btn-secondary">
+                <i class="fas fa-arrow-left"></i> Volver a MatrÃ­culas
+            </a>
+        </div>
+    </div>
+
+    {% if messages %}
+    <div class="messages">
+        {% for message in messages %}
+        <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <div class="card shadow">
+        <div class="card-body">
+            <form method="post" class="needs-validation" novalidate>
+                {% csrf_token %}
+                
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label for="estudiante" class="form-label">Estudiante</label>
+                        <select class="form-select" id="estudiante" name="estudiante" required>
+                            <option value="">Seleccione un estudiante</option>
+                            {% for estudiante in estudiantes %}
+                            <option value="{{ estudiante.id }}" {% if form.estudiante.value == estudiante.id %}selected{% endif %}>
+                                {{ estudiante.get_full_name }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                        {% if form.estudiante.errors %}
+                        <div class="invalid-feedback d-block">
+                            {{ form.estudiante.errors }}
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    <div class="col-md-6 mb-3">
+                        <label for="materia" class="form-label">Materia</label>
+                        <select class="form-select" id="materia" name="materia" required>
+                            <option value="">Seleccione una materia</option>
+                            {% for materia in materias %}
+                            <option value="{{ materia.id }}" {% if form.materia.value == materia.id %}selected{% endif %}>
+                                {{ materia.nombre }} - {{ materia.curso.nombre }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                        {% if form.materia.errors %}
+                        <div class="invalid-feedback d-block">
+                            {{ form.materia.errors }}
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label for="estado" class="form-label">Estado</label>
+                        <select class="form-select" id="estado" name="estado" required>
+                            {% for value, label in form.fields.estado.choices %}
+                            <option value="{{ value }}" {% if form.estado.value == value %}selected{% endif %}>
+                                {{ label }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                        {% if form.estado.errors %}
+                        <div class="invalid-feedback d-block">
+                            {{ form.estado.errors }}
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    <div class="col-md-6 mb-3">
+                        <label for="nota_final" class="form-label">Nota Final</label>
+                        <input type="number" class="form-control" id="nota_final" name="nota_final" 
+                               step="0.01" min="0" max="100" value="{{ form.nota_final.value|default:'' }}">
+                        {% if form.nota_final.errors %}
+                        <div class="invalid-feedback d-block">
+                            {{ form.nota_final.errors }}
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save"></i> Guardar
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+{% block extra_js %}
+<script>
+    // Auto-hide alerts after 5 seconds
+    document.addEventListener('DOMContentLoaded', function() {
+        setTimeout(function() {
+            var alerts = document.querySelectorAll('.alert');
+            alerts.forEach(function(alert) {
+                var bsAlert = new bootstrap.Alert(alert);
+                bsAlert.close();
+            });
+        }, 5000);
+    });
+
+    // Form validation
+    (function() {
+        'use strict';
+        var forms = document.querySelectorAll('.needs-validation');
+        Array.prototype.slice.call(forms).forEach(function(form) {
+            form.addEventListener('submit', function(event) {
+                if (!form.checkValidity()) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                }
+                form.classList.add('was-validated');
+            }, false);
+        });
+    })();
+</script>
+{% endblock %}
+{% endblock %} 

@@ -1,0 +1,239 @@
+{% extends "website/base.html" %}
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-10">
+            <div class="card shadow-lg border-0">
+                <div class="card-header text-white py-3 d-flex justify-content-between align-items-center" style="background-color: #2196F3;">
+                    <h3 class="mb-0">
+                        <i class="fas fa-users me-2"></i>Lista de Usuarios
+                    </h3>
+                    <a href="{% url 'user_create' %}" class="btn btn-light">
+                        <i class="fas fa-user-plus me-2"></i>Nuevo Usuario
+                    </a>
+                </div>
+
+                <div class="card-body p-4">
+                    {% if messages %}
+                        {% for message in messages %}
+                            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                                {{ message }}
+                                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+
+                    <!-- Search Form -->
+                    <form method="get" class="mb-4">
+                        <div class="input-group">
+                            <input type="text" name="q" class="form-control" placeholder="Buscar por nombre, email o cédula..." value="{{ query }}">
+                            <input type="hidden" name="per_page" value="{{ per_page }}">
+                            <button class="btn btn-primary" type="submit">
+                                <i class="fas fa-search me-2"></i>Buscar
+                            </button>
+                        </div>
+                    </form>
+
+                    <form method="get" class="mb-3">
+                        <div class="btn-group" role="group" aria-label="Paginación">
+                            {% for n in page_sizes %}
+                                <button type="submit" name="per_page" value="{{ n }}" class="btn btn-outline-primary {% if per_page == n %}active{% endif %}">
+                                    {{ n }}
+                                </button>
+                            {% endfor %}
+                        </div>
+                        {% if users.number %}
+                            <input type="hidden" name="page" value="{{ users.number }}">
+                        {% endif %}
+                    </form>
+
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Nombre</th>
+                                    <th>Email</th>
+                                    <th>Rol</th>
+                                    <th>Estado</th>
+                                    <th>Último Acceso</th>
+                                    <th>Acciones</th>
+                                </tr>
+                            </thead>
+
+                            <tbody>
+                                {% for user in users %}
+                                <tr>
+                                    <td>{{ user.get_full_name }}</td>
+                                    <td>{{ user.email }}</td>
+                                    <td>
+                                        <span class="badge bg-info">{{ user.rol }}</span>
+                                    </td>
+                                    <td>
+                                        {% if user.is_active %}
+                                            <span class="badge bg-success">Activo</span>
+                                        {% else %}
+                                            <span class="badge bg-danger">Inactivo</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if user.ultimo_acceso %}
+                                            {{ user.ultimo_acceso|date:"d/m/Y H:i" }}
+                                        {% else %}
+                                            <span class="text-muted">Nunca</span>
+                                        {% endif %}
+                                    </td>
+
+                                    <td>
+                                        <div class="btn-group" role="group">
+                                            <a href="{% url 'user_update' user.id %}" class="btn btn-sm btn-primary" title="Editar">
+                                                <i class="fas fa-edit"></i>
+                                            </a>
+                                            <a href="{% url 'user_profile' user.id %}" class="btn btn-sm btn-info" title="Ver Perfil">
+                                                <i class="fas fa-user"></i>
+                                            </a>
+                                            <button type="button" class="btn btn-sm btn-danger" 
+                                                data-bs-toggle="modal" 
+                                                data-bs-target="#deleteModal{{ user.id }}"
+                                                title="Eliminar">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        </div>
+
+                                        <!-- Modal de confirmación de eliminación -->
+                                        <div class="modal fade" id="deleteModal{{ user.id }}" tabindex="-1" aria-hidden="true">
+                                            <div class="modal-dialog">
+                                                <div class="modal-content">
+                                                    <div class="modal-header">
+                                                        <h5 class="modal-title">Confirmar Eliminación</h5>
+                                                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                                    </div>
+                                                    <div class="modal-body">
+                                                        ¿Está seguro que desea eliminar al usuario {{ user.get_full_name }}?
+                                                    </div>
+                                                    <div class="modal-footer">
+                                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                                                        <form action="{% url 'user_delete' user.id %}" method="POST" class="d-inline">
+                                                            {% csrf_token %}
+                                                            <button type="submit" class="btn btn-danger">Eliminar</button>
+                                                        </form>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                    </td>
+                                </tr>
+
+                                {% empty %}
+                                <tr>
+                                    <td colspan="6" class="text-center py-4">
+                                        <i class="fas fa-users fa-3x text-muted mb-3"></i>
+                                        <p class="text-muted">No hay usuarios registrados.</p>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Pagination -->
+                    {% if users.has_other_pages %}
+                    <nav aria-label="Page navigation" class="mt-4">
+                        <ul class="pagination justify-content-center">
+                            {% if users.has_previous %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ users.previous_page_number }}&per_page={{ per_page }}{% if query %}&q={{ query }}{% endif %}" aria-label="Previous">
+                                        <span aria-hidden="true">&laquo;</span>
+                                    </a>
+                                </li>
+                            {% endif %}
+
+                            {% for num in users.paginator.page_range %}
+                                {% if users.number == num %}
+                                    <li class="page-item active">
+                                        <span class="page-link">{{ num }}</span>
+                                    </li>
+                                {% else %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="?page={{ num }}&per_page={{ per_page }}{% if query %}&q={{ query }}{% endif %}">
+                                            {{ num }}
+                                        </a>
+                                    </li>
+                                {% endif %}
+                            {% endfor %}
+
+                            {% if users.has_next %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ users.next_page_number }}&per_page={{ per_page }}{% if query %}&q={{ query }}{% endif %}" aria-label="Next">
+                                        <span aria-hidden="true">&raquo;</span>
+                                    </a>
+                                </li>
+                            {% endif %}
+                        </ul>
+                    </nav>
+                    {% endif %}
+
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.table th {
+    font-weight: 600;
+    background-color: #f8f9fa;
+}
+
+.btn-group .btn {
+    padding: 0.25rem 0.5rem;
+}
+
+.badge {
+    font-weight: 500;
+    padding: 0.5em 0.75em;
+}
+
+.table-hover tbody tr:hover {
+    background-color: rgba(0, 123, 255, 0.05);
+}
+
+.modal-content {
+    border-radius: 15px;
+    border: none;
+}
+
+.modal-header {
+    border-bottom: 1px solid #dee2e6;
+    background-color: #f8f9fa;
+    border-radius: 15px 15px 0 0;
+}
+
+.modal-footer {
+    border-top: 1px solid #dee2e6;
+    background-color: #f8f9fa;
+    border-radius: 0 0 15px 15px;
+}
+
+.pagination {
+    margin-bottom: 0;
+}
+
+.page-link {
+    color: #0d6efd;
+    border: 1px solid #dee2e6;
+    padding: 0.5rem 0.75rem;
+}
+
+.page-item.active .page-link {
+    background-color: #0d6efd;
+    border-color: #0d6efd;
+}
+
+.page-link:hover {
+    color: #0a58ca;
+    background-color: #e9ecef;
+    border-color: #dee2e6;
+}
+</style>
+{% endblock %}

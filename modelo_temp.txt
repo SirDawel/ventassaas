@@ -1,0 +1,32 @@
+
+
+class AsistenciaPersonal(models.Model):
+    ESTADO_CHOICES = [
+        ('presente', 'Presente'),
+        ('ausente', 'Ausente'),
+        ('tardanza', 'Tardanza'),
+        ('permiso', 'Permiso'),
+    ]
+    
+    usuario = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='asistencias_personal')
+    fecha = models.DateField()
+    estado = models.CharField(max_length=10, choices=ESTADO_CHOICES, default='presente')
+    hora_entrada = models.TimeField(null=True, blank=True)
+    hora_salida = models.TimeField(null=True, blank=True)
+    observaciones = models.TextField(blank=True, null=True)
+    registrado_por = models.ForeignKey(CustomUser, on_delete=models.SET_NULL, null=True, related_name='asistencias_personal_registradas')
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = 'Asistencia Personal'
+        verbose_name_plural = 'Asistencias Personal'
+        unique_together = ['usuario', 'fecha']
+        indexes = [
+            models.Index(fields=['fecha']),
+            models.Index(fields=['usuario', 'fecha']),
+        ]
+        ordering = ['-fecha', 'usuario__first_name']
+
+    def __str__(self):
+        return f"{self.usuario.get_full_name()} - {self.fecha} ({self.get_estado_display()})"

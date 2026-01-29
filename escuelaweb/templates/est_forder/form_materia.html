@@ -1,0 +1,145 @@
+{% extends 'website/base.html' %}
+
+{% block title %}
+{{ titulo }}
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0">{{ titulo }}</h4>
+                </div>
+
+                <div class="card-body">
+                    <form method="post" class="needs-validation" novalidate>
+                        {% csrf_token %}
+
+                        {% if form.non_field_errors %}
+                        <div class="alert alert-danger">
+                            {% for error in form.non_field_errors %}
+                            {{ error }}
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+
+                        {% for field in form %}
+                        {% if field.name == 'lunes' %}
+                        <!-- Sección de días de la semana -->
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">
+                                <i class="fas fa-calendar-week"></i> Días en que se imparte
+                            </label>
+                            <div class="card">
+                                <div class="card-body">
+                                    <div class="row">
+                                        <div class="col-md-4 mb-2">
+                                            <div class="form-check">
+                                                {{ form.lunes }}
+                                                <label class="form-check-label" for="{{ form.lunes.id_for_label }}">
+                                                    📅 Lunes
+                                                </label>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-4 mb-2">
+                                            <div class="form-check">
+                                                {{ form.martes }}
+                                                <label class="form-check-label" for="{{ form.martes.id_for_label }}">
+                                                    📅 Martes
+                                                </label>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-4 mb-2">
+                                            <div class="form-check">
+                                                {{ form.miercoles }}
+                                                <label class="form-check-label" for="{{ form.miercoles.id_for_label }}">
+                                                    📅 Miércoles
+                                                </label>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-4 mb-2">
+                                            <div class="form-check">
+                                                {{ form.jueves }}
+                                                <label class="form-check-label" for="{{ form.jueves.id_for_label }}">
+                                                    📅 Jueves
+                                                </label>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-4 mb-2">
+                                            <div class="form-check">
+                                                {{ form.viernes }}
+                                                <label class="form-check-label" for="{{ form.viernes.id_for_label }}">
+                                                    📅 Viernes
+                                                </label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% elif field.name not in 'martes miercoles jueves viernes' %}
+                        <!-- Otros campos normales -->
+                        <div class="mb-3">
+                            <label for="{{ field.id_for_label }}" class="form-label">
+                                {{ field.label }}
+                                {% if field.field.required %}
+                                <span class="text-danger">*</span>
+                                {% endif %}
+                            </label>
+
+                            {{ field }}
+
+                            {% if field.help_text %}
+                            <div class="form-text">{{ field.help_text }}</div>
+
+                            {% endif %}
+
+                            {% if field.errors %}
+                            <div class="invalid-feedback d-block">
+                                {% for error in field.errors %}
+                                {{ error }}
+                                {% endfor %}
+                            </div>
+                            {% endif %}
+                        </div>
+                        {% endif %}
+                        {% endfor %}
+
+                        <div class="d-flex justify-content-end gap-2">
+                            
+                            <a href="{% url 'lista_materias' %}?curso={{ curso_id }}" class="btn btn-secondary">
+                                <i class="fas fa-times"></i> Cancelar
+                            </a>
+
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save"></i> Guardar
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% block extra_js %}
+<script>
+    // Form validation
+    (function () {
+        'use strict'
+        var forms = document.querySelectorAll('.needs-validation')
+        Array.prototype.slice.call(forms).forEach(function (form) {
+            form.addEventListener('submit', function (event) {
+                if (!form.checkValidity()) {
+                    event.preventDefault()
+                    event.stopPropagation()
+                }
+                form.classList.add('was-validated')
+            }, false)
+        })
+    })()
+</script>
+{% endblock %}
+{% endblock %}

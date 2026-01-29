@@ -1,0 +1,85 @@
+{% extends 'website/base.html' %}
+
+{% block title %}{{ titulo }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card shadow border-danger">
+                <div class="card-header bg-danger text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-exclamation-triangle me-2"></i>{{ titulo }}
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-warning">
+                        <i class="fas fa-info-circle me-2"></i>
+                        <strong>¡Atención!</strong> Esta acción no se puede deshacer.
+                    </div>
+
+                    <div class="mb-3">
+                        <h6>¿Está seguro de eliminar este concepto?</h6>
+                        <div class="card bg-light">
+                            <div class="card-body">
+                                <p class="mb-1">
+                                    <strong>Tipo:</strong> 
+                                    <span class="badge bg-primary">{{ concepto.get_tipo_display }}</span>
+                                </p>
+                                <p class="mb-1"><strong>Nombre:</strong> {{ concepto.nombre }}</p>
+                                <p class="mb-0"><strong>Monto:</strong> RD${{ concepto.monto|floatformat:2 }}</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    {% if tarifas_count > 0 %}
+                    <div class="alert alert-danger">
+                        <i class="fas fa-exclamation-circle me-2"></i>
+                        <strong>¡No se puede eliminar!</strong> Este concepto está siendo utilizado en:
+                        <ul class="mb-2 mt-2">
+                            {% if tarifas_count > 0 %}
+                            <li><strong>{{ tarifas_count }} tarifa{{ tarifas_count|pluralize }}</strong> de estudiante{{ tarifas_count|pluralize }}</li>
+                            {% endif %}
+                            {% if facturas_count > 0 %}
+                            <li><strong>{{ facturas_count }} detalle{{ facturas_count|pluralize }} de factura{{ facturas_count|pluralize }}</strong></li>
+                            {% endif %}
+                        </ul>
+                        <hr class="my-2">
+                        <p class="mb-0">
+                            <strong>Sugerencia:</strong> En lugar de eliminar, puede <strong>marcar el concepto como inactivo</strong> 
+                            para que no aparezca en nuevas asignaciones, pero mantenga el histórico.
+                        </p>
+                    </div>
+                    
+                    <div class="d-flex gap-2">
+                        <a href="{% url 'concepto_edit' concepto.id %}" class="btn btn-warning flex-fill">
+                            <i class="fas fa-edit me-1"></i>Editar (Marcar como Inactivo)
+                        </a>
+                        <a href="{% url 'conceptos_list' %}" class="btn btn-secondary">
+                            <i class="fas fa-arrow-left me-1"></i>Volver
+                        </a>
+                    </div>
+                    {% else %}
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-2"></i>
+                        Este concepto no está siendo utilizado y puede ser eliminado de forma segura.
+                    </div>
+
+                    <form method="post">
+                        {% csrf_token %}
+                        <div class="d-flex gap-2">
+                            <button type="submit" class="btn btn-danger flex-fill">
+                                <i class="fas fa-trash me-1"></i>Sí, Eliminar
+                            </button>
+                            <a href="{% url 'conceptos_list' %}" class="btn btn-secondary">
+                                <i class="fas fa-times me-1"></i>Cancelar
+                            </a>
+                        </div>
+                    </form>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

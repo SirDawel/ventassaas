@@ -1,0 +1,321 @@
+{% extends 'website/base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <a href="{% url 'ponchar_asistencia' %}" class="btn btn-success me-2">
+                <i class="fas fa-barcode"></i> Ponchar con Código de Barras
+            </a>
+            <a href="{% url 'generar_codigos_barras' %}" class="btn btn-warning me-2">
+                <i class="fas fa-qrcode"></i> Gestionar Códigos de Barras
+            </a>
+            <a href="{% url 'historial_asistencia_personal' %}" class="btn btn-info me-2">
+                <i class="fas fa-history"></i> Ver Historial
+            </a>
+            <a href="{% url 'historial_asistencia_general' %}" class="btn btn-primary">
+                <i class="fas fa-chart-pie"></i> Estadísticas Generales
+            </a>
+        </div>
+    </div>
+
+    <div class="card shadow">
+        <div class="card-header bg-primary text-white">
+            <div class="d-flex justify-content-between align-items-center">
+                <h4 class="mb-0">
+                    <i class="fas fa-user-check me-2"></i>{{ titulo }}
+                </h4>
+                <span class="badge bg-success fs-6">
+                    <i class="fas fa-calendar-alt"></i> {{ anho_escolar.nombre }}
+                </span>
+            </div>
+        </div>
+        <div class="card-body">
+            <!-- Filtros: Fecha, Rol y Búsqueda -->
+            <div class="row mb-4">
+                <div class="col-md-3">
+                    <form method="GET" class="d-flex gap-2" id="formFecha">
+                        <input type="date" name="fecha" class="form-control" 
+                               value="{{ fecha_seleccionada|date:'Y-m-d' }}" 
+                               max="{{ fecha_hoy|date:'Y-m-d' }}">
+                        <input type="hidden" name="rol" value="{{ rol_filtro }}">
+                        <input type="hidden" name="busqueda" value="{{ busqueda }}">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-search"></i>
+                        </button>
+                    </form>
+                </div>
+                <div class="col-md-4">
+                    <form method="GET" id="formRol">
+                        <input type="hidden" name="fecha" value="{{ fecha_seleccionada|date:'Y-m-d' }}">
+                        <input type="hidden" name="busqueda" value="{{ busqueda }}">
+                        <select name="rol" class="form-select" onchange="this.form.submit()">
+                            <option value="todos" {% if rol_filtro == 'todos' %}selected{% endif %}>
+                                🔵 Todos ({{ total_usuarios }})
+                            </option>
+                            <option value="Profesor" {% if rol_filtro == 'Profesor' %}selected{% endif %}>
+                                👨‍🏫 Profesores ({{ conteo_roles.Profesor }})
+                            </option>
+                            <option value="Estudiante" {% if rol_filtro == 'Estudiante' %}selected{% endif %}>
+                                🎓 Estudiantes ({{ conteo_roles.Estudiante }})
+                            </option>
+                            <option value="Secretaria" {% if rol_filtro == 'Secretaria' %}selected{% endif %}>
+                                📋 Secretarias ({{ conteo_roles.Secretaria }})
+                            </option>
+                            <option value="Administrador" {% if rol_filtro == 'Administrador' %}selected{% endif %}>
+                                👔 Administradores ({{ conteo_roles.Administrador }})
+                            </option>
+                            <option value="Coordinador" {% if rol_filtro == 'Coordinador' %}selected{% endif %}>
+                                📊 Coordinadores ({{ conteo_roles.Coordinador }})
+                            </option>
+                            <option value="Bibliotecario" {% if rol_filtro == 'Bibliotecario' %}selected{% endif %}>
+                                📚 Bibliotecarios ({{ conteo_roles.Bibliotecario }})
+                            </option>
+                        </select>
+                    </form>
+                </div>
+                <div class="col-md-5">
+                    <form method="GET" class="d-flex gap-2" id="formBusqueda">
+                        <input type="hidden" name="fecha" value="{{ fecha_seleccionada|date:'Y-m-d' }}">
+                        <input type="hidden" name="rol" value="{{ rol_filtro }}">
+                        <input type="text" name="busqueda" class="form-control" 
+                               placeholder="Buscar por nombre, apellido, cédula, email o código..." 
+                               value="{{ busqueda }}">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-search"></i>
+                        </button>
+                        {% if busqueda %}
+                        <a href="?fecha={{ fecha_seleccionada|date:'Y-m-d' }}&rol={{ rol_filtro }}" 
+                           class="btn btn-secondary">
+                            <i class="fas fa-times"></i>
+                        </a>
+                        {% endif %}
+                    </form>
+                </div>
+            </div>
+
+            <!-- Fecha actual -->
+            <div class="row mb-3">
+                <div class="col-12 text-center">
+                    <h5 class="text-muted">
+                        <i class="fas fa-calendar-day"></i> 
+                        {{ fecha_seleccionada|date:"d \d\e F \d\e Y" }}
+                    </h5>
+                </div>
+            </div>
+
+            <!-- Resumen por roles -->
+            <div class="row mb-3">
+                <div class="col-12">
+                    <div class="alert alert-info">
+                        <strong>Mostrando:</strong> 
+                        {% if rol_filtro == 'todos' %}
+                            Todos los usuarios
+                        {% else %}
+                            {{ rol_filtro }}s
+                        {% endif %}
+                        {% if busqueda %}
+                            - Filtrado por: <strong>"{{ busqueda }}"</strong>
+                        {% endif %}
+                        ({{ usuarios_paginados.paginator.count }} registros)
+                    </div>
+                </div>
+            </div>
+
+            <!-- Formulario de Asistencia -->
+            <form method="POST" id="asistenciaPersonalForm">
+                {% csrf_token %}
+                <input type="hidden" name="fecha" value="{{ fecha_seleccionada|date:'Y-m-d' }}">
+
+                {% for rol, usuarios_rol in usuarios_por_rol.items %}
+                <div class="card mb-3">
+                    <div class="card-header bg-light">
+                        <h5 class="mb-0">
+                            {% if rol == 'Profesor' %}👨‍🏫{% endif %}
+                            {% if rol == 'Estudiante' %}🎓{% endif %}
+                            {% if rol == 'Secretaria' %}📋{% endif %}
+                            {% if rol == 'Administrador' %}👔{% endif %}
+                            {% if rol == 'Coordinador' %}📊{% endif %}
+                            {% if rol == 'Bibliotecario' %}📚{% endif %}
+                            {{ rol }}s
+                        </h5>
+                        <small class="text-muted">Total: {{ usuarios_rol|length }} personas</small>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table table-hover mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th style="width: 60px;">#</th>
+                                        <th>Nombre</th>
+                                        {% if rol == 'Estudiante' %}
+                                        <th>Grado</th>
+                                        {% endif %}
+                                        <th style="width: 120px;">Hora Entrada</th>
+                                        <th style="width: 120px;">Hora Salida</th>
+                                        <th style="width: 350px;">Estado</th>
+                                        <th>Observaciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for item in usuarios_rol %}
+                                    <tr>
+                                        <td class="text-center">
+                                            <span class="badge bg-secondary rounded-circle" 
+                                                  style="width: 30px; height: 30px; display: inline-flex; align-items: center; justify-content: center; font-size: 14px;">
+                                                {{ forloop.counter }}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <strong>{{ item.persona.get_full_name }}</strong><br>
+                                            <small class="text-muted">{{ item.persona.email }}</small>
+                                        </td>
+                                        {% if rol == 'Estudiante' %}
+                                        <td>
+                                            <span class="badge bg-info">
+                                                {{ item.persona.grado|default:"N/A" }} - {{ item.persona.seccion|default:"N/A" }}
+                                            </span>
+                                        </td>
+                                        {% endif %}
+                                        <td>
+                                            <input type="time" 
+                                                   class="form-control form-control-sm" 
+                                                   name="hora_entrada_{{ item.persona.id }}"
+                                                   value="{% if item.asistencia %}{{ item.asistencia.hora_entrada|time:'H:i' }}{% endif %}">
+                                        </td>
+                                        <td>
+                                            <input type="time" 
+                                                   class="form-control form-control-sm" 
+                                                   name="hora_salida_{{ item.persona.id }}"
+                                                   value="{% if item.asistencia %}{{ item.asistencia.hora_salida|time:'H:i' }}{% endif %}">
+                                        </td>
+                                        <td>
+                                            <div class="btn-group btn-group-sm" role="group">
+                                                <input type="radio" class="btn-check" 
+                                                       name="estado_{{ item.persona.id }}" 
+                                                       id="presente_{{ item.persona.id }}" 
+                                                       value="presente"
+                                                       {% if item.asistencia and item.asistencia.estado == 'presente' %}checked{% endif %}>
+                                                <label class="btn btn-outline-success btn-sm" for="presente_{{ item.persona.id }}">
+                                                    <i class="fas fa-check"></i> Presente
+                                                </label>
+
+                                                <input type="radio" class="btn-check" 
+                                                       name="estado_{{ item.persona.id }}" 
+                                                       id="ausente_{{ item.persona.id }}" 
+                                                       value="ausente"
+                                                       {% if item.asistencia and item.asistencia.estado == 'ausente' %}checked{% endif %}>
+                                                <label class="btn btn-outline-danger btn-sm" for="ausente_{{ item.persona.id }}">
+                                                    <i class="fas fa-times"></i> Ausente
+                                                </label>
+
+                                                <input type="radio" class="btn-check" 
+                                                       name="estado_{{ item.persona.id }}" 
+                                                       id="tardanza_{{ item.persona.id }}" 
+                                                       value="tardanza"
+                                                       {% if item.asistencia and item.asistencia.estado == 'tardanza' %}checked{% endif %}>
+                                                <label class="btn btn-outline-warning btn-sm" for="tardanza_{{ item.persona.id }}">
+                                                    <i class="fas fa-clock"></i> Tardanza
+                                                </label>
+
+                                                <input type="radio" class="btn-check" 
+                                                       name="estado_{{ item.persona.id }}" 
+                                                       id="permiso_{{ item.persona.id }}" 
+                                                       value="permiso"
+                                                       {% if item.asistencia and item.asistencia.estado == 'permiso' %}checked{% endif %}>
+                                                <label class="btn btn-outline-info btn-sm" for="permiso_{{ item.persona.id }}">
+                                                    <i class="fas fa-file-alt"></i> Permiso
+                                                </label>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <input type="text" 
+                                                   class="form-control form-control-sm" 
+                                                   name="observaciones_{{ item.persona.id }}"
+                                                   placeholder="Observaciones..."
+                                                   value="{% if item.asistencia %}{{ item.asistencia.observaciones }}{% endif %}">
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                {% empty %}
+                <div class="alert alert-warning">
+                    <i class="fas fa-info-circle"></i> No hay usuarios para mostrar con el filtro seleccionado.
+                </div>
+                {% endfor %}
+
+                <!-- Paginación -->
+                {% if usuarios_paginados.paginator.num_pages > 1 %}
+                <nav aria-label="Paginación">
+                    <ul class="pagination justify-content-center">
+                        {% if usuarios_paginados.has_previous %}
+                        <li class="page-item">
+                            <a class="page-link" href="?fecha={{ fecha_seleccionada|date:'Y-m-d' }}&rol={{ rol_filtro }}&busqueda={{ busqueda }}&pagina={{ usuarios_paginados.previous_page_number }}">
+                                <i class="fas fa-chevron-left"></i> Anterior
+                            </a>
+                        </li>
+                        {% endif %}
+                        
+                        {% for num in usuarios_paginados.paginator.page_range %}
+                            {% if usuarios_paginados.number == num %}
+                            <li class="page-item active"><span class="page-link">{{ num }}</span></li>
+                            {% elif num > usuarios_paginados.number|add:'-3' and num < usuarios_paginados.number|add:'3' %}
+                            <li class="page-item">
+                                <a class="page-link" href="?fecha={{ fecha_seleccionada|date:'Y-m-d' }}&rol={{ rol_filtro }}&busqueda={{ busqueda }}&pagina={{ num }}">{{ num }}</a>
+                            </li>
+                            {% endif %}
+                        {% endfor %}
+                        
+                        {% if usuarios_paginados.has_next %}
+                        <li class="page-item">
+                            <a class="page-link" href="?fecha={{ fecha_seleccionada|date:'Y-m-d' }}&rol={{ rol_filtro }}&busqueda={{ busqueda }}&pagina={{ usuarios_paginados.next_page_number }}">
+                                Siguiente <i class="fas fa-chevron-right"></i>
+                            </a>
+                        </li>
+                        {% endif %}
+                    </ul>
+                    <p class="text-center text-muted">
+                        Página {{ usuarios_paginados.number }} de {{ usuarios_paginados.paginator.num_pages }}
+                    </p>
+                </nav>
+                {% endif %}
+
+                <!-- Botón de guardar -->
+                <div class="text-center mt-4 mb-4">
+                    <button type="submit" class="btn btn-primary btn-lg px-5">
+                        <i class="fas fa-save"></i> Guardar Asistencia
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<style>
+    .btn-check:checked + .btn-outline-success {
+        background-color: #198754;
+        color: white;
+    }
+    .btn-check:checked + .btn-outline-danger {
+        background-color: #dc3545;
+        color: white;
+    }
+    .btn-check:checked + .btn-outline-warning {
+        background-color: #ffc107;
+        color: black;
+    }
+    .btn-check:checked + .btn-outline-info {
+        background-color: #0dcaf0;
+        color: black;
+    }
+    
+    .table td {
+        vertical-align: middle;
+    }
+</style>
+{% endblock %}

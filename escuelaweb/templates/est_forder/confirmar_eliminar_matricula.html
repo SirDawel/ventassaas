@@ -1,0 +1,75 @@
+{% extends 'website/base.html' %}
+
+{% block title %}
+Confirmar EliminaciÃ³n de MatrÃ­cula
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card shadow">
+                <div class="card-header bg-danger text-white">
+                    <h2 class="h4 mb-0">Confirmar EliminaciÃ³n</h2>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-warning">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <strong>Advertencia:</strong> Esta acciÃ³n no se puede deshacer.
+                    </div>
+
+                    <div class="mb-4">
+                        <h3 class="h5">InformaciÃ³n de la MatrÃ­cula</h3>
+                        <p class="mb-1"><strong>Estudiante:</strong> {{ matricula.estudiante.get_full_name }}</p>
+                        <p class="mb-1"><strong>Materia:</strong> {{ matricula.materia.nombre }}</p>
+                        <p class="mb-0"><strong>Curso:</strong> {{ matricula.materia.curso.nombre }} - {{ matricula.materia.curso.anho_escolar.nombre }}</p>
+                    </div>
+
+                    {% if messages %}
+                    <div class="messages mb-4">
+                        {% for message in messages %}
+                        <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                            {{ message }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+
+                    <form method="post">
+                        {% csrf_token %}
+                        <div class="mb-3">
+                            <label for="password" class="form-label">Ingrese su contraseÃ±a para confirmar</label>
+                            <input type="password" class="form-control" id="password" name="password" required>
+                        </div>
+
+                        <div class="d-flex justify-content-between">
+                            <a href="{% url 'gestionar_matriculas' matricula.materia.id %}" class="btn btn-secondary">
+                                <i class="fas fa-times"></i> Cancelar
+                            </a>
+                            <button type="submit" class="btn btn-danger">
+                                <i class="fas fa-trash"></i> Eliminar MatrÃ­cula
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% block extra_js %}
+<script>
+    // Auto-hide alerts after 5 seconds
+    document.addEventListener('DOMContentLoaded', function() {
+        setTimeout(function() {
+            var alerts = document.querySelectorAll('.alert');
+            alerts.forEach(function(alert) {
+                var bsAlert = new bootstrap.Alert(alert);
+                bsAlert.close();
+            });
+        }, 5000);
+    });
+</script>
+{% endblock %}
+{% endblock %} 

@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+
+{% block content %}
+    <h1>Panel de AdministraciÃ³n</h1>
+    <p>Bienvenido, {{ request.user.first_name }}.</p>
+
+    <div class="dashboard">
+        <div class="card">
+            <h2>Total Usuarios</h2>
+            <p>{{ total_users }}</p>
+        </div>
+        <div class="card">
+            <h2>Usuarios Activos</h2>
+            <p>{{ active_users }}</p>
+        </div>
+    </div>
+
+    <h2>Usuarios Registrados por Mes</h2>
+    <canvas id="usersChart"></canvas>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        fetch("{% url 'get_users_data' %}")
+            .then(response => response.json())
+            .then(data => {
+                const ctx = document.getElementById("usersChart").getContext("2d");
+                new Chart(ctx, {
+                    type: "bar",
+                    data: {
+                        labels: data.labels,
+                        datasets: [{
+                            label: "Usuarios Registrados",
+                            data: data.data,
+                            backgroundColor: "rgba(54, 162, 235, 0.5)"
+                        }]
+                    }
+                });
+            });
+    </script>
+{% endblock %}

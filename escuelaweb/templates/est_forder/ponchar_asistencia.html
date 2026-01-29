@@ -1,0 +1,352 @@
+{% extends 'website/base.html' %}
+{% load static %}
+
+{% block title %}Ponchar Asistencia - Sistema Escolar{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h3 class="mb-0">
+                                <i class="fas fa-barcode"></i> Ponchar Asistencia
+                            </h3>
+                            <small>Escanee su código de barras para registrar entrada/salida</small>
+                        </div>
+                        {% if anho_escolar %}
+                        <span class="badge bg-success fs-6">
+                            <i class="fas fa-calendar-alt"></i> {{ anho_escolar.nombre }}
+                        </span>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="card-body">
+                    <!-- Estado del sistema -->
+                    <div id="statusMessage" class="alert alert-info text-center" style="font-size: 1.2rem;">
+                        <i class="fas fa-qrcode fa-3x mb-3"></i>
+                        <p class="mb-0">Escanee su código de barras...</p>
+                    </div>
+
+                    <!-- Formulario para el código de barras -->
+                    <form id="poncharForm" class="mb-4">
+                        {% csrf_token %}
+                        <div class="input-group input-group-lg">
+                            <span class="input-group-text">
+                                <i class="fas fa-barcode"></i>
+                            </span>
+                            <input type="text" 
+                                   id="codigoBarras" 
+                                   name="codigo_barras"
+                                   class="form-control form-control-lg" 
+                                   placeholder="Código de barras"
+                                   autocomplete="off"
+                                   autofocus>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-check"></i> Registrar
+                            </button>
+                        </div>
+                        <small class="text-muted">
+                            El código se captura automáticamente al escanear
+                        </small>
+                    </form>
+
+                    <!-- Información de la última entrada registrada -->
+                    <div id="ultimoRegistro" class="d-none">
+                        <hr>
+                        <h5>Último Registro:</h5>
+                        <div class="card">
+                            <div class="card-body" id="infoRegistro">
+                                <!-- Se llenará dinámicamente -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Historial de hoy -->
+                    <div class="mt-4">
+                        <h5>Registros de Hoy</h5>
+                        <div class="table-responsive">
+                            <table class="table table-sm table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>Hora</th>
+                                        <th>Nombre</th>
+                                        <th>Tipo</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="historialHoy">
+                                    <tr>
+                                        <td colspan="3" class="text-center text-muted">
+                                            <i>Sin registros aún</i>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Panel de hora actual -->
+            <div class="card mt-3 shadow-sm">
+                <div class="card-body text-center">
+                    <h2 id="horaActual" class="mb-0"></h2>
+                    <small class="text-muted" id="fechaActual"></small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    #statusMessage {
+        transition: all 0.3s ease;
+        min-height: 150px;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+    }
+
+    .alert-success {
+        background-color: #d1e7dd !important;
+        border-color: #badbcc !important;
+    }
+
+    .alert-danger {
+        background-color: #f8d7da !important;
+        border-color: #f5c2c7 !important;
+    }
+
+    #codigoBarras {
+        text-align: center;
+        font-weight: bold;
+        font-size: 1.2rem;
+    }
+
+    .registro-entrada {
+        border-left: 4px solid #28a745;
+    }
+
+    .registro-salida {
+        border-left: 4px solid #dc3545;
+    }
+
+    #horaActual {
+        font-size: 3rem;
+        font-weight: bold;
+        color: #007bff;
+    }
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('poncharForm');
+    const input = document.getElementById('codigoBarras');
+    const statusMessage = document.getElementById('statusMessage');
+    const ultimoRegistro = document.getElementById('ultimoRegistro');
+    const infoRegistro = document.getElementById('infoRegistro');
+    const historialHoy = document.getElementById('historialHoy');
+    
+    let historial = [];
+
+    // Actualizar reloj
+    function actualizarReloj() {
+        const ahora = new Date();
+        document.getElementById('horaActual').textContent = 
+            ahora.toLocaleTimeString('es-DO', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        document.getElementById('fechaActual').textContent = 
+            ahora.toLocaleDateString('es-DO', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+    }
+    actualizarReloj();
+    setInterval(actualizarReloj, 1000);
+
+    // Mantener el foco en el input
+    setInterval(() => {
+        if (document.activeElement !== input) {
+            input.focus();
+        }
+    }, 100);
+
+    // Manejar envío del formulario
+    form.addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const codigo = input.value.trim();
+        if (!codigo) {
+            mostrarError('Por favor escanee o ingrese un código de barras');
+            return;
+        }
+
+        // Enviar solicitud
+        fetch('{% url "ponchar_asistencia_api" %}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+            },
+            body: `codigo_barras=${encodeURIComponent(codigo)}`
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                mostrarExito(data);
+                agregarAlHistorial(data);
+                input.value = '';
+            } else {
+                mostrarError(data.error);
+                input.value = '';
+            }
+        })
+        .catch(error => {
+            mostrarError('Error de conexión. Intente nuevamente.');
+            console.error('Error:', error);
+        });
+    });
+
+    function mostrarExito(data) {
+        const tipo = data.tipo === 'entrada' ? 'ENTRADA' : 'SALIDA';
+        const icono = data.tipo === 'entrada' ? 'fa-sign-in-alt' : 'fa-sign-out-alt';
+        const color = data.tipo === 'entrada' ? 'success' : 'danger';
+        
+        let materiasHTML = '';
+        if (data.materias_registradas && data.materias_registradas.length > 0) {
+            materiasHTML = `
+                <div class="mt-3">
+                    <p class="mb-2"><strong>✅ Asistencia registrada en ${data.total_materias} materia(s):</strong></p>
+                    <div class="d-flex flex-wrap gap-1 justify-content-center">
+                        ${data.materias_registradas.map(materia => 
+                            `<span class="badge bg-info">${materia}</span>`
+                        ).join('')}
+                    </div>
+                </div>
+            `;
+        }
+        
+        statusMessage.className = `alert alert-${color} text-center`;
+        statusMessage.innerHTML = `
+            <i class="fas ${icono} fa-3x mb-3"></i>
+            <h4>${tipo} REGISTRADA</h4>
+            <p class="mb-1"><strong>${data.nombre}</strong></p>
+            <p class="mb-0">${data.rol} - ${data.hora}</p>
+            ${materiasHTML}
+        `;
+
+        // Mostrar información del registro
+        ultimoRegistro.classList.remove('d-none');
+        
+        let materiasInfo = '';
+        if (data.materias_registradas && data.materias_registradas.length > 0) {
+            materiasInfo = `
+                <div class="col-12 mt-2">
+                    <strong>Materias del día:</strong>
+                    <div class="mt-1">
+                        ${data.materias_registradas.map(materia => 
+                            `<span class="badge bg-info me-1">${materia}</span>`
+                        ).join('')}
+                    </div>
+                </div>
+            `;
+        }
+        
+        infoRegistro.innerHTML = `
+            <div class="row">
+                <div class="col-6">
+                    <strong>Nombre:</strong> ${data.nombre}
+                </div>
+                <div class="col-6">
+                    <strong>Rol:</strong> ${data.rol}
+                </div>
+                <div class="col-6">
+                    <strong>Tipo:</strong> <span class="badge bg-${color}">${tipo}</span>
+                </div>
+                <div class="col-6">
+                    <strong>Hora:</strong> ${data.hora}
+                </div>
+                ${data.hora_entrada ? `
+                <div class="col-12 mt-2">
+                    <strong>Hora Entrada:</strong> ${data.hora_entrada}
+                </div>
+                ` : ''}
+                ${materiasInfo}
+            </div>
+        `;
+
+        // Reproducir sonido (opcional)
+        reproducirSonido(data.tipo);
+
+        // Volver al estado inicial después de 5 segundos si hay materias, 3 si no
+        const timeout = data.materias_registradas && data.materias_registradas.length > 0 ? 5000 : 3000;
+        setTimeout(() => {
+            statusMessage.className = 'alert alert-info text-center';
+            statusMessage.innerHTML = `
+                <i class="fas fa-qrcode fa-3x mb-3"></i>
+                <p class="mb-0">Escanee su código de barras...</p>
+            `;
+        }, 3000);
+    }
+
+    function mostrarError(mensaje) {
+        statusMessage.className = 'alert alert-danger text-center';
+        statusMessage.innerHTML = `
+            <i class="fas fa-exclamation-triangle fa-3x mb-3"></i>
+            <h5>ERROR</h5>
+            <p class="mb-0">${mensaje}</p>
+        `;
+
+        // Volver al estado inicial después de 3 segundos
+        setTimeout(() => {
+            statusMessage.className = 'alert alert-info text-center';
+            statusMessage.innerHTML = `
+                <i class="fas fa-qrcode fa-3x mb-3"></i>
+                <p class="mb-0">Escanee su código de barras...</p>
+            `;
+        }, 3000);
+    }
+
+    function agregarAlHistorial(data) {
+        historial.unshift(data);
+        if (historial.length > 10) historial.pop();
+
+        const tipo = data.tipo === 'entrada' ? 'Entrada' : 'Salida';
+        const badge = data.tipo === 'entrada' ? 'success' : 'danger';
+
+        const html = historial.map(item => `
+            <tr>
+                <td>${item.hora}</td>
+                <td>${item.nombre}</td>
+                <td><span class="badge bg-${item.tipo === 'entrada' ? 'success' : 'danger'}">${item.tipo === 'entrada' ? 'Entrada' : 'Salida'}</span></td>
+            </tr>
+        `).join('');
+
+        historialHoy.innerHTML = html || `
+            <tr>
+                <td colspan="3" class="text-center text-muted">
+                    <i>Sin registros aún</i>
+                </td>
+            </tr>
+        `;
+    }
+
+    function reproducirSonido(tipo) {
+        // Crear un sonido simple con Web Audio API
+        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        const oscillator = audioContext.createOscillator();
+        const gainNode = audioContext.createGain();
+        
+        oscillator.connect(gainNode);
+        gainNode.connect(audioContext.destination);
+        
+        oscillator.frequency.value = tipo === 'entrada' ? 800 : 600;
+        oscillator.type = 'sine';
+        
+        gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+        gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
+        
+        oscillator.start(audioContext.currentTime);
+        oscillator.stop(audioContext.currentTime + 0.3);
+    }
+});
+</script>
+{% endblock %}

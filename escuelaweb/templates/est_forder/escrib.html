@@ -1,0 +1,143 @@
+{% extends 'website/base.html' %}
+
+{% block title %}Reporte General - {{ curso.nombre }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>Reporte General - {{ curso.nombre }}</h2>
+        <button onclick="window.print()" class="btn btn-success">
+            <i class="fas fa-print"></i> Imprimir
+        </button>
+    </div>
+
+    {% for estudiante, datos in reporte_estudiantes.items %}
+    <div class="card mb-4 shadow student-report">
+        <div class="card-header bg-light">
+            <h4 class="mb-0">{{ estudiante.get_full_name }}</h4>
+            <small class="text-muted">
+                MatrÃ­cula: {{ estudiante.id }} | Curso: {{ curso.nombre }}
+            </small>
+        </div>
+        <div class="card-body">
+
+            <!-- Encabezado con informaciÃ³n del estudiante -->
+            <div class="row mb-4">
+                <div class="col-md-6">
+                    <h3 class="h5">InformaciÃ³n del Estudiante</h3>
+                    <p class="mb-1"><strong>Nombre:</strong> {{ estudiante.get_full_name }}</p>
+                    <p class="mb-1"><strong>Grado:</strong> {{ estudiante.grado }}</p>
+                    <p class="mb-0"><strong>SecciÃ³n:</strong> {{ estudiante.seccion }}</p>
+                </div>
+                <div class="col-md-6">
+                    <h3 class="h5">Resumen AcadÃ©mico</h3>
+                    <div class="row">
+                        <div class="col-6">
+                            <p class="mb-1"><strong>Total Materias:</strong> {{ datos.total_materias }}</p>
+                            <p class="mb-1"><strong>Aprobadas:</strong>
+                                <span class="badge bg-success">{{ datos.materias_aprobadas }}</span>
+                            </p>
+                            <p class="mb-1"><strong>Reprobadas:</strong>
+                                <span class="badge bg-danger">{{ datos.materias_reprobadas }}</span>
+                            </p>
+                            <p class="mb-0"><strong>En Progreso:</strong>
+                                <span class="badge bg-warning">{{ datos.materias_en_progreso }}</span>
+                            </p>
+                        </div>
+                        <div class="col-6">
+                            <p class="mb-0"><strong>Promedio General:</strong>
+                                {% if datos.promedio_general %}
+                                <span class="badge {% if datos.promedio_general >= 70 %}bg-success{% else %}bg-danger{% endif %}">
+                                    {{ datos.promedio_general|floatformat:2 }}
+                                </span>
+                                {% else %}
+                                <span class="badge bg-secondary">No disponible</span>
+                                {% endif %}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- Fin encabezado -->
+
+            <!-- Notas por AÃ±o Escolar -->
+                    {% for anho, matriculas in matriculas_por_anho.items %}
+                    <div class="card mb-4">
+                        <div class="card-header bg-light">
+                            <h3 class="h5 mb-0">{{ anho.nombre }}</h3>
+                        </div>
+                        <div class="card-body">
+                            <div class="table-responsive">
+                                <table class="table table-hover">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th>Materia</th>
+                                            <th>Curso</th>
+                                            <th>Profesor</th>
+                                            <th>P1</th>
+                                            <th>P2</th>
+                                            <th>P3</th>
+                                            <th>P4</th>
+                                            <th>Promedio Final</th>
+                                            <th>Estado</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for matricula in matriculas %}
+                                        <tr>
+                                            <td>{{ matricula.materia.nombre }}</td>
+                                            <td>{{ matricula.materia.curso.nombre }}</td>
+                                            <td>{{ matricula.materia.profesor.get_full_name }}</td>
+                                            <td>{{ matricula.prom_comunicativa|default:"-" }}</td>
+                                            <td>{{ matricula.prom_logico|default:"-" }}</td>
+                                            <td>{{ matricula.prom_cientifica|default:"-" }}</td>
+                                            <td>{{ matricula.prom_etica|default:"-" }}</td>
+                                            <td>
+                                                {% if matricula.promedio_final %}
+                                                {{ matricula.promedio_final|floatformat:2 }}
+                                                {% else %}
+                                                -
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                {% if matricula.estado == "Aprobado" %}
+                                                <span class="badge bg-success">Aprobado</span>
+                                                {% elif matricula.estado == "Reprobado" %}
+                                                <span class="badge bg-danger">Reprobado</span>
+                                                {% else %}
+                                                <span class="badge bg-warning">En Progreso</span>
+                                                {% endif %}
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+
+
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Forzar salto de pÃ¡gina despuÃ©s de cada estudiante -->
+    <div class="page-break"></div>
+    {% endfor %}
+</div>
+
+<style>
+/* Forzar salto de pÃ¡gina al imprimir */
+@media print {
+    .page-break {
+        page-break-after: always;
+    }
+    .btn {
+        display: none !important;
+    }
+}
+</style>
+{% endblock %}

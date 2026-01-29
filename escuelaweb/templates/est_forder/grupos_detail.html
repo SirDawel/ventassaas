@@ -1,0 +1,30 @@
+{% extends 'website/base.html' %}
+
+{% block title %}{{ titulo }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between mb-3">
+        <h3>{{ grupo.nombre }}</h3>
+        <div class="d-flex gap-2">
+            <a href="{% url 'agregar_estudiantes_grupo' grupo.id %}" class="btn btn-primary">
+                <i class="fas fa-user-plus"></i> Agregar Estudiantes
+            </a>
+            <a href="{% url 'inscribir_grupo_en_curso' grupo.id %}{% if anho_id %}?anho={{ anho_id }}{% endif %}" class="btn btn-success">Inscribir en Curso</a>
+            <a href="{% url 'lista_grupos' %}{% if anho_id %}?anho={{ anho_id }}{% endif %}" class="btn btn-secondary">Volver</a>
+        </div>
+    </div>
+
+    <p><strong>Grado:</strong> {{ grupo.grado }} &nbsp; <strong>Sección:</strong> {{ grupo.seccion }}</p>
+    <p><strong>Creado por:</strong> {{ grupo.creado_por.get_full_name }}</p>
+
+    <h5>Estudiantes</h5>
+    <ul class="list-group">
+        {% for e in grupo.estudiantes.all %}
+        <li class="list-group-item">{{ e.get_full_name }} — {{ e.email }}</li>
+        {% empty %}
+        <li class="list-group-item text-muted">No hay estudiantes en este grupo.</li>
+        {% endfor %}
+    </ul>
+</div>
+{% endblock %}

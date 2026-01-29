@@ -1,0 +1,175 @@
+{% extends 'website/base.html' %}
+
+{% block title %}
+Reporte de Notas - {{ estudiante.get_full_name }}
+{% endblock %}
+
+{% block content %}
+<style>
+    @media print {
+        body {
+            margin: 0;
+            padding: 0;
+            font-size: 12px;
+        }
+        .container {
+            width: 100%;
+            max-width: 100%;
+        }
+        .card {
+            page-break-inside: avoid;
+        }
+        table {
+            width: 100%;
+            font-size: 11px;
+        }
+        th, td {
+            white-space: nowrap;
+            padding: 4px;
+        }
+        .btn,
+        .card-header button {
+            display: none !important;
+        }
+    }
+</style>
+
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow mb-4">
+                <div class="card-header bg-primary text-white">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h2 class="h4 mb-0">Reporte de Notas</h2>
+                        <button onclick="window.print()" class="btn btn-light">
+                            <i class="fas fa-print"></i> Imprimir Reporte
+                        </button>
+                    </div>
+                </div>
+
+                <div class="card-body">
+                    <!-- Información del Estudiante -->
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <h3 class="h5">Información del Estudiante</h3>
+                            <p class="mb-1"><strong>Nombre:</strong> {{ estudiante.get_full_name }}</p>
+                            <p class="mb-1"><strong>Grado:</strong> {{ estudiante.grado }}</p>
+                            <p class="mb-0"><strong>Sección:</strong> {{ estudiante.seccion }}</p>
+                        </div>
+
+                        <div class="col-md-6">
+                            <h3 class="h5">Resumen Académico</h3>
+                            <div class="row">
+                                <div class="col-6">
+                                    <p class="mb-1"><strong>Total Materias:</strong> {{ total_materias }}</p>
+                                    <p class="mb-1"><strong>Materias Aprobadas:</strong>
+                                        <span class="badge bg-success">{{ materias_aprobadas }}</span>
+                                    </p>
+                                    <p class="mb-1"><strong>Materias Reprobadas:</strong>
+                                        <span class="badge bg-danger">{{ materias_reprobadas }}</span>
+                                    </p>
+                                    <p class="mb-0"><strong>En Progreso:</strong>
+                                        <span class="badge bg-warning">{{ materias_en_progreso }}</span>
+                                    </p>
+                                </div>
+                                <div class="col-6">
+                                    <p class="mb-0"><strong>Promedio General:</strong>
+                                        {% if promedio_general %}
+                                        <span class="badge {% if promedio_general >= 70 %}bg-success{% else %}bg-danger{% endif %}">
+                                            {{ promedio_general|floatformat:2 }}
+                                        </span>
+                                        {% else %}
+                                        <span class="badge bg-secondary">No disponible</span>
+                                        {% endif %}
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Notas por Año Escolar -->
+                    {% for anho, matriculas in matriculas_por_anho.items %}
+                    <div class="card mb-4">
+                        <div class="card-header bg-light">
+                            <h3 class="h5 mb-0">{{ anho.nombre }}</h3>
+                        </div>
+
+                        <div class="card-body">
+                            <div class="table-responsive">
+                                <table class="table table-hover">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th>Materia</th>
+                                            <th>Profesor</th>
+                                            <th>P1</th>
+                                            <th>P2</th>
+                                            <th>P3</th>
+                                            <th>P4</th>
+                                            <th>Cal. Final</th>
+                                            <th>Estado</th>
+                                        </tr>
+                                    </thead>
+
+                                    <tbody>
+                                        {% for matricula in matriculas %}
+                                        <tr>
+                                            <td>{{ matricula.materia.nombre }}</td>
+                                            <td>{{ matricula.materia.profesor.get_full_name }}</td>
+
+                                            <td>{{ matricula.prom_comunicativa|default:"-" }}</td>
+                                            <td>{{ matricula.prom_logico|default:"-" }}</td>
+                                            <td>{{ matricula.prom_cientifica|default:"-" }}</td>
+                                            <td>{{ matricula.prom_etica|default:"-" }}</td>
+
+                                            <!-- ✔ Nota Final Oficial -->
+                                            <td>
+                                                {% if matricula.nota_final_oficial is not None %}
+                                                {{ matricula.nota_final_oficial|floatformat:0 }}
+                                                {% else %}
+                                                -
+                                                {% endif %}
+                                            </td>
+
+                                            <!-- ✔ Estado -->
+                                            <td>
+                                                {% if matricula.estado == "Aprobado" %}
+                                                <span class="badge bg-success">✓ Aprobado</span>
+
+                                                {% elif matricula.estado == "Reprobado" %}
+                                                <span class="badge bg-danger">✗ Reprobado</span>
+
+                                                {% else %}
+                                                <span class="badge bg-warning text-dark">⧗ En Progreso</span>
+                                                {% endif %}
+                                            </td>
+
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        setTimeout(function () {
+            var alerts = document.querySelectorAll('.alert');
+            alerts.forEach(function (alert) {
+                var bsAlert = new bootstrap.Alert(alert);
+                bsAlert.close();
+            });
+        }, 5000);
+    });
+</script>
+{% endblock %}
+{% endblock %}

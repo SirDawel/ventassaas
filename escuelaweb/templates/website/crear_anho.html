@@ -1,0 +1,15 @@
+{% extends 'website/base.html' %}
+{% if not user.is_authenticated %}
+    <script>
+        window.location.href = "{% url 'login' %}";
+    </script>
+{% endif %}
+
+{% block content %}
+<h2>Crear AÃ±o Escolar</h2>
+<form method="post">
+    {% csrf_token %}
+    {{ form.as_p }}
+    <button type="submit">Guardar</button>
+</form>
+{% endblock %}

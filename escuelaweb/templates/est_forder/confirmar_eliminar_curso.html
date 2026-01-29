@@ -1,0 +1,108 @@
+{% extends 'website/base.html' %}
+
+{% block title %}
+Confirmar Eliminacion
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header bg-danger text-white">
+                    <h4 class="mb-0">Confirmar EliminaciÃ³n</h4>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-warning">
+                        <h5 class="alert-heading">¡Advertencia!</h5>
+                        <p>Estas seguro que desea eliminar el curso "{{ curso.nombre }}"?</p>
+                        <p class="mb-0">Esta accion no se puede deshacer.</p>
+                    </div>
+                    <form method="post" class="needs-validation" novalidate>
+                        {% csrf_token %}
+                        <!-- Campo oculto con el aÃ±o -->
+                        <input type="hidden" name="anho_id" value="{{ anho_id }}">
+
+                        <!-- Campo de contraseÃ±a -->
+                        <div class="mb-3">
+                            <label for="password" class="form-label">Confirme su contraseña</label>
+                            <div class="input-group">
+                                <input type="password" class="form-control" id="password" name="password" required>
+                                <button class="btn btn-outline-secondary" type="button" id="togglePassword">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                            </div>
+                            <div class="invalid-feedback">
+                                Debe ingresar la contraseña para confirmar.
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="codigo_anulacion" class="form-label">Código de anulación</label>
+                            <input type="text" class="form-control" id="codigo_anulacion" name="codigo_anulacion" maxlength="10" required>
+                            <div class="form-text">Solicite el código de anulación vigente al administrador.</div>
+                        </div>
+
+                        <div class="d-flex justify-content-end gap-2">
+                            <!-- Botón Cancelar -->
+                            <a href="{% url 'lista_cursos' %}{% if anho_id %}?anho={{ anho_id }}{% endif %}" class="btn btn-secondary">
+                                <i class="fas fa-arrow-left"></i> Cancelar
+                            </a>
+                            <!-- Botón Eliminar -->
+                            <button type="submit" class="btn btn-danger">
+                                <i class="fas fa-trash"></i> Eliminar
+                            </button>
+                        </div>
+                    </form>
+
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% block extra_js %}
+<script>
+    // Form validation
+    (function () {
+        'use strict'
+        var forms = document.querySelectorAll('.needs-validation')
+        Array.prototype.slice.call(forms).forEach(function (form) {
+            form.addEventListener('submit', function (event) {
+                if (!form.checkValidity()) {
+                    event.preventDefault()
+                    event.stopPropagation()
+                }
+                form.classList.add('was-validated')
+            }, false)
+        })
+    })()
+
+    // Toggle password visibility
+    document.getElementById('togglePassword').addEventListener('click', function () {
+        const passwordInput = document.getElementById('password');
+        const icon = this.querySelector('i');
+
+        if (passwordInput.type === 'password') {
+            passwordInput.type = 'text';
+            icon.classList.remove('fa-eye');
+            icon.classList.add('fa-eye-slash');
+        } else {
+            passwordInput.type = 'password';
+            icon.classList.remove('fa-eye-slash');
+            icon.classList.add('fa-eye');
+        }
+    });
+
+    // Auto-hide alerts after 5 seconds
+    document.addEventListener('DOMContentLoaded', function () {
+        setTimeout(function () {
+            var alerts = document.querySelectorAll('.alert');
+            alerts.forEach(function (alert) {
+                var bsAlert = new bootstrap.Alert(alert);
+                bsAlert.close();
+            });
+        }, 5000);
+    });
+</script>
+{% endblock %}
+{% endblock %}

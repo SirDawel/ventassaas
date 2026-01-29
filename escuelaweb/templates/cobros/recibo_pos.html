@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Recibo - {{ factura.numero_factura }}</title>
+    <style>
+        /* Estilos optimizados para impresora térmica de 80mm */
+        @page {
+            size: 80mm auto;
+            margin: 0;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            width: 80mm;
+            font-family: 'Courier New', monospace;
+            font-size: 10pt;
+            line-height: 1.3;
+            color: #000;
+            background: #fff;
+            padding: 5mm;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 5mm;
+            border-bottom: 2px dashed #000;
+            padding-bottom: 3mm;
+        }
+        
+        .header h1 {
+            font-size: 14pt;
+            font-weight: bold;
+            margin-bottom: 2mm;
+            text-transform: uppercase;
+        }
+        
+        .header p {
+            font-size: 9pt;
+            margin: 1mm 0;
+        }
+        
+        .info-section {
+            margin: 3mm 0;
+            font-size: 9pt;
+        }
+        
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            margin: 1mm 0;
+        }
+        
+        .info-label {
+            font-weight: bold;
+        }
+        
+        .divider {
+            border-top: 1px dashed #000;
+            margin: 3mm 0;
+        }
+        
+        .items-table {
+            width: 100%;
+            margin: 3mm 0;
+            font-size: 9pt;
+        }
+        
+        .item-row {
+            margin: 2mm 0;
+            padding: 1mm 0;
+            border-bottom: 1px dotted #ccc;
+        }
+        
+        .item-name {
+            font-weight: bold;
+            margin-bottom: 1mm;
+        }
+        
+        .item-details {
+            display: flex;
+            justify-content: space-between;
+            font-size: 8pt;
+        }
+        
+        .totals {
+            margin-top: 3mm;
+            font-size: 10pt;
+        }
+        
+        .total-row {
+            display: flex;
+            justify-content: space-between;
+            margin: 1mm 0;
+        }
+        
+        .total-row.final {
+            font-size: 12pt;
+            font-weight: bold;
+            margin-top: 2mm;
+            padding-top: 2mm;
+            border-top: 2px solid #000;
+        }
+        
+        .payment-info {
+            margin: 3mm 0;
+            font-size: 9pt;
+            background: #f0f0f0;
+            padding: 2mm;
+        }
+        
+        .footer {
+            text-align: center;
+            margin-top: 5mm;
+            padding-top: 3mm;
+            border-top: 2px dashed #000;
+            font-size: 8pt;
+        }
+        
+        .footer p {
+            margin: 1mm 0;
+        }
+        
+        .barcode {
+            text-align: center;
+            font-size: 8pt;
+            margin: 3mm 0;
+        }
+        
+        @media print {
+            body {
+                width: 80mm;
+            }
+            
+            .no-print {
+                display: none !important;
+            }
+        }
+        
+        /* Botones de acción */
+        .actions {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            background: #fff;
+            padding: 10px;
+            border: 2px solid #333;
+            border-radius: 5px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+            z-index: 1000;
+        }
+        
+        .btn {
+            display: inline-block;
+            padding: 8px 15px;
+            margin: 0 5px;
+            background: #007bff;
+            color: #fff;
+            text-decoration: none;
+            border-radius: 3px;
+            font-size: 12px;
+            border: none;
+            cursor: pointer;
+        }
+        
+        .btn:hover {
+            background: #0056b3;
+        }
+        
+        .btn-print {
+            background: #28a745;
+        }
+        
+        .btn-print:hover {
+            background: #218838;
+        }
+        
+        .btn-close {
+            background: #6c757d;
+        }
+        
+        .btn-close:hover {
+            background: #5a6268;
+        }
+    </style>
+</head>
+<body>
+    <!-- Botones de acción (no se imprimen) -->
+    <div class="actions no-print">
+        <button onclick="window.print()" class="btn btn-print">🖨️ Imprimir</button>
+        <a href="{% url 'factura_detalle' factura.id %}" class="btn btn-close">✕ Cerrar</a>
+    </div>
+
+    <!-- Encabezado de la escuela -->
+    <div class="header">
+        <h1>{{ escuela.nombre }}</h1>
+        <p>RNC: {{ escuela.rnc }}</p>
+        <p>{{ escuela.direccion }}</p>
+        <p>Tel: {{ escuela.telefono }}</p>
+        <p>{{ escuela.email }}</p>
+    </div>
+
+    <!-- Información de la factura -->
+    <div class="info-section">
+        <div class="info-row">
+            <span class="info-label">FACTURA:</span>
+            <span>{{ factura.numero_factura }}</span>
+        </div>
+        <div class="info-row">
+            <span class="info-label">FECHA:</span>
+            <span>{{ factura.fecha_emision|date:"d/m/Y H:i" }}</span>
+        </div>
+        <div class="info-row">
+            <span class="info-label">CAJERO:</span>
+            <span>{{ factura.creado_por.get_full_name }}</span>
+        </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- Información del cliente -->
+    <div class="info-section">
+        <div class="info-row">
+            <span class="info-label">CLIENTE:</span>
+        </div>
+        <div style="margin-left: 5mm;">
+            <p>{{ factura.cliente.get_full_name }}</p>
+            {% if factura.cliente.cedula %}
+            <p>Cédula: {{ factura.cliente.cedula }}</p>
+            {% endif %}
+            {% if factura.cliente.codigo_barras %}
+            <p>Código: {{ factura.cliente.codigo_barras }}</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- Detalles de items -->
+    <div class="items-table">
+        <div style="font-weight: bold; margin-bottom: 2mm;">DETALLE DE LA COMPRA</div>
+        
+        {% for detalle in factura.detalles.all %}
+        <div class="item-row">
+            <div class="item-name">
+                {{ detalle.descripcion }}
+                {% if detalle.mes and detalle.anio %}
+                ({{ detalle.mes|date:"F" }} {{ detalle.anio }})
+                {% endif %}
+            </div>
+            <div class="item-details">
+                <span>{{ detalle.cantidad|floatformat:0 }} x RD${{ detalle.precio_unitario|floatformat:2 }}</span>
+                <span>RD${{ detalle.get_total|floatformat:2 }}</span>
+            </div>
+            {% if detalle.descuento > 0 %}
+            <div class="item-details" style="color: #666;">
+                <span>Descuento:</span>
+                <span>-RD${{ detalle.descuento|floatformat:2 }}</span>
+            </div>
+            {% endif %}
+        </div>
+        {% endfor %}
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- Totales -->
+    <div class="totals">
+        <div class="total-row">
+            <span>SUBTOTAL:</span>
+            <span>RD${{ factura.subtotal|floatformat:2 }}</span>
+        </div>
+        
+        {% if factura.descuento > 0 %}
+        <div class="total-row">
+            <span>DESCUENTO:</span>
+            <span>-RD${{ factura.descuento|floatformat:2 }}</span>
+        </div>
+        {% endif %}
+        
+        {% if factura.impuesto > 0 %}
+        <div class="total-row">
+            <span>IMPUESTO:</span>
+            <span>RD${{ factura.impuesto|floatformat:2 }}</span>
+        </div>
+        {% endif %}
+        
+        <div class="total-row final">
+            <span>TOTAL:</span>
+            <span>RD${{ factura.total|floatformat:2 }}</span>
+        </div>
+    </div>
+
+    <!-- Información de pago -->
+    {% if factura.monto_pagado > 0 %}
+    <div class="payment-info">
+        <div class="total-row">
+            <span>PAGADO:</span>
+            <span>RD${{ factura.monto_pagado|floatformat:2 }}</span>
+        </div>
+        
+        {% if cambio > 0 %}
+        <div class="total-row" style="font-weight: bold;">
+            <span>CAMBIO:</span>
+            <span>RD${{ cambio|floatformat:2 }}</span>
+        </div>
+        {% endif %}
+        
+        <div class="total-row">
+            <span>SALDO PENDIENTE:</span>
+            <span>RD${{ factura.saldo_pendiente|floatformat:2 }}</span>
+        </div>
+        
+        {% if factura.metodo_pago %}
+        <div class="total-row">
+            <span>MÉTODO DE PAGO:</span>
+            <span>{{ factura.get_metodo_pago_display }}</span>
+        </div>
+        {% endif %}
+    </div>
+    {% endif %}
+
+    <!-- Código de barras / Número de factura -->
+    <div class="barcode">
+        <div style="border: 1px solid #000; padding: 3mm; margin: 2mm 0;">
+            <div style="font-size: 14pt; font-weight: bold; letter-spacing: 2px;">
+                {{ factura.numero_factura }}
+            </div>
+        </div>
+    </div>
+
+    <!-- Pie de página -->
+    <div class="footer">
+        {% if factura.observaciones %}
+        <p style="margin-bottom: 2mm;">{{ factura.observaciones }}</p>
+        {% endif %}
+        
+        <p>GRACIAS POR SU PREFERENCIA</p>
+        <p>{{ factura.fecha_emision|date:"d/m/Y H:i:s" }}</p>
+        
+        {% if factura.estado == 'pagada' %}
+        <p style="font-weight: bold; margin-top: 2mm;">✓ PAGADO</p>
+        {% elif factura.estado == 'parcial' %}
+        <p style="font-weight: bold; margin-top: 2mm;">⚠ PAGO PARCIAL</p>
+        {% else %}
+        <p style="font-weight: bold; margin-top: 2mm;">⏳ PENDIENTE DE PAGO</p>
+        {% endif %}
+    </div>
+
+    <!-- Script para auto-imprimir -->
+    <script>
+        // Auto-imprimir cuando se carga la página
+        window.onload = function() { 
+            // Pequeño delay para asegurar que todo se cargue
+            setTimeout(function() {
+                window.print();
+            }, 500);
+        };
+        
+        // Opcional: cerrar ventana después de imprimir o cancelar
+        window.onafterprint = function() {
+            // Descomenta la siguiente línea si quieres cerrar automáticamente después de imprimir
+            // setTimeout(function() { window.close(); }, 1000);
+        };
+    </script>
+</body>
+</html>

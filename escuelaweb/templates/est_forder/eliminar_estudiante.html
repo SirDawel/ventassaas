@@ -1,0 +1,15 @@
+{% extends 'website/base.html' %}
+
+{% block title %} Eliminar Estudiante {% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h1 class="text-center text-danger">Eliminar Estudiante</h1>
+    <p class="text-center">Â¿EstÃ¡s seguro de que deseas eliminar a <strong>{{ estudiante.nombre }} {{ estudiante.apellido }}</strong>?</p>
+    <form method="POST">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-danger">Eliminar</button>
+        <a href="{% url 'lista_estudiantes' %}" class="btn btn-secondary">Cancelar</a>
+    </form>
+</div>
+{% endblock %}

@@ -1,0 +1,28 @@
+{% extends 'website/base.html' %}
+{% block content %}
+    <h2>Lista de Personas</h2>
+    <a href="{% url 'persona_create' %}" class="btn btn-primary">Nueva Persona</a>
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>Nombre</th>
+                <th>Apellido</th>
+                <th>Correo</th>
+                <th>Acciones</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for persona in personas %}
+                <tr>
+                    <td>{{ persona.nombre }}</td>
+                    <td>{{ persona.apellido }}</td>
+                    <td>{{ persona.correo }}</td>
+                    <td>
+                        <a href="{% url 'persona_update' persona.id %}" class="btn btn-warning">Editar</a>
+                        <a href="{% url 'persona_delete' persona.id %}" class="btn btn-danger">Eliminar</a>
+                    </td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+{% endblock %}

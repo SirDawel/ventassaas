@@ -1,0 +1,44 @@
+{% extends 'website/base.html' %}
+
+{% block title %}{{ titulo }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="card">
+        <div class="card-header"><h4>{{ titulo }}</h4></div>
+        <div class="card-body">
+            <form method="post">
+                {% csrf_token %}
+                <div class="mb-3">
+                    <label class="form-label">Nombre del Grupo (opcional)</label>
+                    <input type="text" name="nombre" class="form-control" placeholder="Ej: Grupo 5A" value="{{ initial_name|default:'' }}" />
+                </div>
+                <div class="row g-2 mb-3">
+                    <div class="col-md-6">
+                        <label class="form-label">Grado</label>
+                        <select name="grado" class="form-select" required>
+                            <option value="">-- Seleccionar --</option>
+                            {% for g in grados %}
+                            <option value="{{ g }}" {% if g == initial_grade %}selected{% endif %}>{{ g }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Sección</label>
+                        <select name="seccion" class="form-select" required>
+                            <option value="">-- Seleccionar --</option>
+                            {% for s in secciones %}
+                            <option value="{{ s }}" {% if s == initial_section %}selected{% endif %}>{{ s }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+                <div class="d-flex gap-2">
+                    <a href="{% url 'lista_grupos' %}" class="btn btn-secondary">Cancelar</a>
+                    <button class="btn btn-primary" type="submit">Crear Grupo</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

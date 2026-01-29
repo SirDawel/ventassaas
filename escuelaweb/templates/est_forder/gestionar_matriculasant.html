@@ -1,0 +1,193 @@
+{% extends 'website/base.html' %}
+
+{% block title %}
+Gestionar MatrÃ­culas - {{ materia.nombre }}
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow mb-4">
+                <div class="card-header bg-primary text-white">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h2 class="h4 mb-0">Gestionar MatrÃ­culas - {{ materia.nombre }}</h2>
+                        <a href="{% url 'lista_materias' %}?curso={{ curso_id }}" class="btn btn-light">
+                            <i class="fas fa-arrow-left"></i> Volver
+                        </a>
+
+
+                    </div>
+                </div>
+                <div class="card-body">
+                    <!-- Resumen de Notas -->
+                    <div class="row mb-4">
+                        <div class="col-md-3">
+                            <div class="card bg-success text-white">
+                                <div class="card-body text-center">
+                                    <h5 class="card-title">Aprobados</h5>
+                                    <p class="card-text h3">{{ total_aprobados }}</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card bg-danger text-white">
+                                <div class="card-body text-center">
+                                    <h5 class="card-title">Reprobados</h5>
+                                    <p class="card-text h3">{{ total_reprobados }}</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card bg-warning text-dark">
+                                <div class="card-body text-center">
+                                    <h5 class="card-title">En Progreso</h5>
+                                    <p class="card-text h3">{{ total_en_progreso }}</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card bg-info text-white">
+                                <div class="card-body text-center">
+                                    <h5 class="card-title">Total</h5>
+                                    <p class="card-text h3">{{ matriculas.count }}</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Tabla de MatrÃ­culas -->
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Estudiante</th>
+                                    <th>P1</th>
+                                    <th>P2</th>
+                                    <th>P3</th>
+                                    <th>P4</th>
+                                    <th>Nota Final</th>
+                                    <th>Estado</th>
+                                    <th>Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for matricula in matriculas %}
+                                <tr>
+                                    <td>{{ matricula.estudiante.get_full_name }}</td>
+                                    <td>{{ matricula.p1|default:"-" }}</td>
+                                    <td>{{ matricula.p2|default:"-" }}</td>
+                                    <td>{{ matricula.p3|default:"-" }}</td>
+                                    <td>{{ matricula.p4|default:"-" }}</td>
+                                    <td>
+                                        {% if matricula.nota_final %}
+                                        {{ matricula.nota_final|floatformat:2 }}
+                                        {% else %}
+                                        -
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if matricula.nota_final %}
+                                        {% if matricula.nota_final >= 70 %}
+                                        <span class="badge bg-success">Aprobado</span>
+                                        {% else %}
+                                        <span class="badge bg-danger">Reprobado</span>
+                                        {% endif %}
+                                        {% else %}
+                                        <span class="badge bg-warning">En Progreso</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <div class="btn-group">
+                                            <a href="{% url 'actualizar_notas' matricula.id %}"
+                                                class="btn btn-sm btn-warning">
+                                                <i class="fas fa-edit"></i> Notas
+                                            </a>
+                                            <a href="{% url 'reporte_notas_estudiante' matricula.estudiante.id %}"
+                                                class="btn btn-sm btn-info">
+                                                <i class="fas fa-file-alt"></i> Reporte
+                                            </a>
+                                            <button type="button" class="btn btn-sm btn-danger" data-bs-toggle="modal"
+                                                data-bs-target="#eliminarModal{{ matricula.id }}">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Formulario para agregar estudiante -->
+                    <div class="card mt-4">
+                        <div class="card-header bg-light">
+                            <h3 class="h5 mb-0">Agregar Estudiante</h3>
+                        </div>
+                        <div class="card-body">
+                            <form method="post">
+                                {% csrf_token %}
+                                <div class="row">
+                                    <div class="col-md-8">
+                                        <select name="estudiante_id" class="form-select" required>
+                                            <option value="">Seleccione un estudiante...</option>
+                                            {% for estudiante in estudiantes_disponibles %}
+                                            <option value="{{ estudiante.id }}">{{ estudiante.get_full_name }}</option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <button type="submit" class="btn btn-primary">
+                                            <i class="fas fa-plus"></i> Agregar Estudiante
+                                        </button>
+                                    </div>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modales de confirmaciÃ³n para eliminar -->
+{% for matricula in matriculas %}
+<div class="modal fade" id="eliminarModal{{ matricula.id }}" tabindex="-1"
+    aria-labelledby="eliminarModalLabel{{ matricula.id }}" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="eliminarModalLabel{{ matricula.id }}">Confirmar EliminaciÃ³n</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                Â¿EstÃ¡ seguro que desea eliminar la matrÃ­cula de {{ matricula.estudiante.get_full_name }}?
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <form action="{% url 'eliminar_matricula' matricula.id %}" method="post" class="d-inline">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-danger">Eliminar</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endfor %}
+
+{% block extra_js %}
+<script>
+    // Auto-hide alerts after 5 seconds
+    document.addEventListener('DOMContentLoaded', function () {
+        setTimeout(function () {
+            var alerts = document.querySelectorAll('.alert');
+            alerts.forEach(function (alert) {
+                var bsAlert = new bootstrap.Alert(alert);
+                bsAlert.close();
+            });
+        }, 5000);
+    });
+</script>
+{% endblock %}
+{% endblock %}

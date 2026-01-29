@@ -1,0 +1,236 @@
+{% extends "website/base.html" %}
+{% block content %}
+<div class="container mt-4">
+    <h1 class="text-center">{% if persona %}Editar Persona{% else %}Crear Persona{% endif %}</h1>
+
+    <div class="card shadow-lg p-4">
+        <form method="POST">
+            {% csrf_token %}
+
+            <!-- Mensaje de error general -->
+            {% if form.errors %}
+                <div class="alert alert-danger">
+                    <strong>Â¡AtenciÃ³n!</strong> Por favor, corrige los siguientes errores:
+                    <ul>
+                        {% for field, errors in form.errors.items %}
+                            {% for error in errors %}
+                                <li>{{ error }}</li>
+                            {% endfor %}
+                        {% endfor %}
+                    </ul>
+                </div>
+            {% endif %}
+
+            <div class="row">
+                <!-- InformaciÃ³n BÃ¡sica -->
+                <div class="col-md-6 mb-3">
+                    <label for="id_nombre" class="form-label">
+                        <i class="fas fa-user"></i> Nombre <span class="text-danger">*</span>
+                    </label>
+                    <input type="text" id="id_nombre" name="nombre" class="form-control" 
+                           value="{{ form.nombre.value|default:'' }}" required>
+                </div>
+
+                <div class="col-md-6 mb-3">
+                    <label for="id_apellido" class="form-label">
+                        <i class="fas fa-user"></i> Apellido <span class="text-danger">*</span>
+                    </label>
+                    <input type="text" id="id_apellido" name="apellido" class="form-control" 
+                           value="{{ form.apellido.value|default:'' }}" required>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label for="id_correo" class="form-label">
+                        <i class="fas fa-envelope"></i> Correo ElectrÃ³nico <span class="text-danger">*</span>
+                    </label>
+                    <input type="email" id="id_correo" name="correo" class="form-control" 
+                           value="{{ form.correo.value|default:'' }}" required>
+                </div>
+
+                <div class="col-md-6 mb-3">
+                    <label for="id_sexo" class="form-label">
+                        <i class="fas fa-genderless"></i> Sexo <span class="text-danger">*</span>
+                    </label>
+                    <select id="id_sexo" name="sexo" class="form-control" required>
+                        <option value="">Seleccione...</option>
+                        <option value="Masculino" {% if form.sexo.value == 'Masculino' %}selected{% endif %}>Masculino</option>
+                        <option value="Femenino" {% if form.sexo.value == 'Femenino' %}selected{% endif %}>Femenino</option>
+                        <option value="Otro" {% if form.sexo.value == 'Otro' %}selected{% endif %}>Otro</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label for="id_fecha_nacimiento" class="form-label">
+                        <i class="fas fa-calendar-alt"></i> Fecha de Nacimiento
+                    </label>
+                    <input type="date" id="id_fecha_nacimiento" name="fecha_nacimiento" class="form-control" 
+                           value="{{ form.fecha_nacimiento.value|date:'Y-m-d' }}">
+                </div>
+
+                <div class="col-md-6 mb-3">
+                    <label for="id_cedula" class="form-label">
+                        <i class="fas fa-id-card"></i> CÃ©dula
+                    </label>
+                    <input type="text" id="id_cedula" name="cedula" class="form-control" 
+                           value="{{ form.cedula.value|default:'' }}">
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label for="id_rne" class="form-label">
+                        <i class="fas fa-passport"></i> RNE
+                    </label>
+                    <input type="text" id="id_rne" name="rne" class="form-control" 
+                           value="{{ form.rne.value|default:'' }}">
+                </div>
+
+                <div class="col-md-6 mb-3">
+                    <label for="id_telefono" class="form-label">
+                        <i class="fas fa-phone"></i> TelÃ©fono
+                    </label>
+                    <input type="text" id="id_telefono" name="telefono" class="form-control" 
+                           value="{{ form.telefono.value|default:'' }}">
+                </div>
+            </div>
+
+            <div class="mb-3">
+                <label for="id_direccion" class="form-label">
+                    <i class="fas fa-map-marker-alt"></i> DirecciÃ³n
+                </label>
+                <textarea id="id_direccion" name="direccion" class="form-control">{{ form.direccion.value|default:'' }}</textarea>
+            </div>
+
+            <div class="mb-3">
+                <label for="id_grado" class="form-label">
+                    <i class="fas fa-graduation-cap"></i> Grado
+                </label>
+                <input type="text" id="id_grado" name="grado" class="form-control" 
+                       value="{{ form.grado.value|default:'' }}">
+            </div>
+
+            <!-- InformaciÃ³n del Padre -->
+            <h3 class="mt-4">InformaciÃ³n del Padre</h3>
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label for="id_padre_nombre" class="form-label">Nombre</label>
+                    <input type="text" id="id_padre_nombre" name="padre_nombre" class="form-control" 
+                           value="{{ form.padre_nombre.value|default:'' }}">
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label for="id_padre_apellido" class="form-label">Apellido</label>
+                    <input type="text" id="id_padre_apellido" name="padre_apellido" class="form-control" 
+                           value="{{ form.padre_apellido.value|default:'' }}">
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label for="id_padre_telefono" class="form-label">TelÃ©fono</label>
+                    <input type="text" id="id_padre_telefono" name="padre_telefono" class="form-control" 
+                           value="{{ form.padre_telefono.value|default:'' }}">
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label for="id_padre_direccion" class="form-label">DirecciÃ³n</label>
+                    <textarea id="id_padre_direccion" name="padre_direccion" class="form-control">{{ form.padre_direccion.value|default:'' }}</textarea>
+                </div>
+            </div>
+
+            <!-- InformaciÃ³n de la Madre -->
+            <h3 class="mt-4">InformaciÃ³n de la Madre</h3>
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label for="id_madre_nombre" class="form-label">Nombre</label>
+                    <input type="text" id="id_madre_nombre" name="madre_nombre" class="form-control" 
+                           value="{{ form.madre_nombre.value|default:'' }}">
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label for="id_madre_apellido" class="form-label">Apellido</label>
+                    <input type="text" id="id_madre_apellido" name="madre_apellido" class="form-control" 
+                           value="{{ form.madre_apellido.value|default:'' }}">
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label for="id_madre_telefono" class="form-label">TelÃ©fono</label>
+                    <input type="text" id="id_madre_telefono" name="madre_telefono" class="form-control" 
+                           value="{{ form.madre_telefono.value|default:'' }}">
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label for="id_madre_direccion" class="form-label">DirecciÃ³n</label>
+                    <textarea id="id_madre_direccion" name="madre_direccion" class="form-control">{{ form.madre_direccion.value|default:'' }}</textarea>
+                </div>
+            </div>
+
+            <!-- InformaciÃ³n del Tutor -->
+            <h3 class="mt-4">InformaciÃ³n del Tutor</h3>
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label for="id_tutor_nombre" class="form-label">Nombre</label>
+                    <input type="text" id="id_tutor_nombre" name="tutor_nombre" class="form-control" 
+                           value="{{ form.tutor_nombre.value|default:'' }}">
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label for="id_tutor_apellido" class="form-label">Apellido</label>
+                    <input type="text" id="id_tutor_apellido" name="tutor_apellido" class="form-control" 
+                           value="{{ form.tutor_apellido.value|default:'' }}">
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label for="id_tutor_telefono" class="form-label">TelÃ©fono</label>
+                    <input type="text" id="id_tutor_telefono" name="tutor_telefono" class="form-control" 
+                           value="{{ form.tutor_telefono.value|default:'' }}">
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label for="id_tutor_direccion" class="form-label">DirecciÃ³n</label>
+                    <textarea id="id_tutor_direccion" name="tutor_direccion" class="form-control">{{ form.tutor_direccion.value|default:'' }}</textarea>
+                </div>
+            </div>
+
+            <!-- InformaciÃ³n del Contacto de Emergencia -->
+            <h3 class="mt-4">Contacto de Emergencia</h3>
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label for="id_contacto_nombre" class="form-label">Nombre</label>
+                    <input type="text" id="id_contacto_nombre" name="contacto_nombre" class="form-control" 
+                           value="{{ form.contacto_nombre.value|default:'' }}">
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label for="id_contacto_apellido" class="form-label">Apellido</label>
+                    <input type="text" id="id_contacto_apellido" name="contacto_apellido" class="form-control" 
+                           value="{{ form.contacto_apellido.value|default:'' }}">
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label for="id_contacto_telefono" class="form-label">TelÃ©fono</label>
+                    <input type="text" id="id_contacto_telefono" name="contacto_telefono" class="form-control" 
+                           value="{{ form.contacto_telefono.value|default:'' }}">
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label for="id_contacto_direccion" class="form-label">DirecciÃ³n</label>
+                    <textarea id="id_contacto_direccion" name="contacto_direccion" class="form-control">{{ form.contacto_direccion.value|default:'' }}</textarea>
+                </div>
+            </div>
+
+            <div class="d-flex justify-content-between mt-4">
+                <a href="{% url 'persona_list' %}" class="btn btn-secondary">
+                    <i class="fas fa-arrow-left"></i> Cancelar
+                </a>
+                <button type="submit" class="btn btn-success">
+                    <i class="fas fa-save"></i> Guardar
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Agregar FontAwesome para iconos -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+
+{% endblock %}
+

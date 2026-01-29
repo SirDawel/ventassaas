@@ -1,0 +1,384 @@
+{% extends 'website/base.html' %}
+{% load custom_filters %}
+
+{% block title %}{{ titulo }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <div class="d-flex justify-content-between mb-3">
+        <h3>{{ titulo }}</h3>
+        <div class="d-flex gap-2">
+            <a href="{% url 'seleccionar_materia_asistencia' %}" class="btn btn-secondary">
+                <i class="fas fa-arrow-left"></i> Volver
+            </a>
+            <a href="{% url 'seleccionar_materia_asistencia' %}" class="btn btn-primary">
+                <i class="fas fa-clipboard-check"></i> Pasar Lista
+            </a>
+            <button onclick="window.print()" class="btn btn-info">
+                <i class="fas fa-print"></i> Imprimir
+            </button>
+        </div>
+    </div>
+
+    <!-- Filtros -->
+    <div class="card mb-3 no-print">
+        <div class="card-header">
+            <h5 class="mb-0"><i class="fas fa-filter"></i> Seleccionar Materia y Período</h5>
+        </div>
+        <div class="card-body">
+            <form method="get" id="filtrosForm">
+                <div class="row g-3">
+                    <div class="col-md-5">
+                        <label for="materia" class="form-label">Materia</label>
+                        <select class="form-select" id="materia" name="materia" required>
+                            <option value="">Seleccione una materia</option>
+                            {% for mat in materias %}
+                            <option value="{{ mat.id }}" {% if materia_id == mat.id|stringformat:"s" %}selected{% endif %}>
+                                {{ mat.nombre }} - {{ mat.curso.nombre }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label for="mes" class="form-label">Mes</label>
+                        <select class="form-select" id="mes" name="mes" required>
+                            <option value="1" {% if mes == 1 %}selected{% endif %}>Enero</option>
+                            <option value="2" {% if mes == 2 %}selected{% endif %}>Febrero</option>
+                            <option value="3" {% if mes == 3 %}selected{% endif %}>Marzo</option>
+                            <option value="4" {% if mes == 4 %}selected{% endif %}>Abril</option>
+                            <option value="5" {% if mes == 5 %}selected{% endif %}>Mayo</option>
+                            <option value="6" {% if mes == 6 %}selected{% endif %}>Junio</option>
+                            <option value="7" {% if mes == 7 %}selected{% endif %}>Julio</option>
+                            <option value="8" {% if mes == 8 %}selected{% endif %}>Agosto</option>
+                            <option value="9" {% if mes == 9 %}selected{% endif %}>Septiembre</option>
+                            <option value="10" {% if mes == 10 %}selected{% endif %}>Octubre</option>
+                            <option value="11" {% if mes == 11 %}selected{% endif %}>Noviembre</option>
+                            <option value="12" {% if mes == 12 %}selected{% endif %}>Diciembre</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label for="anho" class="form-label">Año</label>
+                        <select class="form-select" id="anho" name="anho" required>
+                            {% for a in anhos_disponibles %}
+                            <option value="{{ a }}" {% if anho == a %}selected{% endif %}>{{ a }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-2 d-flex align-items-end">
+                        <button type="submit" class="btn btn-primary w-100">
+                            <i class="fas fa-search"></i> Ver Registro
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Registro de Asistencia Mensual -->
+    {% if materia %}
+    <div class="card registro-asistencia">
+        <div class="card-body p-0">
+            <!-- Encabezado del Registro -->
+            <div class="registro-header text-center py-3 bg-light border-bottom">
+                <h4 class="mb-1">{{ materia.nombre|upper }}</h4>
+                <p class="mb-1"><strong>DOCENTE:</strong> {{ materia.profesor.get_full_name }}</p>
+                <p class="mb-0"><strong>MES:</strong> {{ nombre_mes|upper }} {{ anho }}</p>
+            </div>
+
+            <!-- Tabla de Asistencia -->
+            <div class="table-responsive">
+                <table class="table table-bordered table-sm mb-0 registro-table">
+                    <thead>
+                        <tr>
+                            <th rowspan="2" class="text-center align-middle" style="width: 40px;">N°</th>
+                            <th rowspan="2" class="text-center align-middle" style="min-width: 200px;">ESTUDIANTES</th>
+                            <th colspan="{{ dias_trabajados|length }}" class="text-center bg-secondary text-white">DÍAS TRABAJADOS</th>
+                            <th rowspan="2" class="text-center align-middle bg-info text-white" style="width: 60px;">TOTAL</th>
+                            <th rowspan="2" class="text-center align-middle bg-success text-white" style="width: 60px;">%</th>
+                        </tr>
+                        <tr>
+                            {% for dia in dias_trabajados %}
+                            <th class="text-center bg-light" style="width: 35px;">{{ dia }}</th>
+                            {% endfor %}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in estudiantes_asistencia %}
+                        <tr class="student-row">
+                            <td class="text-center">
+                                <span class="badge bg-secondary rounded-circle" style="width: 30px; height: 30px; display: inline-flex; align-items: center; justify-content: center; font-size: 14px;">
+                                    {{ item.numero }}
+                                </span>
+                            </td>
+                            <td class="student-name">
+                                <strong>{{ item.estudiante.get_full_name }}</strong>
+                                <br><small class="text-muted">{{ item.estudiante.email }}</small>
+                            </td>
+                            {% for dia in dias_trabajados %}
+                            <td class="text-center asistencia-cell {{ item.asistencias|get_item:dia }}">
+                                {% if item.asistencias|get_item:dia == 'presente' %}
+                                    <i class="fas fa-check"></i>
+                                {% elif item.asistencias|get_item:dia == 'ausente' %}
+                                    <i class="fas fa-times"></i>
+                                {% elif item.asistencias|get_item:dia == 'tardanza' %}
+                                    <i class="fas fa-clock"></i>
+                                {% else %}
+                                    -
+                                {% endif %}
+                            </td>
+                            {% endfor %}
+                            <td class="text-center fw-bold total-cell">{{ item.total_asistencias }}</td>
+                            <td class="text-center fw-bold percentage-cell">{{ item.porcentaje }}%</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Leyenda -->
+            <div class="registro-footer p-3 border-top bg-light">
+                <div class="row align-items-center">
+                    <div class="col-md-8">
+                        <strong class="me-3">Leyenda:</strong>
+                        <span class="badge bg-success-custom me-2">
+                            <i class="fas fa-check"></i> Presente
+                        </span>
+                        <span class="badge bg-danger-custom me-2">
+                            <i class="fas fa-times"></i> Ausente
+                        </span>
+                        <span class="badge bg-warning-custom me-2">
+                            <i class="fas fa-clock"></i> Tardanza
+                        </span>
+                    </div>
+                    <div class="col-md-4 text-end">
+                        <strong>Total Estudiantes:</strong> 
+                        <span class="badge bg-primary fs-6">{{ estudiantes_asistencia|length }}</span>
+                        <br>
+                        <small class="text-muted">Días trabajados: {{ total_dias_trabajados }}</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <div class="alert alert-info text-center">
+        <i class="fas fa-info-circle fa-2x mb-2"></i>
+        <p class="mb-0">Seleccione una materia, mes y año para ver el registro de asistencia.</p>
+    </div>
+    {% endif %}
+</div>
+
+<style>
+    @media print {
+        .no-print {
+            display: none !important;
+        }
+        
+        body {
+            margin: 0;
+            padding: 0;
+        }
+        
+        .container-fluid {
+            padding: 0 !important;
+            margin: 0 !important;
+        }
+        
+        .card.registro-asistencia {
+            border: 2px solid #000 !important;
+            box-shadow: none !important;
+            page-break-inside: auto;
+        }
+        
+        .registro-header {
+            background-color: #f8f9fa !important;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+            page-break-after: avoid;
+        }
+        
+        .table-responsive {
+            overflow: visible !important;
+        }
+        
+        .registro-table {
+            font-size: 9px;
+            page-break-inside: auto;
+        }
+        
+        .registro-table thead {
+            display: table-header-group;
+        }
+        
+        .registro-table tbody {
+            page-break-inside: auto;
+        }
+        
+        .registro-table tr {
+            page-break-inside: avoid;
+            page-break-after: auto;
+        }
+        
+        .registro-table th,
+        .registro-table td {
+            border: 1px solid #000 !important;
+            padding: 2px 3px !important;
+        }
+        
+        .student-name small {
+            display: none;
+        }
+        
+        .asistencia-cell.presente {
+            background-color: #d1e7dd !important;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+        }
+        
+        .asistencia-cell.ausente {
+            background-color: #f8d7da !important;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+        }
+        
+        .asistencia-cell.tardanza {
+            background-color: #fff3cd !important;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+        }
+        
+        .total-cell, .percentage-cell {
+            background-color: #e9ecef !important;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+        }
+        
+        .registro-footer {
+            page-break-before: avoid;
+            background-color: #f8f9fa !important;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+        }
+        
+        @page {
+            size: landscape;
+            margin: 0.5cm;
+        }
+    }
+    
+    .registro-table {
+        font-size: 13px;
+        box-shadow: 0 0 20px rgba(0,0,0,0.1);
+    }
+    
+    .registro-table th {
+        font-weight: 600;
+        vertical-align: middle;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    
+    .registro-table td {
+        vertical-align: middle;
+    }
+    
+    .student-row:hover {
+        background-color: #f8f9fa;
+        transition: background-color 0.2s;
+    }
+    
+    .student-name {
+        font-weight: 500;
+        color: #2c3e50;
+    }
+    
+    .asistencia-cell {
+        font-size: 16px;
+        transition: all 0.2s;
+    }
+    
+    .asistencia-cell:hover {
+        transform: scale(1.1);
+    }
+    
+    .asistencia-cell.presente {
+        background: linear-gradient(135deg, #d1f2dd 0%, #c3e8cf 100%);
+        color: #0f5132;
+    }
+    
+    .asistencia-cell.presente i {
+        color: #198754;
+    }
+    
+    .asistencia-cell.ausente {
+        background: linear-gradient(135deg, #f8d7da 0%, #f1c1c5 100%);
+        color: #842029;
+    }
+    
+    .asistencia-cell.ausente i {
+        color: #dc3545;
+    }
+    
+    .asistencia-cell.tardanza {
+        background: linear-gradient(135deg, #fff3cd 0%, #ffecb3 100%);
+        color: #664d03;
+    }
+    
+    .asistencia-cell.tardanza i {
+        color: #ffc107;
+    }
+    
+    .total-cell {
+        background: linear-gradient(135deg, #cfe2ff 0%, #b6d4fe 100%);
+        color: #084298;
+        font-size: 15px;
+    }
+    
+    .percentage-cell {
+        background: linear-gradient(135deg, #d1e7dd 0%, #badbcc 100%);
+        color: #0f5132;
+        font-size: 15px;
+    }
+    
+    .registro-header {
+        background: linear-gradient(to bottom, #e9ecef, #dee2e6);
+        border-radius: 8px 8px 0 0;
+    }
+    
+    .registro-header h4 {
+        color: #2c3e50;
+        font-weight: 700;
+        text-shadow: 1px 1px 2px rgba(255,255,255,0.8);
+    }
+    
+    .registro-footer {
+        background: linear-gradient(to top, #e9ecef, #f8f9fa);
+        border-radius: 0 0 8px 8px;
+    }
+    
+    .badge.bg-success-custom {
+        background: linear-gradient(135deg, #198754 0%, #20c997 100%) !important;
+        padding: 8px 12px;
+        font-size: 13px;
+    }
+    
+    .badge.bg-danger-custom {
+        background: linear-gradient(135deg, #dc3545 0%, #e35d6a 100%) !important;
+        padding: 8px 12px;
+        font-size: 13px;
+    }
+    
+    .badge.bg-warning-custom {
+        background: linear-gradient(135deg, #ffc107 0%, #ffcd39 100%) !important;
+        padding: 8px 12px;
+        font-size: 13px;
+        color: #000;
+    }
+    
+    .card.registro-asistencia {
+        border-radius: 12px;
+        overflow: hidden;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+    }
+</style>
+{% endblock %}

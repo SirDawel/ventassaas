@@ -1,0 +1,319 @@
+{% extends 'website/base.html' %}
+{% load custom_filters %}
+{% block title %}
+Reporte General - {{ curso.nombre }}
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Flat Business Design */
+    .card {
+        border-radius: 4px;
+        box-shadow: 0 1px 2px rgba(0,0,0,0.08);
+        border: 1px solid #e2e8f0;
+    }
+    
+    .card-header {
+        border-radius: 4px 4px 0 0;
+        border-bottom: 1px solid rgba(255,255,255,0.15);
+        padding: 0.8rem 1rem;
+    }
+    
+    .card-body {
+        padding: 1rem;
+    }
+    
+    .btn {
+        border-radius: 4px;
+        font-weight: 500;
+        padding: 0.5rem 1rem;
+        font-size: 0.875rem;
+        border: none;
+        transition: none;
+    }
+    
+    .btn-light {
+        background-color: #f8fafc;
+        color: #475569;
+        border: 1px solid #e2e8f0;
+    }
+    
+    .btn-light:hover {
+        background-color: #e2e8f0;
+    }
+    
+    .table {
+        margin-bottom: 0;
+    }
+    
+    .table thead th {
+        background-color: #f8fafc;
+        border-bottom: 2px solid #e2e8f0;
+        font-size: 0.75rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        padding: 0.6rem 0.5rem;
+        color: #475569;
+    }
+    
+    .table tbody td {
+        padding: 0.6rem 0.5rem;
+        vertical-align: middle;
+        font-size: 0.875rem;
+        border-color: #f1f5f9;
+    }
+    
+    .table-hover tbody tr:hover {
+        background-color: #f8fafc;
+    }
+    
+    .badge {
+        border-radius: 3px;
+        padding: 0.25rem 0.5rem;
+        font-size: 0.7rem;
+        font-weight: 600;
+    }
+    
+    .info-section {
+        background-color: #f8fafc;
+        border-radius: 4px;
+        padding: 0.8rem;
+        margin-bottom: 0.8rem;
+    }
+    
+    .info-section h4 {
+        font-size: 0.875rem;
+        font-weight: 600;
+        color: #2c3e50;
+        margin-bottom: 0.5rem;
+        text-transform: uppercase;
+    }
+    
+    .info-section p {
+        font-size: 0.875rem;
+        margin-bottom: 0.3rem;
+    }
+    
+    .student-page {
+        margin-bottom: 1.5rem;
+    }
+    
+    .encabezado-institucional {
+        text-align: center;
+        border-bottom: 2px solid #5c6bc0;
+        padding-bottom: 0.5rem;
+        margin-bottom: 0.8rem;
+    }
+    
+    .encabezado-institucional img {
+        height: 50px;
+        margin-bottom: 0.3rem;
+    }
+    
+    .encabezado-institucional h2 {
+        font-size: 1.25rem;
+        font-weight: 700;
+        color: #2c3e50;
+        margin: 0.2rem 0;
+    }
+    
+    .encabezado-institucional h4 {
+        font-size: 1rem;
+        font-weight: 600;
+        color: #5c6bc0;
+        margin: 0.3rem 0;
+    }
+    
+    .encabezado-institucional p {
+        font-size: 0.8rem;
+        margin: 0.1rem 0;
+        color: #6c757d;
+    }
+    
+    @media print {
+        @page {
+            size: A4;
+            margin: 10mm;
+        }
+        
+        .btn, .print-btn {
+            display: none !important;
+        }
+        
+        .card {
+            box-shadow: none;
+            border: 1px solid #ddd;
+        }
+        
+        .student-page {
+            page-break-after: always;
+        }
+        
+        .student-page:last-child {
+            page-break-after: auto;
+        }
+        
+        .table {
+            font-size: 10pt;
+        }
+        
+        tr, td, th {
+            page-break-inside: avoid;
+        }
+        
+        .encabezado-institucional {
+            border-bottom: 2px solid #000;
+        }
+        
+        .info-section {
+            background: none;
+            border: 1px solid #ddd;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container mt-3">
+    <div class="card mb-3">
+        <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+            <h5 class="m-0"><i class="fas fa-chart-bar me-2"></i>Reporte General - {{ curso.nombre }}</h5>
+            <button onclick="window.print()" class="btn btn-light print-btn">
+                <i class="fas fa-print me-1"></i>Imprimir Reporte
+            </button>
+        </div>
+
+        <div class="card-body">
+            {% for estudiante, datos in reporte_estudiantes.items %}
+            <div class="student-page">
+                <div class="card mb-3">
+                    <div class="card-header bg-light encabezado-institucional">
+                        <img src="/static/img/logo_poli.jpeg" alt="Logo">
+                        <h2>Politécnico Prof. José Ramón Rodríguez Herrera</h2>
+                        <p>Calle Atile Gomez, Sector La Mina, Hato del Padre, San Juan</p>
+                        <p>Tel: (809) 000-0000 — Email: politecnicojoseramonrodriguezh@gmail.com</p>
+                        <p>Año Escolar {{ curso.anho_escolar }}</p>
+                        <h4>REPORTE GENERAL DE CALIFICACIONES</h4>
+                        <h4>Curso: {{ curso.nombre }}</h4>
+                    </div>
+
+                    <div class="card-body">
+                        <!-- INFORMACIÓN DEL ESTUDIANTE -->
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <div class="info-section">
+                                    <h4>Información del Estudiante</h4>
+                                    <p><strong>Nombre:</strong> {{ estudiante.get_full_name }}</p>
+                                    <p><strong>Grado:</strong> {{ estudiante.grado }}</p>
+                                    <p><strong>Sección:</strong> {{ estudiante.seccion }}</p>
+                                </div>
+                            </div>
+
+                            <div class="col-md-6">
+                                <div class="info-section">
+                                    <h4>Resumen Académico</h4>
+                                    <p><strong>Total Materias:</strong> {{ datos.total_materias }}</p>
+                                    <p><strong>Aprobadas:</strong> <span class="badge bg-success">{{ datos.materias_aprobadas }}</span></p>
+                                    <p><strong>Reprobadas:</strong> <span class="badge bg-danger">{{ datos.materias_reprobadas }}</span></p>
+                                    <p><strong>En Progreso:</strong> <span class="badge bg-warning">{{ datos.materias_en_progreso }}</span></p>
+                                    <p><strong>Promedio General:</strong>
+                                        {% if datos.promedio_general %}
+                                            <span class="badge {% if datos.promedio_general >= 70 %}bg-success{% else %}bg-danger{% endif %}">
+                                                {{ datos.promedio_general|floatformat:2 }}
+                                            </span>
+                                        {% else %}
+                                            <span class="badge bg-secondary">N/D</span>
+                                        {% endif %}
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- TABLA DE MATERIAS -->
+                        <div class="table-responsive">
+                            <table class="table table-hover table-bordered mb-0">
+                                <thead>
+                                    <tr>
+                                        <th>Materia</th>
+                                        <th>Profesor</th>
+                                        <th>P1</th>
+                                        <th>P2</th>
+                                        <th>P3</th>
+                                        <th>P4</th>
+                                        <th>Cal. Final</th>
+                                        <th>Estado</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for m in datos.matriculas %}
+                                        {% if m.materia.categoria != 'modular' %}
+                                        <tr>
+                                            <td><strong>{{ m.materia.nombre }}</strong></td>
+                                            <td>{{ m.materia.profesor.get_full_name }}</td>
+                                            <td>{{ m.prom_comunicativa|default:"-" }}</td>
+                                            <td>{{ m.prom_logico|default:"-" }}</td>
+                                            <td>{{ m.prom_cientifica|default:"-" }}</td>
+                                            <td>{{ m.prom_etica|default:"-" }}</td>
+
+                                            <td>
+                                                {% if m.nota_final_oficial %}
+                                                    {{ m.nota_final_oficial }}
+                                                {% else %}
+                                                    -
+                                                {% endif %}
+                                            </td>
+
+                                            <td>
+                                                {% if m.nota_final_oficial is None %}
+                                                    <span class="badge bg-warning text-dark">En Progreso</span>
+                                                {% elif m.nota_final_oficial >= 70 %}
+                                                    <span class="badge bg-success">Aprobado</span>
+                                                {% else %}
+                                                    <span class="badge bg-danger">Reprobado</span>
+                                                {% endif %}
+                                            </td>
+                                        </tr>
+                                        {% endif %}
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- RECUADRO DE MATERIAS MODULARES -->
+                        {% for m in datos.matriculas %}
+                            {% if m.materia.categoria == 'modular' %}
+                                <div class="card mt-3 border-info">
+                                    <div class="card-header bg-info text-white">
+                                        <strong>{{ m.materia.nombre }}</strong> - Módulo Formativo
+                                    </div>
+                                    <div class="card-body p-2">
+                                        <table class="table table-bordered table-sm mb-0">
+                                            <thead>
+                                                <tr>
+                                                    {% for i in m.materia.ra_configuracion.valores %}
+                                                        <th>RA {{ forloop.counter }}<br><span class="badge bg-info">{{ i }}%</span></th>
+                                                    {% endfor %}
+                                                    <th>Total</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <tr>
+                                                    {% for i in m.materia.ra_configuracion.valores %}
+                                                        <td>{{ m|get_ra:forloop.counter0|default:"-" }}</td>
+                                                    {% endfor %}
+                                                    <td><strong>{{ m.total_ra|default:"-" }}</strong></td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            {% endif %}
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>

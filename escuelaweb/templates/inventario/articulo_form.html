@@ -1,0 +1,170 @@
+{% extends 'website/base.html' %}
+{% load l10n %}
+
+{% block title %}{{ titulo }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-10">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0">
+                        <i class="fas fa-box me-2"></i>{{ titulo }}
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <form method="post">
+                        {% csrf_token %}
+                        
+                        <div class="row">
+                            <!-- Información Básica -->
+                            <div class="col-md-6">
+                                <h5 class="mb-3">Información Básica</h5>
+                                
+                                <div class="mb-3">
+                                    <label for="codigo_barras" class="form-label">
+                                        <i class="fas fa-barcode"></i> Código de Barras
+                                    </label>
+                                    <input type="text" class="form-control" id="codigo_barras" name="codigo_barras" 
+                                           value="{{ articulo.codigo_barras }}" 
+                                           placeholder="Escanear o escribir código de barras (o dejar vacío para generar)">
+                                    <small class="text-muted">Si se deja vacío, se generará automáticamente. Use para lector óptico en punto de venta</small>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="nombre" class="form-label">Nombre <span class="text-danger">*</span></label>
+                                    <input type="text" class="form-control" id="nombre" name="nombre" 
+                                           value="{{ articulo.nombre }}" required>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="descripcion" class="form-label">Descripción</label>
+                                    <textarea class="form-control" id="descripcion" name="descripcion" rows="3">{{ articulo.descripcion }}</textarea>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="categoria" class="form-label">Categoría</label>
+                                    <select class="form-select" id="categoria" name="categoria">
+                                        <option value="">Sin categoría</option>
+                                        {% for cat in categorias %}
+                                        <option value="{{ cat.id }}" {% if articulo.categoria_id == cat.id %}selected{% endif %}>
+                                            {{ cat.nombre }}
+                                        </option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="tipo" class="form-label">Tipo <span class="text-danger">*</span></label>
+                                    <select class="form-select" id="tipo" name="tipo" required>
+                                        <option value="producto" {% if articulo.tipo == 'producto' %}selected{% endif %}>Producto</option>
+                                        <option value="servicio" {% if articulo.tipo == 'servicio' %}selected{% endif %}>Servicio</option>
+                                    </select>
+                                </div>
+                            </div>
+                            
+                            <!-- Precios e Inventario -->
+                            <div class="col-md-6">
+                                <h5 class="mb-3">Precios e Inventario</h5>
+                                
+                                <div class="mb-3">
+                                    <label for="precio_compra" class="form-label">Precio de Compra</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text">RD$</span>
+                                        <input type="number" step="0.01" class="form-control" id="precio_compra" 
+                                               name="precio_compra" value="{{ articulo.precio_compra|default_if_none:0|unlocalize }}">
+                                    </div>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="precio_venta" class="form-label">Precio de Venta <span class="text-danger">*</span></label>
+                                    <div class="input-group">
+                                        <span class="input-group-text">RD$</span>
+                                        <input type="number" step="0.01" class="form-control" id="precio_venta" 
+                                               name="precio_venta" value="{{ articulo.precio_venta|default_if_none:''|unlocalize }}" required>
+                                    </div>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="precio_minimo" class="form-label">Precio Mínimo</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text">RD$</span>
+                                        <input type="number" step="0.01" class="form-control" id="precio_minimo" 
+                                               name="precio_minimo" value="{% if articulo.precio_minimo %}{{ articulo.precio_minimo|unlocalize }}{% endif %}">
+                                    </div>
+                                </div>
+                                
+                                <div class="row">
+                                    <div class="col-md-4 mb-3">
+                                        <label for="stock_actual" class="form-label">Stock Actual</label>
+                                        <input type="number" class="form-control" id="stock_actual" 
+                                               name="stock_actual" value="{{ articulo.stock_actual|default:0 }}">
+                                    </div>
+                                    <div class="col-md-4 mb-3">
+                                        <label for="stock_minimo" class="form-label">Stock Mínimo</label>
+                                        <input type="number" class="form-control" id="stock_minimo" 
+                                               name="stock_minimo" value="{{ articulo.stock_minimo|default:0 }}">
+                                    </div>
+                                    <div class="col-md-4 mb-3">
+                                        <label for="stock_maximo" class="form-label">Stock Máximo</label>
+                                        <input type="number" class="form-control" id="stock_maximo" 
+                                               name="stock_maximo" value="{% if articulo.stock_maximo %}{{ articulo.stock_maximo }}{% endif %}">
+                                    </div>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="unidad_medida" class="form-label">Unidad de Medida</label>
+                                    <input type="text" class="form-control" id="unidad_medida" 
+                                           name="unidad_medida" value="{{ articulo.unidad_medida|default:'unidad' }}"
+                                           placeholder="unidad, caja, kg, litro...">
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Opciones -->
+                        <div class="row mt-3">
+                            <div class="col-12">
+                                <h5 class="mb-3">Opciones</h5>
+                                <div class="form-check form-switch mb-2">
+                                    <input class="form-check-input" type="checkbox" id="aplica_itbis" 
+                                           name="aplica_itbis" {% if articulo.aplica_itbis %}checked{% endif %}>
+                                    <label class="form-check-label" for="aplica_itbis">
+                                        Aplica ITBIS (18%)
+                                    </label>
+                                </div>
+                                <div class="form-check form-switch mb-2">
+                                    <input class="form-check-input" type="checkbox" id="permite_descuento" 
+                                           name="permite_descuento" {% if articulo.permite_descuento or not articulo %}checked{% endif %}>
+                                    <label class="form-check-label" for="permite_descuento">
+                                        Permite descuentos
+                                    </label>
+                                </div>
+                                {% if articulo %}
+                                <div class="form-check form-switch mb-2">
+                                    <input class="form-check-input" type="checkbox" id="activo" 
+                                           name="activo" {% if articulo.activo %}checked{% endif %}>
+                                    <label class="form-check-label" for="activo">
+                                        Artículo activo
+                                    </label>
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <!-- Botones -->
+                        <div class="d-flex gap-2 mt-4">
+                            <button type="submit" class="btn btn-success flex-fill">
+                                <i class="fas fa-save me-2"></i>Guardar
+                            </button>
+                            <a href="{% url 'articulos_list' %}" class="btn btn-secondary flex-fill">
+                                <i class="fas fa-times me-2"></i>Cancelar
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

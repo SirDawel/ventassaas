@@ -1,0 +1,250 @@
+{% extends 'website/base.html' %}
+
+{% block title %}{{ titulo }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h2><i class="fas fa-file-invoice-dollar me-2"></i>{{ titulo }}</h2>
+                    <span class="badge bg-success">
+                        <i class="fas fa-calendar-alt me-1"></i>{{ anho_escolar.nombre }}
+                    </span>
+                </div>
+                <div>
+                    <a href="{% url 'buscar_estudiante_cobro' %}" class="btn btn-secondary">
+                        <i class="fas fa-arrow-left me-2"></i>Volver
+                    </a>
+                    <a href="{% url 'factura_crear' estudiante.id %}" class="btn btn-primary">
+                        <i class="fas fa-plus me-2"></i>Nueva Factura
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Información del estudiante -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-8">
+                            <h4><i class="fas fa-user-graduate me-2"></i>{{ estudiante.get_full_name }}</h4>
+                            <p class="mb-1"><strong>Email:</strong> {{ estudiante.email }}</p>
+                            <p class="mb-1"><strong>Cédula:</strong> {{ estudiante.cedula|default:"No registrada" }}</p>
+                            <p class="mb-1"><strong>Grado:</strong> {{ estudiante.grado|default:"-" }} | <strong>Sección:</strong> {{ estudiante.seccion|default:"-" }}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tarjetas de estadísticas -->
+    <div class="row mb-4">
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="card border-left-primary shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                                Total Facturas
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ total_facturas }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-file-invoice fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="card border-left-info shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
+                                Total Adeudado
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">RD${{ total_adeudado|floatformat:2 }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-dollar-sign fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="card border-left-success shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
+                                Total Pagado
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">RD${{ total_pagado|floatformat:2 }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-check-circle fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="card border-left-warning shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
+                                Saldo Pendiente
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">RD${{ saldo_pendiente|floatformat:2 }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-exclamation-triangle fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Resumen por estado -->
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <h5><i class="fas fa-chart-pie me-2"></i>Resumen de Facturas</h5>
+                    <ul class="list-group list-group-flush">
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            Facturas Pagadas
+                            <span class="badge bg-success rounded-pill">{{ facturas_pagadas }}</span>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            Facturas Pendientes/Parciales
+                            <span class="badge bg-warning rounded-pill">{{ facturas_pendientes }}</span>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Estado de Mensualidades -->
+        <div class="col-md-6">
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <h5><i class="fas fa-calendar-check me-2"></i>Estado de Mensualidades {{ anio_actual }}</h5>
+                    <div class="row g-2 mt-2">
+                        {% for mes in mensualidades_estado %}
+                        <div class="col-3">
+                            <div class="text-center p-2 rounded {% if mes.pagado %}bg-success text-white{% else %}bg-light text-muted{% endif %}">
+                                {% if mes.pagado %}
+                                <i class="fas fa-check-circle"></i>
+                                {% else %}
+                                <i class="fas fa-circle"></i>
+                                {% endif %}
+                                <br>
+                                <small>{{ mes.nombre|slice:":3" }}</small>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    <small class="text-muted mt-2 d-block">
+                        <i class="fas fa-info-circle"></i> Solo se muestran mensualidades con facturas pagadas
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Lista de facturas -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0"><i class="fas fa-list me-2"></i>Todas las Facturas</h5>
+                </div>
+                <div class="card-body">
+                    {% if facturas %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>No. Factura</th>
+                                    <th>Fecha Emisión</th>
+                                    <th>Vencimiento</th>
+                                    <th>Total</th>
+                                    <th>Pagado</th>
+                                    <th>Saldo</th>
+                                    <th>Estado</th>
+                                    <th>Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for factura in facturas %}
+                                <tr>
+                                    <td><strong>{{ factura.numero_factura }}</strong></td>
+                                    <td>{{ factura.fecha_emision|date:"d/m/Y" }}</td>
+                                    <td>
+                                        {% if factura.fecha_vencimiento %}
+                                            {{ factura.fecha_vencimiento|date:"d/m/Y" }}
+                                        {% else %}
+                                            <span class="text-muted">-</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>RD${{ factura.total|floatformat:2 }}
+                                        {% if factura.total == 0 %}
+                                        <span class="badge bg-danger ms-1" title="Factura sin detalles">⚠</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>RD${{ factura.monto_pagado|floatformat:2 }}</td>
+                                    <td>
+                                        <strong class="{% if factura.saldo_pendiente > 0 %}text-warning{% else %}text-success{% endif %}">
+                                            RD${{ factura.saldo_pendiente|floatformat:2 }}
+                                        </strong>
+                                    </td>
+                                    <td>
+                                        {% if factura.estado == 'pagada' %}
+                                            <span class="badge bg-success">Pagada</span>
+                                        {% elif factura.estado == 'parcial' %}
+                                            <span class="badge bg-warning">Pago Parcial</span>
+                                        {% elif factura.estado == 'vencida' %}
+                                            <span class="badge bg-danger">Vencida</span>
+                                        {% elif factura.estado == 'anulada' %}
+                                            <span class="badge bg-secondary">Anulada</span>
+                                        {% else %}
+                                            <span class="badge bg-info">Pendiente</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <a href="{% url 'factura_detalle' factura.id %}" 
+                                           class="btn btn-sm btn-primary" title="Ver Detalle">
+                                            <i class="fas fa-eye"></i> Ver
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-2"></i>
+                        No hay facturas registradas para este estudiante.
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,874 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Reporte de Ventas - {{ titulo_periodo }}</title>
+    <style>
+        @page {
+            size: letter landscape;
+            margin: 1cm 1.2cm;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Helvetica Neue', 'Arial', sans-serif;
+            font-size: 8pt;
+            line-height: 1.4;
+            color: #2c3e50;
+            background: white;
+        }
+        
+        /* ===== ENCABEZADO MINIMALISTA ===== */
+        .company-header {
+            border-bottom: 4px solid #0891b2;
+            padding-bottom: 15px;
+            margin-bottom: 20px;
+            position: relative;
+        }
+        
+        .company-header::after {
+            content: '';
+            position: absolute;
+            bottom: -4px;
+            left: 0;
+            width: 30%;
+            height: 4px;
+            background: #06b6d4;
+        }
+        
+        .header-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+            position: relative;
+            z-index: 1;
+        }
+        
+        .header-logo-section {
+            flex: 1;
+        }
+        
+        .company-name {
+            font-size: 14pt;
+            font-weight: 900;
+            margin-bottom: 3px;
+            text-transforbaseline;
+            margin-bottom: 10px;
+        }
+        
+        .header-logo-section {
+            flex: 1;
+        }
+        
+        .company-name {
+            font-size: 24pt;
+            font-weight: 300;
+            margin-bottom: 2px;
+            color: #0891b2;
+            letter-spacing: -0.5px;
+        }
+        
+        .company-tagline {
+            font-size: 9pt;
+            font-weight: 400;
+            color: #64748b;
+            font-20px;
+            margin-top: 8px;
+        }
+        
+        .detail-card {
+            flex: 1;
+        }
+        
+        .detail-icon {
+            display: none;
+        }
+        
+        .detail-label {
+            font-size: 7pt;
+            color: #94a3b8;
+            font-weight: 600;
+            text-transform: uppercase;
+            display: block;
+            letter-spacing: 0.5px;
+        }
+        
+        .detail-value {
+            font-size: 9pt;
+            color: #1e293b;
+            font-weight: 600;
+            display: block;
+            margin-top: 2px;
+        }
+        
+        .company-address {
+            margin-top: 8px;
+            font-size: 8pt;
+            color: #64748b: center;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            border: 2px solid transparent;
+            background-image: 
+                linear-gradient(white, white),
+                linear-gradient(135deg, #667eea 0%, #764ba2 50%, #11998e 100%);
+            background-origin: border-box;
+            background-clip: padding-box, border-box;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .report-title-box::before {
+            content: '';
+            position: absolute;
+            top: 0;MINIMALISTA ===== */
+        .report-title-box {
+            background: #f8fafc;
+            padding: 15px 20px;
+            margin-bottom: 15px;
+            border-left: 5px solid #0891b2;
+        }
+        
+        .report-title {
+            font-size: 18pt;
+            font-weight: 700;
+            color: #0f172a;
+            margin-bottom: 5px;
+            letter-spacing: -0.3px;
+        }
+        
+        .report-subtitle {
+            font-size: 10pt;
+            color: #64748b;
+            font-weight: 400;
+        }
+        
+        .report-meta {
+            margin-top: 10px;
+            display: flex;
+            gap: 30px;
+        }
+        
+        .meta-item {
+            flex: 1;
+        }
+        
+        .meta-label {
+            font-size: 7pt;
+            color: #94a3b8;
+            text-transform: uppercase;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+        }
+        
+        .meta-value {
+            font-size: 9pt;
+            color: #1e293b;
+            font-weight: 600;
+            margin-top: 2px
+        .totales-resumen td {
+            padding: 8px;
+            border: none;
+            text-align: center;
+            background: white;
+            border-radius: 6px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .totales-resumen td::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+        }
+        
+        .totales-label {
+            font-size: 6.5pt;
+            color: #6b7280;
+            text-transform: uppercase;
+            display: block;
+            margin-bottom: 3px;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+        }
+        
+        .totales-valor {
+            font-size: 10pt;
+            font-weight: 900;
+            color: #1f2937;
+        }
+        
+        .totales-highlight {
+            background: linear-gradieESTILO FLAT ===== */
+        .totales-resumen {
+            width: 100%;
+            margin-bottom: 20px;
+            border: none;
+        }
+        
+        .totales-resumen table {
+            width: 100%;
+            border: none;
+            margin: 0;
+            border-spacing: 8px;
+        }
+        
+        .totales-resumen td {
+            padding: 12px 10px;
+            border: none;
+            text-align: left;
+            background: #f8fafc;
+            border-left: 4px solid #cbd5e1;
+        }
+        
+        .totales-label {
+            font-size: 7pt;
+            color: #64748b;
+            text-transform: uppercase;
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+        }
+        
+        .totales-valor {
+            font-size: 14pt;
+            font-weight: 700;
+            color: #0f172a;
+        }
+        
+        .totales-highlight {
+            background: #0891b2 !important;
+            border-left-color: #0e7490 !important;
+        }
+        
+        .totales-highlight .totales-label {
+            color: rgba(255,255,255,0.9);
+        }
+        
+        .totales-highlight .totales-valor {
+            color: white;
+        }
+        
+        .totales-success {
+            border-left-color: #10b981;
+        }
+        
+        .totales-warning {
+            border-left-color: #f59e0b;
+        }
+        
+        .totales-info {
+            border-left-color: #06b6d4;
+        }
+        
+        .totales-danger {
+            border-left-color: #ef4444
+            text-transform: uppercase;
+            color: white;
+            letter-spacing: 0.3px;
+        }
+        
+        table td {
+            padding: 5px 4px;
+            border: none;
+            vertical-align: middle;
+            color: #374151;
+            border-bottom: 1px solid #f3f4f6;
+        }
+        
+        table tbody tr:nth-child(even) {
+            background: #f9fafb;
+        }
+        
+        table tbody tr:nth-child(odd) {
+            background: white;
+        }
+        
+        table tfoot tr {MINIMALISTAS ===== */
+        .section-title {
+            color: #0f172a;
+            padding: 10px 0;
+            font-size: 12pt;
+            font-weight: 700;
+            margin: 25px 0 12px 0;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            border-bottom: 2px solid #0891b2;
+            position: relative;
+        }
+        
+        .section-title::after {
+            content: '';
+            position: absolute;
+            bottom: -2px;
+            left: 0;
+            width: 60px;
+            height: 2px;
+            background: #06b6d4
+        
+        /* ===== BADGES MODERNOS ===== */
+        .badge {
+            display: inline-block;
+            padding: 4pxESTILO CLEAN ===== */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 15px;
+            font-size: 8pt;
+            border: 1px solid #e2e8f0;
+        }
+        
+        table thead {
+            background: #f1f5f9;
+            border-bottom: 2px solid #0891b2;
+        }
+        
+        table th {
+            padding: 10px 8px;
+            text-align: left;
+            font-weight: 700;
+            font-size: 8pt;
+            text-transform: uppercase;
+            color: #475569;
+            letter-spacing: 0.5px;
+        }
+        
+        table td {
+            padding: 8px;
+            vertical-align: middle;
+            color: #334155;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        
+        table tbody tr:nth-child(even) {
+            background: #fafafa;
+        }
+        
+        table tbody tr:nth-child(odd) {
+            background: white;
+        }
+        
+        table tfoot tr {
+            background: #f1f5f9;
+            font-weight: 700;
+            border-top: 2px solid #0891b2;
+        }
+        
+        table tfoot td {
+            padding: 10px 8px;
+            color: #0f172a;
+            font-size: 9;
+            color: white;
+            padding: 5px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-top: 2px solid #11998e;
+        }
+        
+        .footer-info p {
+            margin: 0;
+            font-weight: 600;
+        }
+        
+        /* ===== BADGES MODERNOS MEJORADOS ===== */
+        .badge {
+            display: inline-block;
+            padding: 2px 6px;
+            border-radius: 10px;
+            font-size: 6pt;
+            font-weight: 800;
+            letter-spacing: 0.3px;
+            text-transform: uppercase;
+        }
+        
+        .badge-success {
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+            color: white;
+        }
+        
+        .badge-warning {
+            background: linear-gradient(135deg, #f59e0b 0%, #f97316 100%);
+            color: white;
+        }
+        
+        .badge-info {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+        }
+        
+        .badge-danger {
+            background: linear-gradient(135deg, #fc466b 0%, #3f5efb 100%);
+            color: white;
+        }
+        
+        .text-success {
+            color: #22c55e;
+            font-weight: 800;
+        }
+        
+        .text-danger {
+            color: #ef4444;
+            font-weight: 800;
+        }
+        
+        .text-itbis {
+            color: #f59e0b;
+            font-weight: 800;
+        }
+        
+        /* ===== GRID DE ANÁLISIS CON MÁS ESTILO ===== */
+        .analysis-grid {
+            width: 100%;
+            margin-bottom: 10px;
+            border-spaciMINIMALISTA ===== */
+        .footer-info {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            text-align: center;
+            font-size: 7pt;
+            color: #64748b;
+            padding: 10px;
+            background: #f8fafc;
+            border-top: 1px solid #cbd5e1;
+        }
+        
+        .footer-info p {
+            margin: 0;
+            font-weight: 4
+        
+        .analysis-card-header {
+            background: ESTILO FLAT ===== */
+        .badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 3px;
+            font-size: 7pt;
+            font-weight: 600;
+            letter-spacing: 0.3px;
+            text-transform: uppercase;
+        }
+        
+        .badge-success {
+            background: #d1fae5;
+            color: #065f46;
+            border: 1px solid #10b981;
+        }
+        
+        .badge-warning {
+            background: #fef3c7;
+            color: #92400e;
+            border: 1px solid #f59e0b;
+        }
+        
+        .badge-info {
+            background: #cffafe;
+            color: #164e63;
+            border: 1px solid #06b6d4;
+        }
+        
+        .badge-danger {
+            background: #fee2e2;
+            color: #991b1b;
+            border: 1px solid #ef4444;
+        }
+        LIMPIO ===== */
+        .analysis-grid {
+            width: 100%;
+            margin-bottom: 15px;
+            border-spacing: 10px;
+        }
+        
+        .analysis-grid td {
+            width: 33.33%;
+            padding: 0;
+            vertical-align: top;
+            border: none;
+        }
+        
+        .analysis-card {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            padding: 12px;
+            height: 100%;
+        }
+        
+        .analysis-card-header {
+            background: white;FLAT ===== */
+        .rank-icon {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            line-height: 20px;
+            text-align: center;
+            border-radius: 3px;
+            font-weight: 700;
+            font-size: 7pt;
+            color: white;
+        }
+        
+        .rank-1 {
+            background: #f59e0b;
+        }
+        
+        .rank-2 {
+            background: #94a3b8;
+        }
+        
+        .rank-3 {
+            background: #ea580c;
+        }
+        
+        .rank-other {
+            background: #64748b
+        
+        .analysis-item-value {
+            font-weight: 700;
+            color: #0f172a;
+            font-size: 8ss="company-tagline">Excelencia Educativa y Formación Integral</div>
+            </div>
+        </div>
+        
+        <div class="company-details-grid">
+            <div class="detail-card">
+                <span class="detail-icon">🏢</span>
+                <div class="detail-label">RNC / Registro</div>
+                <div class="detail-value">{{ escuela_rnc|default:"N/A" }}</div>
+            </div>
+            
+            <div class="detail-card">
+                <span class="detail-icon">📞</span>
+                <div class="detail-label">Teléfono Contacto</div>
+                <div class="detail-value">{{ escuela_telefono|default:"N/A" }}</div>
+            </div>
+            
+            <div class="detail-card">
+                <span class="detail-icon">✉️</span>
+                <div class="detail-label">Email Institucional</div>
+                <div class="detail-value">{{ escuela_email|default:"N/A" }}</div>
+            </div>
+            
+            <div class="detail-card">
+                <span class="detail-icon">🌐</span>
+                <div class="detail-label">Sitio Web</div>
+                <div class="detail-value">www.escuela.edu.do</div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Título del Reporte -->
+    <div class="report-title-box">
+        <div class="report-title">📊 REPORTE DE VENTAS</div>
+        <div class="report-subtitle">{{ titulo_periodo }}</div>
+        
+        <div class="report-meta">
+            <div class="meta-item">
+                <div class="meta-label">📅 Fecha de Generación</div>
+                <div class="meta-value">{{ fecha_actual|date:"d/m/Y H:i" }}</div>
+            </div>
+            <div class="meta-item">
+                <div class="meta-label">👤 Generado Por</div>
+                <div class="meta-value">{{ usuario }}</div>
+            </div>
+            <div class="meta-item">
+                <div class="meta-label">📊 Período Analizado</div>
+                <div class="meta-value">{{ fecha_inicio|date:"d/m/Y" }} - {{ fecha_fin|date:"d/m/Y" }}</div>
+            </div>
+            <div class="meta-item">
+                <div class="meta-label">📄 Tipo de Reporte</div>
+                <div class="meta-value">Ventas Detallado</div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Información del Reporte -->
+    <div class="header-box">
+        <div class="info-cards-grid">
+            <div class="info-card info-card-primary">
+                <div class="info-card-label">🎯 Objetivo del Reporte</div>
+                <div class="info-card-value">Análisis de Ventas y Facturación</div>
+            </div>
+            <div class="info-card info-card-success">
+                <div class="info-card-label">✅ Estado del Sistema</div>
+                <div class="info-card-value">Operativo y Actualizado</div>
+            </div>
+            <div class="info-card info-card-warning">
+                <div class="info-card-label">📈 Nivel de Detalle</div>
+                <div class="info-card-value">Completo con Métricas</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Resumen de Totales -->
+    <div class="totales-resumen">
+        <table>
+            <tr>
+                <td class="totales-highlight">
+                    <span class="totales-label">💰 Ventas</span><br>
+                    <span class="totales-valor">RD${{ total_ventas|floatformat:2 }}</span>
+                </td>
+                <td class="totales-success">
+                    <span class="totales-label">✅ Cobrado</span><br>
+                    <span class="totales-valor">RD${{ total_cobrado|floatformat:2 }}</span>
+                </td>
+                <td class="totales-warning">
+                    <span class="totales-label">⚠️ ITBIS</span><br>
+                    <span class="totales-valor">RD${{ total_impuestos|floatformat:2 }}</span>
+                </td>
+                <td class="totales-info">
+                    <span class="totales-label">📋 Facturas</span><br>
+                    <span class="totales-valor">{{ total_facturas }}</span>
+                </td>
+                <td>
+                    <span class="totales-label">📊 Promedio</span><br>
+                    <span class="totales-valor">RD${{ promedio_venta|floatformat:2 }}</span>
+                </td>
+                <td class="totales-danger">
+                    <span class="totales-label">🏷️ Descuentos</span><br>
+                    <span class="totales-valor">RD${{ total_descuentos|floatformat:2 }}</span>
+                </td>
+            </tr>
+        </table>
+    </div>
+
+    <!-- Desglose por Estado -->
+    <div class="section-title">📊 Desglose de Facturas por Estado</div>
+    <table>
+        <thead>
+            <tr>
+                <th style="width: 25%;">Estado</th>
+                <th style="width: 15%;" class="text-center">Cantidad</th>
+                <th style="width: 20%;" class="text-right">Monto Total</th>
+                <th style="width: 15%;" class="text-right">% del Total</th>
+                <th style="width: 25%;" class="text-center">Indicador Visual</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><span class="badge badge-success">✅ PAGADAS</span></td>
+                <td class="text-center text-bold">{{ facturas_pagadas }}</td>
+                <td class="text-right text-bold text-success">RD${{ total_cobrado|floatformat:2 }}</td>
+                <td class="text-right text-bold">{{ tasa_pago|floatformat:1 }}%</td>
+                <td class="text-center">
+                    <div style="background: linear-gradient(to right, #11998e 0%, #38ef7d {{ tasa_pago|floatformat:0 }}%, #e5e7eb {{ tasa_pago|floatformat:0 }}%); height: 20px; border-radius: 10px; width: 100%;"></div>
+                </td>
+            </tr>
+            <tr>
+                <td><span class="badge badge-warning">⏳ PAGO PARCIAL</span></td>
+                <td class="text-center text-bold">{{ facturas_parciales }}</td>
+                <td class="text-right">-</td>
+                <td class="text-right">-</td>
+                <td class="text-center" style="color: #f59e0b;">En proceso</td>
+            </tr>
+            <tr>
+                <td><span class="badge badge-info">⏰ PENDIENTES</span></td>
+                <td class="text-center text-bold">{{ facturas_pendientes }}</td>
+                <td class="text-right text-bold text-danger">RD${{ total_pendiente_cobro|floatformat:2 }}</td>
+                <td class="text-right text-bold">{{ pendiente_porcentaje|default:"0"|floatformat:1 }}%</td>
+                <td class="text-center" style="color: #4facfe;">Por cobrar</td>
+            </tr>
+        </tbody>
+        <tfoot>
+            <tr>
+                <td>TOTAL GENERAL</td>
+                <td class="text-center text-bold">{{ total_facturas }}</td>
+                <td class="text-right text-bold">RD${{ total_ventas|floatformat:2 }}</td>
+                <td class="text-right text-bold">100%</td>
+                <td class="text-center">-</td>
+            </tr>
+        </tfoot>
+    </table>
+
+    <!-- Análisis Financiero Detallado -->
+    <div class="section-title">💵 Análisis Financiero Detallado</div>
+    <table class="analysis-grid">
+        <tr>
+            <td>
+                <div class="analysis-card">
+                    <div class="analysis-card-header">💰 Composición de Ingresos</div>
+                    <div class="analysis-item">
+                        <span class="analysis-item-label">Productos</span>
+                        <span class="analysis-item-value text-success">RD${{ ingresos_productos|floatformat:2 }}</span>
+                    </div>
+                    <div class="analysis-item">
+                        <span class="analysis-item-label">Servicios/Conceptos</span>
+                        <span class="analysis-item-value text-info">RD${{ ingresos_servicios|floatformat:2 }}</span>
+                    </div>
+                    <div class="analysis-item">
+                        <span class="analysis-item-label">Mensualidades</span>
+                        <span class="analysis-item-value">RD${{ ingresos_mensualidades|floatformat:2 }}</span>
+                    </div>
+                    <div class="analysis-item highlight-row">
+                        <span class="analysis-item-label">ITBIS (18%)</span>
+                        <span class="analysis-item-value text-itbis">RD${{ total_impuestos|floatformat:2 }}</span>
+                    </div>
+                    <div class="analysis-item highlight-negative">
+                        <span class="analysis-item-label">Descuentos Aplicados</span>
+                        <span class="analysis-item-value text-danger">-RD${{ total_descuentos|floatformat:2 }}</span>
+                    </div>
+                </div>
+            </td>
+            <td>
+                <div class="analysis-card">
+                    <div class="analysis-card-header">💳 Métodos de Pago</div>
+                    {% if ventas_por_metodo %}
+                        {% for metodo in ventas_por_metodo %}
+                        <div class="analysis-item">
+                            <span class="analysis-item-label">
+                                {% if metodo.metodo_pago == 'efectivo' %}💵 Efectivo
+                                {% elif metodo.metodo_pago == 'tarjeta' %}💳 Tarjeta
+                                {% elif metodo.metodo_pago == 'transferencia' %}🏦 Transferencia
+                                {% elif metodo.metodo_pago == 'cheque' %}📄 Cheque
+                                {% elif metodo.metodo_pago == 'mixto' %}🔀 Mixto
+                                {% else %}{{ metodo.metodo_pago }}
+                                {% endif %}
+                            </span>
+                            <span class="analysis-item-value">RD${{ metodo.total|floatformat:2 }}</span>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="analysis-item">
+                            <span class="analysis-item-label">Sin datos</span>
+                            <span class="analysis-item-value">-</span>
+                        </div>
+                    {% endif %}
+                </div>
+            </td>
+            <td>
+                <div class="analysis-card">
+                    <div class="analysis-card-header">📈 Tendencia y Comparación</div>
+                    <div class="analysis-item">
+                        <span class="analysis-item-label">Ventas Período Actual</span>
+                        <span class="analysis-item-value">RD${{ total_ventas|floatformat:2 }}</span>
+                    </div>
+                    <div class="analysis-item">
+                        <span class="analysis-item-label">Ventas Período Anterior</span>
+                        <span class="analysis-item-value">RD${{ total_ventas_anterior|floatformat:2 }}</span>
+                    </div>
+                    <div class="analysis-item {% if variacion_porcentual >= 0 %}highlight-positive{% else %}highlight-negative{% endif %}">
+                        <span class="analysis-item-label">Variación</span>
+                        <span class="analysis-item-value" style="color: {% if variacion_porcentual >= 0 %}#22c55e{% else %}#ef4444{% endif %};">
+                            {% if variacion_porcentual >= 0 %}⬆ +{% else %}⬇ {% endif %}{{ variacion_porcentual|floatformat:1 }}%
+                        </span>
+                    </div>
+                    <div class="analysis-item">
+                        <span class="analysis-item-label">Tasa de Cobro</span>
+                        <span class="analysis-item-value text-success">{{ tasa_pago|floatformat:1 }}%</span>
+                    </div>
+                    <div class="analysis-item">
+                        <span class="analysis-item-label">Pendiente por Cobrar</span>
+                        <span class="analysis-item-value text-danger">RD${{ total_pendiente_cobro|floatformat:2 }}</span>
+                    </div>
+                </div>
+            </td>
+        </tr>
+    </table>
+
+    <!-- Top Artículos Vendidos -->
+    {% if top_articulos %}
+    <div class="section-title">🏆 Artículos Más Vendidos - TOP 10</div>
+    <table>
+        <thead>
+            <tr>
+                <th style="width: 8%;" class="text-center">Ranking</th>
+                <th style="width: 15%;">Código</th>
+                <th style="width: 27%;">Nombre del Artículo</th>
+                <th style="width: 10%;" class="text-center">Unidades</th>
+                <th style="width: 12%;" class="text-right">Precio Prom.</th>
+                <th style="width: 10%;" class="text-right">ITBIS</th>
+                <th style="width: 18%;" class="text-right">Total Ingresos</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for articulo in top_articulos %}
+            <tr>
+                <td class="text-center">
+                    <span class="rank-icon rank-{% if forloop.counter <= 3 %}{{ forloop.counter }}{% else %}other{% endif %}">
+                        #{{ forloop.counter }}
+                    </span>
+                </td>
+                <td><strong>{{ articulo.articulo__codigo_barras }}</strong></td>
+                <td>{{ articulo.articulo__nombre }}</td>
+                <td class="text-center text-bold" style="color: #667eea;">{{ articulo.total_vendido|floatformat:0 }}</td>
+                <td class="text-right">RD${{ articulo.precio_promedio|default:"0.00"|floatformat:2 }}</td>
+                <td class="text-right text-itbis">RD$0.00</td>
+                <td class="text-right text-bold text-success">RD${{ articulo.ingresos|floatformat:2 }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+        <tfoot>
+            <tr>
+                <td colspan="6" class="text-right">TOTAL PRODUCTOS:</td>
+                <td class="text-right text-bold">RD${{ ingresos_productos|floatformat:2 }}</td>
+            </tr>
+        </tfoot>
+    </table>
+    {% endif %}
+
+    <!-- Top Conceptos/Servicios -->
+    {% if top_conceptos %}
+    <div class="section-title">🎯 Conceptos y Servicios Más Facturados - TOP 10</div>
+    <table>
+        <thead>
+            <tr>
+                <th style="width: 8%;" class="text-center">Ranking</th>
+                <th style="width: 40%;">Descripción del Concepto</th>
+                <th style="width: 15%;">Tipo</th>
+                <th style="width: 10%;" class="text-center">Cantidad</th>
+                <th style="width: 12%;" class="text-right">Precio Prom.</th>
+                <th style="width: 15%;" class="text-right">Total Ingresos</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for concepto in top_conceptos %}
+            <tr>
+                <td class="text-center">
+                    <span class="rank-icon rank-{% if forloop.counter <= 3 %}{{ forloop.counter }}{% else %}other{% endif %}">
+                        #{{ forloop.counter }}
+                    </span>
+                </td>
+                <td><strong>{{ concepto.concepto__nombre }}</strong></td>
+                <td>
+                    {% if concepto.concepto__tipo == 'mensualidad' %}
+                    <span class="badge badge-info">💵 Mensualidad</span>
+                    {% elif concepto.concepto__tipo == 'inscripcion' %}
+                    <span class="badge badge-warning">📝 Inscripción</span>
+                    {% else %}
+                    <span class="badge badge-info">{{ concepto.concepto__tipo|title }}</span>
+                    {% endif %}
+                </td>
+                <td class="text-center text-bold" style="color: #667eea;">{{ concepto.cantidad_ventas }}</td>
+                <td class="text-right">RD${{ concepto.precio_promedio|default:"0.00"|floatformat:2 }}</td>
+                <td class="text-right text-bold text-success">RD${{ concepto.ingresos|floatformat:2 }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+        <tfoot>
+            <tr>
+                <td colspan="5" class="text-right">TOTAL SERVICIOS:</td>
+                <td class="text-right text-bold">RD${{ ingresos_servicios|floatformat:2 }}</td>
+            </tr>
+        </tfoot>
+    </table>
+    {% endif %}
+
+    <!-- Footer -->
+    <div class="footer-info">
+        <p style="margin: 0; font-weight: 700;">
+            🔒 Documento Confidencial - Sistema de Gestión Escolar | 
+            Generado el {{ fecha_actual|date:"d/m/Y" }} a las {{ fecha_actual|date:"H:i" }} | 
+            Usuario: {{ usuario }} | 
+            © {{ fecha_actual|date:"Y" }} Todos los derechos reservados
+        </p>
+    </div>
+</body>
+</html>

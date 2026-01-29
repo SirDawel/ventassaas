@@ -1,0 +1,123 @@
+{% extends 'website/base.html' %}
+
+{% block title %}
+Lista de Estudiantes - {{ materia.nombre }}
+{% endblock %}
+
+{% block content %}
+<style>
+@media print {
+    body {
+        margin: 0;
+        padding: 0;
+        font-size: 12px;
+    }
+
+    .container {
+        width: 100%;
+        max-width: 100%;
+    }
+
+    .card {
+        page-break-inside: avoid;
+    }
+
+    table {
+        width: 100%;
+        font-size: 11px;
+    }
+
+    th, td {
+        white-space: nowrap;
+        padding: 4px;
+    }
+
+    /* Ocultar botones al imprimir */
+    .btn {
+        display: none !important;
+    }
+}
+</style>
+
+<div class="container mt-4">
+    <div class="card shadow mb-4">
+        <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+            <h2 class="h4 mb-0">Lista de Estudiantes - {{ materia.nombre }}</h2>
+            <button onclick="window.print()" class="btn btn-light">
+                <i class="fas fa-print"></i> Imprimir Lista
+            </button>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-bordered table-hover align-middle">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>#</th>
+                            <th>Mat</th>
+                            <th>Estudiante</th>
+                            <th>Correo</th>
+                            <th>TelÃ©fono</th>
+                            <th>Sexo</th>
+                            <th>Fecha Nacimiento</th>
+                            <th>Edad</th>
+                            <th>Estado</th>
+                            <th>Nota Final</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for matricula in matriculas %}
+                        <tr>
+                            <td>{{ forloop.counter }}</td>
+                            <td>{{ matricula.estudiante.id|default:"--" }}</td>
+                            <td>{{ matricula.estudiante.get_full_name }}</td>
+                            <td>{{ matricula.estudiante.email|default:"--" }}</td>
+                            <td>{{ matricula.estudiante.telefono|default:"--" }}</td>
+                            <td>{{ matricula.estudiante.genero|default:"--" }}</td>
+                            <td>{{ matricula.estudiante.fecha_nacimiento|date:"d/m/Y"|default:"--" }}</td>
+                            <td>
+                                {% if matricula.estudiante.calcular_edad %}
+                                    {{ matricula.estudiante.calcular_edad }}
+                                {% else %}
+                                    --
+                                {% endif %}
+                            </td>
+                            <td>
+                                <span class="badge 
+                                    {% if matricula.estado == 'ACTIVO' %}bg-success
+                                    {% elif matricula.estado == 'RETIRADO' %}bg-danger
+                                    {% elif matricula.estado == 'APROBADO' %}bg-primary
+                                    {% else %}bg-warning{% endif %}">
+                                    {{ matricula.get_estado_display }}
+                                </span>
+                            </td>
+                            <td>
+                                {% if matricula.nota_final %}
+                                    <span class="fw-bold 
+                                        {% if matricula.nota_final >= 70 %}text-success
+                                        {% elif matricula.nota_final >= 60 %}text-warning
+                                        {% else %}text-danger{% endif %}">
+                                        {{ matricula.nota_final|floatformat:2 }}
+                                    </span>
+                                {% else %}
+                                    <span class="text-muted">En progreso</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="10" class="text-center">
+                                <div class="alert alert-info mb-0">
+                                    <i class="fas fa-info-circle me-2"></i>
+                                    No hay estudiantes matriculados en esta materia.
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}

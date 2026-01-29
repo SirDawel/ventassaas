@@ -1,0 +1,152 @@
+{% extends 'website/base.html' %}
+
+{% block title %}{{ titulo }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h4 class="mb-0">
+                            <i class="fas fa-cog me-2"></i>{{ titulo }}
+                        </h4>
+                        <a href="{% url 'concepto_create' %}" class="btn btn-light btn-sm">
+                            <i class="fas fa-plus me-1"></i>Nuevo Concepto
+                        </a>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-2"></i>
+                        <strong>Conceptos de Pago:</strong> Configure aquí los montos base para los diferentes tipos de cobro. 
+                        Marque como <strong>"Estándar"</strong> los conceptos que se asignarán automáticamente a nuevos estudiantes.
+                    </div>
+
+                    {% if not tiene_mensualidad_estandar or not tiene_inscripcion_estandar %}
+                    <div class="alert alert-warning">
+                        <h6 class="alert-heading">
+                            <i class="fas fa-exclamation-triangle me-2"></i>Tarifas Estándar Faltantes
+                        </h6>
+                        <p class="mb-2">Para que los estudiantes reciban tarifas automáticamente al ser creados, debe configurar:</p>
+                        <ul class="mb-0">
+                            {% if not tiene_mensualidad_estandar %}
+                            <li><i class="fas fa-times-circle text-danger me-1"></i><strong>Mensualidad Estándar</strong> - No configurada</li>
+                            {% else %}
+                            <li><i class="fas fa-check-circle text-success me-1"></i><strong>Mensualidad Estándar</strong> - Configurada</li>
+                            {% endif %}
+                            
+                            {% if not tiene_inscripcion_estandar %}
+                            <li><i class="fas fa-times-circle text-danger me-1"></i><strong>Inscripción Estándar</strong> - No configurada</li>
+                            {% else %}
+                            <li><i class="fas fa-check-circle text-success me-1"></i><strong>Inscripción Estándar</strong> - Configurada</li>
+                            {% endif %}
+                        </ul>
+                    </div>
+                    {% else %}
+                    <div class="alert alert-success">
+                        <i class="fas fa-check-circle me-2"></i>
+                        <strong>Tarifas Estándar Configuradas:</strong> Los nuevos estudiantes recibirán automáticamente las tarifas de mensualidad e inscripción.
+                    </div>
+                    {% endif %}
+
+                    {% if conceptos %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Tipo</th>
+                                    <th>Nombre</th>
+                                    <th>Monto Base</th>
+                                    <th>Descripción</th>
+                                    <th>Estado</th>
+                                    <th>Estándar</th>
+                                    <th style="width: 150px;">Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for concepto in conceptos %}
+                                <tr>
+                                    <td>
+                                        <span class="badge 
+                                            {% if concepto.tipo == 'mensualidad' %}bg-primary
+                                            {% elif concepto.tipo == 'inscripcion' %}bg-success
+                                            {% elif concepto.tipo == 'transporte' %}bg-warning text-dark
+                                            {% elif concepto.tipo == 'articulo' %}bg-info
+                                            {% elif concepto.tipo == 'servicio' %}bg-secondary
+                                            {% else %}bg-dark
+                                            {% endif %}">
+                                            {{ concepto.get_tipo_display }}
+                                        </span>
+                                    </td>
+                                    <td><strong>{{ concepto.nombre }}</strong></td>
+                                    <td>
+                                        <span class="text-success">
+                                            <i class="fas fa-dollar-sign me-1"></i>
+                                            RD${{ concepto.monto|floatformat:2 }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        {% if concepto.descripcion %}
+                                            <small class="text-muted">{{ concepto.descripcion|truncatewords:10 }}</small>
+                                        {% else %}
+                                            <span class="text-muted">-</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if concepto.activo %}
+                                            <span class="badge bg-success">Activo</span>
+                                        {% else %}
+                                            <span class="badge bg-secondary">Inactivo</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if concepto.es_estandar %}
+                                            <span class="badge bg-warning text-dark">
+                                                <i class="fas fa-star me-1"></i>Estándar
+                                            </span>
+                                            <br><small class="text-muted">Auto-asignar</small>
+                                        {% else %}
+                                            <span class="text-muted">-</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <div class="btn-group btn-group-sm" role="group">
+                                            <a href="{% url 'concepto_edit' concepto.id %}" 
+                                               class="btn btn-outline-primary" 
+                                               title="Editar">
+                                                <i class="fas fa-edit"></i>
+                                            </a>
+                                            <a href="{% url 'concepto_delete' concepto.id %}" 
+                                               class="btn btn-outline-danger" 
+                                               title="Eliminar">
+                                                <i class="fas fa-trash"></i>
+                                            </a>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-5">
+                        <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
+                        <p class="text-muted">No hay conceptos de pago registrados.</p>
+                        <a href="{% url 'concepto_create' %}" class="btn btn-primary">
+                            <i class="fas fa-plus me-1"></i>Crear Primer Concepto
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+                <div class="card-footer">
+                    <a href="{% url 'tarifas_list' %}" class="btn btn-secondary">
+                        <i class="fas fa-arrow-left me-1"></i>Volver a Tarifas
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

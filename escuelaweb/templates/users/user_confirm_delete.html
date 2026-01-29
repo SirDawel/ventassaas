@@ -1,0 +1,36 @@
+{% extends "website/base.html" %}
+{% block content %}
+<div class="container mt-4">
+    <div class="card shadow-lg">
+        <div class="card-body text-center">
+            <h1 class="card-title text-danger mb-4">
+                <i class="fas fa-exclamation-triangle"></i> Confirmar EliminaciÃ³n
+            </h1>
+            
+            <p class="lead">
+                Â¿EstÃ¡s seguro que deseas eliminar al usuario <strong>{{ user.get_full_name }}</strong>?
+            </p>
+            
+            <p class="text-muted">
+                Esta acciÃ³n no se puede deshacer.
+            </p>
+
+            <form method="POST">
+                {% csrf_token %}
+                <div class="mt-4">
+                    <a href="{% url 'user_list' %}" class="btn btn-secondary">
+                        <i class="fas fa-times"></i> Cancelar
+                    </a>
+                    <button type="submit" class="btn btn-danger">
+                        <i class="fas fa-trash"></i> Eliminar
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Agregar FontAwesome para iconos -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+
+{% endblock %}

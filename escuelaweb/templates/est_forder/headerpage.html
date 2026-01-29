@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Reporte General - {{ curso.nombre }}</title>
+    <style>
+        /* Contenedor principal del reporte */
+        #reporte-general {
+            font-family: Arial, sans-serif;
+            margin: 0;
+        }
+
+        /* Header centrado para cada estudiante */
+        #reporte-general .header-reporte {
+            display: flex;
+            flex-direction: column;
+            /* apila verticalmente */
+            align-items: center;
+            /* centra horizontalmente todo */
+            justify-content: center;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #99ccff;
+            padding-bottom: 8px;
+        }
+
+        #reporte-general .header-reporte img {
+            margin-bottom: 8px;
+            height: 60px;
+        }
+
+        #reporte-general .header-reporte h2,
+        #reporte-general .header-reporte p {
+            margin: 0;
+            text-align: center;
+            /* asegura que siempre estÃ©n centrados */
+        }
+
+        /* Tablas estilo Bootstrap */
+        #reporte-general table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 25px;
+        }
+
+        #reporte-general th {
+            background-color: #cce5ff;
+            text-align: left;
+            padding: 8px;
+            border-bottom: 2px solid #99ccff;
+        }
+
+        #reporte-general td {
+            padding: 8px;
+            border-bottom: 1px solid #ddd;
+            text-align: left;
+        }
+
+        #reporte-general td.estado {
+            text-align: left;
+        }
+
+        #reporte-general tbody tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+
+        /* Salto de pÃ¡gina para cada estudiante */
+        #reporte-general .page-break {
+            page-break-after: always;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="reporte-general">
+        {% for estudiante, datos in reporte_estudiantes.items %}
+        <!-- Header centrado -->
+        <header class="header-reporte">
+            <img src="/static/img/logo.png" alt="Logo Escuela">
+            <h2 class="mb-0">Politecnico Jose Ramon Rodriguez Herrera</h2>
+            <h3 class="mb-0">Calle. Sector Hato del Padre</h3>
+            <p class="mb-0">Reporte General de Notas</p>
+            <p>Reporte General de Notas</p>
+            <p><b>Curso:</b> {{ curso.nombre }}</p>
+            <p><b>Estudiante:</b> {{ estudiante.get_full_name }}</p>
+        </header>
+        <!-- InformaciÃ³n general en formato horizontal tipo Bootstrap -->
+        <table class="table table-bordered table-striped text-center mb-4">
+            <thead class="table-primary">
+                <tr>
+                    <th>Promedio General</th>
+                    <th>Total Materias</th>
+                    <th>Aprobadas</th>
+                    <th>Reprobadas</th>
+                    <th>En Progreso</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>{{ datos.promedio_general|floatformat:2 }}</td>
+                    <td>{{ datos.total_materias }}</td>
+                    <td>{{ datos.materias_aprobadas }}</td>
+                    <td>{{ datos.materias_reprobadas }}</td>
+                    <td>{{ datos.materias_en_progreso }}</td>
+                </tr>
+            </tbody>
+        </table>
+        <!-- Tabla de materias -->
+        <table>
+            <thead>
+                <tr>
+                    <th>Materia</th>
+                    <th>P1</th>
+                    <th>P2</th>
+                    <th>P3</th>
+                    <th>P4</th>
+                    <th>Promedio Final</th>
+                    <th>Estado</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for m in datos.matriculas %}
+                <tr>
+                    <td>{{ m.materia.nombre }}</td>
+                    <td>{{ m.prom_comunicativa|default:"-" }}</td>
+                    <td>{{ m.prom_logico|default:"-" }}</td>
+                    <td>{{ m.prom_cientifica|default:"-" }}</td>
+                    <td>{{ m.prom_etica|default:"-" }}</td>
+                    <td>{{ m.promedio_final|floatformat:2 }}</td>
+                    <td>
+                        {% if m.estado == "Aprobado" %}âï¸
+                        {% elif m.estado == "Reprobado" %}â
+                        {% else %}â³{% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <div class="page-break"></div>
+        {% endfor %}
+    </div>
+</body>
+
+</html>

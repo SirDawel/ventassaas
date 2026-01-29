@@ -1,0 +1,126 @@
+{% extends 'website/base.html' %}
+
+{% block title %}{{ titulo }}{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8 col-lg-6">
+            <div class="card shadow-lg border-0">
+                <div class="card-header bg-warning text-dark">
+                    <h4 class="mb-0">
+                        <i class="fas fa-key me-2"></i>{{ titulo }}
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <!-- Código Activo -->
+                    <div class="alert alert-warning border-2" role="alert">
+                        <h5 class="alert-heading">
+                            <i class="fas fa-shield-alt me-2"></i>Código del Mes Actual
+                        </h5>
+                        <hr>
+                        <div class="text-center py-3">
+                            <h1 class="display-3 mb-3" style="font-family: 'Courier New', monospace; letter-spacing: 5px;">
+                                <span class="badge bg-dark px-4 py-3">{{ codigo_activo.codigo }}</span>
+                            </h1>
+                            <p class="mb-2">
+                                <i class="fas fa-calendar-alt me-2"></i>
+                                <strong>Válido para:</strong> 
+                                {% if codigo_activo.mes == 1 %}Enero
+                                {% elif codigo_activo.mes == 2 %}Febrero
+                                {% elif codigo_activo.mes == 3 %}Marzo
+                                {% elif codigo_activo.mes == 4 %}Abril
+                                {% elif codigo_activo.mes == 5 %}Mayo
+                                {% elif codigo_activo.mes == 6 %}Junio
+                                {% elif codigo_activo.mes == 7 %}Julio
+                                {% elif codigo_activo.mes == 8 %}Agosto
+                                {% elif codigo_activo.mes == 9 %}Septiembre
+                                {% elif codigo_activo.mes == 10 %}Octubre
+                                {% elif codigo_activo.mes == 11 %}Noviembre
+                                {% elif codigo_activo.mes == 12 %}Diciembre
+                                {% endif %} {{ codigo_activo.anio }}
+                            </p>
+                            <p class="mb-0">
+                                <i class="fas fa-clock me-2"></i>
+                                <strong>Generado el:</strong> {{ codigo_activo.creado|date:"d/m/Y H:i" }}
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Instrucciones -->
+                    <div class="alert alert-info">
+                        <h6 class="alert-heading">
+                            <i class="fas fa-info-circle me-2"></i>Instrucciones de Uso
+                        </h6>
+                        <ul class="mb-0 small">
+                            <li>Este código es necesario para anular facturas</li>
+                            <li>El código cambia automáticamente cada mes</li>
+                            <li>Solo compártalo con personal autorizado (Secretaria)</li>
+                            <li>Cada anulación queda registrada con fecha, usuario y motivo</li>
+                            <li>Las facturas anuladas no se eliminan, solo se marcan como inactivas</li>
+                        </ul>
+                    </div>
+
+                    <!-- Historial -->
+                    {% if historial %}
+                    <div class="mt-4">
+                        <h6 class="mb-3">
+                            <i class="fas fa-history me-2"></i>Historial de Códigos
+                        </h6>
+                        <div class="table-responsive">
+                            <table class="table table-sm table-hover">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Mes/Año</th>
+                                        <th>Código</th>
+                                        <th>Generado</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for codigo in historial %}
+                                    <tr {% if codigo.id == codigo_activo.id %}class="table-success"{% endif %}>
+                                        <td>
+                                            {% if codigo.mes == 1 %}Enero
+                                            {% elif codigo.mes == 2 %}Febrero
+                                            {% elif codigo.mes == 3 %}Marzo
+                                            {% elif codigo.mes == 4 %}Abril
+                                            {% elif codigo.mes == 5 %}Mayo
+                                            {% elif codigo.mes == 6 %}Junio
+                                            {% elif codigo.mes == 7 %}Julio
+                                            {% elif codigo.mes == 8 %}Agosto
+                                            {% elif codigo.mes == 9 %}Septiembre
+                                            {% elif codigo.mes == 10 %}Octubre
+                                            {% elif codigo.mes == 11 %}Noviembre
+                                            {% elif codigo.mes == 12 %}Diciembre
+                                            {% endif %} {{ codigo.anio }}
+                                        </td>
+                                        <td>
+                                            <code>{{ codigo.codigo }}</code>
+                                            {% if codigo.id == codigo_activo.id %}
+                                            <span class="badge bg-success ms-2">Activo</span>
+                                            {% endif %}
+                                        </td>
+                                        <td class="small text-muted">{{ codigo.creado|date:"d/m/Y H:i" }}</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <!-- Botones -->
+                    <div class="d-flex gap-2 mt-4">
+                        <a href="{% url 'facturas_list' %}" class="btn btn-primary flex-fill">
+                            <i class="fas fa-file-invoice me-2"></i>Ir a Facturas
+                        </a>
+                        <a href="{% url 'plataform' %}" class="btn btn-secondary flex-fill">
+                            <i class="fas fa-home me-2"></i>Inicio
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

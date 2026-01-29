@@ -1,0 +1,457 @@
+{% extends 'website/base.html' %}
+
+{% block title %}
+{{ titulo }}
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Flat Business Design */
+    .card {
+        border-radius: 4px;
+        box-shadow: 0 1px 2px rgba(0,0,0,0.08);
+        border: 1px solid #e2e8f0;
+    }
+    
+    .card-header {
+        border-radius: 4px 4px 0 0;
+        border-bottom: 1px solid rgba(255,255,255,0.15);
+        padding: 0.8rem 1rem;
+    }
+    
+    .card-body {
+        padding: 0;
+    }
+    
+    .btn {
+        border-radius: 4px;
+        font-weight: 500;
+        padding: 0.5rem 1rem;
+        font-size: 0.875rem;
+        border: none;
+        transition: none;
+    }
+    
+    .btn-sm {
+        padding: 0.25rem 0.5rem;
+        font-size: 0.8rem;
+    }
+    
+    .btn-primary {
+        background-color: #5c6bc0;
+    }
+    
+    .btn-primary:hover {
+        background-color: #4a5ab3;
+    }
+    
+    .btn-secondary {
+        background-color: #78909c;
+    }
+    
+    .btn-secondary:hover {
+        background-color: #607d8b;
+    }
+    
+    .btn-info {
+        background-color: #29b6f6;
+    }
+    
+    .btn-info:hover {
+        background-color: #1da9e6;
+    }
+    
+    .btn-warning {
+        background-color: #ff9800;
+    }
+    
+    .btn-warning:hover {
+        background-color: #f57c00;
+    }
+    
+    .btn-success {
+        background-color: #4caf50;
+    }
+    
+    .btn-success:hover {
+        background-color: #43a047;
+    }
+    
+    .btn-danger {
+        background-color: #ef5350;
+    }
+    
+    .btn-danger:hover {
+        background-color: #e53935;
+    }
+    
+    .table {
+        border-radius: 4px;
+        overflow: hidden;
+        margin-bottom: 0;
+    }
+    
+    .table thead th {
+        background-color: #f8fafc;
+        border-bottom: 2px solid #e2e8f0;
+        font-size: 0.75rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        padding: 0.6rem 0.75rem;
+        color: #475569;
+    }
+    
+    .table tbody td {
+        padding: 0.7rem 0.75rem;
+        vertical-align: middle;
+        font-size: 0.875rem;
+        border-color: #f1f5f9;
+    }
+    
+    .table-hover tbody tr:hover {
+        background-color: #f8fafc;
+    }
+    
+    .badge {
+        border-radius: 3px;
+        padding: 0.25rem 0.5rem;
+        font-size: 0.7rem;
+        font-weight: 600;
+    }
+    
+    .alert {
+        border-radius: 4px;
+        border: none;
+        padding: 0.75rem 1rem;
+    }
+    
+    .page-header h2 {
+        font-size: 1.75rem;
+        font-weight: 600;
+        color: #2c3e50;
+        margin: 0;
+    }
+    
+    .page-header .subtitle {
+        font-size: 0.875rem;
+        color: #6c757d;
+    }
+    
+    .modal-content {
+        border-radius: 4px;
+        border: none;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    }
+    
+    .modal-header {
+        border-bottom: 1px solid #e2e8f0;
+        border-radius: 4px 4px 0 0;
+        padding: 1rem 1.25rem;
+    }
+    
+    .modal-footer {
+        border-top: 1px solid #e2e8f0;
+        padding: 0.75rem 1.25rem;
+    }
+    
+    .empty-state {
+        padding: 2rem 1rem;
+    }
+    
+    .empty-state i {
+        opacity: 0.3;
+    }
+    
+    .container {
+        padding: 0.8rem 1rem;
+    }
+    
+    .mt-4 {
+        margin-top: 0.8rem !important;
+    }
+    
+    .mb-4 {
+        margin-bottom: 0.8rem !important;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row mb-3">
+        <div class="col">
+            <div class="d-flex justify-content-between align-items-center">
+                <div class="page-header">
+                    <h2><i class="fas fa-book me-2"></i>{{ titulo }}</h2>
+                    {% if curso %}
+                    <p class="subtitle mb-0">{{ curso.nombre }} - {{ curso.anho_escolar.nombre }}</p>
+                    {% endif %}
+                </div>
+                <div class="d-flex gap-2">
+                    {% if curso_id and curso %}
+                    <a href="{% url 'lista_cursos' %}?anho={{ curso.anho_escolar.id }}" class="btn btn-secondary">
+                        <i class="fas fa-arrow-left"></i> Volver a Cursos
+                    </a>
+                    {% endif %}
+
+                    {% if user.rol == 'Administrador' %}
+                    <a href="{% url 'agregar_materia' curso_id %}" class="btn btn-primary">
+                        <i class="fas fa-plus"></i> Agregar Materia
+                    </a>
+                    {% endif %}
+		    {% if user.rol == 'Administrador' %}
+                    <a href="{% url 'reporte_general' curso_id %}" class="btn btn-primary">
+                            📊 Ver Reporte General
+                        </a>
+                    {% endif %}
+		    
+                </div>
+            </div>
+            {% if messages %}
+            <div class="messages">
+                {% for message in messages %}
+                <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header bg-primary text-white">
+            <div class="d-flex justify-content-between align-items-center">
+                <h5 class="m-0">
+                    <i class="fas fa-list-ul me-2"></i>Listado de Materias
+                </h5>
+                <span class="badge bg-light text-primary">{{ materias|length }} materias</span>
+            </div>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead>
+                        <tr>
+                            <th><i class="fas fa-book me-2"></i>Materia</th>
+                            <th><i class="fas fa-tag me-2"></i>Código</th>
+                            <th><i class="fas fa-graduation-cap me-2"></i>Curso</th>
+                            <th><i class="fas fa-calendar me-2"></i>Año Escolar</th>
+                            <th><i class="fas fa-user-tie me-2"></i>Profesor</th>
+                            <th><i class="fas fa-calendar-week me-2"></i>Días de Clase</th>
+                            {% if user.rol == 'Estudiante' %}
+                            <th>Notas</th>
+                            {% endif %}
+                            <th>Acciones</th>
+                            {% if user.rol == 'Administrador' %}
+                            <th>Administrar</th>
+                            {% endif %}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for materia in materias %}
+                        <tr>
+                            <td>{{ materia.nombre }}</td>
+                            <td>{{ materia.codigo }}</td>
+                            <td>{{ materia.curso.nombre }}</td>
+                            <td>{{ materia.curso.anho_escolar.nombre }}</td>
+                            <td>
+                                {% if materia.profesor %}
+                                    {{ materia.profesor.get_full_name }}
+                                {% else %}
+                                    <span class="text-muted">No asignado</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div class="d-flex gap-1 flex-wrap">
+                                    {% if materia.lunes %}<span class="badge bg-primary">L</span>{% endif %}
+                                    {% if materia.martes %}<span class="badge bg-primary">M</span>{% endif %}
+                                    {% if materia.miercoles %}<span class="badge bg-primary">M</span>{% endif %}
+                                    {% if materia.jueves %}<span class="badge bg-primary">J</span>{% endif %}
+                                    {% if materia.viernes %}<span class="badge bg-primary">V</span>{% endif %}
+                                    {% if not materia.lunes and not materia.martes and not materia.miercoles and not materia.jueves and not materia.viernes %}
+                                        <span class="text-muted small">Sin días configurados</span>
+                                    {% endif %}
+                                </div>
+                            </td>
+                            {% if user.rol == 'Estudiante' %}
+                            <td>
+                                {% with matricula=materia.matricula %}
+                                {% if matricula %}
+                                    <div class="small">
+                                        {% if matricula.p1 %}
+                                            <div>P1: {{ matricula.p1 }}</div>
+                                        {% endif %}
+                                        {% if matricula.p2 %}
+                                            <div>P2: {{ matricula.p2 }}</div>
+                                        {% endif %}
+                                        {% if matricula.p3 %}
+                                            <div>P3: {{ matricula.p3 }}</div>
+                                        {% endif %}
+                                        {% if matricula.p4 %}
+                                            <div>P4: {{ matricula.p4 }}</div>
+                                        {% endif %}
+                                        {% if matricula.nota_final %}
+                                            <div class="fw-bold">Final: {{ matricula.nota_final }}</div>
+                                        {% endif %}
+                                    </div>
+                                {% else %}
+                                    <span class="text-muted">Sin calificaciones</span>
+                                {% endif %}
+                                {% endwith %}
+                            </td>
+                            {% endif %}
+                            <td>
+                                <div class="btn-group" role="group">
+                                    {% if user.rol == 'Profesor' %}
+                                    <a href="{% url 'matriculas_materia' materia.id %}" class="btn btn-sm btn-info" title="Ver Estudiantes">
+                                        <i class="fas fa-users"></i> Ver Estudiantes
+                                    </a>
+                                    <a href="{% url 'agregar_notas' materia.id %}" class="btn btn-sm btn-success" title="Gestionar Notas">
+                                        <i class="fas fa-chart-line"></i> Gestionar Notas
+                                    </a>
+                                    {% endif %}
+                                    {% if user.rol == 'Administrador' %}
+                                    <a href="{% url 'gestionar_matriculas' materia.id %}" class="btn btn-sm btn-success" title="Gestionar Matrículas">
+                                        <i class="fas fa-user-plus"></i>
+                                    </a>
+                                    <a href="{% url 'editar_materia' materia.id %}" class="btn btn-sm btn-warning" title="Editar">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                    <a href="{% url 'eliminar_materia' materia.id %}" class="btn btn-sm btn-danger" title="Eliminar">
+                                        <i class="fas fa-trash"></i>
+                                    </a>
+                                    {% endif %}
+                                    {% if user.rol == 'Estudiante' %}
+                                    <button type="button" class="btn btn-sm btn-info" data-bs-toggle="modal" data-bs-target="#notasModal{{ materia.id }}" title="Ver Notas">
+                                        <i class="fas fa-graduation-cap"></i> Ver Notas
+                                    </button>
+                                    {% endif %}
+                                </div>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="{% if user.rol == 'Administrador' %}8{% elif user.rol == 'Estudiante' %}7{% else %}6{% endif %}" class="text-center py-4">
+                                <div class="empty-state text-muted">
+                                    <i class="fas fa-book fa-3x mb-3"></i>
+                                    <p class="mb-0">No hay materias registradas.</p>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modales para notas de estudiantes -->
+{% if user.rol == 'Estudiante' %}
+{% for materia in materias %}
+<div class="modal fade" id="notasModal{{ materia.id }}" tabindex="-1" aria-labelledby="notasModalLabel{{ materia.id }}" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="notasModalLabel{{ materia.id }}">Notas - {{ materia.nombre }}</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                {% with matricula=materia.matricula %}
+                <div class="table-responsive">
+                    <table class="table">
+                        <tbody>
+                            <tr>
+                                <th>Periodo 1:</th>
+                                <td class="text-end">
+                                    {% if matricula.prom_comunicativa %}
+                                        {{ matricula.prom_comunicativa|floatformat:1 }}
+                                    {% else %}
+                                        <span class="text-muted">No registrado</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            <tr>
+                                <th>Periodo 2:</th>
+                                <td class="text-end">
+                                    {% if matricula.prom_logico %}
+                                        {{ matricula.prom_logico|floatformat:1 }}
+                                    {% else %}
+                                        <span class="text-muted">No registrado</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            <tr>
+                                <th>Periodo 3:</th>
+                                <td class="text-end">
+                                    {% if matricula.prom_cientifica %}
+                                        {{ matricula.prom_cientifica|floatformat:1 }}
+                                    {% else %}
+                                        <span class="text-muted">No registrado</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            <tr>
+                                <th>Periodo 4:</th>
+                                <td class="text-end">
+                                    {% if matricula.prom_etica %}
+                                        {{ matricula.prom_etica|floatformat:1 }}
+                                    {% else %}
+                                        <span class="text-muted">No registrado</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            <tr class="table-primary">
+                                <th>Promedio Final:</th>
+                                <td class="text-end fw-bold">
+                                    {% if matricula.promedio_final %}
+                                        {{ matricula.promedio_final|floatformat:1 }}
+                                    {% else %}
+                                        <span class="text-muted">No calculado</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            <tr>
+                                <th>Estado:</th>
+                                <td class="text-end">
+                                    {% if matricula.estado == "Aprobado" %}
+                                        <span class="badge bg-success">Aprobado</span>
+                                    {% elif matricula.estado == "Reprobado" %}
+                                        <span class="badge bg-danger">Reprobado</span>
+                                    {% else %}
+                                        <span class="badge bg-secondary">En curso</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                {% endwith %}
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endfor %}
+{% endif %}
+
+{% block extra_js %}
+<script>
+    // Oculta las alertas automáticamente después de 5 segundos
+    document.addEventListener('DOMContentLoaded', function() {
+        setTimeout(function() {
+            var alerts = document.querySelectorAll('.alert');
+            alerts.forEach(function(alert) {
+                var bsAlert = new bootstrap.Alert(alert);
+                bsAlert.close();
+            });
+        }, 5000);
+    });
+</script>
+{% endblock %}
+{% endblock %}

@@ -1,0 +1,57 @@
+{% extends "website/base.html" %}
+
+{% block title %}Reporte General - {{ materia.nombre }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2>Reporte General - {{ materia.nombre }}</h2>
+        <button class="btn btn-primary" onclick="window.print()">
+            <i class="fas fa-print"></i> Imprimir
+        </button>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table table-bordered table-hover">
+            <thead class="table-light text-center">
+                <tr>
+                    <th>Estudiante</th>
+                    <th>Prom. P1</th>
+                    <th>Prom. P2</th>
+                    <th>Prom. P3</th>
+                    <th>Prom. P4</th>
+                    <th>Promedio Final</th>
+                    <th>Estado</th>
+                </tr>
+            </thead>
+            <tbody class="text-center">
+                {% for m in matriculas %}
+                <tr>
+                    <td class="text-start">{{ m.estudiante.get_full_name }}</td>
+                    <td>{{ m.prom_comunicativa|default:"-" }}</td>
+                    <td>{{ m.prom_logico|default:"-" }}</td>
+                    <td>{{ m.prom_cientifica|default:"-" }}</td>
+                    <td>{{ m.prom_etica|default:"-" }}</td>
+                    <td>
+                        {% if m.promedio_final %}
+                            <strong>{{ m.promedio_final|floatformat:1 }}</strong>
+                        {% else %}
+                            <span class="text-muted">En curso</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if m.estado == "Aprobado" %}
+                            <span class="badge bg-success">Aprobado</span>
+                        {% elif m.estado == "Reprobado" %}
+                            <span class="badge bg-danger">Reprobado</span>
+                        {% else %}
+                            <span class="badge bg-warning text-dark">En proceso</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

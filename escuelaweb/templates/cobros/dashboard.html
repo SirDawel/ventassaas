@@ -1,0 +1,587 @@
+{% extends 'website/base.html' %}
+
+{% block title %}{{ titulo }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-3">
+    <!-- Header Section -->
+    <div class="row mb-2">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
+                <div class="page-header">
+                    <h2 class="dashboard-title mb-2">
+                        <i class="fas fa-cash-register me-2"></i>{{ titulo }}
+                    </h2>
+                    <span class="badge bg-success-flat">
+                        <i class="fas fa-calendar-alt me-1"></i>{{ anho_escolar.nombre }}
+                    </span>
+                </div>
+                <div class="header-actions">
+                    <div class="btn-group-modern" role="group">
+                        {% if cliente_generico %}
+                        <a href="{% url 'factura_crear_nueva' %}?estudiante_id={{ cliente_generico.id }}" class="btn btn-success">
+                            <i class="fas fa-plus-circle me-1"></i>Nueva Factura
+                        </a>
+                        {% else %}
+                        <a href="{% url 'factura_crear_nueva' %}?buscar=cliente" class="btn btn-success">
+                            <i class="fas fa-plus-circle me-1"></i>Nueva Factura
+                        </a>
+                        {% endif %}
+                        <a href="{% url 'facturas_list' %}" class="btn btn-primary">
+                            <i class="fas fa-file-invoice me-1"></i>Facturas
+                        </a>
+                        <a href="{% url 'buscar_estudiante_cobro' %}" class="btn btn-info">
+                            <i class="fas fa-user-plus me-1"></i>Estudiante
+                        </a>
+                        <a href="{% url 'reportes_ventas' %}" class="btn btn-warning">
+                            <i class="fas fa-chart-bar me-1"></i>Reportes
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistics Cards -->
+    <div class="row mb-2">
+        <div class="col-xl-3 col-md-6 mb-2">
+            <div class="stat-card bg-primary-flat text-white">
+                <div class="stat-card-body">
+                    <div class="stat-icon">
+                        <i class="fas fa-dollar-sign"></i>
+                    </div>
+                    <div class="stat-content">
+                        <div class="stat-label">Total Recaudado</div>
+                        <div class="stat-value" data-target="{{ total_recaudado }}">RD$0.00</div>
+                    </div>
+                </div>
+                <div class="stat-card-footer">
+                    <i class="fas fa-calendar-check me-1"></i>
+                    <span>Año Escolar Actual</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-2">
+            <div class="stat-card bg-success-flat text-white">
+                <div class="stat-card-body">
+                    <div class="stat-icon">
+                        <i class="fas fa-check-circle"></i>
+                    </div>
+                    <div class="stat-content">
+                        <div class="stat-label">Pagos Completados</div>
+                        <div class="stat-value" data-target="{{ pagos_completados }}">0</div>
+                    </div>
+                </div>
+                <div class="stat-card-footer">
+                    <i class="fas fa-coins me-1"></i>
+                    <span>Transacciones exitosas</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-2">
+            <div class="stat-card bg-warning-flat text-white">
+                <div class="stat-card-body">
+                    <div class="stat-icon">
+                        <i class="fas fa-exclamation-circle"></i>
+                    </div>
+                    <div class="stat-content">
+                        <div class="stat-label">Pagos Pendientes</div>
+                        <div class="stat-value" data-target="{{ pagos_pendientes }}">0</div>
+                    </div>
+                </div>
+                <div class="stat-card-footer">
+                    <i class="fas fa-hourglass-half me-1"></i>
+                    <span>En proceso de cobro</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-2">
+            <div class="stat-card bg-info-flat text-white">
+                <div class="stat-card-body">
+                    <div class="stat-icon">
+                        <i class="fas fa-receipt"></i>
+                    </div>
+                    <div class="stat-content">
+                        <div class="stat-label">Total de Pagos</div>
+                        <div class="stat-value" data-target="{{ total_pagos }}">0</div>
+                    </div>
+                </div>
+                <div class="stat-card-footer">
+                    <i class="fas fa-database me-1"></i>
+                    <span>Base de datos completa</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Últimos pagos -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="m-0">
+                            <i class="fas fa-list me-2"></i>Últimos Pagos Registrados
+                        </h5>
+                        <span class="badge bg-light text-primary">{{ ultimos_pagos|length }} registros</span>
+                    </div>
+                </div>
+                <div class="card-body p-0">
+                    {% if ultimos_pagos %}
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead>
+                                <tr>
+                                    <th><i class="fas fa-calendar me-2"></i>Fecha</th>
+                                    <th><i class="fas fa-user me-2"></i>Estudiante</th>
+                                    <th><i class="fas fa-tag me-2"></i>Concepto</th>
+                                    <th><i class="fas fa-dollar-sign me-2"></i>Monto</th>
+                                    <th><i class="fas fa-toggle-on me-2"></i>Estado</th>
+                                    <th><i class="fas fa-cogs me-2"></i>Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for pago in ultimos_pagos %}
+                                <tr>
+                                    <td>{{ pago.fecha_registro|date:"d/m/Y H:i" }}</td>
+                                    <td>
+                                        <strong>{{ pago.estudiante.get_full_name }}</strong>
+                                        <br><small class="text-muted">{{ pago.estudiante.email }}</small>
+                                    </td>
+                                    <td>
+                                        {{ pago.concepto.nombre }}
+                                        {% if pago.mes %}
+                                        <br><small class="text-muted">Mes: {{ pago.mes }}/{{ pago.anio }}</small>
+                                        {% endif %}
+                                    </td>
+                                    <td><strong class="text-success">RD${{ pago.monto_total|floatformat:2 }}</strong></td>
+                                    <td>
+                                        {% if pago.estado == 'pagado' %}
+                                        <span class="badge bg-success"><i class="fas fa-check-circle me-1"></i>Pagado</span>
+                                        {% elif pago.estado == 'parcial' %}
+                                        <span class="badge bg-warning"><i class="fas fa-clock me-1"></i>Parcial</span>
+                                        {% elif pago.estado == 'pendiente' %}
+                                        <span class="badge bg-danger"><i class="fas fa-exclamation-circle me-1"></i>Pendiente</span>
+                                        {% else %}
+                                        <span class="badge bg-secondary">{{ pago.get_estado_display }}</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <div class="btn-group btn-group-sm" role="group">
+                                            <button class="btn btn-info" title="Ver detalle">
+                                                <i class="fas fa-eye"></i>
+                                            </button>
+                                            {% if pago.estado != 'pagado' %}
+                                            <button class="btn btn-success" title="Registrar pago">
+                                                <i class="fas fa-money-bill"></i>
+                                            </button>
+                                            {% endif %}
+                                            <button class="btn btn-secondary" title="Imprimir recibo">
+                                                <i class="fas fa-print"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="alert alert-info m-3">
+                        <i class="fas fa-info-circle me-2"></i>
+                        No hay pagos registrados aún.
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Acciones rápidas -->
+    <div class="row mt-3">
+        <div class="col-md-4 mb-3">
+            <div class="action-card bg-primary-flat text-white">
+                <div class="action-card-inner">
+                    <div class="action-card-icon">
+                        <i class="fas fa-calendar-alt"></i>
+                    </div>
+                    <h5 class="action-card-title">Mensualidades</h5>
+                    <p class="action-card-text">Gestionar cobro de mensualidades del año escolar</p>
+                    <a href="#" class="btn btn-light">Ir a Mensualidades <i class="fas fa-arrow-right ms-2"></i></a>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4 mb-3">
+            <div class="action-card bg-success-flat text-white">
+                <div class="action-card-inner">
+                    <div class="action-card-icon">
+                        <i class="fas fa-shopping-cart"></i>
+                    </div>
+                    <h5 class="action-card-title">Artículos y Servicios</h5>
+                    <p class="action-card-text">Registrar venta de papelería y otros servicios</p>
+                    <a href="#" class="btn btn-light">Ir a Ventas <i class="fas fa-arrow-right ms-2"></i></a>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4 mb-3">
+            <div class="action-card bg-info-flat text-white">
+                <div class="action-card-inner">
+                    <div class="action-card-icon">
+                        <i class="fas fa-chart-line"></i>
+                    </div>
+                    <h5 class="action-card-title">Reportes</h5>
+                    <p class="action-card-text">Ver estadísticas y generar reportes de ventas</p>
+                    <a href="{% url 'reportes_ventas' %}" class="btn btn-light">Ver Reportes <i class="fas fa-arrow-right ms-2"></i></a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+/* ===== FLAT BUSINESS DESIGN ===== */
+.container-fluid {
+    padding: 0.8rem 1rem;
+}
+
+.mt-3 {
+    margin-top: 0.8rem !important;
+}
+
+.mb-2 {
+    margin-bottom: 0.5rem !important;
+}
+
+.mb-3 {
+    margin-bottom: 0.8rem !important;
+}
+
+/* ===== HEADER ===== */
+.page-header {
+    margin-bottom: 0.5rem;
+}
+
+.dashboard-title {
+    font-weight: 600;
+    font-size: 1.75rem;
+    color: #2c3e50;
+    margin: 0 0 0.5rem 0;
+}
+
+.badge {
+    border-radius: 3px;
+    padding: 0.35rem 0.6rem;
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 0.3px;
+}
+
+.bg-success-flat {
+    background-color: #4caf50;
+}
+
+.bg-light {
+    background-color: #f8fafc !important;
+    color: #475569 !important;
+}
+
+.text-primary {
+    color: #5c6bc0 !important;
+}
+
+/* ===== BUTTONS ===== */
+.btn {
+    border-radius: 4px;
+    font-weight: 500;
+    padding: 0.5rem 1rem;
+    font-size: 0.875rem;
+    border: none;
+    transition: none;
+}
+
+.btn-sm {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.8rem;
+}
+
+.btn-primary {
+    background-color: #5c6bc0;
+}
+
+.btn-primary:hover {
+    background-color: #4a5ab3;
+}
+
+.btn-success {
+    background-color: #4caf50;
+}
+
+.btn-success:hover {
+    background-color: #43a047;
+}
+
+.btn-info {
+    background-color: #29b6f6;
+}
+
+.btn-info:hover {
+    background-color: #1da9e6;
+}
+
+.btn-warning {
+    background-color: #ff9800;
+}
+
+.btn-warning:hover {
+    background-color: #f57c00;
+}
+
+.btn-secondary {
+    background-color: #78909c;
+}
+
+.btn-secondary:hover {
+    background-color: #607d8b;
+}
+
+.btn-group-modern {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+/* ===== STATS CARDS ===== */
+.stat-card {
+    border-radius: 4px;
+    overflow: hidden;
+    background: white;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.08);
+    border: 1px solid #e2e8f0;
+}
+
+.bg-primary-flat {
+    background-color: #5c6bc0 !important;
+}
+
+.bg-success-flat {
+    background-color: #4caf50 !important;
+}
+
+.bg-warning-flat {
+    background-color: #ff9800 !important;
+}
+
+.bg-info-flat {
+    background-color: #29b6f6 !important;
+}
+
+.stat-card-body {
+    padding: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.stat-icon {
+    width: 50px;
+    height: 50px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 4px;
+    background: rgba(255,255,255,0.2);
+}
+
+.stat-icon i {
+    font-size: 1.5rem;
+    color: white;
+}
+
+.stat-content {
+    flex: 1;
+    color: white;
+}
+
+.stat-label {
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    opacity: 0.9;
+    margin-bottom: 0.4rem;
+}
+
+.stat-value {
+    font-size: 1.75rem;
+    font-weight: 700;
+}
+
+.stat-card-footer {
+    padding: 0.5rem 1rem;
+    background: rgba(0,0,0,0.15);
+    font-size: 0.8rem;
+    color: white;
+}
+
+/* ===== CARD ===== */
+.card {
+    border-radius: 4px;
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.08);
+}
+
+.card-header {
+    border-radius: 4px 4px 0 0;
+    padding: 0.8rem 1rem;
+    border-bottom: 1px solid rgba(255,255,255,0.15);
+}
+
+.card-body {
+    padding: 0;
+}
+
+/* ===== TABLE ===== */
+.table {
+    font-size: 0.875rem;
+    margin-bottom: 0;
+}
+
+.table thead {
+    background-color: #f8fafc;
+}
+
+.table thead th {
+    border-bottom: 2px solid #e2e8f0;
+    padding: 0.6rem 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    font-size: 0.75rem;
+    letter-spacing: 0.5px;
+    color: #475569;
+}
+
+.table tbody td {
+    padding: 0.7rem 0.75rem;
+    vertical-align: middle;
+    border-bottom: 1px solid #f1f5f9;
+}
+
+.table-hover tbody tr:hover {
+    background-color: #f8fafc;
+}
+
+/* ===== ACTION CARDS ===== */
+.action-card {
+    border-radius: 4px;
+    overflow: hidden;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.08);
+    height: 100%;
+}
+
+.action-card-inner {
+    padding: 1.5rem;
+    text-align: center;
+}
+
+.action-card-icon {
+    width: 70px;
+    height: 70px;
+    margin: 0 auto 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 4px;
+    background: rgba(255,255,255,0.2);
+}
+
+.action-card-icon i {
+    font-size: 2rem;
+    color: white;
+}
+
+.action-card-title {
+    color: white;
+    font-weight: 600;
+    font-size: 1.25rem;
+    margin-bottom: 0.8rem;
+}
+
+.action-card-text {
+    color: rgba(255,255,255,0.95);
+    font-size: 0.875rem;
+    margin-bottom: 1.5rem;
+    line-height: 1.5;
+}
+
+.action-card .btn-light {
+    background: white;
+    color: #2c3e50;
+    font-weight: 600;
+}
+
+.alert {
+    border-radius: 4px;
+    border: none;
+}
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Animación de contadores
+    const animateValue = (element, start, end, duration) => {
+        const isDecimal = element.textContent.includes('RD$');
+        const range = end - start;
+        const increment = range / (duration / 16);
+        let current = start;
+        
+        const timer = setInterval(() => {
+            current += increment;
+            if ((increment > 0 && current >= end) || (increment < 0 && current <= end)) {
+                current = end;
+                clearInterval(timer);
+            }
+            
+            if (isDecimal) {
+                element.textContent = 'RD$' + current.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+            } else {
+                element.textContent = Math.floor(current).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+            }
+        }, 16);
+    };
+    
+    // Iniciar animación para cada stat-value
+    document.querySelectorAll('.stat-value[data-target]').forEach(element => {
+        const target = parseFloat(element.getAttribute('data-target'));
+        animateValue(element, 0, target, 2000);
+    });
+    
+    // Efecto hover en action cards
+    document.querySelectorAll('.action-card').forEach(card => {
+        card.addEventListener('mouseenter', function() {
+            this.style.transform = 'translateY(-5px)';
+            this.style.transition = 'transform 0.3s ease';
+        });
+        
+        card.addEventListener('mouseleave', function() {
+            this.style.transform = 'translateY(0)';
+        });
+    });
+    
+    // Auto-refresh de datos cada 30 segundos (opcional)
+    let refreshInterval = setInterval(() => {
+        // Aquí puedes agregar lógica para actualizar datos via AJAX
+        console.log('Datos actualizados:', new Date().toLocaleTimeString());
+    }, 30000);
+    
+    // Limpiar interval al salir de la página
+    window.addEventListener('beforeunload', () => {
+        clearInterval(refreshInterval);
+    });
+});
+</script>
+{% endblock %}

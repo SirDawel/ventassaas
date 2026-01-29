@@ -1,0 +1,167 @@
+{% extends 'website/base.html' %}
+
+{% block title %}{{ titulo }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h4>{{ titulo }}</h4>
+            <a href="{% url 'ver_grupo' grupo.id %}" class="btn btn-secondary">
+                <i class="fas fa-arrow-left"></i> Volver al Grupo
+            </a>
+        </div>
+        <div class="card-body">
+            <div class="alert alert-info">
+                <strong>Grupo:</strong> {{ grupo.nombre }} — {{ grupo.grado }} {{ grupo.seccion }} — 
+                <strong>{{ grupo.estudiantes.count }}</strong> estudiante(s) actualmente
+            </div>
+
+            <form method="get" class="row g-2 mb-3">
+                <div class="col-md-2">
+                    <input type="text" name="nombre" value="{{ query_nombre }}" class="form-control" placeholder="Nombre" />
+                </div>
+                <div class="col-md-2">
+                    <input type="text" name="apellido" value="{{ query_apellido }}" class="form-control" placeholder="Apellido" />
+                </div>
+                <div class="col-md-2">
+                    <input type="text" name="email" value="{{ query_email|default:'' }}" class="form-control" placeholder="Email" />
+                </div>
+                <div class="col-md-2">
+                    <input type="text" name="cedula" value="{{ query_cedula|default:'' }}" class="form-control" placeholder="Cédula" />
+                </div>
+                <div class="col-md-2">
+                    <select name="grado" class="form-select">
+                        <option value="">-- Grado --</option>
+                        {% for g in grados %}
+                        <option value="{{ g }}" {% if g == query_grado %}selected{% endif %}>{{ g }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-1">
+                    <select name="seccion" class="form-select">
+                        <option value="">-- Secc --</option>
+                        {% for s in secciones %}
+                        <option value="{{ s }}" {% if s == query_seccion %}selected{% endif %}>{{ s }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-1">
+                    <button class="btn btn-primary w-100" type="submit">Buscar</button>
+                </div>
+            </form>
+
+            <form method="post">
+                {% csrf_token %}
+                <div class="d-flex justify-content-between mb-2 align-items-center">
+                    <div>
+                        <input type="checkbox" class="btn-check" id="select_page_chk" autocomplete="off">
+                        <label class="btn btn-sm btn-outline-primary" for="select_page_chk" id="select_page_label">Seleccionar todo</label>
+                    </div>
+                    <button class="btn btn-success" type="submit">
+                        <i class="fas fa-plus"></i> Agregar seleccionados al grupo
+                    </button>
+                </div>
+
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>
+                                    <input type="checkbox" id="select_all_header" title="Seleccionar/Deseleccionar todo">
+                                </th>
+                                <th>Nombre</th>
+                                <th>Email</th>
+                                <th>Cédula</th>
+                                <th>Grado</th>
+                                <th>Sección</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for est in estudiantes %}
+                            <tr>
+                                <td>
+                                    <input type="checkbox" name="estudiantes" value="{{ est.id }}" class="estudiante-chk">
+                                </td>
+                                <td>{{ est.get_full_name }}</td>
+                                <td>{{ est.email }}</td>
+                                <td>{{ est.cedula }}</td>
+                                <td>{{ est.grado }}</td>
+                                <td>{{ est.seccion }}</td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="6" class="text-center text-muted">
+                                    No se encontraron estudiantes disponibles para agregar.
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Paginación -->
+                {% if page_obj.has_other_pages %}
+                <nav aria-label="Page navigation">
+                    <ul class="pagination justify-content-center">
+                        {% if page_obj.has_previous %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ page_obj.previous_page_number }}&nombre={{ query_nombre }}&apellido={{ query_apellido }}&email={{ query_email }}&cedula={{ query_cedula }}&grado={{ query_grado }}&seccion={{ query_seccion }}&per_page={{ per_page }}">Anterior</a>
+                        </li>
+                        {% endif %}
+                        <li class="page-item disabled">
+                            <span class="page-link">Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}</span>
+                        </li>
+                        {% if page_obj.has_next %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ page_obj.next_page_number }}&nombre={{ query_nombre }}&apellido={{ query_apellido }}&email={{ query_email }}&cedula={{ query_cedula }}&grado={{ query_grado }}&seccion={{ query_seccion }}&per_page={{ per_page }}">Siguiente</a>
+                        </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+                {% endif %}
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const selectAllHeader = document.getElementById('select_all_header');
+    const selectPageChk = document.getElementById('select_page_chk');
+    const selectPageLabel = document.getElementById('select_page_label');
+    const estudianteCheckboxes = document.querySelectorAll('.estudiante-chk');
+
+    function updatePageCheckboxState() {
+        const allChecked = Array.from(estudianteCheckboxes).every(chk => chk.checked);
+        const anyChecked = Array.from(estudianteCheckboxes).some(chk => chk.checked);
+        
+        selectPageChk.checked = allChecked && estudianteCheckboxes.length > 0;
+        selectPageChk.indeterminate = anyChecked && !allChecked;
+        selectAllHeader.checked = allChecked && estudianteCheckboxes.length > 0;
+        selectAllHeader.indeterminate = anyChecked && !allChecked;
+        
+        selectPageLabel.textContent = allChecked ? 'Deseleccionar todo' : 'Seleccionar todo';
+        selectPageChk.title = allChecked ? 'Deseleccionar todo' : 'Seleccionar todo';
+    }
+
+    selectAllHeader.addEventListener('change', function() {
+        const isChecked = this.checked;
+        estudianteCheckboxes.forEach(chk => chk.checked = isChecked);
+        updatePageCheckboxState();
+    });
+
+    selectPageChk.addEventListener('change', function() {
+        const isChecked = this.checked;
+        estudianteCheckboxes.forEach(chk => chk.checked = isChecked);
+        updatePageCheckboxState();
+    });
+
+    estudianteCheckboxes.forEach(chk => {
+        chk.addEventListener('change', updatePageCheckboxState);
+    });
+
+    updatePageCheckboxState();
+});
+</script>
+{% endblock %}

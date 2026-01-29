@@ -1,0 +1,286 @@
+{% extends 'website/base.html' %}
+{% load static %}
+{% load custom_filters %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <a href="{% url 'ponchar_asistencia' %}" class="btn btn-success me-2">
+                <i class="fas fa-barcode"></i> Ponchar con Código de Barras
+            </a>
+            <a href="{% url 'pasar_lista_personal' %}" class="btn btn-primary me-2">
+                <i class="fas fa-clipboard-check"></i> Pasar Lista Manual
+            </a>
+            <a href="{% url 'generar_codigos_barras' %}" class="btn btn-warning me-2">
+                <i class="fas fa-qrcode"></i> Gestionar Códigos
+            </a>
+            <a href="{% url 'historial_asistencia_general' %}" class="btn btn-info">
+                <i class="fas fa-chart-pie"></i> Estadísticas Generales
+            </a>
+        </div>
+    </div>
+
+    <!-- Filtros -->
+    <div class="card shadow mb-4">
+        <div class="card-header bg-primary text-white">
+            <div class="d-flex justify-content-between align-items-center">
+                <h4 class="mb-0">
+                    <i class="fas fa-chart-bar me-2"></i>{{ titulo }}
+                </h4>
+                <span class="badge bg-success fs-6">
+                    <i class="fas fa-calendar-alt"></i> {{ anho_escolar.nombre }}
+                </span>
+            </div>
+        </div>
+        <div class="card-body">
+            <form method="GET" class="row g-3">
+                <div class="col-md-5">
+                    <label class="form-label"><i class="fas fa-calendar-alt"></i> Mes</label>
+                    <select name="mes" class="form-select">
+                        <option value="1" {% if mes == 1 %}selected{% endif %}>Enero</option>
+                        <option value="2" {% if mes == 2 %}selected{% endif %}>Febrero</option>
+                        <option value="3" {% if mes == 3 %}selected{% endif %}>Marzo</option>
+                        <option value="4" {% if mes == 4 %}selected{% endif %}>Abril</option>
+                        <option value="5" {% if mes == 5 %}selected{% endif %}>Mayo</option>
+                        <option value="6" {% if mes == 6 %}selected{% endif %}>Junio</option>
+                        <option value="7" {% if mes == 7 %}selected{% endif %}>Julio</option>
+                        <option value="8" {% if mes == 8 %}selected{% endif %}>Agosto</option>
+                        <option value="9" {% if mes == 9 %}selected{% endif %}>Septiembre</option>
+                        <option value="10" {% if mes == 10 %}selected{% endif %}>Octubre</option>
+                        <option value="11" {% if mes == 11 %}selected{% endif %}>Noviembre</option>
+                        <option value="12" {% if mes == 12 %}selected{% endif %}>Diciembre</option>
+                    </select>
+                </div>
+                <div class="col-md-5">
+                    <label class="form-label"><i class="fas fa-calendar"></i> Año</label>
+                    <select name="anho" class="form-select">
+                        {% for a in anhos_disponibles %}
+                        <option value="{{ a }}" {% if a == anho %}selected{% endif %}>{{ a }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-2 d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="fas fa-filter"></i> Filtrar
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Registro de Asistencia Mensual -->
+    {% if personal_asistencia %}
+    <div class="card registro-asistencia shadow">
+        <div class="card-header bg-light d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">
+                <i class="fas fa-table"></i> Registro de {{ nombre_mes }} {{ anho }}
+            </h5>
+            <span class="badge bg-primary">{{ total_dias_trabajados }} días</span>
+        </div>
+        <div class="card-body p-0">
+            <!-- Tabla de Asistencia -->
+            <div class="table-responsive">
+                <table class="table table-bordered table-hover mb-0 asistencia-table">
+                    <thead class="table-light sticky-top">
+                        <tr>
+                            <th class="sticky-col">#</th>
+                            <th class="sticky-col-2">Nombre</th>
+                            <th class="sticky-col-3">Rol</th>
+                            {% for dia in dias_trabajados %}
+                            <th class="text-center dia-header">{{ dia }}</th>
+                            {% endfor %}
+                            <th class="text-center total-header bg-success text-white">P</th>
+                            <th class="text-center total-header bg-danger text-white">A</th>
+                            <th class="text-center total-header bg-warning">T</th>
+                            <th class="text-center total-header bg-info">PE</th>
+                            <th class="text-center total-header bg-primary text-white">Total</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in personal_asistencia %}
+                        <tr>
+                            <td class="text-center sticky-col">
+                                <span class="badge bg-secondary rounded-circle" 
+                                      style="width: 30px; height: 30px; display: inline-flex; align-items: center; justify-content: center; font-size: 14px;">
+                                    {{ item.numero }}
+                                </span>
+                            </td>
+                            <td class="sticky-col-2 student-name">
+                                <strong>{{ item.persona.get_full_name }}</strong>
+                                <br><small class="text-muted">{{ item.persona.email }}</small>
+                            </td>
+                            <td class="sticky-col-3">
+                                <span class="badge bg-info">{{ item.persona.rol }}</span>
+                            </td>
+                            {% for dia in dias_trabajados %}
+                            <td class="text-center asistencia-cell {{ item.asistencias|get_item:dia }}">
+                                {% if item.asistencias|get_item:dia == 'presente' %}
+                                    <i class="fas fa-check text-success"></i>
+                                {% elif item.asistencias|get_item:dia == 'ausente' %}
+                                    <i class="fas fa-times text-danger"></i>
+                                {% elif item.asistencias|get_item:dia == 'tardanza' %}
+                                    <i class="fas fa-clock text-warning"></i>
+                                {% elif item.asistencias|get_item:dia == 'permiso' %}
+                                    <i class="fas fa-file-alt text-info"></i>
+                                {% else %}
+                                    <span class="text-muted">-</span>
+                                {% endif %}
+                            </td>
+                            {% endfor %}
+                            <td class="text-center fw-bold total-cell bg-success bg-opacity-10">{{ item.total_presente }}</td>
+                            <td class="text-center fw-bold total-cell bg-danger bg-opacity-10">{{ item.total_ausente }}</td>
+                            <td class="text-center fw-bold total-cell bg-warning bg-opacity-10">{{ item.total_tardanza }}</td>
+                            <td class="text-center fw-bold total-cell bg-info bg-opacity-10">{{ item.total_permiso }}</td>
+                            <td class="text-center fw-bold total-cell bg-primary bg-opacity-10">{{ item.total_asistencias }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Leyenda -->
+            <div class="card-footer bg-light">
+                <div class="row text-center">
+                    <div class="col">
+                        <strong>Leyenda:</strong>
+                    </div>
+                    <div class="col">
+                        <i class="fas fa-check text-success"></i> Presente
+                    </div>
+                    <div class="col">
+                        <i class="fas fa-times text-danger"></i> Ausente
+                    </div>
+                    <div class="col">
+                        <i class="fas fa-clock text-warning"></i> Tardanza
+                    </div>
+                    <div class="col">
+                        <i class="fas fa-file-alt text-info"></i> Permiso
+                    </div>
+                    <div class="col">
+                        <strong>Total Personal:</strong>
+                        <span class="badge bg-primary fs-6">{{ personal_asistencia|length }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <div class="alert alert-info">
+        <i class="fas fa-info-circle"></i>
+        <strong>Sin registros</strong>
+        <p class="mb-0">No hay registros de asistencia para el mes seleccionado.</p>
+    </div>
+    {% endif %}
+</div>
+
+<style>
+    .registro-asistencia {
+        margin-bottom: 2rem;
+    }
+
+    .asistencia-table {
+        font-size: 0.9rem;
+    }
+
+    .asistencia-table th,
+    .asistencia-table td {
+        padding: 0.75rem 0.5rem;
+        white-space: nowrap;
+    }
+
+    .dia-header {
+        min-width: 40px;
+        background-color: #f8f9fa;
+        font-weight: bold;
+    }
+
+    .total-header {
+        min-width: 50px;
+        font-weight: bold;
+        position: sticky;
+        right: 0;
+    }
+
+    .asistencia-cell {
+        min-width: 40px;
+        transition: all 0.3s ease;
+    }
+
+    .asistencia-cell.presente {
+        background-color: #d1e7dd;
+    }
+
+    .asistencia-cell.ausente {
+        background-color: #f8d7da;
+    }
+
+    .asistencia-cell.tardanza {
+        background-color: #fff3cd;
+    }
+
+    .asistencia-cell.permiso {
+        background-color: #cff4fc;
+    }
+
+    .total-cell {
+        font-size: 1rem;
+    }
+
+    .sticky-col {
+        position: sticky;
+        left: 0;
+        background-color: white;
+        z-index: 10;
+        box-shadow: 2px 0 5px rgba(0,0,0,0.1);
+    }
+
+    .sticky-col-2 {
+        position: sticky;
+        left: 60px;
+        background-color: white;
+        z-index: 10;
+        box-shadow: 2px 0 5px rgba(0,0,0,0.1);
+        min-width: 200px;
+    }
+
+    .sticky-col-3 {
+        position: sticky;
+        left: 260px;
+        background-color: white;
+        z-index: 10;
+        box-shadow: 2px 0 5px rgba(0,0,0,0.1);
+        min-width: 100px;
+    }
+
+    thead.sticky-top {
+        position: sticky;
+        top: 0;
+        z-index: 20;
+    }
+
+    .student-name {
+        text-align: left;
+    }
+
+    @media (max-width: 768px) {
+        .asistencia-table {
+            font-size: 0.75rem;
+        }
+
+        .asistencia-table th,
+        .asistencia-table td {
+            padding: 0.5rem 0.25rem;
+        }
+    }
+
+    .asistencia-cell {
+        cursor: default;
+    }
+
+    .asistencia-cell:hover {
+        transform: scale(1.1);
+        box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+    }
+</style>
+{% endblock %}

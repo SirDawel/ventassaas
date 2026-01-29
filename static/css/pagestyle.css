@@ -1,0 +1,33 @@
+
+@media print {
+    body {
+        margin: 0;
+        padding: 0;
+        font-size: 12px; /* Texto más compacto */
+    }
+
+    .container {
+        width: 100%;
+        max-width: 100%;
+    }
+
+    .card {
+        page-break-inside: avoid; /* Evita que una card se corte a mitad de página */
+    }
+
+    table {
+        width: 100%;
+        font-size: 11px;
+    }
+
+    th, td {
+        white-space: nowrap; /* evita que se rompa texto largo */
+        padding: 4px;
+    }
+
+    /* Ocultar botones al imprimir */
+    .btn, .card-header button {
+        display: none !important;
+    }
+}
+

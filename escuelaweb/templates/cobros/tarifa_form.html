@@ -1,0 +1,89 @@
+{% extends 'website/base.html' %}
+{% block content %}
+<div class="container mt-3">
+  <h4>{{ titulo }}</h4>
+  
+  {% if requiere_codigo %}
+  <div class="alert alert-warning">
+    <i class="fas fa-shield-alt me-2"></i>
+    <strong>Código de Seguridad Requerido</strong>
+    <p class="mb-0 small">Como Secretaria, debe ingresar el código de seguridad mensual para crear o editar tarifas. Solicite el código al Administrador.</p>
+  </div>
+  {% endif %}
+  
+  <form method="post">
+    {% csrf_token %}
+    {% if return_to %}
+    <input type="hidden" name="return_to" value="{{ return_to }}">
+    {% endif %}
+    
+    {% if requiere_codigo %}
+    <div class="card mb-3 {% if error_codigo %}border-danger{% else %}border-warning{% endif %}">
+      <div class="card-header bg-warning text-dark">
+        <i class="fas fa-key me-2"></i>Código de Seguridad
+      </div>
+      <div class="card-body">
+        <div class="mb-0">
+          <label for="codigo_seguridad" class="form-label">
+            Código de Seguridad <span class="text-danger">*</span>
+          </label>
+          <input type="text" class="form-control {% if error_codigo %}is-invalid{% endif %}" 
+                 id="codigo_seguridad" name="codigo_seguridad" required 
+                 placeholder="Ingrese el código mensual"
+                 maxlength="10">
+          {% if error_codigo %}
+          <div class="invalid-feedback">
+            Código incorrecto. Verifique con el Administrador.
+          </div>
+          {% else %}
+          <small class="text-muted">
+            <i class="fas fa-info-circle me-1"></i>Solicite el código mensual al Administrador
+          </small>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+    {% endif %}
+    
+    <div class="mb-3">
+      {{ form.estudiante.label_tag }}
+      {{ form.estudiante }}
+      {% if form.estudiante.errors %}
+        <div class="text-danger">{{ form.estudiante.errors }}</div>
+      {% endif %}
+    </div>
+    <div class="mb-3">
+      {{ form.concepto.label_tag }}
+      {{ form.concepto }}
+      <small class="form-text text-muted">Solo mensualidad, inscripción o transporte</small>
+      {% if form.concepto.errors %}
+        <div class="text-danger">{{ form.concepto.errors }}</div>
+      {% endif %}
+    </div>
+    <div class="mb-3">
+      {{ form.monto.label_tag }}
+      {{ form.monto }}
+      {% if form.monto.errors %}
+        <div class="text-danger">{{ form.monto.errors }}</div>
+      {% endif %}
+    </div>
+    <div class="mb-3">
+      {{ form.observaciones.label_tag }}
+      {{ form.observaciones }}
+      <small class="form-text text-muted">Ej: Para transporte indica "Zona cercana" o "Zona lejana"</small>
+      {% if form.observaciones.errors %}
+        <div class="text-danger">{{ form.observaciones.errors }}</div>
+      {% endif %}
+    </div>
+    <div class="form-check mb-3">
+      {{ form.activo }} {{ form.activo.label_tag }}
+    </div>
+    <button class="btn btn-primary">
+      <i class="fas fa-save me-1"></i>Guardar
+    </button>
+    <a href="{% url 'tarifas_list' %}" class="btn btn-secondary">
+      <i class="fas fa-times me-1"></i>Cancelar
+    </a>
+  </form>
+</div>
+{% endblock %}

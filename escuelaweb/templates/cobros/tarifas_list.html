@@ -1,0 +1,116 @@
+{% extends 'website/base.html' %}
+{% block content %}
+<div class="container mt-3">
+  
+  {% if user.rol == 'Administrador' %}
+  <!-- Sección de Conceptos Estándar (Solo Administrador) -->
+  <div class="card mb-4 border-primary">
+    <div class="card-header bg-primary text-white">
+      <div class="d-flex justify-content-between align-items-center">
+        <h5 class="mb-0">
+          <i class="fas fa-cog me-2"></i>Conceptos de Pago (Tarifas Estándar)
+        </h5>
+        <a href="{% url 'conceptos_list' %}" class="btn btn-light btn-sm">
+          <i class="fas fa-eye me-1"></i>Ver Todos
+        </a>
+      </div>
+    </div>
+    <div class="card-body">
+      <p class="text-muted small mb-2">
+        <i class="fas fa-info-circle me-1"></i>
+        Configure aquí los montos base para mensualidad, inscripción y transporte. 
+        Estos valores se utilizan como referencia al crear tarifas para estudiantes.
+      </p>
+      <a href="{% url 'concepto_create' %}" class="btn btn-primary btn-sm">
+        <i class="fas fa-plus me-1"></i>Nuevo Concepto
+      </a>
+    </div>
+  </div>
+  {% endif %}
+  
+  <!-- Sección de Tarifas por Estudiante -->
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h4><i class="fas fa-users me-2"></i>Tarifas por Estudiante</h4>
+    <a href="{% url 'tarifa_create' %}" class="btn btn-primary">
+      <i class="fas fa-plus me-1"></i>Crear Tarifa
+    </a>
+  </div>
+  <table class="table table-striped">
+    <thead>
+      <tr>
+        <th>Estudiante</th>
+        <th>Mensualidad</th>
+        <th>Inscripción</th>
+        <th>Transporte</th>
+        <th>Acciones</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for grupo in tarifas %}
+      <tr>
+        <td><strong>{{ grupo.estudiante.get_full_name }}</strong></td>
+        <td>
+          {% if grupo.mensualidad %}
+            <span class="badge bg-primary">RD${{ grupo.mensualidad.monto|floatformat:2 }}</span>
+          {% else %}
+            <span class="text-muted">-</span>
+          {% endif %}
+        </td>
+        <td>
+          {% if grupo.inscripcion %}
+            <span class="badge bg-success">RD${{ grupo.inscripcion.monto|floatformat:2 }}</span>
+          {% else %}
+            <span class="text-muted">-</span>
+          {% endif %}
+        </td>
+        <td>
+          {% if grupo.transporte %}
+            <span class="badge bg-warning text-dark">RD${{ grupo.transporte.monto|floatformat:2 }}</span>
+            {% if grupo.transporte.observaciones %}
+              <br><small class="text-muted">{{ grupo.transporte.observaciones }}</small>
+            {% endif %}
+          {% else %}
+            <span class="text-muted">-</span>
+          {% endif %}
+        </td>
+        <td>
+          <div class="btn-group btn-group-sm" role="group">
+            {% if grupo.mensualidad %}
+            <a href="{% url 'tarifa_edit' grupo.mensualidad.pk %}" class="btn btn-outline-primary" title="Editar Mensualidad">
+              <i class="fas fa-calendar"></i>
+            </a>
+            {% endif %}
+            {% if grupo.inscripcion %}
+            <a href="{% url 'tarifa_edit' grupo.inscripcion.pk %}" class="btn btn-outline-success" title="Editar Inscripción">
+              <i class="fas fa-graduation-cap"></i>
+            </a>
+            {% endif %}
+            {% if grupo.transporte %}
+            <a href="{% url 'tarifa_edit' grupo.transporte.pk %}" class="btn btn-outline-warning" title="Editar Transporte">
+              <i class="fas fa-bus"></i>
+            </a>
+            {% endif %}
+            <a href="{% url 'tarifa_create' %}?estudiante={{ grupo.estudiante.id }}" class="btn btn-outline-secondary" title="Agregar Tarifa">
+              <i class="fas fa-plus"></i>
+            </a>
+          </div>
+        </td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="5" class="text-center text-muted">No hay tarifas registradas.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  <nav>
+    <ul class="pagination">
+      {% if tarifas.has_previous %}
+        <li class="page-item"><a class="page-link" href="?page={{ tarifas.previous_page_number }}">Anterior</a></li>
+      {% endif %}
+      <li class="page-item disabled"><span class="page-link">Página {{ tarifas.number }} de {{ tarifas.paginator.num_pages }}</span></li>
+      {% if tarifas.has_next %}
+        <li class="page-item"><a class="page-link" href="?page={{ tarifas.next_page_number }}">Siguiente</a></li>
+      {% endif %}
+    </ul>
+  </nav>
+</div>
+{% endblock %}

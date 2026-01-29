@@ -1,0 +1,38 @@
+{% extends 'website/base.html' %}
+
+{% block title %}{{ titulo }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between mb-3">
+        <h3>{{ titulo }}</h3>
+        <div class="d-flex gap-2">
+            <a href="{% url 'lista_cursos' %}{% if anho_id %}?anho={{ anho_id }}{% endif %}" class="btn btn-secondary">
+                <i class="fas fa-arrow-left"></i> Volver a Cursos
+            </a>
+            <a href="{% url 'crear_grupo' %}" class="btn btn-primary">
+                <i class="fas fa-users"></i> Crear Grupo
+            </a>
+            <a href="{% url 'crear_grupo_por_usuarios' %}" class="btn btn-success">
+                <i class="fas fa-user-plus"></i> Crear Grupo (por usuarios)
+            </a>
+        </div>
+    </div>
+
+    <div class="list-group">
+        {% for g in grupos %}
+        <div class="list-group-item d-flex justify-content-between align-items-center">
+            <a href="{% url 'ver_grupo' g.id %}{% if anho_id %}?anho={{ anho_id }}{% endif %}" class="text-decoration-none flex-grow-1">
+                <strong>{{ g.nombre }}</strong> — {{ g.grado }} {{ g.seccion }} — {{ g.estudiantes.count }} estudiantes
+                <div class="text-muted small">Creado por: {{ g.creado_por.get_full_name }} — {{ g.created_at }}</div>
+            </a>
+            <a href="{% url 'confirmar_eliminar_grupo' g.id %}" class="btn btn-sm btn-danger ms-2" title="Eliminar grupo">
+                <i class="fas fa-trash"></i>
+            </a>
+        </div>
+        {% empty %}
+        <div class="alert alert-info">No hay grupos creados.</div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

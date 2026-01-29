@@ -1,0 +1,145 @@
+{% extends 'website/base.html' %}
+
+{% block title %}{{ titulo }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white text-center">
+                    <h4>{{ titulo }}</h4>
+                </div>
+                <div class="card-body">
+                    {% if messages %}
+                    <div class="messages">
+                        {% for message in messages %}
+                        <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                            {{ message }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+
+                    <form method="POST" class="needs-validation" novalidate>
+                        {% csrf_token %}
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="{{ form.nombre.id_for_label }}" class="form-label">Nombre</label>
+                                {{ form.nombre }}
+                                {% if form.nombre.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ form.nombre.errors }}
+                                </div>
+                                {% endif %}
+                            </div>
+
+                            <div class="col-md-6 mb-3">
+                                <label for="{{ form.apellido.id_for_label }}" class="form-label">Apellido</label>
+                                {{ form.apellido }}
+                                {% if form.apellido.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ form.apellido.errors }}
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="{{ form.fecha_nacimiento.id_for_label }}" class="form-label">Fecha de Nacimiento</label>
+                                {{ form.fecha_nacimiento }}
+                                {% if form.fecha_nacimiento.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ form.fecha_nacimiento.errors }}
+                                </div>
+                                {% endif %}
+                            </div>
+
+                            <div class="col-md-6 mb-3">
+                                <label for="{{ form.genero.id_for_label }}" class="form-label">GÃ©nero</label>
+                                {{ form.genero }}
+                                {% if form.genero.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ form.genero.errors }}
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="{{ form.direccion.id_for_label }}" class="form-label">DirecciÃ³n</label>
+                                {{ form.direccion }}
+                                {% if form.direccion.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ form.direccion.errors }}
+                                </div>
+                                {% endif %}
+                            </div>
+
+                            <div class="col-md-6 mb-3">
+                                <label for="{{ form.telefono.id_for_label }}" class="form-label">TelÃ©fono</label>
+                                {{ form.telefono }}
+                                {% if form.telefono.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ form.telefono.errors }}
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="{{ form.email.id_for_label }}" class="form-label">Correo ElectrÃ³nico</label>
+                                {{ form.email }}
+                                {% if form.email.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ form.email.errors }}
+                                </div>
+                                {% endif %}
+                            </div>
+
+                            <div class="col-md-6 mb-3">
+                                <label for="{{ form.cedula.id_for_label }}" class="form-label">CÃ©dula</label>
+                                {{ form.cedula }}
+                                {% if form.cedula.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ form.cedula.errors }}
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <div class="text-center mt-4">
+                            <button type="submit" class="btn btn-success">
+                                <i class="fas fa-save"></i> Guardar
+                            </button>
+                            <a href="{% url 'lista_estudiantes' %}" class="btn btn-secondary">
+                                <i class="fas fa-times"></i> Cancelar
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% block extra_js %}
+<script>
+    // Auto-hide alerts after 5 seconds
+    document.addEventListener('DOMContentLoaded', function() {
+        setTimeout(function() {
+            var alerts = document.querySelectorAll('.alert');
+            alerts.forEach(function(alert) {
+                var bsAlert = new bootstrap.Alert(alert);
+                bsAlert.close();
+            });
+        }, 5000);
+    });
+</script>
+{% endblock %}
+{% endblock %} 
