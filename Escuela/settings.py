@@ -9,41 +9,51 @@ https://docs.djangoproject.com/en/5.1/topics/settings/
 For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.1/ref/settings/
 """
-SESSION_COOKIE_AGE = 300  # 5 minutos
-SESSION_EXPIRE_AT_BROWSER_CLOSE = True
-SESSION_SAVE_EVERY_REQUEST = True
 
+import os
 from pathlib import Path
+from dotenv import load_dotenv
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
+# Cargar variables de entorno desde .env
+load_dotenv(os.path.join(BASE_DIR, '.env'))
 
-EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-EMAIL_HOST = 'smtp.gmail.com'  # Cambia a tu proveedor de correo
-EMAIL_PORT = 587  # El puerto SMTP adecuado
-EMAIL_USE_TLS = True  # Asegúrate de que TLS esté activado
-EMAIL_HOST_USER = 'canadamelissa007@gmail.com'  # Tu dirección de correo
-EMAIL_HOST_PASSWORD = 'acwh couw axzi vzof'  # Tu contraseña o un token de aplicación si usas Gmail
-DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
-SITE_URL = "127.0.0.1:8000" 
-
-
-
-
-#EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
-
-
-# Quick-start development settings - unsuitable for production
-# See https://docs.djangoproject.com/en/5.1/howto/deployment/checklist/
+# ============================================
+# SEGURIDAD
+# ============================================
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-6ee57w85#js2o^3h+l3+-6s#s22du2op0kgv-=&=l_(+--38w$'
+SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-6ee57w85#js2o^3h+l3+-6s#s22du2op0kgv-=&=l_(+--38w$')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = os.getenv('DEBUG', 'True') == 'True'
 
-ALLOWED_HOSTS = []
+# Hosts permitidos
+ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', 'localhost,127.0.0.1').split(',')
+
+# Entorno de ejecución
+ENVIRONMENT = os.getenv('ENVIRONMENT', 'development')
+
+# ============================================
+# SESIÓN
+# ============================================
+SESSION_COOKIE_AGE = int(os.getenv('SESSION_COOKIE_AGE', '300'))  # 5 minutos
+SESSION_EXPIRE_AT_BROWSER_CLOSE = os.getenv('SESSION_EXPIRE_AT_BROWSER_CLOSE', 'True') == 'True'
+SESSION_SAVE_EVERY_REQUEST = os.getenv('SESSION_SAVE_EVERY_REQUEST', 'True') == 'True'
+
+# ============================================
+# EMAIL
+# ============================================
+EMAIL_BACKEND = os.getenv('EMAIL_BACKEND', 'django.core.mail.backends.smtp.EmailBackend')
+EMAIL_HOST = os.getenv('EMAIL_HOST', 'smtp.gmail.com')
+EMAIL_PORT = int(os.getenv('EMAIL_PORT', '587'))
+EMAIL_USE_TLS = os.getenv('EMAIL_USE_TLS', 'True') == 'True'
+EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER', '')
+EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD', '')
+DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL', EMAIL_HOST_USER)
+SITE_URL = os.getenv('SITE_URL', '127.0.0.1:8000')
 
 
 # Application definition
@@ -90,20 +100,34 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'Escuela.wsgi.application'
 
-
-# Database
+# ============================================
+# DATABASE
+# ============================================
 # https://docs.djangoproject.com/en/5.1/ref/settings/#databases
 
-import sys
-import os
-from pathlib import Path
+# Configuración desde variables de entorno
+DB_ENGINE = os.getenv('DB_ENGINE', 'django.db.backends.sqlite3')
 
-BASE_DIR = Path(__file__).resolve().parent.parent
-
-sys.path.append(os.path.dirname(os.path.abspath(__file__)))  # Agrega el directorio actual al path
-import config  # Importa la configuración desde config.py
-
-DATABASES = config.DATABASES  # Usa la configuración de PostgreSQL desde config.py
+if DB_ENGINE == 'django.db.backends.sqlite3':
+    # Configuración para SQLite (desarrollo)
+    DATABASES = {
+        'default': {
+            'ENGINE': DB_ENGINE,
+            'NAME': BASE_DIR / os.getenv('DB_NAME', 'db.sqlite3'),
+        }
+    }
+else:
+    # Configuración para PostgreSQL u otras bases de datos (producción)
+    DATABASES = {
+        'default': {
+            'ENGINE': DB_ENGINE,
+            'NAME': os.getenv('DB_NAME'),
+            'USER': os.getenv('DB_USER'),
+            'PASSWORD': os.getenv('DB_PASSWORD'),
+            'HOST': os.getenv('DB_HOST', 'localhost'),
+            'PORT': os.getenv('DB_PORT', '5432'),
+        }
+    }
 
 
 # Password validation
@@ -172,17 +196,42 @@ STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.1/ref/settings/#default-auto-field
 
+# Default primary key field type
+# https://docs.djangoproject.com/en/5.1/ref/settings/#default-auto-field
+
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-import os
-
+# ============================================
+# MEDIA FILES
+# ============================================
 MEDIA_URL = "/media/"
 MEDIA_ROOT = os.path.join(BASE_DIR, "media")
 
-# Configuración de datos de la escuela para recibos
-ESCUELA_NOMBRE = 'Centro Cristiano de Educación para el Desarrollo'
-ESCUELA_RNC = '123-45678-9'
-ESCUELA_TELEFONO = '(809) 555-1234'
-ESCUELA_DIRECCION = 'Calle Pedro Henrriquez Ureña #123, San Juan de la Maguana, República Dominicana'
-ESCUELA_EMAIL = 'info@escuela.edu.do'
+# ============================================
+# INFORMACIÓN DE LA ESCUELA
+# ============================================
+ESCUELA_NOMBRE = os.getenv('ESCUELA_NOMBRE', 'Centro Cristiano de Educación para el Desarrollo')
+ESCUELA_RNC = os.getenv('ESCUELA_RNC', '123-45678-9')
+ESCUELA_TELEFONO = os.getenv('ESCUELA_TELEFONO', '(809) 555-1234')
+ESCUELA_DIRECCION = os.getenv('ESCUELA_DIRECCION', 'Calle Pedro Henrriquez Ureña #123, San Juan de la Maguana, República Dominicana')
+ESCUELA_EMAIL = os.getenv('ESCUELA_EMAIL', 'info@escuela.edu.do')
+
+# ============================================
+# CONFIGURACIONES DE SEGURIDAD PARA PRODUCCIÓN
+# ============================================
+if not DEBUG:
+    # HTTPS
+    SECURE_SSL_REDIRECT = True
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+    
+    # HSTS
+    SECURE_HSTS_SECONDS = 31536000  # 1 año
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+    SECURE_HSTS_PRELOAD = True
+    
+    # Otras configuraciones de seguridad
+    SECURE_BROWSER_XSS_FILTER = True
+    SECURE_CONTENT_TYPE_NOSNIFF = True
+    X_FRAME_OPTIONS = 'DENY'
 

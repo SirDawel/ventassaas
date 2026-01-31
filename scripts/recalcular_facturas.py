@@ -1,8 +1,14 @@
 #!/usr/bin/env python
 """
 Script para recalcular totales de todas las facturas
-Ejecutar con: python manage.py shell < recalcular_facturas.py
+Ejecutar con: python scripts/recalcular_facturas.py
 """
+
+import os
+import django
+
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'Escuela.settings')
+django.setup()
 
 from escuelaweb.models import Factura, DetalleFactura
 

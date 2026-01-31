@@ -792,6 +792,33 @@ document.addEventListener('DOMContentLoaded', function() {
         {% endif %}
     }
     
+    // PREVENIR SUBMIT DEL FORMULARIO AL PRESIONAR ENTER EN CAMPOS DE BÚSQUEDA
+    const codigoBarrasInput = document.getElementById('codigoBarrasInput');
+    const buscarNombreInput = document.getElementById('buscarNombreInput');
+    
+    if (codigoBarrasInput) {
+        codigoBarrasInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                buscarPorCodigoBarras();
+            }
+        });
+        
+        // Enfocar automáticamente al cargar si hay cliente seleccionado
+        {% if estudiante %}
+        setTimeout(() => codigoBarrasInput.focus(), 500);
+        {% endif %}
+    }
+    
+    if (buscarNombreInput) {
+        buscarNombreInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                buscarPorNombre();
+            }
+        });
+    }
+    
     // Deshabilitar mensualidades, inscripciones y transporte para cliente genérico
     if (esClienteGenerico) {
         const conceptoSelect = document.getElementById('conceptoSelect');
@@ -1435,24 +1462,6 @@ function mostrarNotificacion(mensaje, tipo = 'success') {
     }, 2000);
 }
 
-// Event listener para Enter en campo de código de barras
-document.addEventListener('DOMContentLoaded', function() {
-    const codigoInput = document.getElementById('codigoBarrasInput');
-    if (codigoInput) {
-        codigoInput.addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') {
-                e.preventDefault();
-                buscarPorCodigoBarras();
-            }
-        });
-        
-        // Enfocar automáticamente al cargar si hay cliente seleccionado
-        {% if estudiante %}
-        setTimeout(() => codigoInput.focus(), 500);
-        {% endif %}
-    }
-});
-
 // ========== FIN FUNCIONES CÓDIGO DE BARRAS ==========
 
 function agregarConceptoALista(conceptoId, nombre, cantidad, precio, descuento, mes, anio) {
@@ -1700,32 +1709,6 @@ function limpiarTodo() {
             console.log('anio[]:', anios, '(Total:', anios.length, ')');
             console.log('===========================');
         });
-    }
-
-    // Botón agregar - múltiples handlers para asegurar que funcione
-    const agregarBtn = document.getElementById('agregarBtn');
-    if (agregarBtn) {
-        console.log('Botón agregar encontrado, configurando listeners');
-        
-        agregarBtn.addEventListener('click', function(e) {
-            e.preventDefault();
-            e.stopPropagation();
-            console.log('agregarBtn clicked (addEventListener)');
-            agregarConceptoRapido();
-        });
-        
-        // Handler adicional por si el primero falla
-        agregarBtn.onclick = function(e) {
-            if (e) {
-                e.preventDefault();
-                e.stopPropagation();
-            }
-            console.log('agregarBtn clicked (onclick)');
-            agregarConceptoRapido();
-            return false;
-        };
-    } else {
-        console.error('ERROR: Botón agregarBtn NO encontrado');
     }
 
     // Atajos y comportamiento del select de conceptos
