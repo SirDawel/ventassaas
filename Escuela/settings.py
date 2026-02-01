@@ -36,12 +36,22 @@ ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', 'localhost,127.0.0.1').split(',')
 # Entorno de ejecución
 ENVIRONMENT = os.getenv('ENVIRONMENT', 'development')
 
+# CSRF Trusted Origins (para HTTPS)
+CSRF_TRUSTED_ORIGINS = [
+    'https://colegiocced.online',
+    'http://colegiocced.online',
+    'https://www.colegiocced.online',
+    'http://www.colegiocced.online',
+]
+
 # ============================================
 # SESIÓN
 # ============================================
-SESSION_COOKIE_AGE = int(os.getenv('SESSION_COOKIE_AGE', '300'))  # 5 minutos
-SESSION_EXPIRE_AT_BROWSER_CLOSE = os.getenv('SESSION_EXPIRE_AT_BROWSER_CLOSE', 'True') == 'True'
-SESSION_SAVE_EVERY_REQUEST = os.getenv('SESSION_SAVE_EVERY_REQUEST', 'True') == 'True'
+SESSION_COOKIE_AGE = int(os.getenv('SESSION_COOKIE_AGE', '14400'))  # 4 horas por defecto
+SESSION_EXPIRE_AT_BROWSER_CLOSE = os.getenv('SESSION_EXPIRE_AT_BROWSER_CLOSE', 'False') == 'True'
+SESSION_SAVE_EVERY_REQUEST = os.getenv('SESSION_SAVE_EVERY_REQUEST', 'False') == 'True'
+SESSION_COOKIE_SECURE = not DEBUG  # True en producción
+CSRF_COOKIE_SECURE = not DEBUG  # True en producción
 
 # ============================================
 # EMAIL
@@ -50,10 +60,18 @@ EMAIL_BACKEND = os.getenv('EMAIL_BACKEND', 'django.core.mail.backends.smtp.Email
 EMAIL_HOST = os.getenv('EMAIL_HOST', 'smtp.gmail.com')
 EMAIL_PORT = int(os.getenv('EMAIL_PORT', '587'))
 EMAIL_USE_TLS = os.getenv('EMAIL_USE_TLS', 'True') == 'True'
+EMAIL_USE_SSL = os.getenv('EMAIL_USE_SSL', 'False') == 'True'
 EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER', '')
 EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD', '')
 DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL', EMAIL_HOST_USER)
 SITE_URL = os.getenv('SITE_URL', '127.0.0.1:8000')
+
+# ============================================
+# AUTENTICACIÓN
+# ============================================
+LOGIN_URL = '/login/'
+LOGIN_REDIRECT_URL = '/anhos-escolares/'
+LOGOUT_REDIRECT_URL = '/login/'
 
 
 # Application definition
@@ -206,6 +224,8 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 # ============================================
 MEDIA_URL = "/media/"
 MEDIA_ROOT = os.path.join(BASE_DIR, "media")
+DATA_UPLOAD_MAX_MEMORY_SIZE = 10485760  # 10 MB
+FILE_UPLOAD_MAX_MEMORY_SIZE = 10485760  # 10 MB
 
 # ============================================
 # INFORMACIÓN DE LA ESCUELA
