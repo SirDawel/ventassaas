@@ -1,37 +1,34 @@
 """
 URL configuration for Escuela project.
-
-The `urlpatterns` list routes URLs to views. For more information please see:
-    https://docs.djangoproject.com/en/5.1/topics/http/urls/
-Examples:
-Function views
-    1. Add an import:  from my_app import views
-    2. Add a URL to urlpatterns:  path('', views.home, name='home')
-Class-based views
-    1. Add an import:  from other_app.views import Home
-    2. Add a URL to urlpatterns:  path('', Home.as_view(), name='home')
-Including another URLconf
-    1. Import the include() function: from django.urls import include, path
-    2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
 from django.contrib import admin
 from django.urls import path, include
-from escuelaweb import views
-from escuelaweb.views import login_view, crear_ano_escolar, password_reset_request, password_reset_confirm
-
-from django.urls import path
-from escuelaweb.views import user_list, user_create, user_update, user_delete
-from escuelaweb.views import admin_dashboard, get_users_data
+from django.views.generic import RedirectView
 from django.conf import settings
 from django.conf.urls.static import static
 
+from escuelaweb import views
+from escuelaweb.views import (
+    login_view, 
+    crear_ano_escolar, 
+    password_reset_request, 
+    password_reset_confirm,
+    user_list, 
+    user_create, 
+    user_update, 
+    user_delete,
+    admin_dashboard, 
+    get_users_data
+)
+
 urlpatterns = [
     path('admin/', admin.site.urls),
+    # Redirigir ra√≠z directamente a login
+    path("", RedirectView.as_view(url='/login/', permanent=False), name="root_redirect"),
+    path("index/", views.index, name="index"),  # P√°gina principal/inicio
     path("login/", login_view, name="login"),
-    path('', include('escuelaweb.urls')),
     path("anhoescolar/", crear_ano_escolar, name="anhoescolar"),
-    path("", views.index, name="index"),  # La p·gina principal
-    path("plataform", views.plataform, name="plataform"),  # La p·gina principal
+    path("plataform", views.plataform, name="plataform"),  # La plataforma
     path('base/', views.base, name='base'),  # Ruta para la vista base
     path('noticias/', views.noticias, name='noticias'),
     path("logout/", views.logout_view, name="logout"),
@@ -69,7 +66,7 @@ urlpatterns = [
     path("eliminar/<int:pk>/", views.persona_delete, name="persona_delete"),
     path("persona_update/editar/<int:persona_id>/", views.persona_update, name="persona_update"),
     
-    # URLs para AÒo Escolar
+    # URLs para AÔøΩo Escolar
     path('anhos-escolares/', views.lista_anhos_escolares, name='lista_anhos_escolares'),
     path('anhos-escolares/agregar/', views.agregar_anho_escolar, name='agregar_anho_escolar'),
     path('anhos-escolares/editar/<int:pk>/', views.editar_anho_escolar, name='editar_anho_escolar'),
@@ -99,6 +96,9 @@ urlpatterns = [
     path('materias/editar/<int:pk>/', views.editar_materia, name='editar_materia'),
     path('materias/eliminar/<int:pk>/', views.eliminar_materia, name='eliminar_materia'),
     path('materias/confirmar-eliminar/<int:pk>/', views.confirmar_eliminar_materia, name='confirmar_eliminar_materia'),
+    
+    # Incluir las dem√°s URLs de escuelaweb
+    path('', include('escuelaweb.urls')),
 ]
 
 if settings.DEBUG:

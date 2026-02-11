@@ -97,6 +97,7 @@ urlpatterns = [
     path('facturas/<int:factura_id>/anular/', views.factura_anular, name='factura_anular'),
     path('codigo-anulacion/', views.codigo_anulacion_ver, name='codigo_anulacion_ver'),
     # TarifaEstudiante CRUD
+    
     path('tarifas/', views.tarifas_list, name='tarifas_list'),
     path('tarifas/crear/', views.tarifa_create, name='tarifa_create'),
     path('tarifas/editar/<int:pk>/', views.tarifa_edit, name='tarifa_edit'),
@@ -109,10 +110,14 @@ urlpatterns = [
     
     # URLs para Sistema de Inventario
     path('inventario/', views.inventario_dashboard, name='inventario_dashboard'),
+    path('inventario/lista-completa/', views.inventario_lista_completa, name='inventario_lista_completa'),
+    path('inventario/articulos-pdf/', views.inventario_articulos_pdf, name='inventario_articulos_pdf'),
+    path('inventario/servicios-pdf/', views.inventario_servicios_pdf, name='inventario_servicios_pdf'),
     path('inventario/articulos/', views.articulos_list, name='articulos_list'),
     path('inventario/articulos/crear/', views.articulo_crear, name='articulo_crear'),
-    path('inventario/articulos/<int:articulo_id>/', views.articulo_detalle, name='articulo_detalle'),
     path('inventario/articulos/<int:articulo_id>/editar/', views.articulo_editar, name='articulo_editar'),
+    path('inventario/articulos/<int:articulo_id>/eliminar/', views.articulo_eliminar, name='articulo_eliminar'),
+    path('inventario/articulos/<int:articulo_id>/', views.articulo_detalle, name='articulo_detalle'),
     path('inventario/categorias/', views.categorias_list, name='categorias_list'),
     path('inventario/categorias/crear/', views.categoria_crear, name='categoria_crear'),
     path('inventario/categorias/<int:categoria_id>/editar/', views.categoria_editar, name='categoria_editar'),

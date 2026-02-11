@@ -13,13 +13,22 @@
                 <div>
                     <h2><i class="fas fa-chart-line me-2"></i>{{ titulo }}</h2>
                     <p class="text-muted mb-0">{{ titulo_periodo }}</p>
+                    {% if usuario_filtrado %}
+                        <span class="badge bg-info mt-2">
+                            <i class="fas fa-user me-1"></i>Ventas de: {{ usuario_filtrado.get_full_name }}
+                        </span>
+                    {% elif user.rol == 'Secretaria' %}
+                        <span class="badge bg-info mt-2">
+                            <i class="fas fa-user me-1"></i>Mis Ventas
+                        </span>
+                    {% endif %}
                 </div>
                 <div>
                     <a href="?{{ request.GET.urlencode }}&export=pdf" class="btn btn-danger me-2" target="_blank">
                         <i class="fas fa-file-pdf me-2"></i>Exportar PDF
                     </a>
                     <a href="{% url 'cobros_dashboard' %}" class="btn btn-secondary">
-                        <i class="fas fa-arrow-left me-2"></i>Volver
+                        <i class="fas fa-arrow-left me-2"></i>Volveresss
                     </a>
                 </div>
             </div>
@@ -30,7 +39,7 @@
     <div class="card shadow-sm mb-4">
         <div class="card-body">
             <form method="get" class="row g-3 align-items-end">
-                <div class="col-md-3">
+                <div class="col-md-2">
                     <label class="form-label"><strong>Período</strong></label>
                     <select name="periodo" id="periodoSelect" class="form-select" onchange="toggleFechasPersonalizadas()">
                         <option value="dia" {% if periodo == 'dia' %}selected{% endif %}>Hoy</option>
@@ -41,19 +50,33 @@
                     </select>
                 </div>
                 
-                <div class="col-md-3" id="fechaInicioDiv" style="{% if periodo != 'personalizado' %}display: none;{% endif %}">
+                <div class="col-md-2" id="fechaInicioDiv" style="{% if periodo != 'personalizado' %}display: none;{% endif %}">
                     <label class="form-label"><strong>Fecha Inicio</strong></label>
                     <input type="date" name="fecha_inicio" class="form-control" 
                            value="{{ request.GET.fecha_inicio }}">
                 </div>
                 
-                <div class="col-md-3" id="fechaFinDiv" style="{% if periodo != 'personalizado' %}display: none;{% endif %}">
+                <div class="col-md-2" id="fechaFinDiv" style="{% if periodo != 'personalizado' %}display: none;{% endif %}">
                     <label class="form-label"><strong>Fecha Fin</strong></label>
                     <input type="date" name="fecha_fin" class="form-control" 
                            value="{{ request.GET.fecha_fin }}">
                 </div>
                 
+                {% if usuarios_vendedores %}
                 <div class="col-md-3">
+                    <label class="form-label"><strong>Usuario/Vendedor</strong></label>
+                    <select name="usuario" class="form-select">
+                        <option value="">Todos los usuarios</option>
+                        {% for vendedor in usuarios_vendedores %}
+                            <option value="{{ vendedor.id }}" {% if usuario_id == vendedor.id|stringformat:"s" %}selected{% endif %}>
+                                {{ vendedor.get_full_name }} ({{ vendedor.rol }})
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                {% endif %}
+                
+                <div class="col-md-{% if usuarios_vendedores %}3{% else %}3{% endif %}">
                     <button type="submit" class="btn btn-primary w-100">
                         <i class="fas fa-filter me-2"></i>Filtrar
                     </button>

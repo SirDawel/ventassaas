@@ -203,8 +203,25 @@ def login_view(request):
         return render(request, 'website/login.html')
 
     try:
+        from django.conf import settings
+        print(f"DEBUG LOGIN - DB ENGINE: {settings.DATABASES['default']['ENGINE']}")
+        print(f"DEBUG LOGIN - DB NAME: {settings.DATABASES['default']['NAME']}")
+        
         email = request.POST.get("email", "").strip()
         password = request.POST.get("password", "").strip()
+
+        print(f"DEBUG LOGIN - Email recibido: {email}")
+        print(f"DEBUG LOGIN - Password recibido: {'*' * len(password) if password else 'vacío'}")
+        
+        # Verificar si el usuario existe
+        from escuelaweb.models import CustomUser
+        user_exists = CustomUser.objects.filter(email=email).first()
+        print(f"DEBUG LOGIN - Usuario en BD: {user_exists}")
+        if user_exists:
+            print(f"DEBUG LOGIN - Usuario is_active en BD: {user_exists.is_active}")
+            print(f"DEBUG LOGIN - Has usable password: {user_exists.has_usable_password()}")
+            print(f"DEBUG LOGIN - Check password: {user_exists.check_password(password)}")
+            print(f"DEBUG LOGIN - Password hash: {user_exists.password[:50]}...")
 
         if not email or not password:
             messages.error(request, "Por favor, completa todos los campos")
@@ -212,6 +229,9 @@ def login_view(request):
 
         # Intentar autenticar con CustomUser
         user = authenticate(request, username=email, password=password)
+        
+        print(f"DEBUG LOGIN - Usuario autenticado: {user}")
+        print(f"DEBUG LOGIN - Usuario is_active: {user.is_active if user else 'N/A'}")
 
         if user is not None:
             if user.is_active:
@@ -5452,7 +5472,34 @@ def factura_crear_nueva(request):
                 messages.error(request, 'Debes seleccionar un estudiante.')
                 return redirect('factura_crear_nueva')
             
-            estudiante_post = CustomUser.objects.get(id=estudiante_id_post, rol='Estudiante')
+            # VALIDAR que el estudiante existe ANTES de continuar
+            try:
+                estudiante_post = CustomUser.objects.get(id=estudiante_id_post, rol='Estudiante')
+                
+                # Validar que el estudiante tenga datos mínimos necesarios
+                if not estudiante_post.first_name or not estudiante_post.last_name:
+                    messages.error(request, 
+                        f'El estudiante seleccionado (ID: {estudiante_id_post}) no tiene nombre completo configurado. '
+                        'Por favor, actualiza los datos del estudiante antes de crear la factura.')
+                    return redirect('factura_crear_nueva')
+                    
+                # Validar que el estudiante esté activo
+                if not estudiante_post.is_active:
+                    messages.error(request, 
+                        f'El estudiante {estudiante_post.get_full_name()} está inactivo. '
+                        'No se pueden crear facturas para estudiantes inactivos.')
+                    return redirect('factura_crear_nueva')
+                    
+            except CustomUser.DoesNotExist:
+                messages.error(request, 
+                    f'El estudiante seleccionado (ID: {estudiante_id_post}) no existe en la base de datos. '
+                    'Por favor, selecciona un estudiante válido o verifica que el estudiante no haya sido eliminado.')
+                return redirect('factura_crear_nueva')
+            except Exception as e:
+                messages.error(request, 
+                    f'Error al validar el estudiante: {str(e)}. '
+                    'Por favor, intenta con otro estudiante o contacta al administrador.')
+                return redirect('factura_crear_nueva')
             
             fecha_vencimiento = request.POST.get('fecha_vencimiento')
             observaciones = request.POST.get('observaciones', '')
@@ -5461,6 +5508,26 @@ def factura_crear_nueva(request):
             monto_pagado = Decimal(request.POST.get('monto_pagado', 0))
             metodo_pago = request.POST.get('metodo_pago', 'efectivo')  # Capturar método de pago
             referencia_pago = request.POST.get('referencia_pago', '')
+            confirmar_credito = request.POST.get('confirmar_credito', '0')
+            
+            # VALIDACIÓN ESPECIAL: Cliente genérico NO puede tener facturas a crédito
+            cliente_generico = obtener_o_crear_cliente_generico()
+            if cliente_generico and estudiante_post.id == cliente_generico.id and monto_pagado == 0:
+                logger.warning(f"INTENTO DE FACTURA A CRÉDITO CON CLIENTE GENÉRICO - Usuario: {request.user.email}")
+                messages.error(request, 
+                    '❌ El cliente genérico NO puede tener facturas a crédito. '
+                    'Debes ingresar el pago completo o seleccionar un estudiante específico.')
+                return redirect('factura_crear_nueva')
+            
+            # VALIDACIÓN: Si no hay pago y no se confirmó, advertir
+            if monto_pagado == 0 and confirmar_credito != '1':
+                logger.warning(f"INTENTO DE FACTURA A CRÉDITO SIN CONFIRMACIÓN - Usuario: {request.user.email}")
+                messages.warning(request, 'La factura no tiene pago registrado. Confirma que deseas guardarla a crédito.')
+                return redirect('factura_crear_nueva')
+            
+            # Si es factura a crédito confirmada, registrar en log
+            if monto_pagado == 0 and confirmar_credito == '1':
+                logger.info(f"FACTURA A CRÉDITO CONFIRMADA - Usuario: {request.user.email}, Cliente: {estudiante_post.get_full_name()}")
             
             # Agregar referencia al campo de observaciones si existe
             observaciones_completas = observaciones
@@ -5469,6 +5536,13 @@ def factura_crear_nueva(request):
                     observaciones_completas += f" | Ref: {referencia_pago}"
                 else:
                     observaciones_completas = f"Ref: {referencia_pago}"
+            
+            # Marcar si es factura a crédito confirmada
+            if monto_pagado == 0 and confirmar_credito == '1':
+                if observaciones_completas:
+                    observaciones_completas += " | [FACTURA A CRÉDITO - Confirmada por usuario]"
+                else:
+                    observaciones_completas = "[FACTURA A CRÉDITO - Confirmada por usuario]"
             
             factura = Factura.objects.create(
                 cliente=estudiante_post,
@@ -5687,6 +5761,13 @@ def factura_crear_nueva(request):
             else:
                 url_nueva_factura = '/facturas/nueva/'
             
+            # Mensaje adicional si es factura a crédito
+            mensaje_credito = ""
+            icono_color = "#28a745"
+            if monto_pagado == 0:
+                mensaje_credito = '<p style="color: #ff9800; font-weight: bold;">⚠️ FACTURA A CRÉDITO (Sin pago)</p>'
+                icono_color = "#ff9800"
+            
             # Construir respuesta HTML que abre el recibo e imprime automáticamente
             from django.http import HttpResponse
             recibo_url = f"/facturas/{factura.id}/recibo/"
@@ -5715,7 +5796,7 @@ def factura_crear_nueva(request):
                     }}
                     .icono {{
                         font-size: 48px;
-                        color: #28a745;
+                        color: {icono_color};
                         margin-bottom: 20px;
                     }}
                     h2 {{
@@ -5747,6 +5828,7 @@ def factura_crear_nueva(request):
                     <h2>¡Factura Creada Exitosamente!</h2>
                     <p>Factura: <strong>{factura.numero_factura}</strong></p>
                     <p>Total: <strong>RD${factura.total}</strong></p>
+                    {mensaje_credito}
                     <div class="spinner"></div>
                     <p>Abriendo recibo para imprimir...</p>
                 </div>
@@ -6332,7 +6414,34 @@ def anular_facturas_confirmar(request):
         
         # Anular las facturas
         facturas_anuladas = 0
+        articulos_devueltos = 0
+        from .models import DetalleFactura, MovimientoInventario
+        
         for factura in facturas:
+            # Devolver artículos al inventario
+            detalles = DetalleFactura.objects.filter(factura=factura, articulo__isnull=False)
+            for detalle in detalles:
+                articulo = detalle.articulo
+                stock_anterior = articulo.stock_actual
+                
+                # Devolver la cantidad al stock
+                articulo.stock_actual += detalle.cantidad
+                articulo.save()
+                
+                # Registrar movimiento de inventario
+                MovimientoInventario.objects.create(
+                    articulo=articulo,
+                    tipo='devolucion',
+                    cantidad=detalle.cantidad,
+                    stock_anterior=stock_anterior,
+                    stock_nuevo=articulo.stock_actual,
+                    motivo=f"Devolución por anulación de factura {factura.numero_factura}. Motivo: {motivo}",
+                    factura=factura,
+                    usuario=request.user
+                )
+                articulos_devueltos += 1
+            
+            # Anular la factura
             factura.estado = 'anulada'
             factura.anulado_por = request.user
             factura.fecha_anulacion = timezone.now()
@@ -6343,7 +6452,10 @@ def anular_facturas_confirmar(request):
         # Limpiar sesión
         del request.session['facturas_a_anular']
         
-        messages.success(request, f'Se anularon {facturas_anuladas} factura(s) correctamente.')
+        if articulos_devueltos > 0:
+            messages.success(request, f'Se anularon {facturas_anuladas} factura(s) correctamente. Se devolvieron {articulos_devueltos} artículo(s) al inventario.')
+        else:
+            messages.success(request, f'Se anularon {facturas_anuladas} factura(s) correctamente.')
         return redirect('facturas_list')
     
     # Obtener código activo para mostrar (solo para administrador)
@@ -6392,6 +6504,32 @@ def factura_anular(request, factura_id):
             messages.error(request, 'Debe proporcionar un motivo de anulación (mínimo 10 caracteres).')
             return redirect('factura_detalle', factura_id=factura_id)
         
+        # Devolver artículos al inventario
+        from .models import DetalleFactura, MovimientoInventario
+        detalles = DetalleFactura.objects.filter(factura=factura, articulo__isnull=False)
+        articulos_devueltos = 0
+        
+        for detalle in detalles:
+            articulo = detalle.articulo
+            stock_anterior = articulo.stock_actual
+            
+            # Devolver la cantidad al stock
+            articulo.stock_actual += detalle.cantidad
+            articulo.save()
+            
+            # Registrar movimiento de inventario
+            MovimientoInventario.objects.create(
+                articulo=articulo,
+                tipo='devolucion',
+                cantidad=detalle.cantidad,
+                stock_anterior=stock_anterior,
+                stock_nuevo=articulo.stock_actual,
+                motivo=f"Devolución por anulación de factura {factura.numero_factura}. Motivo: {motivo}",
+                factura=factura,
+                usuario=request.user
+            )
+            articulos_devueltos += 1
+        
         # Anular la factura
         factura.estado = 'anulada'
         factura.anulado_por = request.user
@@ -6399,7 +6537,10 @@ def factura_anular(request, factura_id):
         factura.motivo_anulacion = motivo
         factura.save()
         
-        messages.success(request, f'Factura {factura.numero_factura} anulada correctamente.')
+        if articulos_devueltos > 0:
+            messages.success(request, f'Factura {factura.numero_factura} anulada correctamente. Se devolvieron {articulos_devueltos} artículo(s) al inventario.')
+        else:
+            messages.success(request, f'Factura {factura.numero_factura} anulada correctamente.')
         return redirect('factura_detalle', factura_id=factura_id)
     
     # Si es GET, redirigir al detalle de la factura (el modal se mostrará allí)
@@ -6606,6 +6747,241 @@ def inventario_dashboard(request):
 
 
 @login_required
+def inventario_lista_completa(request):
+    """Lista completa de productos y servicios disponibles"""
+    if request.user.rol not in ['Administrador', 'Secretaria']:
+        messages.error(request, 'No tienes permiso para acceder a esta página.')
+        return redirect('plataform')
+    
+    from .models import Articulo, ConceptoPago
+    from django.db.models import Q
+    
+    # Filtros
+    search = request.GET.get('search', '')
+    tipo_filtro = request.GET.get('tipo', '')  # 'producto', 'servicio', 'todos'
+    solo_activos = request.GET.get('activos', '1') == '1'
+    
+    # Lista consolidada de items
+    items = []
+    
+    # Obtener artículos (productos)
+    articulos = Articulo.objects.select_related('categoria')
+    if solo_activos:
+        articulos = articulos.filter(activo=True)
+    
+    if search:
+        articulos = articulos.filter(
+            Q(codigo_barras__icontains=search) |
+            Q(nombre__icontains=search) |
+            Q(descripcion__icontains=search)
+        )
+    
+    if not tipo_filtro or tipo_filtro == 'producto':
+        for articulo in articulos:
+            items.append({
+                'id': articulo.id,
+                'tipo': 'producto',
+                'tipo_display': 'Producto',
+                'codigo': articulo.codigo_barras or 'N/A',
+                'nombre': articulo.nombre,
+                'descripcion': articulo.descripcion or '',
+                'categoria': articulo.categoria.nombre if articulo.categoria else 'Sin categoría',
+                'precio': articulo.precio_venta,
+                'stock_actual': articulo.stock_actual,
+                'stock_minimo': articulo.stock_minimo,
+                'aplica_itbis': articulo.aplica_itbis,
+                'activo': articulo.activo,
+                'permite_descuento': articulo.permite_descuento,
+                'link_editar': f'/inventario/articulos/{articulo.id}/editar/',
+                'link_detalle': f'/inventario/articulos/{articulo.id}/',
+            })
+    
+    # Obtener servicios (conceptos de pago)
+    conceptos = ConceptoPago.objects.all()
+    if solo_activos:
+        conceptos = conceptos.filter(activo=True)
+    
+    if search:
+        conceptos = conceptos.filter(
+            Q(nombre__icontains=search) |
+            Q(descripcion__icontains=search)
+        )
+    
+    if not tipo_filtro or tipo_filtro == 'servicio':
+        for concepto in conceptos:
+            # Determinar si tiene precio fijo
+            tiene_precio_fijo = concepto.tipo not in ['mensualidad', 'inscripcion', 'transporte']
+            
+            items.append({
+                'id': concepto.id,
+                'tipo': 'servicio',
+                'tipo_display': concepto.get_tipo_display(),
+                'codigo': 'SERV',
+                'nombre': concepto.nombre,
+                'descripcion': concepto.descripcion or '',
+                'categoria': concepto.get_tipo_display(),
+                'precio': concepto.monto if tiene_precio_fijo else None,
+                'stock_actual': None,  # Los servicios no tienen stock
+                'stock_minimo': None,
+                'aplica_itbis': False,
+                'activo': concepto.activo,
+                'permite_descuento': True,
+                'es_estandar': concepto.es_estandar,
+                'link_editar': f'/conceptos/editar/{concepto.id}/',
+                'link_detalle': None,
+            })
+    
+    # Ordenar items por nombre
+    items.sort(key=lambda x: x['nombre'])
+    
+    # Paginación
+    from django.core.paginator import Paginator
+    paginator = Paginator(items, 50)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+    
+    # Estadísticas
+    total_productos = Articulo.objects.filter(activo=True).count()
+    total_servicios = ConceptoPago.objects.filter(activo=True).count()
+    
+    context = {
+        'titulo': 'Inventario Completo - Productos y Servicios',
+        'page_obj': page_obj,
+        'search': search,
+        'tipo_filtro': tipo_filtro,
+        'solo_activos': solo_activos,
+        'total_productos': total_productos,
+        'total_servicios': total_servicios,
+        'total_items': total_productos + total_servicios,
+    }
+    return render(request, 'inventario/lista_completa.html', context)
+
+
+@login_required
+def inventario_articulos_pdf(request):
+    """Genera PDF con la lista de todos los artículos/productos"""
+    if request.user.rol not in ['Administrador', 'Secretaria']:
+        messages.error(request, 'No tienes permiso para acceder a esta página.')
+        return redirect('plataform')
+    
+    from .models import Articulo, CategoriaArticulo
+    from django.template.loader import render_to_string
+    from xhtml2pdf import pisa
+    from django.http import HttpResponse
+    from django.utils import timezone
+    import io
+    
+    # Obtener todos los artículos activos
+    articulos = Articulo.objects.select_related('categoria').filter(activo=True).order_by('categoria__nombre', 'nombre')
+    
+    # Agrupar por categoría
+    categorias = {}
+    for articulo in articulos:
+        cat_nombre = articulo.categoria.nombre if articulo.categoria else 'Sin categoría'
+        if cat_nombre not in categorias:
+            categorias[cat_nombre] = []
+        categorias[cat_nombre].append(articulo)
+    
+    # Estadísticas
+    total_articulos = articulos.count()
+    total_categorias = CategoriaArticulo.objects.filter(activa=True).count()
+    valor_total = sum(art.precio_venta * art.stock_actual for art in articulos)
+    articulos_bajo_stock = articulos.filter(stock_actual__lte=F('stock_minimo')).count()
+    
+    context = {
+        'titulo': 'Lista de Productos',
+        'fecha_generacion': timezone.now(),
+        'generado_por': request.user.get_full_name(),
+        'articulos': articulos,
+        'categorias': categorias,
+        'total_articulos': total_articulos,
+        'total_categorias': total_categorias,
+        'valor_total': valor_total,
+        'articulos_bajo_stock': articulos_bajo_stock,
+        'escuela_nombre': getattr(settings, 'ESCUELA_NOMBRE', 'Escuela'),
+        'escuela_rnc': getattr(settings, 'ESCUELA_RNC', ''),
+        'escuela_telefono': getattr(settings, 'ESCUELA_TELEFONO', ''),
+        'escuela_direccion': getattr(settings, 'ESCUELA_DIRECCION', ''),
+    }
+    
+    # Renderizar template para PDF
+    html_string = render_to_string('inventario/articulos_pdf.html', context)
+    
+    # Crear el PDF
+    result = io.BytesIO()
+    pdf = pisa.pisaDocument(io.BytesIO(html_string.encode("UTF-8")), result)
+    
+    if not pdf.err:
+        response = HttpResponse(result.getvalue(), content_type='application/pdf')
+        filename = f"lista_productos_{timezone.now().strftime('%Y%m%d_%H%M%S')}.pdf"
+        response['Content-Disposition'] = f'inline; filename="{filename}"'
+        return response
+    else:
+        messages.error(request, 'Error al generar el PDF.')
+        return redirect('inventario_lista_completa')
+
+
+@login_required
+def inventario_servicios_pdf(request):
+    """Genera PDF con la lista de todos los servicios/conceptos"""
+    if request.user.rol not in ['Administrador', 'Secretaria']:
+        messages.error(request, 'No tienes permiso para acceder a esta página.')
+        return redirect('plataform')
+    
+    from .models import ConceptoPago
+    from django.template.loader import render_to_string
+    from xhtml2pdf import pisa
+    from django.http import HttpResponse
+    from django.utils import timezone
+    import io
+    
+    # Obtener todos los conceptos activos
+    conceptos = ConceptoPago.objects.filter(activo=True).order_by('tipo', 'nombre')
+    
+    # Agrupar por tipo
+    tipos = {}
+    for concepto in conceptos:
+        tipo_display = concepto.get_tipo_display()
+        if tipo_display not in tipos:
+            tipos[tipo_display] = []
+        tipos[tipo_display].append(concepto)
+    
+    # Estadísticas
+    total_conceptos = conceptos.count()
+    conceptos_estandar = conceptos.filter(es_estandar=True).count()
+    
+    context = {
+        'titulo': 'Lista de Servicios',
+        'fecha_generacion': timezone.now(),
+        'generado_por': request.user.get_full_name(),
+        'conceptos': conceptos,
+        'tipos': tipos,
+        'total_conceptos': total_conceptos,
+        'conceptos_estandar': conceptos_estandar,
+        'escuela_nombre': getattr(settings, 'ESCUELA_NOMBRE', 'Escuela'),
+        'escuela_rnc': getattr(settings, 'ESCUELA_RNC', ''),
+        'escuela_telefono': getattr(settings, 'ESCUELA_TELEFONO', ''),
+        'escuela_direccion': getattr(settings, 'ESCUELA_DIRECCION', ''),
+    }
+    
+    # Renderizar template para PDF
+    html_string = render_to_string('inventario/servicios_pdf.html', context)
+    
+    # Crear el PDF
+    result = io.BytesIO()
+    pdf = pisa.pisaDocument(io.BytesIO(html_string.encode("UTF-8")), result)
+    
+    if not pdf.err:
+        response = HttpResponse(result.getvalue(), content_type='application/pdf')
+        filename = f"lista_servicios_{timezone.now().strftime('%Y%m%d_%H%M%S')}.pdf"
+        response['Content-Disposition'] = f'inline; filename="{filename}"'
+        return response
+    else:
+        messages.error(request, 'Error al generar el PDF.')
+        return redirect('inventario_lista_completa')
+
+
+@login_required
 def articulos_list(request):
     """Lista de artículos"""
     if request.user.rol not in ['Administrador', 'Secretaria']:
@@ -6628,7 +7004,7 @@ def articulos_list(request):
     
     if search:
         articulos = articulos.filter(
-            Q(codigo__icontains=search) |
+            Q(codigo_barras__icontains=search) |
             Q(nombre__icontains=search) |
             Q(descripcion__icontains=search)
         )
@@ -6789,6 +7165,64 @@ def articulo_detalle(request, articulo_id):
 
 
 @login_required
+def articulo_eliminar(request, articulo_id):
+    """Eliminar artículo con código de seguridad"""
+    if request.user.rol not in ['Administrador', 'Secretaria']:
+        messages.error(request, 'No tienes permiso para eliminar artículos.')
+        return redirect('articulos_list')
+    
+    from .models import Articulo, DetalleFactura, CodigoAnulacion
+    from django.utils import timezone
+    
+    articulo = get_object_or_404(Articulo, id=articulo_id)
+    
+    # Verificar si ya está inactivo
+    if not articulo.activo:
+        messages.warning(request, 'Este artículo ya está inactivo.')
+        return redirect('articulo_detalle', articulo_id=articulo_id)
+    
+    if request.method == 'POST':
+        codigo_ingresado = request.POST.get('codigo_anulacion', '').strip()
+        motivo = request.POST.get('motivo_eliminacion', '').strip()
+        
+        # Validar código de anulación
+        if not CodigoAnulacion.validar_codigo(codigo_ingresado):
+            messages.error(request, 'Código de seguridad incorrecto.')
+            return redirect('articulo_detalle', articulo_id=articulo_id)
+        
+        # Validar motivo
+        if not motivo or len(motivo) < 10:
+            messages.error(request, 'Debe proporcionar un motivo de eliminación (mínimo 10 caracteres).')
+            return redirect('articulo_detalle', articulo_id=articulo_id)
+        
+        nombre = articulo.nombre
+        codigo = articulo.codigo_barras
+        
+        # Verificar si el artículo ha sido usado en facturas
+        detalles_con_articulo = DetalleFactura.objects.filter(articulo=articulo).count()
+        
+        if detalles_con_articulo > 0:
+            # Marcar como inactivo con registro de motivo
+            articulo.activo = False
+            articulo.save()
+            
+            messages.warning(
+                request, 
+                f'El artículo "{nombre}" ha sido usado en {detalles_con_articulo} factura(s), '
+                f'se marcó como inactivo. Motivo: {motivo}'
+            )
+        else:
+            # Si no ha sido usado, se puede eliminar completamente
+            articulo.delete()
+            messages.success(request, f'Artículo "{codigo} - {nombre}" eliminado exitosamente. Motivo: {motivo}')
+        
+        return redirect('articulos_list')
+    
+    # Si es GET, redirigir al detalle del artículo (el modal se mostrará allí)
+    return redirect('articulo_detalle', articulo_id=articulo_id)
+
+
+@login_required
 def categorias_list(request):
     """Lista de categorías"""
     if request.user.rol not in ['Administrador', 'Secretaria']:
@@ -6910,6 +7344,7 @@ def reportes_ventas(request):
     periodo = request.GET.get('periodo', 'dia')  # dia, semana, mes, anio, personalizado (por defecto: hoy)
     fecha_inicio = request.GET.get('fecha_inicio')
     fecha_fin = request.GET.get('fecha_fin')
+    usuario_id = request.GET.get('usuario', '')  # Filtro por usuario
     export_pdf = request.GET.get('export', '')  # Parámetro para exportar PDF
     
     # Calcular rango de fechas según el período
@@ -6949,6 +7384,23 @@ def reportes_ventas(request):
         fecha_emision__lte=fecha_fin
     ).exclude(estado='anulada')
     
+    # Filtro por usuario: Administrador puede ver todos, Secretaria solo sus ventas
+    if request.user.rol == 'Secretaria':
+        # Secretarias solo ven sus propias ventas
+        facturas = facturas.filter(creado_por=request.user)
+        usuario_filtrado = request.user
+    elif request.user.rol == 'Administrador' and usuario_id:
+        # Administrador puede filtrar por usuario específico
+        from .models import CustomUser
+        try:
+            usuario_filtrado = CustomUser.objects.get(id=usuario_id)
+            facturas = facturas.filter(creado_por=usuario_filtrado)
+        except CustomUser.DoesNotExist:
+            usuario_filtrado = None
+    else:
+        # Administrador sin filtro ve todo
+        usuario_filtrado = None
+    
     # Estadísticas generales
     total_ventas = facturas.aggregate(total=Sum('total'))['total'] or 0
     total_facturas = facturas.count()
@@ -6971,60 +7423,64 @@ def reportes_ventas(request):
     
     # Top artículos más vendidos
     from .models import Articulo
-    top_articulos = DetalleFactura.objects.filter(
+    from django.db.models import Case, When, Value
+    
+    detalles_query = DetalleFactura.objects.filter(
         factura__fecha_emision__gte=fecha_inicio,
         factura__fecha_emision__lte=fecha_fin,
         factura__estado__in=['pagada', 'parcial']
+    )
+    
+    # Aplicar filtro de usuario a los detalles
+    if request.user.rol == 'Secretaria':
+        detalles_query = detalles_query.filter(factura__creado_por=request.user)
+    elif request.user.rol == 'Administrador' and usuario_id and usuario_filtrado:
+        detalles_query = detalles_query.filter(factura__creado_por=usuario_filtrado)
+    
+    # Expresión para calcular ingresos con ITBIS (protegido contra división por cero)
+    ingresos_con_itbis = ExpressionWrapper(
+        Case(
+            When(
+                factura__subtotal__gt=0,
+                then=(F('cantidad') * F('precio_unitario') - F('descuento')) * 
+                     (F('factura__total') / F('factura__subtotal'))
+            ),
+            default=F('cantidad') * F('precio_unitario') - F('descuento'),
+            output_field=DecimalField(max_digits=15, decimal_places=2)
+        ),
+        output_field=DecimalField(max_digits=15, decimal_places=2)
+    )
+    
+    top_articulos = detalles_query.filter(
     ).exclude(
         articulo=None
     ).values(
         'articulo__nombre', 'articulo__codigo_barras'
     ).annotate(
         total_vendido=Sum('cantidad'),
-        ingresos=Sum(
-            ExpressionWrapper(
-                F('cantidad') * F('precio_unitario') - F('descuento'),
-                output_field=DecimalField()
-            )
-        )
+        ingresos=Sum(ingresos_con_itbis)
     ).order_by('-total_vendido')[:10]
     
     # TODOS los artículos vendidos (para detalle completo)
-    todos_articulos = DetalleFactura.objects.filter(
-        factura__fecha_emision__gte=fecha_inicio,
-        factura__fecha_emision__lte=fecha_fin,
-        factura__estado__in=['pagada', 'parcial']
+    todos_articulos = detalles_query.filter(
     ).exclude(
         articulo=None
     ).values(
         'articulo__nombre', 'articulo__codigo_barras'
     ).annotate(
         total_vendido=Sum('cantidad'),
-        ingresos=Sum(
-            ExpressionWrapper(
-                F('cantidad') * F('precio_unitario') - F('descuento'),
-                output_field=DecimalField()
-            )
-        )
+        ingresos=Sum(ingresos_con_itbis)
     ).order_by('-ingresos')
     
     # TODOS los conceptos/servicios vendidos (para detalle completo)
-    todos_conceptos = DetalleFactura.objects.filter(
-        factura__fecha_emision__gte=fecha_inicio,
-        factura__fecha_emision__lte=fecha_fin,
-        factura__estado__in=['pagada', 'parcial']
+    todos_conceptos = detalles_query.filter(
     ).exclude(
         concepto=None
     ).values(
         'concepto__nombre', 'concepto__tipo'
     ).annotate(
         total_vendido=Sum('cantidad'),
-        ingresos=Sum(
-            ExpressionWrapper(
-                F('cantidad') * F('precio_unitario') - F('descuento'),
-                output_field=DecimalField()
-            )
-        )
+        ingresos=Sum(ingresos_con_itbis)
     ).order_by('-ingresos')
     
     # Combinar artículos y conceptos en una lista unificada
@@ -7063,22 +7519,14 @@ def reportes_ventas(request):
     
     # Top conceptos más facturados
     from .models import ConceptoPago
-    top_conceptos = DetalleFactura.objects.filter(
-        factura__fecha_emision__gte=fecha_inicio,
-        factura__fecha_emision__lte=fecha_fin,
-        factura__estado__in=['pagada', 'parcial']
+    top_conceptos = detalles_query.filter(
     ).exclude(
         concepto=None
     ).values(
         'concepto__nombre', 'concepto__tipo'
     ).annotate(
         cantidad_ventas=Count('id'),
-        ingresos=Sum(
-            ExpressionWrapper(
-                F('cantidad') * F('precio_unitario') - F('descuento'),
-                output_field=DecimalField()
-            )
-        )
+        ingresos=Sum(ingresos_con_itbis)
     ).order_by('-ingresos')[:10]
     
     # Ventas por estudiante (top 10)
@@ -7113,6 +7561,12 @@ def reportes_ventas(request):
         fecha_emision__lte=fecha_fin_anterior
     ).exclude(estado='anulada')
     
+    # Aplicar el mismo filtro de usuario al período anterior
+    if request.user.rol == 'Secretaria':
+        facturas_anterior = facturas_anterior.filter(creado_por=request.user)
+    elif request.user.rol == 'Administrador' and usuario_id and usuario_filtrado:
+        facturas_anterior = facturas_anterior.filter(creado_por=usuario_filtrado)
+    
     total_ventas_anterior = facturas_anterior.aggregate(total=Sum('total'))['total'] or 0
     
     # Calcular variación porcentual
@@ -7124,10 +7578,27 @@ def reportes_ventas(request):
     # NUEVAS MÉTRICAS AVANZADAS
     
     # Análisis de efectivo
-    total_cobrado = facturas.filter(estado='pagada').aggregate(total=Sum('monto_pagado'))['total'] or 0
+    total_cobrado = facturas.filter(estado__in=['pagada', 'parcial']).aggregate(total=Sum('monto_pagado'))['total'] or 0
     total_pendiente_cobro = facturas.filter(estado__in=['pendiente', 'parcial']).aggregate(
         pendiente=Sum(ExpressionWrapper(F('total') - F('monto_pagado'), output_field=DecimalField()))
     )['pendiente'] or 0
+    
+    # Lista de facturas con deuda (pendientes y parciales con saldo pendiente)
+    facturas_con_deuda = facturas.filter(
+        estado__in=['pendiente', 'parcial']
+    ).annotate(
+        saldo_pendiente=ExpressionWrapper(F('total') - F('monto_pagado'), output_field=DecimalField())
+    ).filter(
+        saldo_pendiente__gt=0
+    ).values(
+        'numero_factura',
+        'fecha_emision',
+        'cliente__first_name',
+        'cliente__last_name',
+        'total',
+        'monto_pagado',
+        'saldo_pendiente'
+    ).order_by('-saldo_pendiente')[:20]  # Top 20 deudas más grandes
     
     # Ventas por método de pago
     ventas_por_metodo = facturas.filter(metodo_pago__isnull=False).values('metodo_pago').annotate(
@@ -7136,27 +7607,53 @@ def reportes_ventas(request):
     ).order_by('-total')
     
     # Análisis de productos vs servicios
-    ingresos_productos = DetalleFactura.objects.filter(
+    ingresos_productos_query = DetalleFactura.objects.filter(
         factura__fecha_emision__gte=fecha_inicio,
         factura__fecha_emision__lte=fecha_fin,
         articulo__isnull=False
-    ).aggregate(
-        total=Sum(ExpressionWrapper(
-            F('cantidad') * F('precio_unitario') - F('descuento'),
-            output_field=DecimalField()
-        ))
-    )['total'] or 0
+    )
     
-    ingresos_servicios = DetalleFactura.objects.filter(
+    # Aplicar filtro de usuario
+    if request.user.rol == 'Secretaria':
+        ingresos_productos_query = ingresos_productos_query.filter(factura__creado_por=request.user)
+    elif request.user.rol == 'Administrador' and usuario_id and usuario_filtrado:
+        ingresos_productos_query = ingresos_productos_query.filter(factura__creado_por=usuario_filtrado)
+    
+    ingresos_productos = ingresos_productos_query.annotate(
+        ingreso_con_itbis=Case(
+            When(
+                factura__subtotal__gt=0,
+                then=(F('cantidad') * F('precio_unitario') - F('descuento')) * 
+                     (F('factura__total') / F('factura__subtotal'))
+            ),
+            default=F('cantidad') * F('precio_unitario') - F('descuento'),
+            output_field=DecimalField(max_digits=15, decimal_places=2)
+        )
+    ).aggregate(total=Sum('ingreso_con_itbis'))['total'] or 0
+    
+    ingresos_servicios_query = DetalleFactura.objects.filter(
         factura__fecha_emision__gte=fecha_inicio,
         factura__fecha_emision__lte=fecha_fin,
         concepto__isnull=False
-    ).aggregate(
-        total=Sum(ExpressionWrapper(
-            F('cantidad') * F('precio_unitario') - F('descuento'),
-            output_field=DecimalField()
-        ))
-    )['total'] or 0
+    )
+    
+    # Aplicar filtro de usuario
+    if request.user.rol == 'Secretaria':
+        ingresos_servicios_query = ingresos_servicios_query.filter(factura__creado_por=request.user)
+    elif request.user.rol == 'Administrador' and usuario_id and usuario_filtrado:
+        ingresos_servicios_query = ingresos_servicios_query.filter(factura__creado_por=usuario_filtrado)
+    
+    ingresos_servicios = ingresos_servicios_query.annotate(
+        ingreso_con_itbis=Case(
+            When(
+                factura__subtotal__gt=0,
+                then=(F('cantidad') * F('precio_unitario') - F('descuento')) * 
+                     (F('factura__total') / F('factura__subtotal'))
+            ),
+            default=F('cantidad') * F('precio_unitario') - F('descuento'),
+            output_field=DecimalField(max_digits=15, decimal_places=2)
+        )
+    ).aggregate(total=Sum('ingreso_con_itbis'))['total'] or 0
     
     # Ventas por hora del día (solo para día y semana)
     ventas_por_hora = None
@@ -7195,15 +7692,30 @@ def reportes_ventas(request):
     ).order_by('-num_compras')[:10]
     
     # Detalles de mensualidades vs otros conceptos
-    mensualidades = DetalleFactura.objects.filter(
+    mensualidades_query = DetalleFactura.objects.filter(
         factura__fecha_emision__gte=fecha_inicio,
         factura__fecha_emision__lte=fecha_fin,
         concepto__tipo='mensualidad'
+    )
+    
+    # Aplicar filtro de usuario
+    if request.user.rol == 'Secretaria':
+        mensualidades_query = mensualidades_query.filter(factura__creado_por=request.user)
+    elif request.user.rol == 'Administrador' and usuario_id and usuario_filtrado:
+        mensualidades_query = mensualidades_query.filter(factura__creado_por=usuario_filtrado)
+    
+    mensualidades = mensualidades_query.annotate(
+        ingreso_con_itbis=Case(
+            When(
+                factura__subtotal__gt=0,
+                then=(F('cantidad') * F('precio_unitario') - F('descuento')) * 
+                     (F('factura__total') / F('factura__subtotal'))
+            ),
+            default=F('cantidad') * F('precio_unitario') - F('descuento'),
+            output_field=DecimalField(max_digits=15, decimal_places=2)
+        )
     ).aggregate(
-        total=Sum(ExpressionWrapper(
-            F('cantidad') * F('precio_unitario') - F('descuento'),
-            output_field=DecimalField()
-        )),
+        total=Sum('ingreso_con_itbis'),
         cantidad=Count('id')
     )
     
@@ -7223,6 +7735,19 @@ def reportes_ventas(request):
     for venta in ventas_por_dia_semana:
         venta['nombre_dia'] = dias_semana.get(venta['dia_semana'], 'Desconocido')
     
+    # Lista de usuarios para filtro (solo para administradores)
+    usuarios_vendedores = None
+    if request.user.rol == 'Administrador':
+        from .models import CustomUser
+        usuarios_vendedores = CustomUser.objects.filter(
+            rol__in=['Administrador', 'Secretaria'],
+            is_active=True
+        ).order_by('first_name', 'last_name')
+    
+    # Calcular total general de items (suma de todos los ingresos)
+    from decimal import Decimal
+    total_general_items = sum([Decimal(str(item['ingresos'])) for item in todos_items_vendidos], Decimal('0'))
+    
     context = {
         'titulo': 'Reportes de Ventas',
         'periodo': periodo,
@@ -7231,6 +7756,11 @@ def reportes_ventas(request):
         'fecha_fin': fecha_fin,
         'fecha_actual': timezone.now(),
         'usuario': request.user.get_full_name(),
+        
+        # Filtro de usuario
+        'usuario_id': usuario_id,
+        'usuario_filtrado': usuario_filtrado,
+        'usuarios_vendedores': usuarios_vendedores,
         
         # Información de la escuela
         'escuela_nombre': getattr(settings, 'ESCUELA_NOMBRE', 'Escuela'),
@@ -7266,6 +7796,7 @@ def reportes_ventas(request):
         # NUEVAS MÉTRICAS
         'total_cobrado': total_cobrado,
         'total_pendiente_cobro': total_pendiente_cobro,
+        'facturas_con_deuda': list(facturas_con_deuda),
         'pendiente_porcentaje': pendiente_porcentaje,
         'ventas_por_metodo': list(ventas_por_metodo),
         'ingresos_productos': ingresos_productos,
@@ -7279,6 +7810,7 @@ def reportes_ventas(request):
         'ingresos_mensualidades': ingresos_mensualidades,
         'cantidad_mensualidades': cantidad_mensualidades,
         'ventas_por_dia_semana': list(ventas_por_dia_semana),
+        'total_general_items': total_general_items,
     }
     
     # Si se solicita exportar a PDF

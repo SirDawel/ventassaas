@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>{{ titulo }}</title>
+    <style>
+        @page {
+            size: letter portrait;
+            margin: 1cm;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Arial', sans-serif;
+            font-size: 9pt;
+            line-height: 1.3;
+            color: #2d3748;
+        }
+        
+        /* ENCABEZADO */
+        .header {
+            border-bottom: 3px solid #2563eb;
+            padding-bottom: 10px;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .company-name {
+            font-size: 18pt;
+            font-weight: bold;
+            color: #1e40af;
+        }
+        
+        .company-info {
+            font-size: 9pt;
+            color: #1e40af;
+        }
+        
+        .report-title {
+            font-size: 16pt;
+            font-weight: bold;
+            color: #2563eb;
+            text-align: center;
+            margin: 15px 0;
+            text-transform: uppercase;
+        }
+        
+        .metadata {
+            display: flex;
+            justify-content: space-between;
+            font-size: 8pt;
+            color: #718096;
+            margin-bottom: 15px;
+            padding: 8px;
+            background: #f7fafc;
+            border-radius: 4px;
+        }
+        
+        /* ESTADÍSTICAS */
+        .stats-container {
+            margin-bottom: 15px;
+        }
+        
+        .stats-table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 8px 0;
+        }
+        
+        .stats-table td {
+            padding: 12px 15px;
+            border-radius: 4px;
+            text-align: left;
+            vertical-align: top;
+            width: 25%;
+        }
+        
+        .stats-table td.purple-box {
+            background: #667eea;
+        }
+        
+        .stats-table td.green-box {
+            background: #38b000;
+        }
+        
+        .stats-table td.orange-box {
+            background: #f59e0b;
+        }
+        
+        .stats-table td.red-box {
+            background: #ef4444;
+        }
+        
+        .stat-label {
+            font-size: 8pt;
+            font-weight: 600;
+            text-transform: uppercase;
+            color: white;
+            display: block;
+            margin-bottom: 5px;
+        }
+        
+        .stat-value {
+            font-size: 16pt;
+            font-weight: bold;
+            color: white;
+            display: block;
+        }
+        
+        /* TABLA */
+        .category-header {
+            background: #2563eb;
+            color: white;
+            padding: 8px 10px;
+            font-size: 10pt;
+            font-weight: bold;
+            margin-top: 15px;
+            margin-bottom: 5px;
+            border-radius: 3px;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 15px;
+            font-size: 8pt;
+        }
+        
+        thead {
+            background: #1e40af;
+            color: #ffffff;
+        }
+        
+        th {
+            padding: 8px 5px;
+            text-align: left;
+            font-weight: 600;
+            font-size: 8pt;
+            text-transform: uppercase;
+            background: #1e40af;
+            color: #ffffff;
+        }
+        
+        td {
+            padding: 6px 5px;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        
+        tbody tr:nth-child(even) {
+            background: #f7fafc;
+        }
+        
+        tbody tr:hover {
+            background: #edf2f7;
+        }
+        
+        .codigo {
+            font-family: 'Courier New', monospace;
+            font-weight: bold;
+            color: #2563eb;
+        }
+        
+        .text-right {
+            text-align: right;
+        }
+        
+        .text-center {
+            text-align: center;
+        }
+        
+        .badge {
+            padding: 3px 8px;
+            border-radius: 3px;
+            font-size: 7pt;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+        
+        .badge-success {
+            background: #d1fae5;
+            color: #065f46;
+        }
+        
+        .badge-warning {
+            background: #fef3c7;
+            color: #92400e;
+        }
+        
+        .badge-danger {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+        
+        .badge-info {
+            background: #dbeafe;
+            color: #1e40af;
+        }
+        
+        .stock-bajo {
+            background: #fee2e2 !important;
+            font-weight: bold;
+        }
+        
+        /* PIE DE PÁGINA */
+        .footer {
+            position: fixed;
+            bottom: 0;
+            width: 100%;
+            text-align: center;
+            font-size: 7pt;
+            color: #a0aec0;
+            padding: 10px 0;
+            border-top: 1px solid #e2e8f0;
+        }
+        
+        .page-break {
+            page-break-after: always;
+        }
+    </style>
+</head>
+<body>
+    <!-- ENCABEZADO -->
+    <div class="header">
+        <span class="company-name">📦 {{ escuela_nombre }}</span>
+        <span class="company-info">
+            {% if escuela_rnc %}RNC: {{ escuela_rnc }}{% endif %}{% if escuela_telefono %} | Tel: {{ escuela_telefono }}{% endif %}{% if escuela_direccion %} | {{ escuela_direccion }}{% endif %}
+        </span>
+    </div>
+    
+    <div class="report-title">{{ titulo }}</div>
+    
+    <div class="metadata">
+        <div>
+            <strong>Fecha de generación:</strong> {{ fecha_generacion|date:"d/m/Y H:i" }}
+        </div>
+        <div>
+            <strong>Generado por:</strong> {{ generado_por }}
+        </div>
+    </div>
+    
+    <!-- ESTADÍSTICAS -->
+    <div class="stats-container">
+        <table class="stats-table">
+            <tr>
+                <td class="purple-box">
+                    <span class="stat-label">Total Productos</span>
+                    <span class="stat-value">{{ total_articulos }}</span>
+                </td>
+                <td class="green-box">
+                    <span class="stat-label">Categorías</span>
+                    <span class="stat-value">{{ total_categorias }}</span>
+                </td>
+                <td class="orange-box">
+                    <span class="stat-label">Valor Inventario</span>
+                    <span class="stat-value">RD$ {{ valor_total|floatformat:0 }}</span>
+                </td>
+                <td class="red-box">
+                    <span class="stat-label">Stock Bajo</span>
+                    <span class="stat-value">{{ articulos_bajo_stock }}</span>
+                </td>
+            </tr>
+        </table>
+    </div>
+    
+    <!-- TABLA POR CATEGORÍAS -->
+    {% for categoria_nombre, items in categorias.items %}
+    <div class="category-header">
+        📁 {{ categoria_nombre }} ({{ items|length }} productos)
+    </div>
+    
+    <table>
+        <thead>
+            <tr>
+                <th style="width: 15%;">📋 Código de Barras</th>
+                <th style="width: 35%;">📦 Nombre del Producto</th>
+                <th style="width: 12%;" class="text-right">💰 Precio Venta</th>
+                <th style="width: 10%;" class="text-center">📊 Stock Actual</th>
+                <th style="width: 10%;" class="text-center">⚠️ Stock Mín.</th>
+                <th style="width: 8%;" class="text-center">💳 ITBIS</th>
+                <th style="width: 7%;" class="text-center">🔄 Estado</th>
+                <th style="width: 8%;" class="text-center">📏 Unidad</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for articulo in items %}
+            <tr {% if articulo.stock_actual <= articulo.stock_minimo %}class="stock-bajo"{% endif %}>
+                <td class="codigo">{{ articulo.codigo_barras|default:"N/A" }}</td>
+                <td><strong>{{ articulo.nombre }}</strong></td>
+                <td class="text-right"><strong>RD$ {{ articulo.precio_venta|floatformat:2 }}</strong></td>
+                <td class="text-center">
+                    {% if articulo.stock_actual <= articulo.stock_minimo %}
+                        <span class="badge badge-danger">{{ articulo.stock_actual }}</span>
+                    {% else %}
+                        <span class="badge badge-success">{{ articulo.stock_actual }}</span>
+                    {% endif %}
+                </td>
+                <td class="text-center">{{ articulo.stock_minimo }}</td>
+                <td class="text-center">
+                    {% if articulo.aplica_itbis %}
+                        <span class="badge badge-info">18%</span>
+                    {% else %}
+                        <span class="badge badge-success">0%</span>
+                    {% endif %}
+                </td>
+                <td class="text-center">
+                    {% if articulo.activo %}
+                        <span class="badge badge-success">Activo</span>
+                    {% else %}
+                        <span class="badge badge-danger">Inactivo</span>
+                    {% endif %}
+                </td>
+                <td class="text-center">{{ articulo.unidad_medida|default:"Unidad" }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% endfor %}
+    
+    <!-- PIE DE PÁGINA -->
+    <div class="footer">
+        <p>{{ escuela_nombre }} - Lista de Productos - Página <pdf:pagenumber> de <pdf:pagecount></p>
+        <p>Documento generado automáticamente el {{ fecha_generacion|date:"d/m/Y H:i" }}</p>
+    </div>
+</body>
+</html>

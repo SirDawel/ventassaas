@@ -413,6 +413,7 @@
         {% csrf_token %}
         <input type="hidden" name="estudiante_id_hidden" id="estudianteIdHiddenPost" value="{% if estudiante %}{{ estudiante.id }}{% endif %}">
         <input type="hidden" name="monto_pagado" id="montoPagadoHidden" value="0">
+        <input type="hidden" name="confirmar_credito" id="confirmarCredito" value="0">
 
         <div class="row">
             <!-- Panel Izquierdo: Conceptos -->
@@ -637,6 +638,15 @@
                                            id="dineroRecibido" step="0.01" min="0" 
                                            placeholder="0.00" oninput="calcularCambio()">
                                     <small class="text-muted">Monto con el que paga el cliente</small>
+                                    
+                                    <!-- Advertencia para cliente genérico -->
+                                    {% if es_cliente_generico %}
+                                    <div class="alert alert-warning mt-2 mb-0" role="alert">
+                                        <i class="fas fa-exclamation-triangle me-2"></i>
+                                        <strong>¡ATENCIÓN!</strong> El cliente genérico <strong>NO puede tener facturas a crédito</strong>.
+                                        Debes ingresar el pago completo.
+                                    </div>
+                                    {% endif %}
                                     
                                     <!-- Botones de acceso rápido -->
                                     <div class="btn-group btn-group-sm mt-2 w-100" role="group">
@@ -1612,8 +1622,11 @@ function calcularCambio() {
         cambioDisplay.classList.add('text-success');
     }
     
-    // Actualizar campo hidden para enviar al servidor
-    document.getElementById('montoPagadoHidden').value = dineroRecibido.toFixed(2);
+    // CORREGIDO: El monto pagado es el menor entre lo recibido y el total
+    // Si pagó completo: guarda el total de la factura
+    // Si pagó parcial: guarda solo lo que dio
+    const montoCobrado = Math.min(dineroRecibido, total);
+    document.getElementById('montoPagadoHidden').value = montoCobrado.toFixed(2);
 }
 
 // Botones de acceso rápido para dinero recibido
@@ -1686,6 +1699,88 @@ function limpiarTodo() {
                 alert('Debes agregar al menos un concepto a la factura');
                 const conceptoSelect = document.getElementById('conceptoSelect');
                 if (conceptoSelect) conceptoSelect.focus();
+                return false;
+            }
+
+            // VALIDACIÓN ESPECIAL: Cliente genérico NO puede tener facturas a crédito
+            const montoPagadoEl = document.getElementById('montoPagadoHidden');
+            const montoPagado = montoPagadoEl ? parseFloat(montoPagadoEl.value) || 0 : 0;
+            
+            if (esClienteGenerico && montoPagado === 0) {
+                e.preventDefault();
+                alert(
+                    '❌ ERROR: CLIENTE GENÉRICO SIN PAGO\n\n' +
+                    'El cliente genérico NO puede tener facturas a crédito.\n\n' +
+                    'Debes:\n' +
+                    '1. Ingresar el pago completo, o\n' +
+                    '2. Seleccionar un estudiante específico\n\n' +
+                    'Por favor, ingresa el monto recibido o cambia de cliente.'
+                );
+                
+                // Enfocar el campo de dinero recibido
+                const dineroRecibidoInput = document.getElementById('dineroRecibido');
+                if (dineroRecibidoInput) {
+                    dineroRecibidoInput.focus();
+                    dineroRecibidoInput.select();
+                }
+                return false;
+            }
+
+            // NUEVA VALIDACIÓN: Advertir si no hay monto pagado (factura a crédito)
+            const confirmarCreditoEl = document.getElementById('confirmarCredito');
+            const yaConfirmado = confirmarCreditoEl && confirmarCreditoEl.value === '1';
+            
+            // Si no hay pago y no está confirmado, mostrar diálogo de confirmación
+            if (montoPagado === 0 && !yaConfirmado) {
+                e.preventDefault();
+                
+                // Obtener el total de la factura del elemento correcto
+                const totalDisplay = document.getElementById('totalDisplay');
+                let totalMonto = '0.00';
+                if (totalDisplay) {
+                    // Extraer el número del texto (ej: "RD$1,500.00" -> "1500.00")
+                    const textoTotal = totalDisplay.textContent || totalDisplay.innerText || '';
+                    totalMonto = textoTotal.replace(/[^\d.]/g, ''); // Eliminar todo excepto dígitos y punto
+                    if (!totalMonto || totalMonto === '') totalMonto = '0.00';
+                }
+                
+                // Formatear el monto para mostrarlo
+                const totalFormateado = parseFloat(totalMonto).toLocaleString('es-DO', {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2
+                });
+                
+                const confirmacion = confirm(
+                    '⚠️ ADVERTENCIA: FACTURA A CRÉDITO\n\n' +
+                    'No has ingresado ningún pago para esta factura.\n' +
+                    'Total de la factura: RD$' + totalFormateado + '\n' +
+                    'Monto pagado: RD$0.00\n\n' +
+                    'La factura quedará registrada como "PENDIENTE" (a crédito).\n\n' +
+                    '¿Deseas continuar y guardar esta factura a crédito?'
+                );
+                
+                if (confirmacion) {
+                    // Usuario confirmó, agregar campo de confirmación y reenviar
+                    if (confirmarCreditoEl) {
+                        confirmarCreditoEl.value = '1';
+                    } else {
+                        const inputConfirmar = document.createElement('input');
+                        inputConfirmar.type = 'hidden';
+                        inputConfirmar.name = 'confirmar_credito';
+                        inputConfirmar.id = 'confirmarCredito';
+                        inputConfirmar.value = '1';
+                        facturaFormEl.appendChild(inputConfirmar);
+                    }
+                    // Reenviar el formulario
+                    facturaFormEl.submit();
+                } else {
+                    // Usuario canceló, dar foco al campo de pago
+                    const montoPagadoInput = document.getElementById('monto_pagado');
+                    if (montoPagadoInput) {
+                        montoPagadoInput.focus();
+                        montoPagadoInput.select();
+                    }
+                }
                 return false;
             }
             

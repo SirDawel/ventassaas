@@ -33,7 +33,8 @@
                 {% endfor %}
                 {% endif %}
 
-                <form method="POST" action="{% url 'register' %}">
+                <!-- Registro temporalmente deshabilitado -->
+                <form method="POST" action="#">
                     {% csrf_token %}
                     {% if error %}
                     <div class="alert alert-danger">{{ error }}</div>

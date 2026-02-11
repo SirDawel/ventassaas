@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>{{ titulo }}</title>
+    <style>
+        @page {
+            size: letter portrait;
+            margin: 1cm;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Arial', sans-serif;
+            font-size: 10pt;
+            line-height: 1.4;
+            color: #2d3748;
+        }
+        
+        /* ENCABEZADO */
+        .header {
+            border-bottom: 3px solid #7c3aed;
+            padding-bottom: 10px;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .company-name {
+            font-size: 18pt;
+            font-weight: bold;
+            color: #6d28d9;
+        }
+        
+        .company-info {
+            font-size: 9pt;
+            color: #6d28d9;
+        }
+        
+        .report-title {
+            font-size: 16pt;
+            font-weight: bold;
+            color: #7c3aed;
+            text-align: center;
+            margin: 15px 0;
+            text-transform: uppercase;
+        }
+        
+        .metadata {
+            display: flex;
+            justify-content: space-between;
+            font-size: 8pt;
+            color: #718096;
+            margin-bottom: 15px;
+            padding: 8px;
+            background: #f7fafc;
+            border-radius: 4px;
+        }
+        
+        /* ESTADÍSTICAS */
+        .stats-container {
+            margin-bottom: 20px;
+        }
+        
+        .stats-table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 8px 0;
+        }
+        
+        .stats-table td {
+            padding: 12px 15px;
+            border-radius: 4px;
+            text-align: left;
+            vertical-align: top;
+            width: 50%;
+        }
+        
+        .stats-table td.purple-box {
+            background: #7c3aed;
+        }
+        
+        .stats-table td.blue-box {
+            background: #2563eb;
+        }
+        
+        .stat-label {
+            font-size: 9pt;
+            font-weight: 600;
+            text-transform: uppercase;
+            color: white;
+            display: block;
+            margin-bottom: 5px;
+        }
+        
+        .stat-value {
+            font-size: 20pt;
+            font-weight: bold;
+            color: white;
+            display: block;
+        }
+        
+        /* TABLA */
+        .type-header {
+            background: #7c3aed;
+            color: white;
+            padding: 10px 12px;
+            font-size: 11pt;
+            font-weight: bold;
+            margin-top: 20px;
+            margin-bottom: 5px;
+            border-radius: 3px;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+            font-size: 9pt;
+        }
+        
+        thead {
+            background: #6d28d9;
+            color: #ffffff;
+        }
+        
+        th {
+            padding: 10px 8px;
+            text-align: left;
+            font-weight: 600;
+            font-size: 9pt;
+            text-transform: uppercase;
+            background: #6d28d9;
+            color: #ffffff;
+        }
+        
+        td {
+            padding: 8px;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        
+        tbody tr:nth-child(even) {
+            background: #faf5ff;
+        }
+        
+        tbody tr:hover {
+            background: #f3e8ff;
+        }
+        
+        .text-right {
+            text-align: right;
+        }
+        
+        .text-center {
+            text-align: center;
+        }
+        
+        .badge {
+            padding: 4px 10px;
+            border-radius: 3px;
+            font-size: 8pt;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+        
+        .badge-success {
+            background: #d1fae5;
+            color: #065f46;
+        }
+        
+        .badge-warning {
+            background: #fed7aa;
+            color: #92400e;
+        }
+        
+        .badge-info {
+            background: #dbeafe;
+            color: #1e40af;
+        }
+        
+        .badge-purple {
+            background: #e9d5ff;
+            color: #581c87;
+        }
+        
+        .servicio-nombre {
+            font-weight: bold;
+            color: #1a202c;
+        }
+        
+        .precio-fijo {
+            color: #059669;
+            font-weight: bold;
+        }
+        
+        .precio-variable {
+            color: #7c3aed;
+            font-style: italic;
+        }
+        
+        /* PIE DE PÁGINA */
+        .footer {
+            position: fixed;
+            bottom: 0;
+            width: 100%;
+            text-align: center;
+            font-size: 7pt;
+            color: #a0aec0;
+            padding: 10px 0;
+            border-top: 1px solid #e2e8f0;
+        }
+        
+        .info-box {
+            background: #fef3c7;
+            border-left: 4px solid #f59e0b;
+            padding: 12px;
+            margin-top: 20px;
+            border-radius: 3px;
+        }
+        
+        .info-box-title {
+            font-weight: bold;
+            color: #92400e;
+            margin-bottom: 5px;
+        }
+        
+        .info-box-text {
+            font-size: 8pt;
+            color: #78350f;
+        }
+    </style>
+</head>
+<body>
+    <!-- ENCABEZADO -->
+    <div class="header">
+        <span class="company-name">🎓 {{ escuela_nombre }}</span>
+        <span class="company-info">
+            {% if escuela_rnc %}RNC: {{ escuela_rnc }}{% endif %}{% if escuela_telefono %} | Tel: {{ escuela_telefono }}{% endif %}{% if escuela_direccion %} | {{ escuela_direccion }}{% endif %}
+        </span>
+    </div>
+    
+    <div class="report-title">{{ titulo }}</div>
+    
+    <div class="metadata">
+        <div>
+            <strong>Fecha de generación:</strong> {{ fecha_generacion|date:"d/m/Y H:i" }}
+        </div>
+        <div>
+            <strong>Generado por:</strong> {{ generado_por }}
+        </div>
+    </div>
+    
+    <!-- ESTADÍSTICAS -->
+    <div class="stats-container">
+        <table class="stats-table">
+            <tr>
+                <td class="purple-box">
+                    <span class="stat-label">Total Servicios</span>
+                    <span class="stat-value">{{ total_conceptos }}</span>
+                </td>
+                <td class="blue-box">
+                    <span class="stat-label">Servicios Estándar</span>
+                    <span class="stat-value">{{ conceptos_estandar }}</span>
+                </td>
+            </tr>
+        </table>
+    </div>
+    
+    <!-- INFORMACIÓN IMPORTANTE -->
+    <div class="info-box">
+        <div class="info-box-title">ℹ️ Información sobre Precios</div>
+        <div class="info-box-text">
+            <strong>Precio Fijo:</strong> El precio mostrado se aplica directamente en las facturas.<br>
+            <strong>Precio Variable:</strong> El precio depende de la tarifa asignada a cada estudiante (mensualidades, inscripciones, transporte).
+        </div>
+    </div>
+    
+    <!-- TABLA POR TIPOS -->
+    {% for tipo_nombre, items in tipos.items %}
+    <div class="type-header">
+        📋 {{ tipo_nombre }} ({{ items|length }} servicios)
+    </div>
+    
+    <table>
+        <thead>
+            <tr>
+                <th style="width: 10%;">🔢 #</th>
+                <th style="width: 45%;">🎓 Nombre del Servicio</th>
+                <th style="width: 15%;" class="text-right">💰 Precio Base</th>
+                <th style="width: 18%;" class="text-center">📋 Categoría</th>
+                <th style="width: 12%;" class="text-center">⭐ Estándar</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for concepto in items %}
+            <tr>
+                <td class="text-center"><strong>{{ forloop.counter }}</strong></td>
+                <td>
+                    <span class="servicio-nombre">{{ concepto.nombre }}</span>
+                </td>
+                <td class="text-right">
+                    {% if concepto.tipo == 'mensualidad' or concepto.tipo == 'inscripcion' or concepto.tipo == 'transporte' %}
+                        <span class="precio-variable">Según tarifa*</span>
+                    {% else %}
+                        <span class="precio-fijo">RD$ {{ concepto.monto|floatformat:2 }}</span>
+                    {% endif %}
+                </td>
+                <td class="text-center">
+                    {% if concepto.tipo == 'mensualidad' %}
+                        <span class="badge badge-purple">Mensualidad</span>
+                    {% elif concepto.tipo == 'inscripcion' %}
+                        <span class="badge badge-info">Inscripción</span>
+                    {% elif concepto.tipo == 'transporte' %}
+                        <span class="badge badge-warning">Transporte</span>
+                    {% else %}
+                        <span class="badge badge-success">{{ concepto.get_tipo_display }}</span>
+                    {% endif %}
+                </td>
+                <td class="text-center">
+                    {% if concepto.es_estandar %}
+                        <span class="badge badge-warning">Sí</span>
+                    {% else %}
+                        <span style="color: #a0aec0;">-</span>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% endfor %}
+    
+    <!-- LEYENDA -->
+    <div style="margin-top: 30px; padding: 12px; background: #f0f9ff; border-radius: 4px; border-left: 4px solid #2563eb;">
+        <div style="font-weight: bold; color: #1e40af; margin-bottom: 8px;">📌 Leyenda de Servicios</div>
+        <div style="font-size: 8pt; color: #1e3a8a; line-height: 1.6;">
+            <div style="margin-bottom: 5px;">
+                <span class="badge badge-warning">⭐ Estándar</span> - Se asigna automáticamente a nuevos estudiantes
+            </div>
+            <div style="margin-bottom: 5px;">
+                <span class="precio-variable">Variable*</span> - El precio se configura individualmente para cada estudiante según su tarifa
+            </div>
+            <div>
+                <span class="precio-fijo">Precio Fijo</span> - Se aplica directamente al momento de facturar
+            </div>
+        </div>
+    </div>
+    
+    <!-- PIE DE PÁGINA -->
+    <div class="footer">
+        <p>{{ escuela_nombre }} - Lista de Servicios - Página <pdf:pagenumber> de <pdf:pagecount></p>
+        <p>Documento generado automáticamente el {{ fecha_generacion|date:"d/m/Y H:i" }}</p>
+    </div>
+</body>
+</html>

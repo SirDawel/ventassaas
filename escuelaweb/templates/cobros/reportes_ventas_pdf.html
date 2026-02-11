@@ -5,8 +5,8 @@
     <title>Reporte de Ventas - {{ titulo_periodo }}</title>
     <style>
         @page {
-            size: letter landscape;
-            margin: 1.2cm;
+            size: letter portrait;
+            margin: 1cm 1.5cm;
         }
         
         * {
@@ -17,8 +17,8 @@
         
         body {
             font-family: 'Segoe UI', 'Tahoma', 'Geneva', 'Verdana', sans-serif;
-            font-size: 8.5pt;
-            line-height: 1.5;
+            font-size: 8pt;
+            line-height: 1.4;
             color: #2d3748;
             background: white;
         }
@@ -26,29 +26,29 @@
         /* ENCABEZADO */
         .company-header {
             border-left: 6px solid #2563eb;
-            padding: 15px 20px;
-            margin-bottom: 25px;
+            padding: 10px 15px;
+            margin-bottom: 15px;
             background: #f7fafc;
         }
         
         .company-name {
-            font-size: 26pt;
+            font-size: 18pt;
             font-weight: 600;
             color: #1a202c;
-            margin-bottom: 5px;
+            margin-bottom: 4px;
             letter-spacing: -0.5px;
         }
         
         .company-tagline {
-            font-size: 10pt;
+            font-size: 9pt;
             color: #718096;
-            margin-bottom: 15px;
+            margin-bottom: 10px;
         }
         
         .company-details-grid {
             display: flex;
-            gap: 25px;
-            margin-top: 12px;
+            gap: 12px;
+            margin-top: 6px;
         }
         
         .detail-card {
@@ -56,16 +56,16 @@
         }
         
         .detail-label {
-            font-size: 7.5pt;
+            font-size: 7pt;
             color: #a0aec0;
             text-transform: uppercase;
             font-weight: 600;
             display: block;
-            margin-bottom: 3px;
+            margin-bottom: 2px;
         }
         
         .detail-value {
-            font-size: 9pt;
+            font-size: 8pt;
             color: #2d3748;
             font-weight: 600;
         }
@@ -73,28 +73,28 @@
         /* TÍTULO */
         .report-title-box {
             background: #edf2f7;
-            padding: 18px 25px;
-            margin-bottom: 20px;
+            padding: 12px 15px;
+            margin-bottom: 15px;
             border-radius: 4px;
         }
         
         .report-title {
-            font-size: 20pt;
+            font-size: 16pt;
             font-weight: 700;
             color: #1a202c;
-            margin-bottom: 6px;
+            margin-bottom: 4px;
         }
         
         .report-subtitle {
-            font-size: 11pt;
+            font-size: 10pt;
             color: #4a5568;
-            margin-bottom: 12px;
+            margin-bottom: 8px;
         }
         
         .report-meta {
             display: flex;
-            gap: 35px;
-            margin-top: 15px;
+            gap: 15px;
+            margin-top: 10px;
         }
         
         .meta-item {
@@ -102,15 +102,15 @@
         }
         
         .meta-label {
-            font-size: 7.5pt;
+            font-size: 7pt;
             color: #a0aec0;
             text-transform: uppercase;
             font-weight: 600;
-            margin-bottom: 3px;
+            margin-bottom: 2px;
         }
         
         .meta-value {
-            font-size: 9pt;
+            font-size: 8pt;
             color: #2d3748;
             font-weight: 600;
         }
@@ -123,32 +123,33 @@
         /* TOTALES */
         .totales-resumen {
             width: 100%;
-            margin-bottom: 25px;
+            margin-bottom: 12px;
+            page-break-inside: avoid;
         }
         
         .totales-resumen table {
             width: 100%;
-            border-spacing: 10px;
+            border-spacing: 8px;
         }
         
         .totales-resumen td {
-            padding: 14px 12px;
+            padding: 10px 8px;
             background: #f7fafc;
-            border-left: 5px solid #cbd5e0;
+            border-left: 4px solid #cbd5e0;
             text-align: left;
         }
         
         .totales-label {
-            font-size: 7.5pt;
+            font-size: 7pt;
             color: #718096;
             text-transform: uppercase;
             display: block;
-            margin-bottom: 6px;
+            margin-bottom: 4px;
             font-weight: 600;
         }
         
         .totales-valor {
-            font-size: 15pt;
+            font-size: 12pt;
             font-weight: 700;
             color: #1a202c;
         }
@@ -182,45 +183,111 @@
             border-left-color: #ef4444;
         }
         
+        /* INDICADOR DE SALUD FINANCIERA */
+        .health-indicator {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 15px;
+            margin: 12px 0;
+            border-radius: 6px;
+            border-left: 4px solid;
+            page-break-inside: avoid;
+        }
+        
+        .health-indicator.excellent {
+            background: #d1fae5;
+            border-color: #10b981;
+            color: #065f46;
+        }
+        
+        .health-indicator.good {
+            background: #fef3c7;
+            border-color: #f59e0b;
+            color: #92400e;
+        }
+        
+        .health-indicator.alert {
+            background: #fee2e2;
+            border-color: #ef4444;
+            color: #991b1b;
+        }
+        
+        .health-icon {
+            font-size: 18pt;
+            font-weight: 700;
+        }
+        
+        .health-text {
+            flex: 1;
+        }
+        
+        .health-label {
+            font-size: 7.5pt;
+            font-weight: 600;
+            text-transform: uppercase;
+            margin-bottom: 2px;
+        }
+        
+        .health-value {
+            font-size: 11pt;
+            font-weight: 700;
+        }
+        
         /* SECCIONES */
         .section-title {
-            font-size: 13pt;
+            font-size: 11pt;
             font-weight: 700;
             color: #1a202c;
-            margin: 30px 0 15px 0;
-            padding: 12px 0;
-            border-bottom: 3px solid #2563eb;
+            margin: 18px 0 8px 0;
+            padding: 6px 0;
+            border-bottom: 2px solid #2563eb;
             text-transform: uppercase;
             letter-spacing: 0.5px;
+            page-break-after: avoid;
         }
         
         /* TABLAS */
         table {
             width: 100%;
             border-collapse: collapse;
-            margin-bottom: 20px;
+            margin-bottom: 12px;
             border: 1px solid #e2e8f0;
+            font-size: 7.5pt;
+            page-break-inside: auto;
+            table-layout: fixed;
         }
         
         table thead {
             background: #edf2f7;
             border-bottom: 2px solid #2563eb;
+            display: table-header-group;
+        }
+        
+        table tbody tr {
+            page-break-inside: avoid;
+            page-break-after: auto;
         }
         
         table th {
-            padding: 11px 10px;
+            padding: 6px 5px;
             text-align: left;
             font-weight: 700;
-            font-size: 8.5pt;
+            font-size: 7.5pt;
             color: #4a5568;
             text-transform: uppercase;
             letter-spacing: 0.3px;
+            word-wrap: break-word;
+            word-break: break-word;
         }
         
         table td {
-            padding: 10px;
+            padding: 5px 5px;
             border-bottom: 1px solid #e2e8f0;
             color: #2d3748;
+            word-wrap: break-word;
+            word-break: break-word;
+            overflow-wrap: break-word;
         }
         
         table tbody tr:nth-child(even) {
@@ -238,9 +305,9 @@
         }
         
         table tfoot td {
-            padding: 12px 10px;
+            padding: 7px 5px;
             color: #1a202c;
-            font-size: 9.5pt;
+            font-size: 8.5pt;
         }
         
         .text-right {
@@ -255,12 +322,20 @@
             font-weight: 700;
         }
         
+        /* Permitir salto de línea en textos largos */
+        table strong {
+            word-wrap: break-word;
+            word-break: break-word;
+            display: inline-block;
+            max-width: 100%;
+        }
+        
         /* BADGES */
         .badge {
             display: inline-block;
-            padding: 5px 10px;
-            border-radius: 4px;
-            font-size: 7.5pt;
+            padding: 3px 8px;
+            border-radius: 3px;
+            font-size: 7pt;
             font-weight: 600;
             text-transform: uppercase;
         }
@@ -303,8 +378,9 @@
         /* ANALYSIS GRID */
         .analysis-grid {
             width: 100%;
-            margin-bottom: 20px;
-            border-spacing: 12px;
+            margin-bottom: 12px;
+            border-spacing: 8px;
+            page-break-inside: avoid;
         }
         
         .analysis-grid td {
@@ -315,27 +391,28 @@
         
         .analysis-card {
             background: #f7fafc;
-            padding: 15px;
+            padding: 10px;
             border: 1px solid #e2e8f0;
             border-radius: 4px;
             height: 100%;
+            page-break-inside: avoid;
         }
         
         .analysis-card-header {
             background: #2563eb;
             color: white;
-            padding: 10px 12px;
-            margin: -15px -15px 12px -15px;
+            padding: 8px 10px;
+            margin: -10px -10px 10px -10px;
             font-weight: 700;
             text-transform: uppercase;
-            font-size: 9pt;
+            font-size: 8pt;
             border-radius: 4px 4px 0 0;
         }
         
         .analysis-item {
             display: flex;
             justify-content: space-between;
-            padding: 8px 0;
+            padding: 6px 0;
             border-bottom: 1px solid #e2e8f0;
         }
         
@@ -345,13 +422,13 @@
         
         .analysis-item-label {
             color: #718096;
-            font-size: 8.5pt;
+            font-size: 7.5pt;
         }
         
         .analysis-item-value {
             font-weight: 700;
             color: #1a202c;
-            font-size: 8.5pt;
+            font-size: 8pt;
         }
         
         /* HIGHLIGHTS */
@@ -371,13 +448,13 @@
         /* RANKING */
         .rank-icon {
             display: inline-block;
-            width: 22px;
-            height: 22px;
-            line-height: 22px;
+            width: 18px;
+            height: 18px;
+            line-height: 18px;
             text-align: center;
-            border-radius: 4px;
+            border-radius: 3px;
             font-weight: 700;
-            font-size: 7.5pt;
+            font-size: 7pt;
             color: white;
         }
         
@@ -433,7 +510,7 @@
         
         /* DETALLE COMPLETO DE PRODUCTOS */
         .detalle-completo-section {
-            margin-top: 35px;
+            margin-top: 25px;
             page-break-before: always;
         }
         
@@ -442,12 +519,12 @@
         }
         
         .detalle-completo-table th {
-            padding: 8px 6px;
+            padding: 6px 5px;
             font-size: 7.5pt;
         }
         
         .detalle-completo-table td {
-            padding: 7px 6px;
+            padding: 5px 5px;
         }
         
         /* FOOTER */
@@ -457,9 +534,9 @@
             left: 0;
             right: 0;
             text-align: center;
-            font-size: 7.5pt;
+            font-size: 7pt;
             color: #718096;
-            padding: 12px;
+            padding: 8px;
             background: #f7fafc;
             border-top: 1px solid #e2e8f0;
         }
@@ -546,9 +623,9 @@
                     <span class="totales-label">📋 Facturas</span>
                     <span class="totales-valor">{{ total_facturas }}</span>
                 </td>
-                <td>
-                    <span class="totales-label">📊 Promedio</span>
-                    <span class="totales-valor">RD${{ promedio_venta|floatformat:2 }}</span>
+                <td class="totales-danger">
+                    <span class="totales-label">💳 Créditos No Cobrados</span>
+                    <span class="totales-valor">RD${{ total_pendiente_cobro|floatformat:2 }}</span>
                 </td>
                 <td class="totales-danger">
                     <span class="totales-label">🏷️ Descuentos</span>
@@ -557,6 +634,33 @@
             </tr>
         </table>
     </div>
+
+    <!-- Indicador de Salud Financiera -->
+    {% if tasa_pago >= 85 %}
+    <div class="health-indicator excellent">
+        <div class="health-icon">🟢</div>
+        <div class="health-text">
+            <div class="health-label">💚 Salud Financiera: Excelente</div>
+            <div class="health-value">Tasa de Cobro: {{ tasa_pago|floatformat:1 }}% - La gestión de cobros es óptima</div>
+        </div>
+    </div>
+    {% elif tasa_pago >= 60 %}
+    <div class="health-indicator good">
+        <div class="health-icon">🟡</div>
+        <div class="health-text">
+            <div class="health-label">💛 Salud Financiera: Buena</div>
+            <div class="health-value">Tasa de Cobro: {{ tasa_pago|floatformat:1 }}% - Créditos manejables, seguir monitoreando</div>
+        </div>
+    </div>
+    {% else %}
+    <div class="health-indicator alert">
+        <div class="health-icon">🔴</div>
+        <div class="health-text">
+            <div class="health-label">⚠️ Salud Financiera: Atención Requerida</div>
+            <div class="health-value">Tasa de Cobro: {{ tasa_pago|floatformat:1 }}% - Alto nivel de créditos, revisar políticas de cobro</div>
+        </div>
+    </div>
+    {% endif %}
 
     <!-- Desglose por Estado -->
     <div class="section-title">📊 Facturas por Estado</div>
@@ -607,7 +711,7 @@
     </table>
 
     <!-- Análisis Financiero -->
-    <div class="section-title">💵 Análisis Financiero</div>
+    <div class="section-title" style="page-break-before: always;">💵 Análisis Financiero</div>
     <table class="analysis-grid">
         <tr>
             <td>
@@ -680,10 +784,13 @@
                     </div>
                     <div class="analysis-item">
                         <span class="analysis-item-label">Tasa de Cobro</span>
-                        <span class="analysis-item-value text-success">{{ tasa_pago|floatformat:1 }}%</span>
+                        <span class="analysis-item-value" style="color: {% if tasa_pago >= 85 %}#10b981{% elif tasa_pago >= 60 %}#f59e0b{% else %}#ef4444{% endif %};">
+                            {{ tasa_pago|floatformat:1 }}%
+                            {% if tasa_pago >= 85 %}🟢{% elif tasa_pago >= 60 %}🟡{% else %}🔴{% endif %}
+                        </span>
                     </div>
-                    <div class="analysis-item">
-                        <span class="analysis-item-label">Pendiente</span>
+                    <div class="analysis-item highlight-negative">
+                        <span class="analysis-item-label">💳 Pendiente de Cobro</span>
                         <span class="analysis-item-value text-danger">RD${{ total_pendiente_cobro|floatformat:2 }}</span>
                     </div>
                 </div>
@@ -691,9 +798,44 @@
         </tr>
     </table>
 
+    <!-- Facturas con Deuda -->
+    {% if facturas_con_deuda %}
+    <div class="section-title" style="page-break-before: always;">💰 Facturas con Deuda Pendiente (Top 20)</div>
+    <table>
+        <thead>
+            <tr>
+                <th style="width: 12%;" class="text-center">No. Factura</th>
+                <th style="width: 12%;" class="text-center">Fecha</th>
+                <th style="width: 28%;">Cliente</th>
+                <th style="width: 16%;" class="text-right">Total Factura</th>
+                <th style="width: 16%;" class="text-right">Pagado</th>
+                <th style="width: 16%;" class="text-right">Saldo Pendiente</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for factura in facturas_con_deuda %}
+            <tr>
+                <td class="text-center"><strong>{{ factura.numero_factura }}</strong></td>
+                <td class="text-center">{{ factura.fecha_emision|date:"d/m/Y" }}</td>
+                <td>{{ factura.cliente__first_name }} {{ factura.cliente__last_name }}</td>
+                <td class="text-right">RD${{ factura.total|floatformat:2 }}</td>
+                <td class="text-right text-success">RD${{ factura.monto_pagado|floatformat:2 }}</td>
+                <td class="text-right text-bold text-danger">RD${{ factura.saldo_pendiente|floatformat:2 }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+        <tfoot>
+            <tr>
+                <td colspan="5" class="text-right"><strong>TOTAL DEUDA:</strong></td>
+                <td class="text-right text-bold text-danger">RD${{ total_pendiente_cobro|floatformat:2 }}</td>
+            </tr>
+        </tfoot>
+    </table>
+    {% endif %}
+
     <!-- Top Artículos -->
     {% if top_articulos %}
-    <div class="section-title">🏆 Top 10 Productos Más Vendidos</div>
+    <div class="section-title" style="page-break-before: always;">🏆 Top 10 Productos Más Vendidos</div>
     <table>
         <thead>
             <tr>
@@ -770,7 +912,7 @@
             <tfoot>
                 <tr>
                     <td colspan="5" class="text-right">TOTAL GENERAL DE ITEMS:</td>
-                    <td class="text-right text-bold">RD${{ ingresos_productos|add:ingresos_servicios|floatformat:2 }}</td>
+                    <td class="text-right text-bold">RD${{ total_general_items|floatformat:2 }}</td>
                 </tr>
                 <tr>
                     <td colspan="5" class="text-right">CANTIDAD DE ITEMS DIFERENTES:</td>

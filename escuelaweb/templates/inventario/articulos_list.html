@@ -134,6 +134,13 @@
                                        class="btn btn-sm btn-primary" title="Editar">
                                         <i class="fas fa-edit"></i>
                                     </a>
+                                    {% if user.rol in 'Administrador,Secretaria' and articulo.activo %}
+                                    <button type="button" class="btn btn-sm btn-danger" 
+                                            onclick="abrirModalEliminar('{{ articulo.id }}', '{{ articulo.codigo_barras }}', '{{ articulo.nombre|escapejs }}')" 
+                                            title="Eliminar">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                    {% endif %}
                                 </td>
                             </tr>
                             {% endfor %}
@@ -178,4 +185,81 @@
         </div>
     </div>
 </div>
+
+<!-- Modal para eliminar artículo -->
+<div class="modal fade" id="modalEliminarArticulo" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="post" id="formEliminarArticulo">
+                {% csrf_token %}
+                <div class="modal-header bg-danger text-white">
+                    <h5 class="modal-title">
+                        <i class="fas fa-exclamation-triangle me-2"></i>Eliminar Artículo
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="alert alert-warning">
+                        <strong>¡Atención!</strong> Si este artículo ha sido usado en facturas, 
+                        se marcará como inactivo en lugar de eliminarse para preservar los registros históricos.
+                    </div>
+                    
+                    <p><strong>Código:</strong> <span id="modalArticuloCodigo"></span></p>
+                    <p><strong>Nombre:</strong> <span id="modalArticuloNombre"></span></p>
+                    
+                    <div class="mb-3">
+                        <label for="codigo_anulacion" class="form-label">
+                            <i class="fas fa-key me-1"></i>Código de Seguridad <span class="text-danger">*</span>
+                        </label>
+                        <input type="text" class="form-control" id="codigo_anulacion" 
+                               name="codigo_anulacion" required 
+                               placeholder="Ingrese el código de seguridad"
+                               maxlength="10">
+                        <small class="text-muted">
+                            Solicite el código mensual al Administrador
+                        </small>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="motivo_eliminacion" class="form-label">
+                            <i class="fas fa-comment me-1"></i>Motivo de Eliminación <span class="text-danger">*</span>
+                        </label>
+                        <textarea class="form-control" id="motivo_eliminacion" 
+                                  name="motivo_eliminacion" rows="3" required 
+                                  placeholder="Describa el motivo de la eliminación (mínimo 10 caracteres)"
+                                  minlength="10"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="fas fa-times me-1"></i>Cancelar
+                    </button>
+                    <button type="submit" class="btn btn-danger">
+                        <i class="fas fa-trash me-1"></i>Eliminar Artículo
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+function abrirModalEliminar(articuloId, articuloCodigo, articuloNombre) {
+    // Llenar los datos del modal
+    document.getElementById('modalArticuloCodigo').textContent = articuloCodigo;
+    document.getElementById('modalArticuloNombre').textContent = articuloNombre;
+    
+    // Configurar el action del formulario
+    const form = document.getElementById('formEliminarArticulo');
+    form.action = '/inventario/articulos/' + articuloId + '/eliminar/';
+    
+    // Limpiar los campos del formulario
+    document.getElementById('codigo_anulacion').value = '';
+    document.getElementById('motivo_eliminacion').value = '';
+    
+    // Mostrar el modal
+    const modal = new bootstrap.Modal(document.getElementById('modalEliminarArticulo'));
+    modal.show();
+}
+</script>
 {% endblock %}

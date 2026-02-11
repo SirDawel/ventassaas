@@ -79,6 +79,12 @@
                 <div class="card-body">
                     <div class="row">
                         <div class="col-md-3 mb-3">
+                            <a href="{% url 'inventario_lista_completa' %}" class="btn btn-outline-dark w-100 btn-lg">
+                                <i class="fas fa-warehouse d-block fs-1 mb-2"></i>
+                                Inventario Completo
+                            </a>
+                        </div>
+                        <div class="col-md-3 mb-3">
                             <a href="{% url 'articulos_list' %}" class="btn btn-outline-primary w-100 btn-lg">
                                 <i class="fas fa-box d-block fs-1 mb-2"></i>
                                 Ver Artículos
@@ -96,6 +102,8 @@
                                 Categorías
                             </a>
                         </div>
+                    </div>
+                    <div class="row">
                         <div class="col-md-3 mb-3">
                             <a href="{% url 'facturas_list' %}" class="btn btn-outline-warning w-100 btn-lg">
                                 <i class="fas fa-file-invoice d-block fs-1 mb-2"></i>

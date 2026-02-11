@@ -50,8 +50,8 @@ CSRF_TRUSTED_ORIGINS = [
 SESSION_COOKIE_AGE = int(os.getenv('SESSION_COOKIE_AGE', '14400'))  # 4 horas por defecto
 SESSION_EXPIRE_AT_BROWSER_CLOSE = os.getenv('SESSION_EXPIRE_AT_BROWSER_CLOSE', 'False') == 'True'
 SESSION_SAVE_EVERY_REQUEST = os.getenv('SESSION_SAVE_EVERY_REQUEST', 'False') == 'True'
-SESSION_COOKIE_SECURE = not DEBUG  # True en producción
-CSRF_COOKIE_SECURE = not DEBUG  # True en producción
+SESSION_COOKIE_SECURE = False if DEBUG else True  # False en desarrollo
+CSRF_COOKIE_SECURE = False if DEBUG else True  # False en desarrollo
 
 # ============================================
 # EMAIL
@@ -123,29 +123,17 @@ WSGI_APPLICATION = 'Escuela.wsgi.application'
 # ============================================
 # https://docs.djangoproject.com/en/5.1/ref/settings/#databases
 
-# Configuración desde variables de entorno
-DB_ENGINE = os.getenv('DB_ENGINE', 'django.db.backends.sqlite3')
-
-if DB_ENGINE == 'django.db.backends.sqlite3':
-    # Configuración para SQLite (desarrollo)
-    DATABASES = {
-        'default': {
-            'ENGINE': DB_ENGINE,
-            'NAME': BASE_DIR / os.getenv('DB_NAME', 'db.sqlite3'),
-        }
+# Configuración PostgreSQL
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': os.getenv('DB_NAME', 'escuelaonline'),
+        'USER': os.getenv('DB_USER', 'djdawel'),
+        'PASSWORD': os.getenv('DB_PASSWORD', 'P455wM4st3rKingsSofts@'),
+        'HOST': os.getenv('DB_HOST', 'localhost'),
+        'PORT': os.getenv('DB_PORT', '5432'),
     }
-else:
-    # Configuración para PostgreSQL u otras bases de datos (producción)
-    DATABASES = {
-        'default': {
-            'ENGINE': DB_ENGINE,
-            'NAME': os.getenv('DB_NAME'),
-            'USER': os.getenv('DB_USER'),
-            'PASSWORD': os.getenv('DB_PASSWORD'),
-            'HOST': os.getenv('DB_HOST', 'localhost'),
-            'PORT': os.getenv('DB_PORT', '5432'),
-        }
-    }
+}
 
 
 # Password validation
@@ -162,7 +150,8 @@ AUTH_USER_MODEL = 'escuelaweb.CustomUser'
 
 
 AUTHENTICATION_BACKENDS = [
-    'django.contrib.auth.backends.ModelBackend',
+    'escuelaweb.backends.EmailBackend',  # Autenticación por email
+    'django.contrib.auth.backends.ModelBackend',  # Fallback
 ]
 
 AUTH_PASSWORD_VALIDATORS = [

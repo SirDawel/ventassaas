@@ -1,0 +1,378 @@
+{% extends 'website/base.html' %}
+
+{% block title %}{{ titulo }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <h2><i class="fas fa-warehouse me-2"></i>{{ titulo }}</h2>
+                <div>
+                    <a href="{% url 'inventario_dashboard' %}" class="btn btn-secondary">
+                        <i class="fas fa-arrow-left me-2"></i>Dashboard
+                    </a>
+                    <a href="{% url 'inventario_articulos_pdf' %}" class="btn btn-danger" target="_blank">
+                        <i class="fas fa-file-pdf me-2"></i>PDF Productos
+                    </a>
+                    <a href="{% url 'inventario_servicios_pdf' %}" class="btn btn-warning" target="_blank">
+                        <i class="fas fa-file-pdf me-2"></i>PDF Servicios
+                    </a>
+                    <a href="{% url 'articulo_crear' %}" class="btn btn-success me-2">
+                        <i class="fas fa-plus me-2"></i>Nuevo Producto
+                    </a>
+                    {% if user.rol == 'Administrador' %}
+                    <a href="{% url 'concepto_create' %}" class="btn btn-primary">
+                        <i class="fas fa-plus me-2"></i>Nuevo Servicio
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Estadísticas rápidas -->
+    <div class="row mb-4">
+        <div class="col-md-4">
+            <div class="card bg-primary text-white">
+                <div class="card-body">
+                    <h5 class="card-title"><i class="fas fa-boxes me-2"></i>Total Items</h5>
+                    <h2 class="mb-0">{{ total_items }}</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card bg-success text-white">
+                <div class="card-body">
+                    <h5 class="card-title"><i class="fas fa-box me-2"></i>Productos</h5>
+                    <h2 class="mb-0">{{ total_productos }}</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card bg-info text-white">
+                <div class="card-body">
+                    <h5 class="card-title"><i class="fas fa-handshake me-2"></i>Servicios</h5>
+                    <h2 class="mb-0">{{ total_servicios }}</h2>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filtros -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="get" class="row g-3">
+                <div class="col-md-5">
+                    <label for="search" class="form-label">Buscar</label>
+                    <input type="text" class="form-control" id="search" name="search" 
+                           value="{{ search }}" placeholder="Código, nombre, descripción...">
+                </div>
+                <div class="col-md-3">
+                    <label for="tipo" class="form-label">Tipo</label>
+                    <select class="form-select" id="tipo" name="tipo">
+                        <option value="">Todos</option>
+                        <option value="producto" {% if tipo_filtro == 'producto' %}selected{% endif %}>Solo Productos</option>
+                        <option value="servicio" {% if tipo_filtro == 'servicio' %}selected{% endif %}>Solo Servicios</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Estado</label>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="activos" name="activos" 
+                               value="1" {% if solo_activos %}checked{% endif %}>
+                        <label class="form-check-label" for="activos">
+                            Solo activos
+                        </label>
+                    </div>
+                </div>
+                <div class="col-md-2 d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="fas fa-search me-1"></i>Buscar
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Tabla de Inventario -->
+    <div class="card">
+        <div class="card-body">
+            {% if page_obj %}
+                <div class="table-responsive">
+                    <table class="table table-hover table-striped">
+                        <thead class="table-dark">
+                            <tr>
+                                <th style="width: 10%;">Código</th>
+                                <th style="width: 25%;">Nombre</th>
+                                <th style="width: 15%;">Tipo/Categoría</th>
+                                <th style="width: 12%;" class="text-end">Precio</th>
+                                <th style="width: 10%;" class="text-center">Stock</th>
+                                <th style="width: 8%;" class="text-center">ITBIS</th>
+                                <th style="width: 8%;" class="text-center">Estado</th>
+                                <th style="width: 12%;" class="text-center">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in page_obj %}
+                            <tr>
+                                <td>
+                                    {% if item.tipo == 'producto' %}
+                                        <span class="badge bg-success">
+                                            <i class="fas fa-barcode"></i> {{ item.codigo }}
+                                        </span>
+                                    {% else %}
+                                        <span class="badge bg-info">
+                                            <i class="fas fa-server"></i> {{ item.codigo }}
+                                        </span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <strong>{{ item.nombre }}</strong>
+                                    {% if item.descripcion %}
+                                        <br><small class="text-muted">{{ item.descripcion|truncatewords:10 }}</small>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if item.tipo == 'producto' %}
+                                        <span class="badge bg-secondary">
+                                            <i class="fas fa-box"></i> {{ item.categoria }}
+                                        </span>
+                                    {% else %}
+                                        <span class="badge bg-primary">
+                                            <i class="fas fa-handshake"></i> {{ item.tipo_display }}
+                                        </span>
+                                        {% if item.es_estandar %}
+                                            <br><span class="badge bg-warning text-dark mt-1">
+                                                <i class="fas fa-star"></i> Estándar
+                                            </span>
+                                        {% endif %}
+                                    {% endif %}
+                                </td>
+                                <td class="text-end">
+                                    {% if item.precio is not None %}
+                                        <strong class="text-success">RD$ {{ item.precio|floatformat:2 }}</strong>
+                                    {% else %}
+                                        <span class="text-muted"><i>Variable</i></span>
+                                    {% endif %}
+                                </td>
+                                <td class="text-center">
+                                    {% if item.tipo == 'producto' %}
+                                        {% if item.stock_actual <= item.stock_minimo %}
+                                            <span class="badge bg-danger">{{ item.stock_actual }}</span>
+                                            <br><small class="text-muted">Min: {{ item.stock_minimo }}</small>
+                                        {% else %}
+                                            <span class="badge bg-success">{{ item.stock_actual }}</span>
+                                            <br><small class="text-muted">Min: {{ item.stock_minimo }}</small>
+                                        {% endif %}
+                                    {% else %}
+                                        <span class="text-muted">-</span>
+                                    {% endif %}
+                                </td>
+                                <td class="text-center">
+                                    {% if item.aplica_itbis %}
+                                        <span class="badge bg-info">Sí</span>
+                                    {% else %}
+                                        <span class="text-muted">-</span>
+                                    {% endif %}
+                                </td>
+                                <td class="text-center">
+                                    {% if item.activo %}
+                                        <span class="badge bg-success">Activo</span>
+                                    {% else %}
+                                        <span class="badge bg-secondary">Inactivo</span>
+                                    {% endif %}
+                                </td>
+                                <td class="text-center">
+                                    {% if item.link_detalle %}
+                                        <a href="{{ item.link_detalle }}" class="btn btn-sm btn-info" title="Ver detalle">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                    {% endif %}
+                                    {% if item.tipo == 'producto' or user.rol == 'Administrador' %}
+                                        <a href="{{ item.link_editar }}" class="btn btn-sm btn-primary" title="Editar">
+                                            <i class="fas fa-edit"></i>
+                                        </a>
+                                    {% endif %}
+                                    {% if item.tipo == 'producto' and item.activo and user.rol in 'Administrador,Secretaria' %}
+                                        <button type="button" class="btn btn-sm btn-danger" 
+                                                onclick="abrirModalEliminarArticulo('{{ item.id }}', '{{ item.codigo }}', '{{ item.nombre|escapejs }}')" 
+                                                title="Eliminar">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Paginación -->
+                {% if page_obj.has_other_pages %}
+                <nav aria-label="Paginación" class="mt-4">
+                    <ul class="pagination justify-content-center">
+                        {% if page_obj.has_previous %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page=1{% if search %}&search={{ search }}{% endif %}{% if tipo_filtro %}&tipo={{ tipo_filtro }}{% endif %}{% if solo_activos %}&activos=1{% endif %}">Primera</a>
+                        </li>
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if search %}&search={{ search }}{% endif %}{% if tipo_filtro %}&tipo={{ tipo_filtro }}{% endif %}{% if solo_activos %}&activos=1{% endif %}">Anterior</a>
+                        </li>
+                        {% endif %}
+
+                        <li class="page-item active">
+                            <span class="page-link">
+                                Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}
+                            </span>
+                        </li>
+
+                        {% if page_obj.has_next %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if search %}&search={{ search }}{% endif %}{% if tipo_filtro %}&tipo={{ tipo_filtro }}{% endif %}{% if solo_activos %}&activos=1{% endif %}">Siguiente</a>
+                        </li>
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if search %}&search={{ search }}{% endif %}{% if tipo_filtro %}&tipo={{ tipo_filtro }}{% endif %}{% if solo_activos %}&activos=1{% endif %}">Última</a>
+                        </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+                {% endif %}
+
+            {% else %}
+                <div class="alert alert-info text-center">
+                    <i class="fas fa-info-circle me-2"></i>
+                    No se encontraron items que coincidan con los criterios de búsqueda.
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Leyenda -->
+    <div class="card mt-4">
+        <div class="card-body">
+            <h5 class="card-title"><i class="fas fa-info-circle me-2"></i>Leyenda</h5>
+            <div class="row">
+                <div class="col-md-6">
+                    <p class="mb-2">
+                        <span class="badge bg-success"><i class="fas fa-barcode"></i></span>
+                        <strong>Productos:</strong> Artículos físicos del inventario con control de stock
+                    </p>
+                    <p class="mb-2">
+                        <span class="badge bg-info"><i class="fas fa-server"></i></span>
+                        <strong>Servicios:</strong> Conceptos de pago (mensualidades, servicios, etc.)
+                    </p>
+                </div>
+                <div class="col-md-6">
+                    <p class="mb-2">
+                        <span class="badge bg-danger">Stock</span>
+                        <strong>Stock bajo:</strong> El stock actual es igual o menor al mínimo
+                    </p>
+                    <p class="mb-2">
+                        <span class="badge bg-warning text-dark"><i class="fas fa-star"></i> Estándar</span>
+                        <strong>Tarifa estándar:</strong> Se asigna automáticamente a nuevos estudiantes
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal para eliminar artículo -->
+<div class="modal fade" id="modalEliminarArticulo" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="post" id="formEliminarArticulo">
+                {% csrf_token %}
+                <div class="modal-header bg-danger text-white">
+                    <h5 class="modal-title">
+                        <i class="fas fa-exclamation-triangle me-2"></i>Eliminar Artículo
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="alert alert-warning">
+                        <strong>¡Atención!</strong> Si este artículo ha sido usado en facturas, 
+                        se marcará como inactivo en lugar de eliminarse para preservar los registros históricos.
+                    </div>
+                    
+                    <p><strong>Código:</strong> <span id="modalArticuloCodigo"></span></p>
+                    <p><strong>Nombre:</strong> <span id="modalArticuloNombre"></span></p>
+                    
+                    <div class="mb-3">
+                        <label for="codigo_anulacion" class="form-label">
+                            <i class="fas fa-key me-1"></i>Código de Seguridad <span class="text-danger">*</span>
+                        </label>
+                        <input type="text" class="form-control" id="codigo_anulacion" 
+                               name="codigo_anulacion" required 
+                               placeholder="Ingrese el código de seguridad"
+                               maxlength="10">
+                        <small class="text-muted">
+                            Solicite el código mensual al Administrador
+                        </small>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="motivo_eliminacion" class="form-label">
+                            <i class="fas fa-comment me-1"></i>Motivo de Eliminación <span class="text-danger">*</span>
+                        </label>
+                        <textarea class="form-control" id="motivo_eliminacion" 
+                                  name="motivo_eliminacion" rows="3" required 
+                                  placeholder="Describa el motivo de la eliminación (mínimo 10 caracteres)"
+                                  minlength="10"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="fas fa-times me-1"></i>Cancelar
+                    </button>
+                    <button type="submit" class="btn btn-danger">
+                        <i class="fas fa-trash me-1"></i>Eliminar Artículo
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+function abrirModalEliminarArticulo(articuloId, articuloCodigo, articuloNombre) {
+    // Llenar los datos del modal
+    document.getElementById('modalArticuloCodigo').textContent = articuloCodigo;
+    document.getElementById('modalArticuloNombre').textContent = articuloNombre;
+    
+    // Configurar el action del formulario
+    const form = document.getElementById('formEliminarArticulo');
+    form.action = '/inventario/articulos/' + articuloId + '/eliminar/';
+    
+    // Limpiar los campos del formulario
+    document.getElementById('codigo_anulacion').value = '';
+    document.getElementById('motivo_eliminacion').value = '';
+    
+    // Mostrar el modal
+    const modal = new bootstrap.Modal(document.getElementById('modalEliminarArticulo'));
+    modal.show();
+}
+</script>
+
+<style>
+    .table-hover tbody tr:hover {
+        background-color: #f8f9fa;
+        cursor: pointer;
+    }
+    
+    .badge {
+        font-size: 0.85rem;
+    }
+    
+    .card {
+        box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+        margin-bottom: 1.5rem;
+    }
+    
+    .btn-group-sm > .btn, .btn-sm {
+        padding: 0.25rem 0.5rem;
+        font-size: 0.875rem;
+    }
+</style>
+{% endblock %}
