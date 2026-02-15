@@ -3,7 +3,7 @@ from . import views
 
 urlpatterns = [
     # ... existing urls ...
-    path('register/', views.register_user, name='register'),
+   path('register/', views.register_user, name='register'),
     
     path("activate/<uidb64>/<token>/", views.activate, name="activate"),
 
@@ -109,6 +109,8 @@ urlpatterns = [
     path('conceptos/eliminar/<int:pk>/', views.concepto_delete, name='concepto_delete'),
     
     # URLs para Sistema de Inventario
+    path('inventario/validar_codigo_barras/', views.validar_codigo_barras, name='validar_codigo_barras'),
+    
     path('inventario/', views.inventario_dashboard, name='inventario_dashboard'),
     path('inventario/lista-completa/', views.inventario_lista_completa, name='inventario_lista_completa'),
     path('inventario/articulos-pdf/', views.inventario_articulos_pdf, name='inventario_articulos_pdf'),

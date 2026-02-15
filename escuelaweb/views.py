@@ -5181,7 +5181,7 @@ def cobros_dashboard(request):
 
 @login_required
 def buscar_estudiante_cobro(request):
-    """Buscar estudiante para asignar pagos"""
+    """Buscar cliente para asignar pagos"""
     if request.user.rol not in ['Secretaria', 'Administrador']:
         messages.error(request, 'No tienes permiso para acceder a esta página.')
         return redirect('plataform')
@@ -5198,7 +5198,7 @@ def buscar_estudiante_cobro(request):
     grado = request.GET.get('grado', '').strip()
     seccion = request.GET.get('seccion', '').strip()
     
-    estudiantes = CustomUser.objects.filter(rol='Estudiante', is_active=True)
+    estudiantes = CustomUser.objects.filter(is_active=True)
     
     if query:
         estudiantes = estudiantes.filter(
@@ -5222,7 +5222,7 @@ def buscar_estudiante_cobro(request):
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
     
-    # Obtener grados y secciones únicas
+    # Obtener grados y secciones únicas (solo para estudiantes)
     grados_disponibles = CustomUser.objects.filter(
         rol='Estudiante', 
         grado__isnull=False
@@ -5234,7 +5234,7 @@ def buscar_estudiante_cobro(request):
     ).values_list('seccion', flat=True).distinct().order_by('seccion')
     
     context = {
-        'titulo': 'Buscar Estudiante para Cobro',
+        'titulo': 'Buscar Cliente para Cobro',
         'anho_escolar': anho_escolar,
         'estudiantes': page_obj,
         'query': query,
@@ -5359,13 +5359,12 @@ def factura_crear_nueva(request):
     
     estudiante_seleccionado = None
     
-    # Búsqueda de estudiante
+    # Búsqueda de cliente (todos los roles)
     buscar = request.GET.get('buscar', '')
     estudiantes_encontrados = []
     
     if buscar:
         estudiantes_encontrados = CustomUser.objects.filter(
-            rol='Estudiante',
             is_active=True
         ).filter(
             Q(first_name__icontains=buscar) |
@@ -5385,7 +5384,7 @@ def factura_crear_nueva(request):
     
     if estudiante_id:
         try:
-            estudiante_seleccionado = CustomUser.objects.get(id=estudiante_id, rol='Estudiante')
+            estudiante_seleccionado = CustomUser.objects.get(id=estudiante_id, is_active=True)
             
             # Verificar si es el cliente genérico
             if cliente_generico and estudiante_seleccionado.id == cliente_generico.id:
@@ -5472,32 +5471,32 @@ def factura_crear_nueva(request):
                 messages.error(request, 'Debes seleccionar un estudiante.')
                 return redirect('factura_crear_nueva')
             
-            # VALIDAR que el estudiante existe ANTES de continuar
+            # VALIDAR que el cliente existe ANTES de continuar
             try:
-                estudiante_post = CustomUser.objects.get(id=estudiante_id_post, rol='Estudiante')
+                estudiante_post = CustomUser.objects.get(id=estudiante_id_post, is_active=True)
                 
-                # Validar que el estudiante tenga datos mínimos necesarios
+                # Validar que el cliente tenga datos mínimos necesarios
                 if not estudiante_post.first_name or not estudiante_post.last_name:
                     messages.error(request, 
-                        f'El estudiante seleccionado (ID: {estudiante_id_post}) no tiene nombre completo configurado. '
-                        'Por favor, actualiza los datos del estudiante antes de crear la factura.')
+                        f'El cliente seleccionado (ID: {estudiante_id_post}) no tiene nombre completo configurado. '
+                        'Por favor, actualiza los datos del cliente antes de crear la factura.')
                     return redirect('factura_crear_nueva')
                     
-                # Validar que el estudiante esté activo
+                # Validar que el cliente esté activo
                 if not estudiante_post.is_active:
                     messages.error(request, 
-                        f'El estudiante {estudiante_post.get_full_name()} está inactivo. '
-                        'No se pueden crear facturas para estudiantes inactivos.')
+                        f'El cliente {estudiante_post.get_full_name()} está inactivo. '
+                        'No se pueden crear facturas para clientes inactivos.')
                     return redirect('factura_crear_nueva')
                     
             except CustomUser.DoesNotExist:
                 messages.error(request, 
-                    f'El estudiante seleccionado (ID: {estudiante_id_post}) no existe en la base de datos. '
-                    'Por favor, selecciona un estudiante válido o verifica que el estudiante no haya sido eliminado.')
+                    f'El cliente seleccionado (ID: {estudiante_id_post}) no existe en la base de datos. '
+                    'Por favor, selecciona un cliente válido o verifica que el cliente no haya sido eliminado.')
                 return redirect('factura_crear_nueva')
             except Exception as e:
                 messages.error(request, 
-                    f'Error al validar el estudiante: {str(e)}. '
+                    f'Error al validar el cliente: {str(e)}. '
                     'Por favor, intenta con otro estudiante o contacta al administrador.')
                 return redirect('factura_crear_nueva')
             
@@ -6290,7 +6289,7 @@ def factura_registrar_pago(request, factura_id):
 
 @login_required
 def facturas_estudiante(request, estudiante_id):
-    """Ver todas las facturas de un estudiante"""
+    """Ver todas las facturas de un cliente"""
     if request.user.rol not in ['Secretaria', 'Administrador']:
         messages.error(request, 'No tienes permiso para acceder a esta página.')
         return redirect('plataform')
@@ -6298,7 +6297,7 @@ def facturas_estudiante(request, estudiante_id):
     from .models import Factura
     from django.db.models import Sum
     
-    estudiante = get_object_or_404(CustomUser, id=estudiante_id, rol='Estudiante')
+    estudiante = get_object_or_404(CustomUser, id=estudiante_id, is_active=True)
     
     # Obtener año escolar activo
     try:
@@ -7837,4 +7836,13 @@ def reportes_ventas(request):
             messages.error(request, 'Error al generar el PDF.')
             return redirect('reportes_ventas')
     
-    return render(request, 'cobros/reportes_ventas.html', context)
+        return render(request, 'cobros/reportes_ventas.html', context)
+    
+
+def validar_codigo_barras(request):
+    from .models import Articulo
+    codigo = request.GET.get('codigo', '').strip()
+    exists = False
+    if codigo:
+        exists = Articulo.objects.filter(codigo_barras=codigo).exists()
+    return JsonResponse({'exists': exists})

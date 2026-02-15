@@ -322,7 +322,7 @@
                                 <div class="search-input-wrapper">
                                     <i class="fas fa-barcode search-icon"></i>
                                     <input type="text" class="form-control form-control-lg search-input" id="buscarInput" name="buscar"
-                                           placeholder="🔍 Escanea código de barras o busca estudiante..." 
+                                           placeholder="🔍 Escanea código de barras o busca cliente..." 
                                            value="{{ buscar }}" autocomplete="off">
                                 </div>
                             </div>
@@ -894,7 +894,7 @@ function toggleCamposMes() {
         if ((tipo === 'mensualidad' || tipo === 'inscripcion' || tipo === 'transporte') && esClienteGenerico) {
             selectedOption.disabled = true;
             select.value = '';
-            alert('El cliente genérico no puede tener mensualidades, inscripciones ni transporte. Selecciona un estudiante real.');
+            alert('El cliente genérico no puede tener mensualidades, inscripciones ni transporte. Selecciona un cliente real.');
             return;
         }
         
@@ -1064,7 +1064,7 @@ function agregarConceptoRapido() {
     
     // VALIDAR: Cliente genérico no puede tener mensualidades, inscripciones ni transporte
     if ((tipo === 'mensualidad' || tipo === 'inscripcion' || tipo === 'transporte') && esClienteGenerico) {
-        alert('El cliente genérico no puede tener mensualidades, inscripciones ni transporte. Por favor selecciona un estudiante real.');
+        alert('El cliente genérico no puede tener mensualidades, inscripciones ni transporte. Por favor selecciona un cliente real.');
         return;
     }
     

@@ -29,8 +29,16 @@
                                     <input type="text" class="form-control" id="codigo_barras" name="codigo_barras" 
                                            value="{{ articulo.codigo_barras }}" 
                                            placeholder="Escanear o escribir código de barras (o dejar vacío para generar)">
+                                     <div id="codigo_barras_error" class="text-danger mt-1" style="display:none;"></div>
                                     <small class="text-muted">Si se deja vacío, se generará automáticamente. Use para lector óptico en punto de venta</small>
                                 </div>
+
+                                <script>
+                                document.addEventListener('DOMContentLoaded', function() {
+                                    var cb = document.getElementById('codigo_barras');
+                                    if (cb) { cb.focus(); }
+                                });
+                                </script>
                                 
                                 <div class="mb-3">
                                     <label for="nombre" class="form-label">Nombre <span class="text-danger">*</span></label>
@@ -98,8 +106,36 @@
                                 <div class="row">
                                     <div class="col-md-4 mb-3">
                                         <label for="stock_actual" class="form-label">Stock Actual</label>
-                                        <input type="number" class="form-control" id="stock_actual" 
-                                               name="stock_actual" value="{{ articulo.stock_actual|default:0 }}">
+                                             <input type="number" class="form-control" id="stock_actual" 
+                                                 name="stock_actual" value="{{ articulo.stock_actual|default:0 }}" {% if articulo %}readonly{% endif %}>
+                                            {% if articulo %}
+                                            <label for="sumar_stock" class="form-label mt-2">Sumar Stock</label>
+                                                <input type="number" class="form-control" id="sumar_stock" name="sumar_stock" value="" placeholder="Cantidad a agregar o restar" {% if not articulo %}style="display:none;"{% endif %}>
+                                                <script>
+                                                document.addEventListener('DOMContentLoaded', function() {
+        var sumar = document.getElementById('sumar_stock');
+        var stock = document.getElementById('stock_actual');
+        var cb = document.getElementById('codigo_barras');
+        var original = stock ? parseFloat(stock.value) || 0 : 0;
+        {% if articulo %}
+            if (stock && sumar) {
+                stock.readOnly = true;
+                sumar.addEventListener('input', function() {
+                    var agregar = parseFloat(sumar.value) || 0;
+                    stock.value = original + agregar;
+                });
+                sumar.addEventListener('blur', function() {
+                    sumar.value = '';
+                    original = parseFloat(stock.value) || 0;
+                });
+                setTimeout(function() { sumar.focus(); }, 100);
+            }
+        {% else %}
+            if (cb) { setTimeout(function() { cb.focus(); }, 100); }
+        {% endif %}
+                                                });
+                                                </script>
+                                            {% endif %}
                                     </div>
                                     <div class="col-md-4 mb-3">
                                         <label for="stock_minimo" class="form-label">Stock Mínimo</label>
@@ -132,12 +168,38 @@
                                     <label class="form-check-label" for="aplica_itbis">
                                         Aplica ITBIS (18%)
                                     </label>
-                                </div>
-                                <div class="form-check form-switch mb-2">
-                                    <input class="form-check-input" type="checkbox" id="permite_descuento" 
-                                           name="permite_descuento" {% if articulo.permite_descuento or not articulo %}checked{% endif %}>
-                                    <label class="form-check-label" for="permite_descuento">
-                                        Permite descuentos
+                        <script>
+                        document.addEventListener('DOMContentLoaded', function() {
+                            var cb = document.getElementById('codigo_barras');
+                            var stock = document.getElementById('stock_actual');
+                            var errorDiv = document.getElementById('codigo_barras_error');
+                            {% if articulo %}
+                                if (stock) { stock.focus(); }
+                            {% else %}
+                                if (cb) { cb.focus(); }
+                            {% endif %}
+
+                            if (cb) {
+                                cb.addEventListener('blur', function() {
+                                    var codigo = cb.value.trim();
+                                    if (!codigo) {
+                                        errorDiv.style.display = 'none';
+                                        return;
+                                    }
+                                    fetch('/inventario/validar_codigo_barras/?codigo=' + encodeURIComponent(codigo))
+                                        .then(resp => resp.json())
+                                        .then(data => {
+                                            if (data.exists) {
+                                                errorDiv.textContent = 'Ya existe un artículo con ese código de barras.';
+                                                errorDiv.style.display = 'block';
+                                            } else {
+                                                errorDiv.style.display = 'none';
+                                            }
+                                        });
+                                });
+                            }
+                        });
+                        </script>
                                     </label>
                                 </div>
                                 {% if articulo %}
