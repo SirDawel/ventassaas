@@ -2480,7 +2480,9 @@ def reporte_general(request, curso_id):
                 for idx, peso in enumerate(valores):
                     ra_val = getattr(m, f'ra_{idx+1}', None)
                     if ra_val is not None:
-                        total_ra += (ra_val * peso / 100)
+                        # ra_val ya está en formato porcentaje (ej: 8.5 de 10%)
+                        # por lo tanto, simplemente sumamos directamente
+                        total_ra += float(ra_val)
                 # El total nunca debe exceder 100
                 m.total_ra = round(min(total_ra, 100), 2)
             else:
@@ -3639,9 +3641,10 @@ def agregar_notas_modular(request, materia_id):
                         setattr(m, campo, valor_float)
                         ra_valores.append(valor_float)
 
-                # Calcular nota final como suma ponderada de los RA (cada input * su %/100)
+                # Calcular nota final como suma directa de los RA
+                # (cada valor ya está en formato porcentaje)
                 if len(ra_valores) == cantidad_ra:
-                    total_ra = sum([ra_valores[i] * (valores_ra[i]/100) for i in range(cantidad_ra)])
+                    total_ra = sum(ra_valores)
                     m.nota_final = round(total_ra, 2)
                     m.nota_final_oficial = m.nota_final
                 else:
@@ -3657,9 +3660,9 @@ def agregar_notas_modular(request, materia_id):
     for m in matriculas:
         ra_vals = [getattr(m, campo, None) for campo in campos_ra]
         ra_nums = [float(v) if v is not None else 0 for v in ra_vals]
-        ponderados = [ra_nums[i] * (valores_ra[i]/100) for i in range(len(ra_nums))]
-        print('Ponderados:', ponderados)
-        m.total_ra = round(sum(ponderados), 2) if all(v is not None for v in ra_vals) else None
+        # Los valores ya están en formato porcentaje (ej: 8.5 de 10%)
+        # Simplemente sumamos directamente
+        m.total_ra = round(sum(ra_nums), 2) if all(v is not None for v in ra_vals) else None
 
     return render(request, 'est_forder/agregar_notas_modular.html', {
         'materia': materia,

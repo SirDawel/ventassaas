@@ -111,11 +111,15 @@
     </div>
 
     <div class="card shadow">
-        <div class="card-header bg-primary text-white">
+        <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
             <h5 class="mb-0"><i class="fas fa-chart-bar me-2"></i>Calificaciones del Módulo Formativo</h5>
+            <div class="form-check form-switch" style="padding-left: 2.5em;">
+                <input class="form-check-input" type="checkbox" id="modoEntrada" onchange="cambiarModoEntrada()" style="width: 3em; height: 1.5em; cursor: pointer;">
+                <label class="form-check-label fw-bold fs-6" for="modoEntrada" id="labelModo" style="cursor: pointer; margin-left: 0.5rem;">Modo: % del RA</label>
+            </div>
         </div>
         <div class="card-body p-0">
-            <form method="post">
+            <form method="post" id="formNotas">
                 {% csrf_token %}
                 <input type="hidden" name="guardar_notas_modular" value="1">
 
@@ -143,16 +147,20 @@
                                     <input type="number"
                                            name="ra_{{ i|add:1 }}_{{ m.id }}"
                                            value="{{ m|get_ra:i }}"
-                                           class="form-control form-control-sm text-center"
+                                           class="form-control form-control-sm text-center input-nota"
                                            step="0.01"
                                            min="0"
                                            max="{{ valores_ra|index:i }}"
                                            placeholder="0-{{ valores_ra|index:i }}"
+                                           data-porcentaje="{{ valores_ra|index:i }}"
+                                           data-modo="porcentaje"
+                                           data-estudiante="{{ m.id }}"
+                                           oninput="calcularTotal({{ m.id }})"
                                            autocomplete="off">
                                     <script>console.log('Estudiante: {{ m.estudiante.get_full_name }} | RA_{{ i|add:1 }} =', '{{ m|get_ra:i }}');</script>
                                 </td>
                                 {% endfor %}
-                                <td class="text-center fw-bold fs-6 bg-success text-white">
+                                <td class="text-center fw-bold fs-6 bg-success text-white" id="total_{{ m.id }}">
                                     {% if m.total_ra %}
                                         {{ m.total_ra }}
                                     {% else %}
@@ -177,8 +185,9 @@
                         <div class="col-md-8">
                             <div class="alert alert-warning mb-0">
                                 <i class="fas fa-exclamation-triangle me-2"></i>
-                                <strong>Importante:</strong> Cada Resultado de Aprendizaje (RA) tiene un valor de 0 a 10%.
-                                La suma de los 10 RA debe totalizar aproximadamente 100% (calificación final).
+                                <strong>Importante:</strong> Puedes ingresar notas de dos formas:<br>
+                                • <strong>Modo % del RA:</strong> Ingresa el valor directo del porcentaje (ej: si RA vale 30%, ingresa de 0 a 30)<br>
+                                • <strong>Modo Sobre 100:</strong> Ingresa la nota sobre 100 puntos y se convertirá automáticamente (ej: 85/100 en un RA de 30% = 25.5%)
                             </div>
                         </div>
                         <div class="col-md-4 text-end">
@@ -215,10 +224,217 @@
         box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
     }
 
+    /* Estilos para el switch de modo */
+    .form-switch .form-check-input {
+        background-color: rgba(255, 255, 255, 0.3);
+        border: 2px solid white;
+    }
+    
+    .form-switch .form-check-input:checked {
+        background-color: #ffffff;
+        border-color: #ffffff;
+    }
+    
+    .form-check-label {
+        color: white !important;
+    }
+
     /* Remove spinner arrows from number inputs */
     input[type="number"]::-webkit-inner-spin-button,
     input[type="number"]::-webkit-outer-spin-button {
         opacity: 1;
     }
 </style>
+
+<script>
+console.log('Script de modo de entrada cargado');
+
+// Función para calcular el total de un estudiante
+function calcularTotal(estudianteId) {
+    const inputs = document.querySelectorAll(`.input-nota[data-estudiante="${estudianteId}"]`);
+    const modoActual = inputs[0] ? inputs[0].getAttribute('data-modo') : 'porcentaje';
+    let total = 0;
+    
+    inputs.forEach(input => {
+        const valor = parseFloat(input.value) || 0;
+        const porcentaje = parseFloat(input.getAttribute('data-porcentaje'));
+        const max = parseFloat(input.max);
+        
+        // Validar que no supere el máximo
+        if (valor > max) {
+            input.value = max;
+        }
+        
+        // Validar que no sea negativo
+        if (valor < 0) {
+            input.value = 0;
+        }
+        
+        const valorFinal = parseFloat(input.value) || 0;
+        
+        if (modoActual === 'sobre100') {
+            // Si está en modo sobre 100, convertir a porcentaje para sumar
+            // Ej: 85 sobre 100 en un RA de 10% = (85/100) * 10 = 8.5
+            total += (valorFinal / 100) * porcentaje;
+        } else {
+            // Ya está en porcentaje, sumar directamente
+            total += valorFinal;
+        }
+    });
+    
+    const totalCell = document.getElementById(`total_${estudianteId}`);
+    if (totalCell) {
+        totalCell.textContent = total > 0 ? total.toFixed(2) : '-';
+    }
+    
+    console.log(`Total para estudiante ${estudianteId}: ${total.toFixed(2)}`);
+}
+
+// Recalcular todos los totales
+function recalcularTodosLosTotales() {
+    const estudiantesIds = new Set();
+    document.querySelectorAll('.input-nota').forEach(input => {
+        const id = input.getAttribute('data-estudiante');
+        if (id) estudiantesIds.add(id);
+    });
+    estudiantesIds.forEach(id => calcularTotal(id));
+}
+
+// Guardar los valores originales cuando se carga la página
+document.addEventListener('DOMContentLoaded', function() {
+    const inputs = document.querySelectorAll('.input-nota');
+    inputs.forEach(input => {
+        // Guardar el valor original en formato porcentaje
+        const valorOriginal = parseFloat(input.value) || 0;
+        input.setAttribute('data-valor-original', valorOriginal);
+        
+        // Agregar validación al perder el foco
+        input.addEventListener('blur', function() {
+            const max = parseFloat(this.max);
+            const min = parseFloat(this.min) || 0;
+            let valor = parseFloat(this.value);
+            
+            if (isNaN(valor)) {
+                this.value = '';
+                return;
+            }
+            
+            if (valor > max) {
+                this.value = max;
+                this.style.borderColor = '#dc3545';
+                setTimeout(() => { this.style.borderColor = ''; }, 1000);
+            }
+            
+            if (valor < min) {
+                this.value = min;
+                this.style.borderColor = '#dc3545';
+                setTimeout(() => { this.style.borderColor = ''; }, 1000);
+            }
+            
+            // Recalcular el total después de la validación
+            const estudianteId = this.getAttribute('data-estudiante');
+            if (estudianteId) calcularTotal(estudianteId);
+        });
+    });
+    // Calcular totales iniciales
+    recalcularTodosLosTotales();
+});
+
+// Función para cambiar el modo de entrada
+function cambiarModoEntrada() {
+    console.log('Cambiar modo de entrada');
+    const checkbox = document.getElementById('modoEntrada');
+    const label = document.getElementById('labelModo');
+    const inputs = document.querySelectorAll('.input-nota');
+    
+    if (checkbox.checked) {
+        // Modo: Sobre 100
+        label.textContent = 'Modo: Sobre 100';
+        inputs.forEach(input => {
+            const porcentaje = parseFloat(input.getAttribute('data-porcentaje'));
+            const modoActual = input.getAttribute('data-modo') || 'porcentaje';
+            let valorPorcentaje = parseFloat(input.value) || 0;
+            
+            // Si ya estamos en modo sobre100, no convertir
+            if (modoActual === 'sobre100') return;
+            
+            // Convertir: valorPorcentaje (0-porcentaje) -> valorSobre100 (0-100)
+            // Ej: 8.5 en un RA de 10% -> (8.5 / 10) * 100 = 85
+            const valorSobre100 = porcentaje > 0 ? ((valorPorcentaje / porcentaje) * 100).toFixed(2) : 0;
+            
+            console.log(`Convirtiendo: ${valorPorcentaje}% -> ${valorSobre100}/100 (RA vale ${porcentaje}%)`);
+            
+            input.value = valorSobre100 > 0 ? valorSobre100 : '';
+            input.max = '100';
+            input.placeholder = '0-100';
+            input.setAttribute('data-modo', 'sobre100');
+        });
+    } else {
+        // Modo: % del RA
+        label.textContent = 'Modo: % del RA';
+        inputs.forEach(input => {
+            const porcentaje = parseFloat(input.getAttribute('data-porcentaje'));
+            const modoActual = input.getAttribute('data-modo') || 'porcentaje';
+            let valorSobre100 = parseFloat(input.value) || 0;
+            
+            // Si ya estamos en modo porcentaje, no convertir
+            if (modoActual === 'porcentaje') return;
+            
+            // Convertir: valorSobre100 (0-100) -> valorPorcentaje (0-porcentaje)
+            // Ej: 85 en un RA de 10% -> (85 / 100) * 10 = 8.5
+            const valorPorcentaje = porcentaje > 0 ? ((valorSobre100 / 100) * porcentaje).toFixed(2) : 0;
+            
+            console.log(`Convirtiendo: ${valorSobre100}/100 -> ${valorPorcentaje}% (RA vale ${porcentaje}%)`);
+            
+            input.value = valorPorcentaje > 0 ? valorPorcentaje : '';
+            input.max = porcentaje;
+            input.placeholder = '0-' + porcentaje;
+            input.setAttribute('data-modo', 'porcentaje');
+        });
+    }
+    
+    // Recalcular todos los totales después de cambiar modo
+    recalcularTodosLosTotales();
+}
+
+// Actualizar data-valor-original cuando el usuario cambia un valor
+document.addEventListener('DOMContentLoaded', function() {
+    const inputs = document.querySelectorAll('.input-nota');
+    inputs.forEach(input => {
+        input.addEventListener('change', function() {
+            const modoActual = input.getAttribute('data-modo') || 'porcentaje';
+            const porcentaje = parseFloat(input.getAttribute('data-porcentaje'));
+            let valor = parseFloat(input.value) || 0;
+            
+            // Siempre guardar en formato porcentaje
+            if (modoActual === 'sobre100') {
+                valor = (valor / 100) * porcentaje;
+            }
+            input.setAttribute('data-valor-original', valor);
+        });
+    });
+});
+
+// Antes de enviar el formulario, convertir todo a modo porcentaje
+document.getElementById('formNotas').addEventListener('submit', function(e) {
+    const inputs = document.querySelectorAll('.input-nota');
+    const modoActual = document.getElementById('modoEntrada').checked;
+    
+    if (modoActual) {
+        // Si está en modo "sobre 100", convertir a porcentaje
+        inputs.forEach(input => {
+            const valorSobre100 = parseFloat(input.value) || 0;
+            const porcentaje = parseFloat(input.getAttribute('data-porcentaje'));
+            
+            if (valorSobre100 >= 0 && porcentaje > 0) {
+                // valorSobre100 (0-100) -> valorPorcentaje (0-porcentaje)
+                // Ej: 85 en un RA de 10% -> (85 / 100) * 10 = 8.5
+                const valorPorcentaje = ((valorSobre100 / 100) * porcentaje).toFixed(2);
+                console.log(`Guardando: ${valorSobre100}/100 -> ${valorPorcentaje}% (RA vale ${porcentaje}%)`);
+                input.value = valorPorcentaje;
+            }
+        });
+    }
+});
+</script>
 {% endblock %}
