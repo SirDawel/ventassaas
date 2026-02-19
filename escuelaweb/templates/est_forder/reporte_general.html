@@ -153,11 +153,21 @@ Reporte General - {{ curso.nombre }}
     * {
         -webkit-print-color-adjust: exact !important;
         print-color-adjust: exact !important;
+        color-adjust: exact !important;
+    }
+
+    html {
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+        color-adjust: exact !important;
     }
 
     body {
         font-size: 11pt;
         color: #000;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+        color-adjust: exact !important;
     }
 
     .btn,
@@ -325,14 +335,110 @@ Reporte General - {{ curso.nombre }}
 </style>
 
 <script>
-// Aplicar configuración de impresión
+// Forzar estilos de color en impresión
 window.addEventListener('beforeprint', function() {
-    // Los estilos CSS @media print manejan el tamaño de fuente
-    console.log('Vista previa de impresión activada');
+    console.log('Preparando para imprimir - Aplicando estilos forzados');
+    
+    // Forzar colores en todos los elementos
+    document.body.style.webkitPrintColorAdjust = 'exact';
+    document.body.style.printColorAdjust = 'exact';
+    document.body.style.colorAdjust = 'exact';
+    
+    // Aplicar estilos a las cards
+    document.querySelectorAll('.card').forEach(function(card) {
+        card.style.border = '2px solid #5c6bc0';
+        card.style.borderRadius = '8px';
+        card.style.backgroundColor = '#ffffff';
+    });
+    
+    document.querySelectorAll('.card-body').forEach(function(body) {
+        body.style.backgroundColor = '#fafbff';
+        body.style.padding = '12px';
+    });
+    
+    document.querySelectorAll('.card-header').forEach(function(header) {
+        header.style.borderBottom = '2px solid rgba(92, 107, 192, 0.3)';
+        header.style.padding = '8px 12px';
+    });
+    
+    // Forzar colores en badges
+    document.querySelectorAll('.badge.bg-success').forEach(function(el) {
+        el.style.backgroundColor = '#28a745';
+        el.style.color = 'white';
+    });
+    
+    document.querySelectorAll('.badge.bg-danger').forEach(function(el) {
+        el.style.backgroundColor = '#dc3545';
+        el.style.color = 'white';
+    });
+    
+    document.querySelectorAll('.badge.bg-warning').forEach(function(el) {
+        el.style.backgroundColor = '#ffc107';
+        el.style.color = '#000';
+    });
+    
+    document.querySelectorAll('.badge.bg-info').forEach(function(el) {
+        el.style.backgroundColor = '#17a2b8';
+        el.style.color = 'white';
+    });
+    
+    document.querySelectorAll('.badge.bg-secondary').forEach(function(el) {
+        el.style.backgroundColor = '#6c757d';
+        el.style.color = 'white';
+    });
+    
+    // Forzar colores en info-sections
+    document.querySelectorAll('.info-section').forEach(function(el) {
+        el.style.backgroundColor = '#f8fafc';
+        el.style.borderRadius = '4px';
+        el.style.padding = '8px';
+    });
+    
+    // Forzar colores en encabezado institucional
+    document.querySelectorAll('.encabezado-institucional').forEach(function(el) {
+        el.style.borderBottom = '2px solid #5c6bc0';
+    });
+    
+    document.querySelectorAll('.encabezado-institucional h2').forEach(function(el) {
+        el.style.color = '#2c3e50';
+    });
+    
+    document.querySelectorAll('.encabezado-institucional h4').forEach(function(el) {
+        el.style.color = '#5c6bc0';
+    });
+    
+    document.querySelectorAll('.encabezado-institucional p').forEach(function(el) {
+        el.style.color = '#6c757d';
+    });
+    
+    // Forzar colores en cards modulares
+    document.querySelectorAll('.card.border-info').forEach(function(el) {
+        el.style.borderColor = '#17a2b8';
+    });
+    
+    document.querySelectorAll('.card.border-info .card-header').forEach(function(el) {
+        el.style.backgroundColor = '#17a2b8';
+        el.style.color = 'white';
+    });
+    
+    document.querySelectorAll('.bg-info').forEach(function(el) {
+        el.style.backgroundColor = '#17a2b8';
+        el.style.color = 'white';
+    });
+    
+    // Forzar estilos en tablas
+    document.querySelectorAll('.table thead th').forEach(function(el) {
+        el.style.backgroundColor = '#f8fafc';
+        el.style.border = '1px solid #ddd';
+    });
+    
+    document.querySelectorAll('.table td').forEach(function(el) {
+        el.style.border = '1px solid #ddd';
+    });
 });
 
 window.addEventListener('afterprint', function() {
-    console.log('Vista previa de impresión cerrada');
+    console.log('Impresión completada');
 });
 </script>
 {% endblock %}
