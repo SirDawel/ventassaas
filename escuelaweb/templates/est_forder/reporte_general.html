@@ -145,11 +145,11 @@ Reporte General - {{ curso.nombre }}
 
     @page {
         size: A4 portrait;
-        margin: 15mm;
+        margin: 12mm;
     }
 
     body {
-        font-size: 12px;
+        font-size: 11pt;
         color: #000;
     }
 
@@ -180,23 +180,51 @@ Reporte General - {{ curso.nombre }}
 
     .table {
         width: 100%;
-        font-size: 11px;
+        font-size: 10pt;
     }
 
     .table th,
     .table td {
-        padding: 6px;
+        padding: 4px 6px;
+    }
+
+    .table th {
+        font-size: 9pt;
     }
 
     .encabezado-institucional {
         border-bottom: 2px solid #000;
-        padding-bottom: 10px;
-        margin-bottom: 15px;
+        padding-bottom: 8px;
+        margin-bottom: 12px;
     }
 
     .encabezado-institucional img {
-        height: 80px;
-        margin-bottom: 10px;
+        height: 60px;
+        margin-bottom: 8px;
+    }
+
+    .encabezado-institucional h2 {
+        font-size: 14pt;
+    }
+
+    .encabezado-institucional h4 {
+        font-size: 11pt;
+    }
+
+    .encabezado-institucional p {
+        font-size: 9pt;
+    }
+
+    .info-section h4 {
+        font-size: 10pt;
+    }
+
+    .info-section p {
+        font-size: 9pt;
+    }
+
+    .badge {
+        font-size: 8pt;
     }
 
 }
@@ -204,30 +232,14 @@ Reporte General - {{ curso.nombre }}
 </style>
 
 <script>
-// Forzar estilos de impresión
+// Aplicar configuración de impresión
 window.addEventListener('beforeprint', function() {
-    document.body.style.fontSize = '5pt';
-    document.documentElement.style.fontSize = '5pt';
-    
-    // Aplicar estilos a todas las páginas de estudiantes
-    var pages = document.querySelectorAll('.student-page');
-    pages.forEach(function(page) {
-        page.style.transform = 'scale(0.85)';
-        page.style.transformOrigin = 'top left';
-        page.style.fontSize = '5pt';
-    });
+    // Los estilos CSS @media print manejan el tamaño de fuente
+    console.log('Vista previa de impresión activada');
 });
 
 window.addEventListener('afterprint', function() {
-    document.body.style.fontSize = '';
-    document.documentElement.style.fontSize = '';
-    
-    var pages = document.querySelectorAll('.student-page');
-    pages.forEach(function(page) {
-        page.style.transform = '';
-        page.style.transformOrigin = '';
-        page.style.fontSize = '';
-    });
+    console.log('Vista previa de impresión cerrada');
 });
 </script>
 {% endblock %}
