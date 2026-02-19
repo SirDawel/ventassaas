@@ -217,32 +217,33 @@ Reporte General - {{ curso.nombre }}
             height: 277mm !important;
             max-height: 277mm !important;
             page-break-after: always !important;
+            page-break-before: auto !important;
             page-break-inside: avoid !important;
             margin: 0 !important;
             padding: 0 !important;
-            display: flex !important;
-            flex-direction: column !important;
+            display: block !important;
+            position: relative !important;
+        }
+        
+        .student-page:last-child {
+            page-break-after: auto !important;
         }
         
         .student-page .card {
             width: 100% !important;
             height: 100% !important;
             margin: 0 !important;
+            page-break-inside: avoid !important;
             display: flex !important;
             flex-direction: column !important;
-            box-sizing: border-box !important;
+            overflow: hidden !important;
         }
         
         .student-page .card-body {
             flex: 1 !important;
             display: flex !important;
             flex-direction: column !important;
-            overflow: hidden !important;
-        }
-        
-        .student-page .table-responsive {
-            flex: 1 !important;
-            overflow: visible !important;
+            overflow: auto !important;
         }
     }
 
@@ -265,8 +266,32 @@ window.addEventListener('beforeprint', function() {
     document.body.style.fontSize = '18px';
     document.body.style.color = '#000';
     
-    // NO TOCAR LOS ESTILOS INLINE QUE YA ESTÁN - Solo reforzar algunos críticos
-    console.log('✅ Estilos de impresión aplicados - TODO INLINE');
+    // FORZAR SALTOS DE PÁGINA EN CADA ESTUDIANTE
+    var studentPages = document.querySelectorAll('.student-page');
+    console.log('Total de páginas de estudiantes:', studentPages.length);
+    
+    studentPages.forEach(function(page, index) {
+        page.style.pageBreakAfter = 'always';
+        page.style.pageBreakInside = 'avoid';
+        page.style.breakAfter = 'page';
+        page.style.breakInside = 'avoid';
+        page.style.height = '277mm';
+        page.style.maxHeight = '277mm';
+        page.style.display = 'block';
+        page.style.width = '100%';
+        page.style.position = 'relative';
+        
+        // Último estudiante no necesita salto de página después
+        if (index === studentPages.length - 1) {
+            page.style.pageBreakAfter = 'auto';
+            page.style.breakAfter = 'auto';
+            console.log('Última página de estudiante - sin salto al final');
+        }
+        
+        console.log('Página estudiante ' + (index + 1) + ' configurada para nueva página');
+    });
+    
+    console.log('✅ Estilos de impresión aplicados - UNA PÁGINA POR ESTUDIANTE');
 });
 
 window.addEventListener('afterprint', function() {
@@ -287,8 +312,8 @@ window.addEventListener('afterprint', function() {
 
         <div class="card-body">
             {% for estudiante, datos in reporte_estudiantes.items %}
-            <div class="student-page" style="page-break-after: always !important; page-break-inside: avoid !important; width: 100% !important; height: 277mm !important; margin: 0 !important; padding: 0 !important; display: flex !important; flex-direction: column !important;">
-                <div class="card mb-3" style="border: 3px solid #5c6bc0 !important; border-radius: 8px !important; background-color: #ffffff !important; margin: 0 !important; width: 100% !important; height: 100% !important; display: flex !important; flex-direction: column !important; box-sizing: border-box !important;">
+            <div class="student-page" style="page-break-after: always !important; page-break-before: auto !important; page-break-inside: avoid !important; break-after: page !important; break-inside: avoid !important; width: 100% !important; height: 277mm !important; max-height: 277mm !important; margin: 0 !important; padding: 0 !important; display: block !important; position: relative !important;">
+                <div class="card mb-3" style="border: 3px solid #5c6bc0 !important; border-radius: 8px !important; background-color: #ffffff !important; margin: 0 !important; width: 100% !important; height: 100% !important; max-height: 100% !important; overflow: hidden !important; page-break-inside: avoid !important;">
                     <div class="card-header bg-light encabezado-institucional" style="border-bottom: 3px solid #5c6bc0 !important; padding: 15px 20px !important; text-align: center !important; background-color: #f8f9fa !important;">
                         
                         <img src="/static/img/logo_poli.jpeg" alt="Logo" style="height:80px !important; margin-bottom:10px !important;">                         
@@ -301,9 +326,9 @@ window.addEventListener('afterprint', function() {
                         <h4 style="font-size: 18px !important; color: #5c6bc0 !important; margin: 8px 0 !important; font-weight: 600 !important;">Curso: {{ curso.nombre }}</h4>
                     </div>
 
-                    <div class="card-body" style="padding: 20px !important; background-color: #fafbff !important; flex: 1 !important; width: 100% !important; display: flex !important; flex-direction: column !important; overflow: hidden !important;">
+                    <div class="card-body" style="padding: 20px !important; background-color: #fafbff !important; flex: 1 !important; display: flex !important; flex-direction: column !important; width: 100% !important; overflow: auto !important;">
                         <!-- INFORMACIÓN DEL ESTUDIANTE -->
-                        <div class="row mb-2" style="margin-bottom: 12px !important; flex-shrink: 0 !important;">
+                        <div class="row mb-2" style="margin-bottom: 15px !important;">
                             <div class="col-md-6">
                                 <div class="info-section" style="background-color: #f8fafc !important; border-radius: 8px !important; padding: 15px !important; margin-bottom: 10px !important; border: 2px solid #e2e8f0 !important;">
                                     <h4 style="font-size: 17px !important; font-weight: 600 !important; color: #2c3e50 !important; margin-bottom: 10px !important;">Información del Estudiante</h4>
@@ -334,8 +359,8 @@ window.addEventListener('afterprint', function() {
                         </div>
 
                         <!-- TABLA DE MATERIAS -->
-                        <div class="table-responsive" style="flex: 1 !important; display: flex !important; flex-direction: column !important; overflow: visible !important;">
-                            <table class="table table-hover table-bordered mb-0" style="width: 100% !important; border-collapse: collapse !important; margin-top: 15px !important; height: 100% !important;">
+                        <div class="table-responsive">
+                            <table class="table table-hover table-bordered mb-0" style="width: 100% !important; border-collapse: collapse !important; margin-top: 15px !important;">
                                 <thead>
                                     <tr>
                                         <th style="background-color: #f8fafc !important; border: 2px solid #ddd !important; font-size: 16px !important; font-weight: 600 !important; padding: 10px 8px !important; color: #000 !important; text-align: center !important;">Materia</th>
