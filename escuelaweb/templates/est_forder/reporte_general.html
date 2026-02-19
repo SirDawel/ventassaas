@@ -11,7 +11,7 @@ Reporte General - {{ curso.nombre }}
     .card {
         border-radius: 4px;
         box-shadow: 0 1px 2px rgba(0,0,0,0.08);
-        border: 1px solid #e2e8f0;
+        border: 1px solid #355175;
     }
     
     .card-header {
@@ -213,7 +213,7 @@ window.addEventListener('beforeprint', function() {
     var pages = document.querySelectorAll('.student-page');
     pages.forEach(function(page) {
         page.style.transform = 'scale(0.85)';
-        page.style.transformOrigin = 'top center';
+        page.style.transformOrigin = 'top left';
         page.style.fontSize = '5pt';
     });
 });
@@ -252,7 +252,7 @@ window.addEventListener('afterprint', function() {
                         
                         <h2>Politécnico Prof. José Ramón Rodríguez Herrera</h2>
                         <p>Calle Atile Gomez, Sector La Mina, Hato del Padre, San Juan</p>
-                        <p>Tel: (809) 000-0000 — Email: politecnicojoseramonrodriguezh@gmail.com</p>
+                        <p>Tel: (809) 000-5252 — Email: politecnicojoseramonrodriguezh@gmail.com</p>
                         <p>Año Escolar {{ curso.anho_escolar }}</p>
                         <h4>REPORTE GENERAL DE CALIFICACIONES</h4>
                         <h4>Curso: {{ curso.nombre }}</h4>
