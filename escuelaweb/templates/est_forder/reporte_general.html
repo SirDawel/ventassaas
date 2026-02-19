@@ -147,11 +147,16 @@ Reporte General - {{ curso.nombre }}
 
     @page {
         size: A4 portrait;
-        margin: 10mm;
+        margin: 8mm;
+    }
+
+    * {
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
     }
 
     body {
-        font-size: 12pt;
+        font-size: 11pt;
         color: #000;
     }
 
@@ -177,82 +182,142 @@ Reporte General - {{ curso.nombre }}
     }
 
     .card {
-        border: 1px solid #ddd !important;
-        box-shadow: none;
+        border: 2px solid #5c6bc0 !important;
+        box-shadow: none !important;
         margin-bottom: 0 !important;
+        background-color: #ffffff !important;
+        border-radius: 8px !important;
     }
 
     .card-body {
-        padding: 15px !important;
+        padding: 12px !important;
+        background-color: #fafbff !important;
+    }
+
+    .card-header {
+        padding: 8px 12px !important;
+        border-bottom: 2px solid rgba(92, 107, 192, 0.3) !important;
     }
 
     .table {
         width: 100%;
-        font-size: 11pt;
+        font-size: 10pt;
+        border-collapse: collapse;
     }
 
     .table th,
     .table td {
-        padding: 6px 8px !important;
+        padding: 5px 6px !important;
+        border: 1px solid #ddd !important;
     }
 
     .table th {
-        font-size: 10pt;
+        font-size: 9pt;
         font-weight: 600;
+        background-color: #f8fafc !important;
     }
 
     .table td {
-        font-size: 10pt;
+        font-size: 9pt;
     }
 
     .encabezado-institucional {
-        border-bottom: 2px solid #000;
-        padding-bottom: 10px;
-        margin-bottom: 15px;
+        border-bottom: 2px solid #5c6bc0;
+        padding-bottom: 8px;
+        margin-bottom: 12px;
     }
 
     .encabezado-institucional img {
-        height: 70px;
-        margin-bottom: 10px;
+        height: 60px;
+        margin-bottom: 8px;
     }
 
     .encabezado-institucional h2 {
-        font-size: 16pt;
-        margin: 5px 0;
+        font-size: 14pt;
+        margin: 4px 0;
+        color: #2c3e50 !important;
     }
 
     .encabezado-institucional h4 {
-        font-size: 13pt;
-        margin: 5px 0;
+        font-size: 11pt;
+        margin: 4px 0;
+        color: #5c6bc0 !important;
     }
 
     .encabezado-institucional p {
-        font-size: 10pt;
-        margin: 3px 0;
+        font-size: 9pt;
+        margin: 2px 0;
+        color: #6c757d !important;
     }
 
     .info-section {
-        padding: 10px !important;
-        margin-bottom: 10px !important;
+        padding: 8px !important;
+        margin-bottom: 8px !important;
+        background-color: #f8fafc !important;
+        border-radius: 4px;
     }
 
     .info-section h4 {
-        font-size: 11pt;
-        margin-bottom: 6px !important;
+        font-size: 10pt;
+        margin-bottom: 4px !important;
+        color: #2c3e50 !important;
     }
 
     .info-section p {
-        font-size: 10pt;
-        margin-bottom: 4px !important;
+        font-size: 9pt;
+        margin-bottom: 3px !important;
     }
 
     .badge {
-        font-size: 9pt;
-        padding: 3px 6px !important;
+        font-size: 8pt;
+        padding: 2px 5px !important;
+        border-radius: 3px;
+    }
+
+    .badge.bg-success {
+        background-color: #28a745 !important;
+        color: white !important;
+    }
+
+    .badge.bg-danger {
+        background-color: #dc3545 !important;
+        color: white !important;
+    }
+
+    .badge.bg-warning {
+        background-color: #ffc107 !important;
+        color: #000 !important;
+    }
+
+    .badge.bg-info {
+        background-color: #17a2b8 !important;
+        color: white !important;
+    }
+
+    .badge.bg-secondary {
+        background-color: #6c757d !important;
+        color: white !important;
     }
 
     .row.mb-2 {
-        margin-bottom: 10px !important;
+        margin-bottom: 8px !important;
+    }
+
+    .border-info {
+        border-color: #17a2b8 !important;
+    }
+
+    .bg-info {
+        background-color: #17a2b8 !important;
+        color: white !important;
+    }
+
+    .text-white {
+        color: white !important;
+    }
+
+    .card.border-info .card-header {
+        background-color: #17a2b8 !important;
     }
 
 }
