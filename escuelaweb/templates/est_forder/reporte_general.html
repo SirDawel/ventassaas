@@ -198,7 +198,7 @@ Reporte General - {{ curso.nombre }}
     @media print {
         @page {
             size: A4 portrait;
-            margin: 8mm;
+            margin: 5mm;
         }
         
         .btn, .print-btn {
@@ -220,105 +220,29 @@ Reporte General - {{ curso.nombre }}
             page-break-inside: avoid !important;
             margin: 0 !important;
             padding: 0 !important;
-            overflow: hidden !important;
+            display: flex !important;
+            flex-direction: column !important;
         }
         
         .student-page .card {
             width: 100% !important;
-            margin: 0 !important;
             height: 100% !important;
-            border: 2px solid #5c6bc0 !important;
-        }
-        
-        .student-page .card-header {
-            padding: 8px 12px !important;
-        }
-        
-        .student-page .card-header img {
-            height: 50px !important;
-            margin-bottom: 5px !important;
-        }
-        
-        .student-page .card-header h2 {
-            font-size: 14px !important;
-            margin: 3px 0 !important;
-        }
-        
-        .student-page .card-header h4 {
-            font-size: 12px !important;
-            margin: 3px 0 !important;
-        }
-        
-        .student-page .card-header p {
-            font-size: 10px !important;
-            margin: 2px 0 !important;
+            margin: 0 !important;
+            display: flex !important;
+            flex-direction: column !important;
+            box-sizing: border-box !important;
         }
         
         .student-page .card-body {
-            padding: 12px !important;
-            height: auto !important;
+            flex: 1 !important;
+            display: flex !important;
+            flex-direction: column !important;
+            overflow: hidden !important;
         }
         
-        .student-page .info-section {
-            padding: 8px !important;
-            margin-bottom: 8px !important;
-        }
-        
-        .student-page .info-section h4 {
-            font-size: 12px !important;
-            margin-bottom: 5px !important;
-        }
-        
-        .student-page .info-section p {
-            font-size: 11px !important;
-            margin-bottom: 4px !important;
-        }
-        
-        .student-page .table {
-            font-size: 10px !important;
-            margin-top: 10px !important;
-        }
-        
-        .student-page .table th {
-            padding: 5px 4px !important;
-            font-size: 10px !important;
-            border: 1px solid #ddd !important;
-        }
-        
-        .student-page .table td {
-            padding: 5px 4px !important;
-            font-size: 10px !important;
-            border: 1px solid #ddd !important;
-        }
-        
-        .student-page .badge,
-        .student-page span[style*="background-color"] {
-            padding: 2px 6px !important;
-            font-size: 9px !important;
-        }
-        
-        .student-page .card.border-info {
-            margin-top: 10px !important;
-            border: 2px solid #17a2b8 !important;
-        }
-        
-        .student-page .card.border-info .card-header {
-            padding: 6px 10px !important;
-            font-size: 11px !important;
-        }
-        
-        .student-page .card.border-info .card-body {
-            padding: 8px !important;
-        }
-        
-        .student-page .card.border-info .table {
-            font-size: 9px !important;
-        }
-        
-        .student-page .card.border-info .table th,
-        .student-page .card.border-info .table td {
-            padding: 3px !important;
-            font-size: 9px !important;
+        .student-page .table-responsive {
+            flex: 1 !important;
+            overflow: visible !important;
         }
     }
 
@@ -363,46 +287,46 @@ window.addEventListener('afterprint', function() {
 
         <div class="card-body">
             {% for estudiante, datos in reporte_estudiantes.items %}
-            <div class="student-page" style="page-break-after: always !important; page-break-inside: avoid !important; width: 100% !important; min-height: 277mm !important; margin: 0 !important; padding: 0 !important;">
-                <div class="card mb-3" style="border: 3px solid #5c6bc0 !important; border-radius: 8px !important; background-color: #ffffff !important; margin: 0 !important; width: 100% !important; min-height: 270mm !important;">
-                    <div class="card-header bg-light encabezado-institucional" style="border-bottom: 3px solid #5c6bc0 !important; padding: 10px 15px !important; text-align: center !important; background-color: #f8f9fa !important;">
+            <div class="student-page" style="page-break-after: always !important; page-break-inside: avoid !important; width: 100% !important; height: 277mm !important; margin: 0 !important; padding: 0 !important; display: flex !important; flex-direction: column !important;">
+                <div class="card mb-3" style="border: 3px solid #5c6bc0 !important; border-radius: 8px !important; background-color: #ffffff !important; margin: 0 !important; width: 100% !important; height: 100% !important; display: flex !important; flex-direction: column !important; box-sizing: border-box !important;">
+                    <div class="card-header bg-light encabezado-institucional" style="border-bottom: 3px solid #5c6bc0 !important; padding: 15px 20px !important; text-align: center !important; background-color: #f8f9fa !important;">
                         
-                        <img src="/static/img/logo_poli.jpeg" alt="Logo" style="height:50px !important; margin-bottom:5px !important;">                         
+                        <img src="/static/img/logo_poli.jpeg" alt="Logo" style="height:80px !important; margin-bottom:10px !important;">                         
                         
-                        <h2 style="font-size: 14px !important; color: #2c3e50 !important; margin: 3px 0 !important; font-weight: 700 !important;">Politécnico Prof. José Ramón Rodríguez Herrera</h2>
-                        <p style="font-size: 10px !important; color: #6c757d !important; margin: 2px 0 !important;">Calle Atile Gomez, Sector La Mina, Hato del Padre, San Juan</p>
-                        <p style="font-size: 10px !important; color: #6c757d !important; margin: 2px 0 !important;">Tel: (809) 000-5252 — Email: politecnicojoseramonrodriguezh@gmail.com</p>
-                        <p style="font-size: 10px !important; color: #6c757d !important; margin: 2px 0 !important;">Año Escolar {{ curso.anho_escolar }}</p>
-                        <h4 style="font-size: 12px !important; color: #5c6bc0 !important; margin: 3px 0 !important; font-weight: 600 !important;">REPORTE GENERAL DE CALIFICACIONES</h4>
-                        <h4 style="font-size: 12px !important; color: #5c6bc0 !important; margin: 3px 0 !important; font-weight: 600 !important;">Curso: {{ curso.nombre }}</h4>
+                        <h2 style="font-size: 20px !important; color: #2c3e50 !important; margin: 5px 0 !important; font-weight: 700 !important;">Politécnico Prof. José Ramón Rodríguez Herrera</h2>
+                        <p style="font-size: 16px !important; color: #6c757d !important; margin: 3px 0 !important;">Calle Atile Gomez, Sector La Mina, Hato del Padre, San Juan</p>
+                        <p style="font-size: 16px !important; color: #6c757d !important; margin: 3px 0 !important;">Tel: (809) 000-5252 — Email: politecnicojoseramonrodriguezh@gmail.com</p>
+                        <p style="font-size: 16px !important; color: #6c757d !important; margin: 3px 0 !important;">Año Escolar {{ curso.anho_escolar }}</p>
+                        <h4 style="font-size: 18px !important; color: #5c6bc0 !important; margin: 8px 0 !important; font-weight: 600 !important;">REPORTE GENERAL DE CALIFICACIONES</h4>
+                        <h4 style="font-size: 18px !important; color: #5c6bc0 !important; margin: 8px 0 !important; font-weight: 600 !important;">Curso: {{ curso.nombre }}</h4>
                     </div>
 
-                    <div class="card-body" style="padding: 12px !important; background-color: #fafbff !important; width: 100% !important;">
+                    <div class="card-body" style="padding: 20px !important; background-color: #fafbff !important; flex: 1 !important; width: 100% !important; display: flex !important; flex-direction: column !important; overflow: hidden !important;">
                         <!-- INFORMACIÓN DEL ESTUDIANTE -->
-                        <div class="row mb-2" style="margin-bottom: 8px !important;">
+                        <div class="row mb-2" style="margin-bottom: 12px !important; flex-shrink: 0 !important;">
                             <div class="col-md-6">
-                                <div class="info-section" style="background-color: #f8fafc !important; border-radius: 6px !important; padding: 8px !important; margin-bottom: 8px !important; border: 2px solid #e2e8f0 !important;">
-                                    <h4 style="font-size: 12px !important; font-weight: 600 !important; color: #2c3e50 !important; margin-bottom: 6px !important;">Información del Estudiante</h4>
-                                    <p style="font-size: 11px !important; margin-bottom: 4px !important; color: #000 !important;"><strong>Nombre:</strong> {{ estudiante.get_full_name }}</p>
-                                    <p style="font-size: 11px !important; margin-bottom: 4px !important; color: #000 !important;"><strong>Grado:</strong> {{ estudiante.grado }}</p>
-                                    <p style="font-size: 11px !important; margin-bottom: 4px !important; color: #000 !important;"><strong>Sección:</strong> {{ estudiante.seccion }}</p>
+                                <div class="info-section" style="background-color: #f8fafc !important; border-radius: 8px !important; padding: 15px !important; margin-bottom: 10px !important; border: 2px solid #e2e8f0 !important;">
+                                    <h4 style="font-size: 17px !important; font-weight: 600 !important; color: #2c3e50 !important; margin-bottom: 10px !important;">Información del Estudiante</h4>
+                                    <p style="font-size: 16px !important; margin-bottom: 8px !important; color: #000 !important;"><strong>Nombre:</strong> {{ estudiante.get_full_name }}</p>
+                                    <p style="font-size: 16px !important; margin-bottom: 8px !important; color: #000 !important;"><strong>Grado:</strong> {{ estudiante.grado }}</p>
+                                    <p style="font-size: 16px !important; margin-bottom: 8px !important; color: #000 !important;"><strong>Sección:</strong> {{ estudiante.seccion }}</p>
                                 </div>
                             </div>
 
                             <div class="col-md-6">
-                                <div class="info-section" style="background-color: #f8fafc !important; border-radius: 6px !important; padding: 8px !important; margin-bottom: 8px !important; border: 2px solid #e2e8f0 !important;">
-                                    <h4 style="font-size: 12px !important; font-weight: 600 !important; color: #2c3e50 !important; margin-bottom: 6px !important;">Resumen Académico</h4>
-                                    <p style="font-size: 11px !important; margin-bottom: 4px !important; color: #000 !important;"><strong>Total Materias:</strong> {{ datos.total_materias }}</p>
-                                    <p style="font-size: 11px !important; margin-bottom: 4px !important; color: #000 !important;"><strong>Aprobadas:</strong> <span style="background-color: #28a745 !important; color: white !important; padding: 2px 6px !important; border-radius: 3px !important; font-size: 10px !important; font-weight: 600 !important; display: inline-block !important;">{{ datos.materias_aprobadas }}</span></p>
-                                    <p style="font-size: 11px !important; margin-bottom: 4px !important; color: #000 !important;"><strong>Reprobadas:</strong> <span style="background-color: #dc3545 !important; color: white !important; padding: 2px 6px !important; border-radius: 3px !important; font-size: 10px !important; font-weight: 600 !important; display: inline-block !important;">{{ datos.materias_reprobadas }}</span></p>
-                                    <p style="font-size: 11px !important; margin-bottom: 4px !important; color: #000 !important;"><strong>En Progreso:</strong> <span style="background-color: #ffc107 !important; color: #000 !important; padding: 2px 6px !important; border-radius: 3px !important; font-size: 10px !important; font-weight: 600 !important; display: inline-block !important;">{{ datos.materias_en_progreso }}</span></p>
-                                    <p style="font-size: 11px !important; margin-bottom: 4px !important; color: #000 !important;"><strong>Promedio General:</strong>
+                                <div class="info-section" style="background-color: #f8fafc !important; border-radius: 8px !important; padding: 15px !important; margin-bottom: 10px !important; border: 2px solid #e2e8f0 !important;">
+                                    <h4 style="font-size: 17px !important; font-weight: 600 !important; color: #2c3e50 !important; margin-bottom: 10px !important;">Resumen Académico</h4>
+                                    <p style="font-size: 16px !important; margin-bottom: 8px !important; color: #000 !important;"><strong>Total Materias:</strong> {{ datos.total_materias }}</p>
+                                    <p style="font-size: 16px !important; margin-bottom: 8px !important; color: #000 !important;"><strong>Aprobadas:</strong> <span style="background-color: #28a745 !important; color: white !important; padding: 5px 10px !important; border-radius: 4px !important; font-size: 15px !important; font-weight: 600 !important; display: inline-block !important;">{{ datos.materias_aprobadas }}</span></p>
+                                    <p style="font-size: 16px !important; margin-bottom: 8px !important; color: #000 !important;"><strong>Reprobadas:</strong> <span style="background-color: #dc3545 !important; color: white !important; padding: 5px 10px !important; border-radius: 4px !important; font-size: 15px !important; font-weight: 600 !important; display: inline-block !important;">{{ datos.materias_reprobadas }}</span></p>
+                                    <p style="font-size: 16px !important; margin-bottom: 8px !important; color: #000 !important;"><strong>En Progreso:</strong> <span style="background-color: #ffc107 !important; color: #000 !important; padding: 5px 10px !important; border-radius: 4px !important; font-size: 15px !important; font-weight: 600 !important; display: inline-block !important;">{{ datos.materias_en_progreso }}</span></p>
+                                    <p style="font-size: 16px !important; margin-bottom: 8px !important; color: #000 !important;"><strong>Promedio General:</strong>
                                         {% if datos.promedio_general %}
-                                            <span style="background-color: {% if datos.promedio_general >= 70 %}#28a745{% else %}#dc3545{% endif %} !important; color: white !important; padding: 2px 6px !important; border-radius: 3px !important; font-size: 10px !important; font-weight: 600 !important; display: inline-block !important;">
+                                            <span style="background-color: {% if datos.promedio_general >= 70 %}#28a745{% else %}#dc3545{% endif %} !important; color: white !important; padding: 5px 10px !important; border-radius: 4px !important; font-size: 15px !important; font-weight: 600 !important; display: inline-block !important;">
                                                 {{ datos.promedio_general|floatformat:2 }}
                                             </span>
                                         {% else %}
-                                            <span style="background-color: #6c757d !important; color: white !important; padding: 2px 6px !important; border-radius: 3px !important; font-size: 10px !important; font-weight: 600 !important; display: inline-block !important;">N/D</span>
+                                            <span style="background-color: #6c757d !important; color: white !important; padding: 5px 10px !important; border-radius: 4px !important; font-size: 15px !important; font-weight: 600 !important; display: inline-block !important;">N/D</span>
                                         {% endif %}
                                     </p>
                                 </div>
@@ -410,32 +334,32 @@ window.addEventListener('afterprint', function() {
                         </div>
 
                         <!-- TABLA DE MATERIAS -->
-                        <div class="table-responsive">
-                            <table class="table table-hover table-bordered mb-0" style="width: 100% !important; border-collapse: collapse !important; margin-top: 8px !important;">
+                        <div class="table-responsive" style="flex: 1 !important; display: flex !important; flex-direction: column !important; overflow: visible !important;">
+                            <table class="table table-hover table-bordered mb-0" style="width: 100% !important; border-collapse: collapse !important; margin-top: 15px !important; height: 100% !important;">
                                 <thead>
                                     <tr>
-                                        <th style="background-color: #f8fafc !important; border: 1px solid #ddd !important; font-size: 10px !important; font-weight: 600 !important; padding: 5px 4px !important; color: #000 !important; text-align: center !important;">Materia</th>
-                                        <th style="background-color: #f8fafc !important; border: 1px solid #ddd !important; font-size: 10px !important; font-weight: 600 !important; padding: 5px 4px !important; color: #000 !important; text-align: center !important;">Profesor</th>
-                                        <th style="background-color: #f8fafc !important; border: 1px solid #ddd !important; font-size: 10px !important; font-weight: 600 !important; padding: 5px 4px !important; color: #000 !important; text-align: center !important;">P1</th>
-                                        <th style="background-color: #f8fafc !important; border: 1px solid #ddd !important; font-size: 10px !important; font-weight: 600 !important; padding: 5px 4px !important; color: #000 !important; text-align: center !important;">P2</th>
-                                        <th style="background-color: #f8fafc !important; border: 1px solid #ddd !important; font-size: 10px !important; font-weight: 600 !important; padding: 5px 4px !important; color: #000 !important; text-align: center !important;">P3</th>
-                                        <th style="background-color: #f8fafc !important; border: 1px solid #ddd !important; font-size: 10px !important; font-weight: 600 !important; padding: 5px 4px !important; color: #000 !important; text-align: center !important;">P4</th>
-                                        <th style="background-color: #f8fafc !important; border: 1px solid #ddd !important; font-size: 10px !important; font-weight: 600 !important; padding: 5px 4px !important; color: #000 !important; text-align: center !important;">Cal. Final</th>
-                                        <th style="background-color: #f8fafc !important; border: 1px solid #ddd !important; font-size: 10px !important; font-weight: 600 !important; padding: 5px 4px !important; color: #000 !important; text-align: center !important;">Estado</th>
+                                        <th style="background-color: #f8fafc !important; border: 2px solid #ddd !important; font-size: 16px !important; font-weight: 600 !important; padding: 10px 8px !important; color: #000 !important; text-align: center !important;">Materia</th>
+                                        <th style="background-color: #f8fafc !important; border: 2px solid #ddd !important; font-size: 16px !important; font-weight: 600 !important; padding: 10px 8px !important; color: #000 !important; text-align: center !important;">Profesor</th>
+                                        <th style="background-color: #f8fafc !important; border: 2px solid #ddd !important; font-size: 16px !important; font-weight: 600 !important; padding: 10px 8px !important; color: #000 !important; text-align: center !important;">P1</th>
+                                        <th style="background-color: #f8fafc !important; border: 2px solid #ddd !important; font-size: 16px !important; font-weight: 600 !important; padding: 10px 8px !important; color: #000 !important; text-align: center !important;">P2</th>
+                                        <th style="background-color: #f8fafc !important; border: 2px solid #ddd !important; font-size: 16px !important; font-weight: 600 !important; padding: 10px 8px !important; color: #000 !important; text-align: center !important;">P3</th>
+                                        <th style="background-color: #f8fafc !important; border: 2px solid #ddd !important; font-size: 16px !important; font-weight: 600 !important; padding: 10px 8px !important; color: #000 !important; text-align: center !important;">P4</th>
+                                        <th style="background-color: #f8fafc !important; border: 2px solid #ddd !important; font-size: 16px !important; font-weight: 600 !important; padding: 10px 8px !important; color: #000 !important; text-align: center !important;">Cal. Final</th>
+                                        <th style="background-color: #f8fafc !important; border: 2px solid #ddd !important; font-size: 16px !important; font-weight: 600 !important; padding: 10px 8px !important; color: #000 !important; text-align: center !important;">Estado</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     {% for m in datos.matriculas %}
                                         {% if m.materia.categoria != 'modular' %}
                                         <tr>
-                                            <td style="border: 1px solid #ddd !important; font-size: 10px !important; padding: 5px 4px !important; color: #000 !important;"><strong>{{ m.materia.nombre }}</strong></td>
-                                            <td style="border: 1px solid #ddd !important; font-size: 10px !important; padding: 5px 4px !important; color: #000 !important; text-align: center !important;">{{ m.materia.profesor.get_full_name }}</td>
-                                            <td style="border: 1px solid #ddd !important; font-size: 10px !important; padding: 5px 4px !important; color: #000 !important; text-align: center !important; font-weight: 600 !important;">{{ m.prom_comunicativa|default:"-" }}</td>
-                                            <td style="border: 1px solid #ddd !important; font-size: 10px !important; padding: 5px 4px !important; color: #000 !important; text-align: center !important; font-weight: 600 !important;">{{ m.prom_logico|default:"-" }}</td>
-                                            <td style="border: 1px solid #ddd !important; font-size: 10px !important; padding: 5px 4px !important; color: #000 !important; text-align: center !important; font-weight: 600 !important;">{{ m.prom_cientifica|default:"-" }}</td>
-                                            <td style="border: 1px solid #ddd !important; font-size: 10px !important; padding: 5px 4px !important; color: #000 !important; text-align: center !important; font-weight: 600 !important;">{{ m.prom_etica|default:"-" }}</td>
+                                            <td style="border: 2px solid #ddd !important; font-size: 16px !important; padding: 10px 8px !important; color: #000 !important;"><strong>{{ m.materia.nombre }}</strong></td>
+                                            <td style="border: 2px solid #ddd !important; font-size: 16px !important; padding: 10px 8px !important; color: #000 !important; text-align: center !important;">{{ m.materia.profesor.get_full_name }}</td>
+                                            <td style="border: 2px solid #ddd !important; font-size: 16px !important; padding: 10px 8px !important; color: #000 !important; text-align: center !important; font-weight: 600 !important;">{{ m.prom_comunicativa|default:"-" }}</td>
+                                            <td style="border: 2px solid #ddd !important; font-size: 16px !important; padding: 10px 8px !important; color: #000 !important; text-align: center !important; font-weight: 600 !important;">{{ m.prom_logico|default:"-" }}</td>
+                                            <td style="border: 2px solid #ddd !important; font-size: 16px !important; padding: 10px 8px !important; color: #000 !important; text-align: center !important; font-weight: 600 !important;">{{ m.prom_cientifica|default:"-" }}</td>
+                                            <td style="border: 2px solid #ddd !important; font-size: 16px !important; padding: 10px 8px !important; color: #000 !important; text-align: center !important; font-weight: 600 !important;">{{ m.prom_etica|default:"-" }}</td>
 
-                                            <td style="border: 1px solid #ddd !important; font-size: 10px !important; padding: 5px 4px !important; color: #000 !important; text-align: center !important; font-weight: bold !important;">
+                                            <td style="border: 2px solid #ddd !important; font-size: 16px !important; padding: 10px 8px !important; color: #000 !important; text-align: center !important; font-weight: bold !important;">
                                                 {% if m.nota_final_oficial %}
                                                     {{ m.nota_final_oficial }}
                                                 {% else %}
@@ -443,13 +367,13 @@ window.addEventListener('afterprint', function() {
                                                 {% endif %}
                                             </td>
 
-                                            <td style="border: 1px solid #ddd !important; font-size: 10px !important; padding: 5px 4px !important; text-align: center !important;">
+                                            <td style="border: 2px solid #ddd !important; font-size: 16px !important; padding: 10px 8px !important; text-align: center !important;">
                                                 {% if m.nota_final_oficial is None %}
-                                                    <span style="background-color: #ffc107 !important; color: #000 !important; padding: 2px 6px !important; border-radius: 3px !important; font-size: 9px !important; font-weight: 600 !important; display: inline-block !important;">En Progreso</span>
+                                                    <span style="background-color: #ffc107 !important; color: #000 !important; padding: 5px 10px !important; border-radius: 4px !important; font-size: 14px !important; font-weight: 600 !important; display: inline-block !important;">En Progreso</span>
                                                 {% elif m.nota_final_oficial >= 70 %}
-                                                    <span style="background-color: #28a745 !important; color: white !important; padding: 2px 6px !important; border-radius: 3px !important; font-size: 9px !important; font-weight: 600 !important; display: inline-block !important;">Aprobado</span>
+                                                    <span style="background-color: #28a745 !important; color: white !important; padding: 5px 10px !important; border-radius: 4px !important; font-size: 14px !important; font-weight: 600 !important; display: inline-block !important;">Aprobado</span>
                                                 {% else %}
-                                                    <span style="background-color: #dc3545 !important; color: white !important; padding: 2px 6px !important; border-radius: 3px !important; font-size: 9px !important; font-weight: 600 !important; display: inline-block !important;">Reprobado</span>
+                                                    <span style="background-color: #dc3545 !important; color: white !important; padding: 5px 10px !important; border-radius: 4px !important; font-size: 14px !important; font-weight: 600 !important; display: inline-block !important;">Reprobado</span>
                                                 {% endif %}
                                             </td>
                                         </tr>
@@ -462,11 +386,11 @@ window.addEventListener('afterprint', function() {
                         <!-- RECUADRO DE MATERIAS MODULARES -->
                         {% for m in datos.matriculas %}
                             {% if m.materia.categoria == 'modular' %}
-                                <div class="card mt-3 border-info" style="border: 2px solid #17a2b8 !important; border-radius: 6px !important; margin-top: 10px !important; background-color: #ffffff !important;">
-                                    <div class="card-header bg-info text-white" style="background-color: #17a2b8 !important; color: white !important; padding: 6px 10px !important; border-radius: 6px 6px 0 0 !important; font-size: 11px !important;">
+                                <div class="card mt-3 border-info" style="border: 3px solid #17a2b8 !important; border-radius: 8px !important; margin-top: 20px !important; background-color: #ffffff !important;">
+                                    <div class="card-header bg-info text-white" style="background-color: #17a2b8 !important; color: white !important; padding: 12px 15px !important; border-radius: 8px 8px 0 0 !important; font-size: 17px !important;">
                                         <strong>{{ m.materia.nombre }}</strong> - Módulo Formativo
                                     </div>
-                                    <div class="card-body p-2" style="padding: 8px !important; background-color: #f0f9fb !important;">
+                                    <div class="card-body p-2" style="padding: 15px !important; background-color: #f0f9fb !important;">
                                         <table class="table table-bordered table-sm mb-0">
                                             <thead>
                                                 <tr>
