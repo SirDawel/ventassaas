@@ -205,6 +205,25 @@ Reporte General - {{ curso.nombre }}
             display: none !important;
         }
         
+        /* Ocultar card wrapper y header del reporte en impresión */
+        .container > .card {
+            border: none !important;
+            box-shadow: none !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            background: none !important;
+        }
+        
+        .container > .card > .card-header {
+            display: none !important;
+        }
+        
+        .container > .card > .card-body {
+            padding: 0 !important;
+            margin: 0 !important;
+            background: none !important;
+        }
+        
         .container {
             width: 100% !important;
             max-width: 100% !important;
@@ -223,6 +242,11 @@ Reporte General - {{ curso.nombre }}
             padding: 0 !important;
             display: block !important;
             position: relative !important;
+        }
+        
+        /* Primer estudiante empieza en página 1 */
+        .student-page:first-child {
+            page-break-before: avoid !important;
         }
         
         .student-page:last-child {
@@ -281,6 +305,13 @@ window.addEventListener('beforeprint', function() {
         page.style.width = '100%';
         page.style.position = 'relative';
         
+        // Primer estudiante empieza en página 1 (sin salto antes)
+        if (index === 0) {
+            page.style.pageBreakBefore = 'avoid';
+            page.style.breakBefore = 'avoid';
+            console.log('Primera página de estudiante - empieza en página 1');
+        }
+        
         // Último estudiante no necesita salto de página después
         if (index === studentPages.length - 1) {
             page.style.pageBreakAfter = 'auto';
@@ -288,7 +319,7 @@ window.addEventListener('beforeprint', function() {
             console.log('Última página de estudiante - sin salto al final');
         }
         
-        console.log('Página estudiante ' + (index + 1) + ' configurada para nueva página');
+        console.log('Página estudiante ' + (index + 1) + ' configurada');
     });
     
     console.log('✅ Estilos de impresión aplicados - UNA PÁGINA POR ESTUDIANTE');
