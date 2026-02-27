@@ -3,7 +3,9 @@ from . import views
 
 urlpatterns = [
     # ... existing urls ...
-   path('register/', views.register_user, name='register'),
+    # Reporte general PDF (notas por curso)
+    path('reporte-general/<int:curso_id>/pdf/', views.reporte_general_pdf, name='reporte_general_pdf'),
+    path('register/', views.register_user, name='register'),
     
     path("activate/<uidb64>/<token>/", views.activate, name="activate"),
 
@@ -52,6 +54,7 @@ urlpatterns = [
     path('materias/<int:materia_id>/agregar-notas-modular/', views.agregar_notas_modular, name='agregar_notas_modular'),
     #lista estudiantes x materia
     path('materias/<int:materia_id>/estudiantes/', views.lista_estudiantes_materia, name='lista_estudiantes_materia'),
+
 
     # URLs para Matr�culas
     
@@ -109,7 +112,7 @@ urlpatterns = [
     path('conceptos/eliminar/<int:pk>/', views.concepto_delete, name='concepto_delete'),
     
     # URLs para Sistema de Inventario
-    path('inventario/validar_codigo_barras/', views.validar_codigo_barras, name='validar_codigo_barras'),
+    path('inventario/validar_codigo_barras/', views.buscar_articulo_barras, name='validar_codigo_barras'),
     
     path('inventario/', views.inventario_dashboard, name='inventario_dashboard'),
     path('inventario/lista-completa/', views.inventario_lista_completa, name='inventario_lista_completa'),

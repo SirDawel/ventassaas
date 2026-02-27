@@ -1,4 +1,5 @@
 {% extends 'website/base.html' %}
+{% load l10n %}
 
 {% block title %}{{ titulo }}{% endblock %}
 
@@ -46,7 +47,7 @@
                     <div class="d-flex justify-content-between align-items-center">
                         <div>
                             <h6 class="card-title">Valor Inventario</h6>
-                            <h3 class="mb-0">RD${{ valor_inventario|floatformat:2 }}</h3>
+                            <h3 class="mb-0">RD${{ valor_inventario|floatformat:2|unlocalize }}</h3>
                         </div>
                         <i class="fas fa-dollar-sign fa-3x opacity-50"></i>
                     </div>
@@ -77,34 +78,40 @@
                     <h5 class="mb-0"><i class="fas fa-th-large me-2"></i>Accesos Rápidos</h5>
                 </div>
                 <div class="card-body">
-                    <div class="row">
-                        <div class="col-md-3 mb-3">
-                            <a href="{% url 'inventario_lista_completa' %}" class="btn btn-outline-dark w-100 btn-lg">
+                    <div class="row mb-2">
+                        <div class="col-md-4 mb-3">
+                            <a href="{% url 'inventario_lista_completa' %}" class="btn btn-dark w-100 btn-lg">
                                 <i class="fas fa-warehouse d-block fs-1 mb-2"></i>
                                 Inventario Completo
                             </a>
                         </div>
-                        <div class="col-md-3 mb-3">
-                            <a href="{% url 'articulos_list' %}" class="btn btn-outline-primary w-100 btn-lg">
+                        <div class="col-md-4 mb-3">
+                            <a href="{% url 'articulos_list' %}" class="btn btn-primary w-100 btn-lg">
                                 <i class="fas fa-box d-block fs-1 mb-2"></i>
                                 Ver Artículos
                             </a>
                         </div>
-                        <div class="col-md-3 mb-3">
-                            <a href="{% url 'articulo_crear' %}" class="btn btn-outline-success w-100 btn-lg">
+                        <div class="col-md-4 mb-3">
+                            <a href="{% url 'conceptos_list' %}" class="btn btn-warning w-100 btn-lg">
+                                <i class="fas fa-concierge-bell d-block fs-1 mb-2"></i>
+                                Ver Mensualidades
+                            </a>
+                        </div>
+                    </div>
+                    <div class="row mb-2">
+                        <div class="col-md-4 mb-3">
+                            <a href="{% url 'articulo_crear' %}" class="btn btn-success w-100 btn-lg">
                                 <i class="fas fa-plus-circle d-block fs-1 mb-2"></i>
                                 Nuevo Artículo
                             </a>
                         </div>
-                        <div class="col-md-3 mb-3">
-                            <a href="{% url 'categorias_list' %}" class="btn btn-outline-info w-100 btn-lg">
+                        <div class="col-md-4 mb-3">
+                            <a href="{% url 'categorias_list' %}" class="btn btn-info w-100 btn-lg">
                                 <i class="fas fa-tags d-block fs-1 mb-2"></i>
                                 Categorías
                             </a>
                         </div>
-                    </div>
-                    <div class="row">
-                        <div class="col-md-3 mb-3">
+                        <div class="col-md-4 mb-3">
                             <a href="{% url 'facturas_list' %}" class="btn btn-outline-warning w-100 btn-lg">
                                 <i class="fas fa-file-invoice d-block fs-1 mb-2"></i>
                                 Facturas
@@ -160,46 +167,44 @@
             </div>
         </div>
 
-        <!-- Últimos Movimientos -->
+        <!-- Servicios (Conceptos de Pago) -->
         <div class="col-md-6">
             <div class="card">
-                <div class="card-header bg-info text-white">
-                    <h5 class="mb-0"><i class="fas fa-history me-2"></i>Últimos Movimientos</h5>
+                <div class="card-header bg-warning text-dark">
+                    <h5 class="mb-0"><i class="fas fa-concierge-bell me-2"></i>Servicios Disponibles</h5>
                 </div>
                 <div class="card-body">
-                    {% if ultimos_movimientos %}
+                    {% if servicios_disponibles %}
                     <div class="table-responsive">
                         <table class="table table-sm">
                             <thead>
                                 <tr>
-                                    <th>Fecha</th>
+                                    <th>Nombre</th>
                                     <th>Tipo</th>
-                                    <th>Artículo</th>
-                                    <th class="text-center">Cantidad</th>
+                                    <th class="text-center">Precio</th>
+                                    <th class="text-center">Estado</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                {% for mov in ultimos_movimientos %}
+                                {% for servicio in servicios_disponibles %}
                                 <tr>
-                                    <td class="small">{{ mov.fecha|date:"d/m H:i" }}</td>
-                                    <td>
-                                        {% if mov.tipo == 'entrada' %}
-                                        <span class="badge bg-success">{{ mov.get_tipo_display }}</span>
-                                        {% elif mov.tipo == 'salida' %}
-                                        <span class="badge bg-danger">{{ mov.get_tipo_display }}</span>
+                                    <td>{{ servicio.nombre }}</td>
+                                    <td>{{ servicio.get_tipo_display }}</td>
+                                    <td class="text-center">RD${{ servicio.monto|floatformat:2|unlocalize }}</td>
+                                    <td class="text-center">
+                                        {% if servicio.activo %}
+                                            <span class="badge bg-success">Activo</span>
                                         {% else %}
-                                        <span class="badge bg-secondary">{{ mov.get_tipo_display }}</span>
+                                            <span class="badge bg-danger">Inactivo</span>
                                         {% endif %}
                                     </td>
-                                    <td class="small">{{ mov.articulo.nombre|truncatewords:3 }}</td>
-                                    <td class="text-center">{{ mov.cantidad }}</td>
                                 </tr>
                                 {% endfor %}
                             </tbody>
                         </table>
                     </div>
                     {% else %}
-                    <p class="text-muted text-center mb-0">No hay movimientos registrados</p>
+                    <p class="text-muted text-center mb-0">No hay servicios disponibles</p>
                     {% endif %}
                 </div>
             </div>

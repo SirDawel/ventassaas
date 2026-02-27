@@ -1,3 +1,13 @@
+from django import template
+
+register = template.Library()
+
+@register.filter
+def get_nota(matricula, materia_id):
+    # Si la matrícula corresponde a la materia, devuelve la nota final
+    if hasattr(matricula, 'materia') and matricula.materia.id == materia_id:
+        return getattr(matricula, 'nota_final', None)
+    return None
 
 from django import template
 

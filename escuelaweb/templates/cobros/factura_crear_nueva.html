@@ -1,4 +1,5 @@
 {% extends 'website/base.html' %}
+{% load l10n %}
 
 {% block title %}{{ titulo }}{% endblock %}
 
@@ -412,7 +413,40 @@
     <form method="post" id="facturaForm">
         {% csrf_token %}
         <input type="hidden" name="estudiante_id_hidden" id="estudianteIdHiddenPost" value="{% if estudiante %}{{ estudiante.id }}{% endif %}">
-        <input type="hidden" name="monto_pagado" id="montoPagadoHidden" value="0">
+        <input type="hidden" name="monto_pagado" id="montoPagadoHidden" value="{% if monto_pagado_copiado is not None %}{{ monto_pagado_copiado|unlocalize }}{% else %}0{% endif %}">
+        <script>
+        // DEBUG: Valor de monto_pagado_copiado desde Django
+        console.log('[DEBUG Django] monto_pagado_copiado desde contexto:', '{{ monto_pagado_copiado|default:"None" }}');
+        
+        // Sincroniza el valor inicial de monto_pagado_copiado en el campo hidden al cargar la página
+        document.addEventListener('DOMContentLoaded', function() {
+            var dineroRecibido = document.getElementById('dineroRecibido');
+            var montoPagadoHidden = document.getElementById('montoPagadoHidden');
+            
+            console.log('[DEBUG JS] dineroRecibido element:', dineroRecibido);
+            console.log('[DEBUG JS] dineroRecibido.value inicial:', dineroRecibido ? dineroRecibido.value : 'elemento no encontrado');
+            console.log('[DEBUG JS] montoPagadoHidden.value inicial:', montoPagadoHidden ? montoPagadoHidden.value : 'elemento no encontrado');
+            
+            if (dineroRecibido && montoPagadoHidden) {
+                // Si hay un valor en el hidden, aplicarlo al input visible
+                if (montoPagadoHidden.value && montoPagadoHidden.value !== '0') {
+                    dineroRecibido.value = montoPagadoHidden.value;
+                    console.log('[DEBUG JS] Valor aplicado desde hidden a dineroRecibido:', dineroRecibido.value);
+                } else if (dineroRecibido.value) {
+                    // Si el input visible tiene valor, sincronizarlo al hidden
+                    montoPagadoHidden.value = dineroRecibido.value;
+                    console.log('[DEBUG JS] Valor sincronizado desde dineroRecibido a hidden:', montoPagadoHidden.value);
+                }
+                
+                // Calcular el cambio inicial si hay monto
+                if (dineroRecibido.value && dineroRecibido.value !== '0') {
+                    calcularCambio();
+                }
+                
+                console.log('[DEBUG JS] Valores finales - dineroRecibido:', dineroRecibido.value, 'montoPagadoHidden:', montoPagadoHidden.value);
+            }
+        });
+        </script>
         <input type="hidden" name="confirmar_credito" id="confirmarCredito" value="0">
 
         <div class="row">
@@ -591,7 +625,8 @@
                         <div class="mb-3">
                             <label class="form-label">Descuento General (RD$)</label>
                             <input type="number" class="form-control" id="descuento_factura" name="descuento_factura" 
-                                   value="0" step="0.01" min="0" onchange="calcularTotales()">
+                                   value="{% if factura_origen %}{{ factura_origen.descuento|floatformat:2 }}{% else %}0{% endif %}" 
+                                   step="0.01" min="0" onchange="calcularTotales()">
                         </div>
                         
                         <div class="mb-3">
@@ -634,9 +669,37 @@
                                     <label for="dineroRecibido" class="form-label">
                                         <strong>Dinero Recibido (RD$)</strong>
                                     </label>
+                                    
+                                    <!-- DEBUG: Mostrar valor recibido desde Django -->
+                                    {% if monto_pagado_copiado is not None %}
+                                    <div class="alert alert-info alert-sm mb-2" style="font-size: 0.85rem; padding: 0.5rem;">
+                                        <strong>🔍:</strong> Monto Pagado = {{ monto_pagado_copiado }}
+                                    </div>
+                                    
+                                    {% endif %}
+                                    
                                     <input type="number" class="form-control form-control-lg" 
-                                           id="dineroRecibido" step="0.01" min="0" 
-                                           placeholder="0.00" oninput="calcularCambio()">
+                                        id="dineroRecibido" step="0.01" min="0" 
+                                        placeholder="0.00" oninput="calcularCambio()"
+                                        value="{% if monto_pagado_copiado is not None %}{{ monto_pagado_copiado|unlocalize }}{% else %}0{% endif %}"
+                                        data-monto-original="{{ monto_pagado_copiado|unlocalize|default:'0' }}">
+                                    
+                                    <script>
+                                    // Forzar el valor inmediatamente después de crear el input
+                                    (function() {
+                                        var input = document.getElementById('dineroRecibido');
+                                        var montoOriginal = input.getAttribute('data-monto-original');
+                                        console.log('[DEBUG INLINE] Input encontrado:', input);
+                                        console.log('[DEBUG INLINE] data-monto-original:', montoOriginal);
+                                        console.log('[DEBUG INLINE] value actual:', input.value);
+                                        
+                                        if (montoOriginal && montoOriginal !== '0') {
+                                            input.value = montoOriginal;
+                                            console.log('[DEBUG INLINE] Valor forzado a:', input.value);
+                                        }
+                                    })();
+                                    </script>
+                                    
                                     <small class="text-muted">Monto con el que paga el cliente</small>
                                     
                                     <!-- Advertencia para cliente genérico -->
@@ -1842,6 +1905,45 @@ function limpiarTodo() {
 
 })();
 </script>
+
+{% if detalles_json %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    try {
+        const detalles = JSON.parse('{{ detalles_json|escapejs }}');
+        if (Array.isArray(detalles) && detalles.length > 0) {
+            detalles.forEach(det => {
+                if (det.articulo_id) {
+                    const articulo = {
+                        id: det.articulo_id,
+                        nombre: det.nombre,
+                        codigo_barras: det.codigo_barras || '',
+                        precio_venta: det.precio,
+                        stock_actual: det.stock_actual || 999,
+                        tipo: det.tipo_articulo || 'producto',
+                        aplica_itbis: det.aplica_itbis
+                    };
+                    agregarArticuloALista(articulo);
+                } else if (det.concepto_id) {
+                    agregarConceptoALista(
+                        det.concepto_id,
+                        det.nombre,
+                        det.cantidad,
+                        det.precio,
+                        det.descuento,
+                        det.mes || '',
+                        det.anio || ''
+                    );
+                }
+            });
+            calcularTotales();
+        }
+    } catch (e) {
+        console.error('Error inicializando detalles desde factura de origen', e);
+    }
+});
+</script>
+{% endif %}
 
 <style>
 .resultado-item:hover {

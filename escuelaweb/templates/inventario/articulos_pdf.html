@@ -258,6 +258,10 @@
                     <span class="stat-value">{{ total_categorias }}</span>
                 </td>
                 <td class="orange-box">
+                    <span class="stat-label">Total Compras</span>
+                    <span class="stat-value">RD$ {{ valor_total_compra|floatformat:0 }}</span>
+                </td>
+                <td class="orange-box">
                     <span class="stat-label">Valor Inventario</span>
                     <span class="stat-value">RD$ {{ valor_total|floatformat:0 }}</span>
                 </td>
@@ -280,7 +284,8 @@
             <tr>
                 <th style="width: 15%;">📋 Código de Barras</th>
                 <th style="width: 35%;">📦 Nombre del Producto</th>
-                <th style="width: 12%;" class="text-right">💰 Precio Venta</th>
+                <th style="width: 12%;" class="text-right">🛒 Precio Compra</th>
+                <th style="width: 12%;" class="text-right">💰 Precio Venta</th>                
                 <th style="width: 10%;" class="text-center">📊 Stock Actual</th>
                 <th style="width: 10%;" class="text-center">⚠️ Stock Mín.</th>
                 <th style="width: 8%;" class="text-center">💳 ITBIS</th>
@@ -292,7 +297,8 @@
             {% for articulo in items %}
             <tr {% if articulo.stock_actual <= articulo.stock_minimo %}class="stock-bajo"{% endif %}>
                 <td class="codigo">{{ articulo.codigo_barras|default:"N/A" }}</td>
-                <td><strong>{{ articulo.nombre }}</strong></td>
+                <td><strong>{{ articulo.nombre }}</strong></td>                
+                <td class="text-right"><strong>RD$ {{ articulo.precio_compra|floatformat:2 }}</strong></td>
                 <td class="text-right"><strong>RD$ {{ articulo.precio_venta|floatformat:2 }}</strong></td>
                 <td class="text-center">
                     {% if articulo.stock_actual <= articulo.stock_minimo %}

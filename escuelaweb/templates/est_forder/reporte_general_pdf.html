@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Reporte de Notas - {{ curso.nombre }}</title>
+    <style>
+        body {
+            font-family: Arial, Helvetica, sans-serif;
+            font-size: 12px;
+            color: #222;
+        }
+        h2, h3 {
+            margin-bottom: 0.2em;
+        }
+        .student-section {
+            page-break-after: always;
+            margin-bottom: 30px;
+        }
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            margin-bottom: 10px;
+        }
+        th, td {
+            border: 1px solid #444;
+            padding: 4px 6px;
+            text-align: center;
+        }
+        th {
+            background: #eee;
+        }
+        .summary {
+            margin-top: 8px;
+        }
+    </style>
+</head>
+<body>
+    <h2>Reporte de Notas - {{ curso.nombre }}</h2>
+    <hr>
+    {% for estudiante, datos in reporte_estudiantes.items %}
+        <div class="student-section">
+            <h3>{{ estudiante.get_full_name }}</h3>
+            <p><strong>Cédula:</strong> {{ estudiante.cedula }}</p>
+            <p><strong>Correo:</strong> {{ estudiante.email }}</p>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Materia</th>
+                        <th>Nota Final</th>
+                        <th>Completivo</th>
+                        <th>Extraordinario</th>
+                        <th>Especial</th>
+                        <th>Nota Oficial</th>
+                    </tr>
+                </thead>
+                <tbody>
+                {% for m in datos.matriculas %}
+                    <tr>
+                        <td>{{ m.materia.nombre }}</td>
+                        <td>{{ m.nota_final|default_if_none:'-' }}</td>
+                        <td>{{ m.nota_final_completivo|default_if_none:'-' }}</td>
+                        <td>{{ m.nota_final_extraordinario|default_if_none:'-' }}</td>
+                        <td>{{ m.nota_final_especial|default_if_none:'-' }}</td>
+                        <td>{{ m.nota_final_oficial|default_if_none:'-' }}</td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+            <div class="summary">
+                <p><strong>Total materias:</strong> {{ datos.total_materias }}</p>
+                <p><strong>Aprobadas:</strong> {{ datos.materias_aprobadas }}</p>
+                <p><strong>Reprobadas:</strong> {{ datos.materias_reprobadas }}</p>
+                <p><strong>En progreso:</strong> {{ datos.materias_en_progreso }}</p>
+                <p><strong>Promedio general:</strong> {{ datos.promedio_general|floatformat:2|default_if_none:'-' }}</p>
+            </div>
+        </div>
+    {% endfor %}
+</body>
+</html>
