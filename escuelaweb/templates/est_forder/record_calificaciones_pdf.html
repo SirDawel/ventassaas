@@ -1,0 +1,277 @@
+{% load custom_filters %}
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Récord de Calificaciones - {{ estudiante.get_full_name }}</title>
+    <style>
+        @page {
+            size: A4;
+            margin: 1.5cm 1cm;
+        }
+        
+        body {
+            font-family: Arial, sans-serif;
+            font-size: 9pt;
+            line-height: 1.3;
+            color: #000;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 10px;
+            padding-bottom: 8px;
+        }
+        
+        .header h1 {
+            margin: 0;
+            font-size: 12pt;
+            text-transform: uppercase;
+            font-weight: bold;
+            letter-spacing: 0.5px;
+        }
+        
+        .header h2 {
+            margin: 2px 0;
+            font-size: 11pt;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+        
+        .header .distrito {
+            margin: 4px 0;
+            font-size: 8.5pt;
+            line-height: 1.4;
+        }
+        
+        .header .centro-educativo {
+            margin: 5px 0 8px 0;
+            font-size: 9pt;
+            font-weight: bold;
+        }
+        
+        .titulo-documento {
+            text-align: center;
+            font-size: 11pt;
+            font-weight: bold;
+            text-decoration: underline;
+            margin: 12px 0;
+            text-transform: uppercase;
+        }
+        
+        .parrafo-oficial {
+            text-align: justify;
+            font-size: 8.5pt;
+            line-height: 1.5;
+            margin: 10px 0;
+        }
+        
+        .parrafo-oficial strong {
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 8px 0;
+            font-size: 8pt;
+        }
+        
+        table th {
+            background-color: #e8e8e8;
+            border: 1px solid #000;
+            padding: 5px;
+            text-align: center;
+            font-weight: bold;
+            font-size: 7.5pt;
+        }
+        
+        table td {
+            border: 1px solid #000;
+            padding: 5px;
+            text-align: center;
+        }
+        
+        table td.materia-nombre {
+            text-align: left;
+            padding-left: 10px;
+        }
+        
+        .grado-titulo {
+            background-color: #d8d8d8;
+            font-weight: bold;
+            padding: 6px 10px;
+            margin-top: 12px;
+            border: 1px solid #000;
+            text-align: center;
+            font-size: 9pt;
+        }
+        
+        .footer {
+            margin-top: 25px;
+            page-break-inside: avoid;
+        }
+        
+        .firmas {
+            margin-top: 35px;
+            display: table;
+            width: 100%;
+        }
+        
+        .firma-bloque {
+            display: table-cell;
+            width: 50%;
+            text-align: center;
+            padding: 8px;
+        }
+        
+        .linea-firma {
+            border-top: 1.5px solid #000;
+            padding-top: 5px;
+            margin-top: 45px;
+            font-size: 8pt;
+            font-weight: bold;
+        }
+        
+        .fecha-emision {
+            text-align: justify;
+            margin: 15px 0;
+            font-size: 8.5pt;
+            line-height: 1.5;
+        }
+        
+        .aprobado {
+            color: #006400;
+            font-weight: bold;
+        }
+        
+        .reprobado {
+            color: #8B0000;
+            font-weight: bold;
+        }
+        
+        hr {
+            border: none;
+            border-top: 2px solid #000;
+            margin: 8px 0;
+        }
+    </style>
+</head>
+<body>
+    <!-- Encabezado Oficial -->
+    <div class="header">
+        <h1>REPÚBLICA DOMINICANA</h1>
+        <h2>EDUCACIÓN</h2>
+        <div class="distrito">
+            Distrito Educativo No 02-05, San Juan de la Maguana, Prov. San Juan.<br>
+            Centro Educativo: <strong>CENTRO CRISTIANO DE EDUCACIÓN PARA EL DESARROLLO</strong> / Código: ###### Bayard [####]
+        </div>
+    </div>
+    
+    <hr>
+    
+    <!-- Título del Documento -->
+    <div class="titulo-documento">
+        RÉCORD DE CALIFICACIONES
+    </div>
+    
+    <!-- Párrafo Oficial -->
+    <div class="parrafo-oficial">
+        <strong>QUIEN SUSCRIBE:</strong> Mauro Bocio Díaz, Secretario Docente del Centro Educativo 
+        <strong>CENTRO CRISTIANO DE EDUCACIÓN PARA EL DESARROLLO</strong>, del Distrito Educativo 02-05 
+        de San Juan de la Maguana, Provincia San Juan, <strong>CERTIFICA:</strong> Que según consta en los 
+        libros de calificaciones de este centro, <strong>{{ estudiante.get_full_name|upper }}</strong>, 
+        cédula o pasaporte No. <strong>{{ estudiante.cedula|default:"__________________" }}</strong>, 
+        ha obtenido las siguientes calificaciones:
+    </div>
+    
+    <!-- Tabla Horizontal por Grados -->
+    <div class="grado-titulo">
+        Primer Ciclo de Educación Secundaria, Ordenanzas 1-2017, 22-2017 Y 04-2023
+    </div>
+    
+    <table>
+        <thead>
+            <tr>
+                <th rowspan="3" style="width: 25%; vertical-align: middle;">Asignaturas</th>
+                {% for grado_info in grados_ordenados %}
+                <th colspan="2">{{ grado_info.grado }}</th>
+                {% endfor %}
+            </tr>
+            <tr>
+                {% for grado_info in grados_ordenados %}
+                <th colspan="2" style="font-size: 7pt;">Año escolar {{ grado_info.anho }}</th>
+                {% endfor %}
+            </tr>
+            <tr>
+                {% for grado_info in grados_ordenados %}
+                <th style="font-size: 7pt;">Calificación<br>Final</th>
+                <th style="font-size: 7pt;">Fecha<br>Aprobación</th>
+                {% endfor %}
+            </tr>
+        </thead>
+        <tbody>
+            {% for materia_nombre, grados_data in materias_por_grado.items %}
+            <tr>
+                <td class="materia-nombre">{{ materia_nombre }}</td>
+                {% for grado_info in grados_ordenados %}
+                    {% if grado_info.grado in grados_data %}
+                    <td>{% if grados_data|get_item:grado_info.grado|get_item:'nota' %}{{ grados_data|get_item:grado_info.grado|get_item:'nota' }}{% else %}-{% endif %}</td>
+                    <td style="font-size: 7pt;">{% if grados_data|get_item:grado_info.grado|get_item:'fecha' %}{{ grados_data|get_item:grado_info.grado|get_item:'fecha' }}{% else %}-{% endif %}</td>
+                    {% else %}
+                    <td>-</td>
+                    <td>-</td>
+                    {% endif %}
+                {% endfor %}
+            </tr>
+            {% endfor %}
+            <tr>
+                <td colspan="{{ total_columnas }}" style="text-align: center; padding: 10px; background-color: #f5f5f5;">
+                    <strong>Centro de Procedencia:</strong><br>
+                    CENTRO CRISTIANO DE EDUCACIÓN PARA EL DESARROLLO
+                </td>
+            </tr>
+        </tbody>
+    </table>
+    
+    <!-- Fecha de Emisión -->
+    <div class="fecha-emision">
+        Dado en la Ciudad de San Juan de la Maguana, República Dominicana a los 
+        <strong>{{ fecha_actual.day }}</strong> días del mes de 
+        <strong>{% if fecha_actual.month == 1 %}ENERO{% elif fecha_actual.month == 2 %}FEBRERO{% elif fecha_actual.month == 3 %}MARZO{% elif fecha_actual.month == 4 %}ABRIL{% elif fecha_actual.month == 5 %}MAYO{% elif fecha_actual.month == 6 %}JUNIO{% elif fecha_actual.month == 7 %}JULIO{% elif fecha_actual.month == 8 %}AGOSTO{% elif fecha_actual.month == 9 %}SEPTIEMBRE{% elif fecha_actual.month == 10 %}OCTUBRE{% elif fecha_actual.month == 11 %}NOVIEMBRE{% elif fecha_actual.month == 12 %}DICIEMBRE{% endif %}</strong> 
+        del año <strong>{{ fecha_actual.year }}</strong>.
+    </div>
+    
+    <!-- Firmas -->
+    <div class="firmas footer">
+        <div class="firma-bloque">
+            <div class="linea-firma">
+                Mauro Bocio Díaz<br>
+                <span style="font-weight: normal; font-size: 7pt;">Secretario Académico</span>
+            </div>
+        </div>
+        <div class="firma-bloque">
+            <div class="linea-firma">
+                Simón Sánchez Ramírez<br>
+                <span style="font-weight: normal; font-size: 7pt;">Director Académico</span>
+            </div>
+        </div>
+    </div>
+    
+    <div class="firmas" style="margin-top: 20px;">
+        <div class="firma-bloque">
+            <div class="linea-firma">
+                Ynes Moreta Mora<br>
+                <span style="font-weight: normal; font-size: 7pt;">Encargada de Validación y Certificación<br>Distrito Educativo 02-05</span>
+            </div>
+        </div>
+        <div class="firma-bloque">
+            <div class="linea-firma">
+                Sandra De Los Santos Del Rosario<br>
+                <span style="font-weight: normal; font-size: 7pt;">Director del Distrito Educativo<br>San Juan Este</span>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

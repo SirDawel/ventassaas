@@ -80,6 +80,21 @@
                         </a>
                         {% endif %}
                         
+                        <!-- Botón Récord de Calificaciones solo para Estudiantes -->
+                        {% if user.rol == "Estudiante" %}
+                        <div class="btn-group" role="group">
+                            <a href="{% url 'reporte_notas_estudiante' user.id %}" class="btn btn-outline-info">
+                                <i class="fas fa-graduation-cap me-2"></i>Ver Reporte de Notas
+                            </a>
+                            <a href="{% url 'record_calificaciones_pdf' user.id %}" class="btn btn-outline-danger" target="_blank">
+                                <i class="fas fa-file-pdf me-2"></i>Récord PDF - Primer Ciclo
+                            </a>
+                            <a href="{% url 'record_calificaciones_completo_pdf' user.id %}" class="btn btn-outline-primary" target="_blank">
+                                <i class="fas fa-file-alt me-2"></i>Récord Completo - Ambos Ciclos
+                            </a>
+                        </div>
+                        {% endif %}
+                        
                         <!-- Botón volver -->
                         {% if request.user.rol == "Administrador" %}
                         <a href="{% url 'user_list' %}" class="btn btn-outline-secondary">

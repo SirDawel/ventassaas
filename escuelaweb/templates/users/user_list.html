@@ -23,6 +23,168 @@
                         {% endfor %}
                     {% endif %}
 
+                    <!-- Estadísticas por Rol -->
+                    <div class="row mb-4">
+                        <div class="col-md-3 col-sm-6 mb-3">
+                            <div class="card border-0 shadow h-100" style="background-color: #5e72e4;">
+                                <div class="card-body text-white">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <h6 class="text-white mb-1 fw-normal">Estudiantes</h6>
+                                            <h2 class="mb-0 fw-bold">{{ estadisticas.estudiantes }}</h2>
+                                        </div>
+                                        <div class="fs-1" style="opacity: 0.8;">
+                                            <i class="fas fa-user-graduate"></i>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3 col-sm-6 mb-3">
+                            <div class="card border-0 shadow h-100" style="background-color: #f5365c;">
+                                <div class="card-body text-white">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <h6 class="text-white mb-1 fw-normal">Profesores</h6>
+                                            <h2 class="mb-0 fw-bold">{{ estadisticas.profesores }}</h2>
+                                        </div>
+                                        <div class="fs-1" style="opacity: 0.8;">
+                                            <i class="fas fa-chalkboard-teacher"></i>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3 col-sm-6 mb-3">
+                            <div class="card border-0 shadow h-100" style="background-color: #11cdef;">
+                                <div class="card-body text-white">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <h6 class="text-white mb-1 fw-normal">Directores</h6>
+                                            <h2 class="mb-0 fw-bold">{{ estadisticas.directores }}</h2>
+                                        </div>
+                                        <div class="fs-1" style="opacity: 0.8;">
+                                            <i class="fas fa-user-tie"></i>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3 col-sm-6 mb-3">
+                            <div class="card border-0 shadow h-100" style="background-color: #2dce89;">
+                                <div class="card-body text-white">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <h6 class="text-white mb-1 fw-normal">Secretarias</h6>
+                                            <h2 class="mb-0 fw-bold">{{ estadisticas.secretarias }}</h2>
+                                        </div>
+                                        <div class="fs-1" style="opacity: 0.8;">
+                                            <i class="fas fa-user-edit"></i>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Fila adicional de estadísticas -->
+                    <div class="row mb-4">
+                        <div class="col-md-2 col-sm-4 mb-3">
+                            <div class="card border-0 shadow h-100" style="background-color: #fb6340;">
+                                <div class="card-body text-white">
+                                    <div class="d-flex flex-column justify-content-center align-items-center text-center">
+                                        <i class="fas fa-user-shield fs-3 mb-2"></i>
+                                        <h6 class="text-white mb-1 small fw-normal">Administradores</h6>
+                                        <h4 class="mb-0 fw-bold">{{ estadisticas.administradores }}</h4>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-2 col-sm-4 mb-3">
+                            <div class="card border-0 shadow h-100" style="background-color: #ffa500;">
+                                <div class="card-body text-white">
+                                    <div class="d-flex flex-column justify-content-center align-items-center text-center">
+                                        <i class="fas fa-users-cog fs-3 mb-2"></i>
+                                        <h6 class="text-white mb-1 small fw-normal">Coordinadores</h6>
+                                        <h4 class="mb-0 fw-bold">{{ estadisticas.coordinadores }}</h4>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-2 col-sm-4 mb-3">
+                            <div class="card border-0 shadow h-100" style="background-color: #8965e0;">
+                                <div class="card-body text-white">
+                                    <div class="d-flex flex-column justify-content-center align-items-center text-center">
+                                        <i class="fas fa-book-reader fs-3 mb-2"></i>
+                                        <h6 class="text-white mb-1 small fw-normal">Bibliotecarios</h6>
+                                        <h4 class="mb-0 fw-bold">{{ estadisticas.bibliotecarios }}</h4>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-2 col-sm-4 mb-3">
+                            <div class="card border-0 shadow h-100" style="background-color: #f3a4b5;">
+                                <div class="card-body text-white">
+                                    <div class="d-flex flex-column justify-content-center align-items-center text-center">
+                                        <i class="fas fa-brain fs-3 mb-2"></i>
+                                        <h6 class="text-white mb-1 small fw-normal">Psicólogos</h6>
+                                        <h4 class="mb-0 fw-bold">{{ estadisticas.psicologos }}</h4>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-2 col-sm-4 mb-3">
+                            <div class="card border-0 shadow h-100" style="background-color: #28a745;">
+                                <div class="card-body text-white">
+                                    <div class="d-flex flex-column justify-content-center align-items-center text-center">
+                                        <i class="fas fa-check-circle fs-3 mb-2"></i>
+                                        <h6 class="text-white mb-1 small fw-normal">Activos</h6>
+                                        <h4 class="mb-0 fw-bold">{{ estadisticas.total_activos }}</h4>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-2 col-sm-4 mb-3">
+                            <div class="card border-0 shadow h-100" style="background-color: #5a6c7d;">
+                                <div class="card-body text-white">
+                                    <div class="d-flex flex-column justify-content-center align-items-center text-center">
+                                        <i class="fas fa-users fs-3 mb-2"></i>
+                                        <h6 class="text-white mb-1 small fw-normal">Total Usuarios</h6>
+                                        <h4 class="mb-0 fw-bold">{{ estadisticas.total_usuarios }}</h4>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Resumen de Estadísticas -->
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <div class="card border-0 shadow" style="background-color: #f8f9fa;">
+                                <div class="card-body">
+                                    <div class="row text-center">
+                                        <div class="col-md-3">
+                                            <h6 class="text-muted mb-1">Suma de Roles</h6>
+                                            <h3 class="fw-bold text-primary mb-0">{{ estadisticas.suma_roles }}</h3>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <h6 class="text-muted mb-1">Total Activos</h6>
+                                            <h3 class="fw-bold text-success mb-0">{{ estadisticas.total_activos }}</h3>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <h6 class="text-muted mb-1">Total Inactivos</h6>
+                                            <h3 class="fw-bold text-danger mb-0">{{ estadisticas.total_inactivos }}</h3>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <h6 class="text-muted mb-1">Total General</h6>
+                                            <h3 class="fw-bold text-dark mb-0">{{ estadisticas.total_usuarios }}</h3>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
                     <!-- Search Form -->
                     <form method="get" class="mb-4">
                         <div class="input-group">
@@ -91,6 +253,17 @@
                                             <a href="{% url 'user_profile' user.id %}" class="btn btn-sm btn-info" title="Ver Perfil">
                                                 <i class="fas fa-user"></i>
                                             </a>
+                                            {% if user.rol == 'Estudiante' %}
+                                            <a href="{% url 'reporte_notas_estudiante' user.id %}" class="btn btn-sm btn-success" title="Reporte de Notas">
+                                                <i class="fas fa-graduation-cap"></i>
+                                            </a>
+                                            <a href="{% url 'record_calificaciones_pdf' user.id %}" class="btn btn-sm btn-danger" title="Récord PDF - Primer Ciclo" target="_blank">
+                                                <i class="fas fa-file-pdf"></i>
+                                            </a>
+                                            <a href="{% url 'record_calificaciones_completo_pdf' user.id %}" class="btn btn-sm btn-primary" title="Récord Completo - Ambos Ciclos" target="_blank">
+                                                <i class="fas fa-file-alt"></i>
+                                            </a>
+                                            {% endif %}
                                             <button type="button" class="btn btn-sm btn-danger" 
                                                 data-bs-toggle="modal" 
                                                 data-bs-target="#deleteModal{{ user.id }}"

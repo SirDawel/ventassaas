@@ -1,5 +1,6 @@
 from django.urls import path
 from . import views
+from . import views_familias
 
 urlpatterns = [
     # ... existing urls ...
@@ -55,7 +56,10 @@ urlpatterns = [
     #lista estudiantes x materia
     path('materias/<int:materia_id>/estudiantes/', views.lista_estudiantes_materia, name='lista_estudiantes_materia'),
 
-
+    # URLs para listas de estudiantes por curso
+    path('cursos/estudiantes/info/', views.lista_estudiantes_curso_info, name='lista_estudiantes_curso_info'),
+    path('cursos/estudiantes/promedios/', views.lista_estudiantes_curso_promedios, name='lista_estudiantes_curso_promedios'),    path('cursos/estudiantes/info/pdf/', views.lista_estudiantes_curso_info_pdf, name='lista_estudiantes_curso_info_pdf'),
+    path('cursos/estudiantes/promedios/pdf/', views.lista_estudiantes_curso_promedios_pdf, name='lista_estudiantes_curso_promedios_pdf'),
     # URLs para Matr�culas
     
     path('matriculas/', views.lista_matriculas, name='lista_matriculas'),
@@ -66,6 +70,8 @@ urlpatterns = [
     path('matriculas/<int:matricula_id>/eliminar/', views.eliminar_matricula, name='eliminar_matricula'),
     path('matriculas/<int:matricula_id>/actualizar-notas/', views.actualizar_notas, name='actualizar_notas'),
     path('estudiante/<int:estudiante_id>/reporte-notas/', views.reporte_notas_estudiante, name='reporte_notas_estudiante'),
+    path('estudiante/<int:estudiante_id>/record-calificaciones-pdf/', views.record_calificaciones_pdf, name='record_calificaciones_pdf'),
+    path('estudiante/<int:estudiante_id>/record-calificaciones-completo-pdf/', views.record_calificaciones_completo_pdf, name='record_calificaciones_completo_pdf'),
     
     # URLs para Asistencia (Pasar Lista)
     path('asistencia/seleccionar-materia/', views.seleccionar_materia_asistencia, name='seleccionar_materia_asistencia'),
@@ -105,6 +111,7 @@ urlpatterns = [
     path('tarifas/crear/', views.tarifa_create, name='tarifa_create'),
     path('tarifas/editar/<int:pk>/', views.tarifa_edit, name='tarifa_edit'),
     path('tarifas/eliminar/<int:pk>/', views.tarifa_delete, name='tarifa_delete'),
+    path('tarifas/concepto/<int:concepto_id>/monto/', views.obtener_concepto_monto, name='obtener_concepto_monto'),
     # ConceptoPago (Tarifas Estándar) CRUD - Solo Administrador
     path('conceptos/', views.conceptos_list, name='conceptos_list'),
     path('conceptos/crear/', views.concepto_create, name='concepto_create'),
@@ -130,4 +137,49 @@ urlpatterns = [
     
     # URLs para Reportes de Ventas
     path('reportes/ventas/', views.reportes_ventas, name='reportes_ventas'),
+    
+    # URLs para Grupos Familiares
+    path('familias/', views_familias.grupos_familiares_lista, name='grupos_familiares_lista'),
+    path('familias/crear/', views_familias.grupo_familiar_crear, name='grupo_familiar_crear'),
+    path('familias/<int:grupo_id>/', views_familias.grupo_familiar_detalle, name='grupo_familiar_detalle'),
+    path('familias/<int:grupo_id>/editar/', views_familias.grupo_familiar_editar, name='grupo_familiar_editar'),
+    path('familias/<int:grupo_id>/asignar-estudiante/', views_familias.grupo_familiar_asignar_estudiante, name='grupo_familiar_asignar_estudiante'),
+    path('familias/<int:grupo_id>/remover-estudiante/<int:estudiante_id>/', views_familias.grupo_familiar_remover_estudiante, name='grupo_familiar_remover_estudiante'),
+    path('familias/<int:grupo_id>/facturar/', views_familias.grupo_familiar_facturar, name='grupo_familiar_facturar'),
+    
+    # ============================================
+    # URLs para CONTABILIDAD - Plan de Cuentas
+    # ============================================
+    path('contabilidad/plan-cuentas/', views.plan_cuentas_list, name='plan_cuentas_list'),
+    path('contabilidad/plan-cuentas/crear/', views.plan_cuentas_crear, name='plan_cuentas_crear'),
+    path('contabilidad/plan-cuentas/<int:pk>/', views.plan_cuentas_detalle, name='plan_cuentas_detalle'),
+    path('contabilidad/plan-cuentas/<int:pk>/editar/', views.plan_cuentas_editar, name='plan_cuentas_editar'),
+    path('contabilidad/plan-cuentas/<int:pk>/eliminar/', views.plan_cuentas_eliminar, name='plan_cuentas_eliminar'),
+    path('contabilidad/plan-cuentas/<int:pk>/toggle-activo/', views.plan_cuentas_toggle_activo, name='plan_cuentas_toggle_activo'),
+    
+    # APIs para Plan de Cuentas
+    path('contabilidad/api/plan-cuentas/<int:pk>/subcuentas/', views.plan_cuentas_obtener_subcuentas, name='plan_cuentas_obtener_subcuentas'),
+    path('contabilidad/api/plan-cuentas/estructura/', views.plan_cuentas_estructura_json, name='plan_cuentas_estructura_json'),
+    
+    # ============================================
+    # URLs para Asientos Contables
+    # ============================================
+    path('contabilidad/asientos/', views.asientos_list, name='asientos_list'),
+    path('contabilidad/asientos/crear/', views.asiento_crear, name='asiento_crear'),
+    path('contabilidad/asientos/<int:pk>/', views.asiento_detalle, name='asiento_detalle'),
+    path('contabilidad/asientos/<int:pk>/contabilizar/', views.asiento_contabilizar, name='asiento_contabilizar'),
+    path('contabilidad/asientos/<int:pk>/anular/', views.asiento_anular, name='asiento_anular'),
+    path('contabilidad/asientos/<int:pk>/eliminar/', views.asiento_eliminar, name='asiento_eliminar'),
+    path('contabilidad/asientos/<int:pk>/imprimir/', views.asiento_imprimir, name='asiento_imprimir'),
+    
+    # ============================================
+    # URLs para Reportes Contables
+    # ============================================
+    path('contabilidad/dashboard/', views.contabilidad_dashboard, name='contabilidad_dashboard'),
+    path('contabilidad/reportes/libro-diario/', views.libro_diario, name='libro_diario'),
+    path('contabilidad/reportes/libro-mayor/', views.libro_mayor, name='libro_mayor'),
+    path('contabilidad/reportes/balance-comprobacion/', views.balance_comprobacion, name='balance_comprobacion'),
+    path('contabilidad/reportes/estado-resultados/', views.estado_resultados, name='estado_resultados'),
+    path('contabilidad/reportes/balance-general/', views.balance_general, name='balance_general'),
+    path('contabilidad/cuentas/<int:pk>/consulta/', views.consulta_cuenta, name='consulta_cuenta'),
 ] 

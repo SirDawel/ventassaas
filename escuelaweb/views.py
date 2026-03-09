@@ -1,6 +1,9 @@
 import uuid
 from datetime import datetime, timedelta
 from django.utils import timezone
+import logging
+
+logger = logging.getLogger(__name__)
 
 from django.conf import settings
 from django.contrib import messages
@@ -36,7 +39,7 @@ from .forms import (
 )
 from .forms import TarifaEstudianteForm
 from .models import Estudiante, CustomUser, AnhoEscolar, Persona, Curso, Materia, Matricula
-from .models import TarifaEstudiante
+from .models import TarifaEstudiante, ConceptoPago
 from .models import StudentGroup, Asistencia, AsistenciaPersonal
 from .decorators import admin_required
 
@@ -204,61 +207,181 @@ def login_view(request):
 
     try:
         from django.conf import settings
-        print(f"DEBUG LOGIN - DB ENGINE: {settings.DATABASES['default']['ENGINE']}")
-        print(f"DEBUG LOGIN - DB NAME: {settings.DATABASES['default']['NAME']}")
+        from escuelaweb.models import LoginAttempt, SecurityLog
         
         email = request.POST.get("email", "").strip()
         password = request.POST.get("password", "").strip()
-
-        print(f"DEBUG LOGIN - Email recibido: {email}")
-        print(f"DEBUG LOGIN - Password recibido: {'*' * len(password) if password else 'vacío'}")
         
-        # Verificar si el usuario existe
-        from escuelaweb.models import CustomUser
-        user_exists = CustomUser.objects.filter(email=email).first()
-        print(f"DEBUG LOGIN - Usuario en BD: {user_exists}")
-        if user_exists:
-            print(f"DEBUG LOGIN - Usuario is_active en BD: {user_exists.is_active}")
-            print(f"DEBUG LOGIN - Has usable password: {user_exists.has_usable_password()}")
-            print(f"DEBUG LOGIN - Check password: {user_exists.check_password(password)}")
-            print(f"DEBUG LOGIN - Password hash: {user_exists.password[:50]}...")
+        # Obtener IP y User Agent
+        ip_address = get_client_ip(request)
+        user_agent = request.META.get('HTTP_USER_AGENT', '')
 
         if not email or not password:
             messages.error(request, "Por favor, completa todos los campos")
             return render(request, 'website/login.html')
-
-        # Intentar autenticar con CustomUser
-        user = authenticate(request, username=email, password=password)
         
-        print(f"DEBUG LOGIN - Usuario autenticado: {user}")
-        print(f"DEBUG LOGIN - Usuario is_active: {user.is_active if user else 'N/A'}")
+        # Verificar si la cuenta está bloqueada por múltiples intentos fallidos
+        if LoginAttempt.is_blocked(email, max_attempts=5, block_minutes=15):
+            SecurityLog.log_event(
+                tipo_evento='ACCOUNT_LOCKED',
+                descripcion=f'Intento de acceso a cuenta bloqueada: {email}',
+                email=email,
+                ip_address=ip_address,
+                user_agent=user_agent,
+                nivel_severidad='WARNING'
+            )
+            messages.error(
+                request, 
+                'Cuenta temporalmente bloqueada por múltiples intentos fallidos. '
+                'Intenta nuevamente en 15 minutos.'
+            )
+            return render(request, 'website/login.html')
+
+        # Verificar si el usuario existe
+        from escuelaweb.models import CustomUser
+        user_exists = CustomUser.objects.filter(email=email).first()
+
+        # Intentar autenticar
+        user = authenticate(request, username=email, password=password)
 
         if user is not None:
             if user.is_active:
+                # Registrar login exitoso
+                LoginAttempt.record_attempt(
+                    email=email,
+                    ip_address=ip_address,
+                    user_agent=user_agent,
+                    exitoso=True,
+                    user=user
+                )
+                
+                SecurityLog.log_event(
+                    tipo_evento='LOGIN',
+                    descripcion=f'Login exitoso desde {ip_address}',
+                    usuario=user,
+                    ip_address=ip_address,
+                    user_agent=user_agent,
+                    nivel_severidad='INFO'
+                )
+                
                 login(request, user)
+                
                 # Actualizar último acceso
                 user.ultimo_acceso = timezone.now()
                 user.save(update_fields=['ultimo_acceso'])
+                
+                # Inicializar sesión
+                request.session['last_activity'] = timezone.now().isoformat()
 
                 messages.success(request, f"Bienvenido, {user.get_full_name()}")
                 return redirect("plataform")
             else:
+                # Cuenta inactiva
+                LoginAttempt.record_attempt(
+                    email=email,
+                    ip_address=ip_address,
+                    user_agent=user_agent,
+                    exitoso=False,
+                    razon_fallo='Cuenta inactiva',
+                    user=user
+                )
+                
+                SecurityLog.log_event(
+                    tipo_evento='LOGIN_FAILED',
+                    descripcion='Intento de login en cuenta inactiva',
+                    usuario=user,
+                    ip_address=ip_address,
+                    user_agent=user_agent,
+                    nivel_severidad='WARNING'
+                )
+                
                 messages.error(request, "Tu cuenta no está activa. Por favor, verifica tu correo electrónico para activarla.")
                 return render(request, 'website/login.html')
         else:
-            messages.error(request, "Correo electrónico o contraseña incorrectos")
+            # Login fallido
+            razon = 'Usuario no existe' if not user_exists else 'Contraseña incorrecta'
+            
+            LoginAttempt.record_attempt(
+                email=email,
+                ip_address=ip_address,
+                user_agent=user_agent,
+                exitoso=False,
+                razon_fallo=razon,
+                user=user_exists
+            )
+            
+            SecurityLog.log_event(
+                tipo_evento='LOGIN_FAILED',
+                descripcion=f'Login fallido: {razon}',
+                email=email,
+                ip_address=ip_address,
+                user_agent=user_agent,
+                nivel_severidad='WARNING'
+            )
+            
+            # Verificar cuántos intentos fallidos lleva
+            intentos_fallidos = LoginAttempt.get_recent_failed_attempts(email, minutes=15)
+            intentos_restantes = 5 - intentos_fallidos
+            
+            if intentos_restantes > 0:
+                messages.error(
+                    request, 
+                    f"Correo electrónico o contraseña incorrectos. "
+                    f"Te quedan {intentos_restantes} intentos antes de bloquear la cuenta."
+                )
+            else:
+                messages.error(
+                    request, 
+                    "Cuenta bloqueada temporalmente por múltiples intentos fallidos. "
+                    "Intenta nuevamente en 15 minutos."
+                )
+            
             return render(request, 'website/login.html')
 
     except Exception as e:
+        logger.error(f"Error en login_view: {str(e)}")
         messages.error(request, f"Error al iniciar sesión: {str(e)}")
         return render(request, 'website/login.html')
 
 
+# Función auxiliar para obtener IP del cliente
+def get_client_ip(request):
+    """Obtiene la IP real del cliente"""
+    x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
+    if x_forwarded_for:
+        ip = x_forwarded_for.split(',')[0].strip()
+    else:
+        ip = request.META.get('REMOTE_ADDR')
+    return ip
+
+
 def logout_view(request):
+    """Vista mejorada de logout con auditoría"""
+    if request.user.is_authenticated:
+        from escuelaweb.models import SecurityLog, UserSession
+        
+        # Registrar logout
+        SecurityLog.log_event(
+            tipo_evento='LOGOUT',
+            descripcion=f'Logout desde {get_client_ip(request)}',
+            usuario=request.user,
+            ip_address=get_client_ip(request),
+            user_agent=request.META.get('HTTP_USER_AGENT', ''),
+            nivel_severidad='INFO'
+        )
+        
+        # Cerrar sesión en base de datos
+        try:
+            session_key = request.session.session_key
+            if session_key:
+                user_session = UserSession.objects.filter(session_key=session_key).first()
+                if user_session:
+                    user_session.cerrar_sesion()
+        except Exception as e:
+            logger.error(f"Error cerrando sesión en DB: {e}")
 
     logout(request)
-
-    return redirect("login")  # Redirige al usuario al login después de cerrar sesión
+    return redirect("login")
 
 
 # para resetear contrasena
@@ -462,6 +585,38 @@ def user_list(request):
             Q(cedula__icontains=query)
         )
 
+    # Estadísticas por rol
+    cant_estudiantes = User.objects.filter(rol='Estudiante', is_active=True).count()
+    cant_profesores = User.objects.filter(rol='Profesor', is_active=True).count()
+    cant_directores = User.objects.filter(rol='Director', is_active=True).count()
+    cant_secretarias = User.objects.filter(rol='Secretaria', is_active=True).count()
+    cant_administradores = User.objects.filter(rol='Administrador', is_active=True).count()
+    cant_coordinadores = User.objects.filter(rol='Coordinador', is_active=True).count()
+    cant_bibliotecarios = User.objects.filter(rol='Bibliotecario', is_active=True).count()
+    cant_psicologos = User.objects.filter(rol='Psicologo', is_active=True).count()
+    cant_otros = User.objects.filter(rol='Otro', is_active=True).count()
+    
+    # Suma de todos los roles
+    suma_roles = (cant_estudiantes + cant_profesores + cant_directores + 
+                  cant_secretarias + cant_administradores + cant_coordinadores + 
+                  cant_bibliotecarios + cant_psicologos + cant_otros)
+    
+    estadisticas_roles = {
+        'estudiantes': cant_estudiantes,
+        'profesores': cant_profesores,
+        'directores': cant_directores,
+        'secretarias': cant_secretarias,
+        'administradores': cant_administradores,
+        'coordinadores': cant_coordinadores,
+        'bibliotecarios': cant_bibliotecarios,
+        'psicologos': cant_psicologos,
+        'otros': cant_otros,
+        'suma_roles': suma_roles,
+        'total_activos': User.objects.filter(is_active=True).count(),
+        'total_inactivos': User.objects.filter(is_active=False).count(),
+        'total_usuarios': User.objects.count(),
+    }
+
     paginator = Paginator(users, per_page)
     page_obj = paginator.get_page(page_number)
 
@@ -470,6 +625,7 @@ def user_list(request):
         'per_page': per_page,
         'page_sizes': page_sizes,
         'query': query,
+        'estadisticas': estadisticas_roles,
     })
 
 @login_required
@@ -898,6 +1054,38 @@ def user_list(request):
             Q(cedula__icontains=query)
         )
 
+    # Estadísticas por rol
+    cant_estudiantes = CustomUser.objects.filter(rol='Estudiante', is_active=True).count()
+    cant_profesores = CustomUser.objects.filter(rol='Profesor', is_active=True).count()
+    cant_directores = CustomUser.objects.filter(rol='Director', is_active=True).count()
+    cant_secretarias = CustomUser.objects.filter(rol='Secretaria', is_active=True).count()
+    cant_administradores = CustomUser.objects.filter(rol='Administrador', is_active=True).count()
+    cant_coordinadores = CustomUser.objects.filter(rol='Coordinador', is_active=True).count()
+    cant_bibliotecarios = CustomUser.objects.filter(rol='Bibliotecario', is_active=True).count()
+    cant_psicologos = CustomUser.objects.filter(rol='Psicologo', is_active=True).count()
+    cant_otros = CustomUser.objects.filter(rol='Otro', is_active=True).count()
+    
+    # Suma de todos los roles
+    suma_roles = (cant_estudiantes + cant_profesores + cant_directores + 
+                  cant_secretarias + cant_administradores + cant_coordinadores + 
+                  cant_bibliotecarios + cant_psicologos + cant_otros)
+    
+    estadisticas_roles = {
+        'estudiantes': cant_estudiantes,
+        'profesores': cant_profesores,
+        'directores': cant_directores,
+        'secretarias': cant_secretarias,
+        'administradores': cant_administradores,
+        'coordinadores': cant_coordinadores,
+        'bibliotecarios': cant_bibliotecarios,
+        'psicologos': cant_psicologos,
+        'otros': cant_otros,
+        'suma_roles': suma_roles,
+        'total_activos': CustomUser.objects.filter(is_active=True).count(),
+        'total_inactivos': CustomUser.objects.filter(is_active=False).count(),
+        'total_usuarios': CustomUser.objects.count(),
+    }
+
     paginator = Paginator(users, per_page)
     page_obj = paginator.get_page(page_number)
     
@@ -906,6 +1094,7 @@ def user_list(request):
         'per_page': per_page,
         'page_sizes': page_sizes,
         'query': query,
+        'estadisticas': estadisticas_roles,
     })
 """
 
@@ -2481,7 +2670,7 @@ def reporte_general(request, curso_id):
                 for idx, peso in enumerate(valores):
                     ra_val = getattr(m, f'ra_{idx+1}', None)
                     if ra_val is not None:
-                        total_ra += (ra_val * peso / 100)
+                        total_ra += ra_val
                 # El total nunca debe exceder 100
                 m.total_ra = round(min(total_ra, 100), 2)
             else:
@@ -2620,7 +2809,7 @@ def reporte_general_pdf(request, curso_id):
                 for idx, peso in enumerate(valores):
                     ra_val = getattr(m, f'ra_{idx+1}', None)
                     if ra_val is not None:
-                        total_ra += (ra_val * peso / 100)
+                        total_ra += ra_val
                 m.total_ra = round(min(total_ra, 100), 2)
             else:
                 m.total_ra = None
@@ -2663,10 +2852,41 @@ def reporte_general_pdf(request, curso_id):
         "curso": curso,
         "reporte_estudiantes": reporte_estudiantes,
         "request": request,
+        "STATIC_ROOT": settings.STATIC_ROOT,
     })
     response = HttpResponse(content_type='application/pdf')
     response['Content-Disposition'] = f'inline; filename="reporte_general_{curso.id}.pdf"'
-    pisa_status = pisa.CreatePDF(html, dest=response)
+    
+    # Función para resolver rutas de archivos estáticos para xhtml2pdf
+    def link_callback(uri, rel):
+        import os
+        
+        # Si la URI ya es una ruta absoluta del sistema, devolverla
+        if os.path.isfile(uri):
+            return uri
+        
+        # Limpiar la URI
+        if uri.startswith(settings.STATIC_ROOT):
+            return uri
+        
+        # Remover prefijos de URL
+        clean_uri = uri.replace('/static/', '').replace('static/', '').lstrip('/')
+        
+        # Buscar primero en STATICFILES_DIRS (desarrollo)
+        for static_dir in getattr(settings, 'STATICFILES_DIRS', []):
+            path = os.path.join(static_dir, clean_uri)
+            if os.path.isfile(path):
+                return path
+        
+        # Luego buscar en STATIC_ROOT (producción)
+        path = os.path.join(settings.STATIC_ROOT, clean_uri)
+        if os.path.isfile(path):
+            return path
+        
+        # Si no se encuentra, devolver la ruta original
+        return uri
+    
+    pisa_status = pisa.CreatePDF(html, dest=response, link_callback=link_callback)
     if pisa_status.err:
         return HttpResponse('Error al generar PDF', status=500)
     return response
@@ -3771,9 +3991,9 @@ def agregar_notas_modular(request, materia_id):
                         setattr(m, campo, valor_float)
                         ra_valores.append(valor_float)
 
-                # Calcular nota final como suma ponderada de los RA (cada input * su %/100)
+                # Calcular nota final como suma de los RA (ya están en escala del peso)
                 if len(ra_valores) == cantidad_ra:
-                    total_ra = sum([ra_valores[i] * (valores_ra[i]/100) for i in range(cantidad_ra)])
+                    total_ra = sum(ra_valores)
                     m.nota_final = round(total_ra, 2)
                     m.nota_final_oficial = m.nota_final
                 else:
@@ -3789,9 +4009,8 @@ def agregar_notas_modular(request, materia_id):
     for m in matriculas:
         ra_vals = [getattr(m, campo, None) for campo in campos_ra]
         ra_nums = [float(v) if v is not None else 0 for v in ra_vals]
-        ponderados = [ra_nums[i] * (valores_ra[i]/100) for i in range(len(ra_nums))]
-        print('Ponderados:', ponderados)
-        m.total_ra = round(sum(ponderados), 2) if all(v is not None for v in ra_vals) else None
+        # Los valores ya están en escala del peso, solo sumarlos
+        m.total_ra = round(sum(ra_nums), 2) if all(v is not None for v in ra_vals) else None
 
     return render(request, 'est_forder/agregar_notas_modular.html', {
         'materia': materia,
@@ -3987,7 +4206,7 @@ def agregar_notasXXX(request, materia_id):
                     for idx, peso in enumerate(valores):
                         ra_val = getattr(matricula, f'ra_{idx+1}', None)
                         if ra_val is not None:
-                            total_ra += (ra_val * peso / 100)
+                            total_ra += ra_val
                     # El total nunca debe exceder 100
                     matricula.total_ra = round(min(total_ra, 100), 2)
                 else:
@@ -4238,6 +4457,306 @@ def reporte_notas_estudiante(request, estudiante_id):
         'promedio_general': promedio_general,
     }
     return render(request, 'est_forder/reporte_notas_estudiante.html', context)
+
+
+@login_required
+def record_calificaciones_pdf(request, estudiante_id):
+    """Generar récord de calificaciones en PDF formato oficial"""
+    from django.template.loader import get_template
+    from xhtml2pdf import pisa
+    from django.conf import settings
+    import os
+    from datetime import date
+    
+    estudiante = get_object_or_404(CustomUser, id=estudiante_id, rol='Estudiante')
+    
+    # Obtener todas las matrículas del estudiante
+    matriculas = Matricula.objects.filter(
+        estudiante=estudiante
+    ).select_related(
+        'materia',
+        'materia__curso',
+        'materia__curso__anho_escolar',
+        'materia__profesor'
+    ).order_by('materia__curso__anho_escolar', 'materia__curso', 'materia__nombre')
+
+    # Calcular notas finales
+    for m in matriculas:
+        try:
+            prom_com = float(m.prom_comunicativa) if m.prom_comunicativa is not None else None
+            prom_log = float(m.prom_logico) if m.prom_logico is not None else None
+            prom_cie = float(m.prom_cientifica) if m.prom_cientifica is not None else None
+            prom_eti = float(m.prom_etica) if m.prom_etica is not None else None
+            ex_com = float(m.ex_com) if m.ex_com is not None else None
+            ex_ext = float(m.ex_ext) if m.ex_ext is not None else None
+            ex_esp = float(m.ex_esp) if m.ex_esp is not None else None
+
+            m.nota_final_oficial = None
+
+            if None not in (prom_com, prom_log, prom_cie, prom_eti):
+                m.nota_final = round((prom_com + prom_log + prom_cie + prom_eti) / 4, 2)
+                
+                if m.nota_final >= 70:
+                    m.nota_final_oficial = int(m.nota_final + 0.5)
+                elif ex_com is not None:
+                    m.nota_final_completivo = round((m.nota_final * 0.5) + (ex_com * 0.5), 2)
+                    if m.nota_final_completivo >= 70:
+                        m.nota_final_oficial = int(m.nota_final_completivo + 0.5)
+                    elif ex_ext is not None:
+                        m.nota_final_extraordinario = round((m.nota_final * 0.3) + (ex_ext * 0.7), 2)
+                        if m.nota_final_extraordinario >= 70:
+                            m.nota_final_oficial = int(m.nota_final_extraordinario + 0.5)
+                        elif ex_esp is not None:
+                            m.nota_final_especial = round(ex_esp, 2)
+                            m.nota_final_oficial = int(m.nota_final_especial + 0.5)
+        except Exception as e:
+            print(f"Error en matrícula {m.id}: {e}")
+
+    # Agrupar materias por estudiante para crear tabla horizontal
+    # Estructura: { 'materia_nombre': { 'grado1': {'nota': XX, 'fecha': 'XX', 'anho': 'XX'}, 'grado2': {...} } }
+    
+    # Primero obtener todos los grados únicos ordenados
+    grados_ordenados = []
+    grados_dict = {}
+    for m in matriculas:
+        grado = m.materia.curso.nombre
+        anho = m.materia.curso.anho_escolar.nombre
+        if grado not in grados_dict:
+            grados_dict[grado] = anho
+            grados_ordenados.append({'grado': grado, 'anho': anho})
+    
+    # Crear estructura de materias con calificaciones por grado
+    materias_por_grado = {}
+    for m in matriculas:
+        materia_nombre = m.materia.nombre
+        grado = m.materia.curso.nombre
+        anho = m.materia.curso.anho_escolar.nombre
+        
+        if materia_nombre not in materias_por_grado:
+            materias_por_grado[materia_nombre] = {}
+        
+        materias_por_grado[materia_nombre][grado] = {
+            'nota': m.nota_final_oficial if hasattr(m, 'nota_final_oficial') else None,
+            'fecha': 'Junio/' + anho.split('-')[-1] if hasattr(m, 'nota_final_oficial') and m.nota_final_oficial else None,
+            'anho': anho,
+            'aprobado': m.nota_final_oficial >= 70 if (hasattr(m, 'nota_final_oficial') and m.nota_final_oficial) else False
+        }
+
+    # Contexto para el template
+    context = {
+        'estudiante': estudiante,
+        'grados_ordenados': grados_ordenados,
+        'materias_por_grado': materias_por_grado,
+        'total_columnas': (len(grados_ordenados) * 2) + 1,  # 2 columnas por grado (Cal, Fecha) + 1 (Asignaturas)
+        'fecha_actual': date.today(),
+        'STATIC_ROOT': settings.STATIC_ROOT,
+    }
+
+    # Renderizar template HTML
+    template = get_template('est_forder/record_calificaciones_pdf.html')
+    html = template.render(context)
+    
+    # Crear respuesta PDF
+    response = HttpResponse(content_type='application/pdf')
+    response['Content-Disposition'] = f'inline; filename="record_calificaciones_{estudiante.cedula or estudiante.id}.pdf"'
+    
+    # Función para resolver rutas estáticas
+    def link_callback(uri, rel):
+        if os.path.isfile(uri):
+            return uri
+        
+        if uri.startswith(settings.STATIC_ROOT):
+            return uri
+        
+        clean_uri = uri.replace('/static/', '').replace('static/', '').lstrip('/')
+        
+        for static_dir in getattr(settings, 'STATICFILES_DIRS', []):
+            path = os.path.join(static_dir, clean_uri)
+            if os.path.isfile(path):
+                return path
+        
+        path = os.path.join(settings.STATIC_ROOT, clean_uri)
+        if os.path.isfile(path):
+            return path
+        
+        return uri
+    
+    # Generar PDF
+    pisa_status = pisa.CreatePDF(html, dest=response, link_callback=link_callback)
+    if pisa_status.err:
+        return HttpResponse('Error al generar PDF', status=500)
+    return response
+
+
+@login_required
+def record_calificaciones_completo_pdf(request, estudiante_id):
+    """Generar récord de calificaciones completo (ambos ciclos) en PDF formato Legal (8.5 x 14)"""
+    from django.template.loader import get_template
+    from xhtml2pdf import pisa
+    from django.conf import settings
+    import os
+    from datetime import date
+    
+    estudiante = get_object_or_404(CustomUser, id=estudiante_id, rol='Estudiante')
+    
+    # Obtener todas las matrículas del estudiante
+    matriculas = Matricula.objects.filter(
+        estudiante=estudiante
+    ).select_related(
+        'materia',
+        'materia__curso',
+        'materia__curso__anho_escolar',
+        'materia__profesor'
+    ).order_by('materia__curso__anho_escolar', 'materia__curso', 'materia__nombre')
+
+    # Debug: imprimir información de matrículas
+    print(f"=== DEBUG RECORD COMPLETO ===")
+    print(f"Estudiante: {estudiante.get_full_name()}")
+    print(f"Total de matrículas encontradas: {matriculas.count()}")
+    if matriculas.count() > 0:
+        for m in matriculas[:5]:  # Solo las primeras 5 para no saturar
+            print(f"  - {m.materia.nombre} | Curso: {m.materia.curso.nombre} | Año: {m.materia.curso.anho_escolar.nombre}")
+
+    # Calcular notas finales
+    for m in matriculas:
+        try:
+            prom_com = float(m.prom_comunicativa) if m.prom_comunicativa is not None else None
+            prom_log = float(m.prom_logico) if m.prom_logico is not None else None
+            prom_cie = float(m.prom_cientifica) if m.prom_cientifica is not None else None
+            prom_eti = float(m.prom_etica) if m.prom_etica is not None else None
+            ex_com = float(m.ex_com) if m.ex_com is not None else None
+            ex_ext = float(m.ex_ext) if m.ex_ext is not None else None
+            ex_esp = float(m.ex_esp) if m.ex_esp is not None else None
+
+            m.nota_final_oficial = None
+
+            if None not in (prom_com, prom_log, prom_cie, prom_eti):
+                m.nota_final = round((prom_com + prom_log + prom_cie + prom_eti) / 4, 2)
+                
+                if m.nota_final >= 70:
+                    m.nota_final_oficial = int(m.nota_final + 0.5)
+                elif ex_com is not None:
+                    m.nota_final_completivo = round((m.nota_final * 0.5) + (ex_com * 0.5), 2)
+                    if m.nota_final_completivo >= 70:
+                        m.nota_final_oficial = int(m.nota_final_completivo + 0.5)
+                    elif ex_ext is not None:
+                        m.nota_final_extraordinario = round((m.nota_final * 0.3) + (ex_ext * 0.7), 2)
+                        if m.nota_final_extraordinario >= 70:
+                            m.nota_final_oficial = int(m.nota_final_extraordinario + 0.5)
+                        elif ex_esp is not None:
+                            m.nota_final_especial = round(ex_esp, 2)
+                            m.nota_final_oficial = int(m.nota_final_especial + 0.5)
+        except Exception as e:
+            print(f"Error en matrícula {m.id}: {e}")
+
+    # Separar grados por ciclo - detectar automáticamente usando patrones
+    import re
+    
+    # PRIMERO: Agrupar TODAS las materias como en el reporte que funciona
+    # Obtener todos los grados únicos ordenados
+    grados_ordenados_todos = []
+    grados_dict = {}
+    for m in matriculas:
+        grado = m.materia.curso.nombre
+        anho = m.materia.curso.anho_escolar.nombre
+        if grado not in grados_dict:
+            grados_dict[grado] = anho
+            grados_ordenados_todos.append({'grado': grado, 'anho': anho})
+    
+    # Crear estructura de materias con calificaciones por grado
+    materias_por_grado_todas = {}
+    for m in matriculas:
+        materia_nombre = m.materia.nombre
+        grado = m.materia.curso.nombre
+        anho = m.materia.curso.anho_escolar.nombre
+        
+        if materia_nombre not in materias_por_grado_todas:
+            materias_por_grado_todas[materia_nombre] = {}
+        
+        materias_por_grado_todas[materia_nombre][grado] = {
+            'nota': m.nota_final_oficial if hasattr(m, 'nota_final_oficial') else None,
+            'fecha': 'Junio/' + anho.split('-')[-1] if hasattr(m, 'nota_final_oficial') and m.nota_final_oficial else None,
+            'anho': anho,
+            'aprobado': m.nota_final_oficial >= 70 if (hasattr(m, 'nota_final_oficial') and m.nota_final_oficial) else False
+        }
+    
+    # SEGUNDO: Separar los grados en dos ciclos
+    primer_ciclo_grados_ord = []
+    segundo_ciclo_grados_ord = []
+    
+    print(f"Total grados encontrados: {len(grados_ordenados_todos)}")
+    for grado_info in grados_ordenados_todos:
+        grado_nombre = grado_info['grado'].lower()
+        print(f"Analizando grado: {grado_info['grado']}")
+        # Buscar patrones para primer ciclo
+        if re.search(r'(1°|1er|1ro|primero?|2°|2do|2da|segundo|3°|3er|3ro|tercero)', grado_nombre):
+            primer_ciclo_grados_ord.append(grado_info)
+            print(f"  -> Asignado a PRIMER CICLO")
+        # Buscar patrones para segundo ciclo
+        elif re.search(r'(4°|4to|4ta|cuarto|5°|5to|5ta|quinto|6°|6to|6ta|sexto)', grado_nombre):
+            segundo_ciclo_grados_ord.append(grado_info)
+            print(f"  -> Asignado a SEGUNDO CICLO")
+        else:
+            print(f"  -> NO RECONOCIDO")
+    
+    print(f"Primer ciclo: {len(primer_ciclo_grados_ord)} grados")
+    print(f"Segundo ciclo: {len(segundo_ciclo_grados_ord)} grados")
+    
+    # Las materias son las mismas para ambos ciclos, solo filtramos qué grados mostrar en cada tabla
+    primer_ciclo_materias = materias_por_grado_todas
+    segundo_ciclo_materias = materias_por_grado_todas
+
+    # Contexto para el template
+    context = {
+        'estudiante': estudiante,
+        'primer_ciclo': {
+            'grados_ordenados': primer_ciclo_grados_ord,
+            'materias_por_grado': primer_ciclo_materias,
+            'total_columnas': (len(primer_ciclo_grados_ord) * 2) + 1 if primer_ciclo_grados_ord else 1,  # 2 columnas por grado
+        },
+        'segundo_ciclo': {
+            'grados_ordenados': segundo_ciclo_grados_ord,
+            'materias_por_grado': segundo_ciclo_materias,
+            'total_columnas': (len(segundo_ciclo_grados_ord) * 2) + 1 if segundo_ciclo_grados_ord else 1,  # 2 columnas por grado
+        },
+        'fecha_actual': date.today(),
+        'STATIC_ROOT': settings.STATIC_ROOT,
+    }
+
+    # Renderizar template HTML
+    template = get_template('est_forder/record_calificaciones_completo_pdf.html')
+    html = template.render(context)
+    
+    # Crear respuesta PDF
+    response = HttpResponse(content_type='application/pdf')
+    response['Content-Disposition'] = f'inline; filename="record_completo_{estudiante.cedula or estudiante.id}.pdf"'
+    
+    # Función para resolver rutas estáticas
+    def link_callback(uri, rel):
+        if os.path.isfile(uri):
+            return uri
+        
+        if uri.startswith(settings.STATIC_ROOT):
+            return uri
+        
+        clean_uri = uri.replace('/static/', '').replace('static/', '').lstrip('/')
+        
+        for static_dir in getattr(settings, 'STATICFILES_DIRS', []):
+            path = os.path.join(static_dir, clean_uri)
+            if os.path.isfile(path):
+                return path
+        
+        path = os.path.join(settings.STATIC_ROOT, clean_uri)
+        if os.path.isfile(path):
+            return path
+        
+        return uri
+    
+    # Generar PDF
+    pisa_status = pisa.CreatePDF(html, dest=response, link_callback=link_callback)
+    if pisa_status.err:
+        return HttpResponse('Error al generar PDF', status=500)
+    return response
 
 
 # ===============================
@@ -5269,7 +5788,8 @@ def cobros_dashboard(request):
         messages.error(request, 'No tienes permiso para acceder a esta página.')
         return redirect('plataform')
     
-    from .models import Pago, ConceptoPago
+    from .models import Pago, ConceptoPago, Factura
+    from django.db.models import Sum, Q
     
     # Obtener año escolar activo
     try:
@@ -5278,22 +5798,38 @@ def cobros_dashboard(request):
         messages.error(request, 'No hay un año escolar activo.')
         return redirect('plataform')
     
-    # Estadísticas generales
+    # Estadísticas basadas en Facturas
+    facturas_anho = Factura.objects.filter(anho_escolar=anho_escolar).exclude(estado='anulada')
+    
+    # Total de facturas
+    total_facturas = facturas_anho.count()
+    
+    # Facturas por estado
+    facturas_pagadas = facturas_anho.filter(estado='pagada').count()
+    facturas_pendientes = facturas_anho.filter(Q(estado='pendiente') | Q(estado='parcial')).count()
+    
+    # Monto total recaudado (solo facturas pagadas completamente)
+    total_recaudado = facturas_anho.filter(estado='pagada').aggregate(
+        total=Sum('monto_pagado')
+    )['total'] or 0
+    
+    # Monto total por cobrar (saldo pendiente de facturas no pagadas)
+    facturas_no_pagadas = facturas_anho.exclude(estado='pagada')
+    total_por_cobrar = sum(
+        (factura.total - factura.monto_pagado) 
+        for factura in facturas_no_pagadas
+    )
+    
+    # Monto total de facturas (incluyendo todo)
+    monto_total_facturas = facturas_anho.aggregate(total=Sum('total'))['total'] or 0
+    
+    # Últimas facturas
+    ultimas_facturas = facturas_anho.select_related(
+        'cliente', 'anho_escolar'
+    ).order_by('-fecha_emision')[:10]
+    
+    # Estadísticas de Pagos (sistema antiguo, para compatibilidad)
     total_pagos = Pago.objects.filter(anho_escolar=anho_escolar).count()
-    pagos_pendientes = Pago.objects.filter(anho_escolar=anho_escolar, estado='pendiente').count()
-    pagos_completados = Pago.objects.filter(anho_escolar=anho_escolar, estado='pagado').count()
-    
-    # Monto total recaudado
-    from django.db.models import Sum
-    total_recaudado = Pago.objects.filter(
-        anho_escolar=anho_escolar,
-        estado='pagado'
-    ).aggregate(Sum('monto_pagado'))['monto_pagado__sum'] or 0
-    
-    # Últimos pagos
-    ultimos_pagos = Pago.objects.filter(
-        anho_escolar=anho_escolar
-    ).select_related('estudiante', 'concepto').order_by('-fecha_registro')[:10]
     
     # Obtener o crear el estudiante genérico "cliente"
     cliente_generico = obtener_o_crear_cliente_generico()
@@ -5301,11 +5837,19 @@ def cobros_dashboard(request):
     context = {
         'titulo': 'Sistema de Cobros',
         'anho_escolar': anho_escolar,
-        'total_pagos': total_pagos,
-        'pagos_pendientes': pagos_pendientes,
-        'pagos_completados': pagos_completados,
+        # Estadísticas de Facturas
+        'total_facturas': total_facturas,
+        'facturas_pagadas': facturas_pagadas,
+        'facturas_pendientes': facturas_pendientes,
         'total_recaudado': total_recaudado,
-        'ultimos_pagos': ultimos_pagos,
+        'total_por_cobrar': total_por_cobrar,
+        'monto_total_facturas': monto_total_facturas,
+        'ultimas_facturas': ultimas_facturas,
+        # Para compatibilidad con template existente
+        'total_pagos': total_facturas,  # Usar facturas como "pagos"
+        'pagos_completados': facturas_pagadas,
+        'pagos_pendientes': facturas_pendientes,
+        'ultimos_pagos': ultimas_facturas,  # Usar facturas en lugar de pagos
         'cliente_generico': cliente_generico,
     }
     return render(request, 'cobros/dashboard.html', context)
@@ -5313,7 +5857,7 @@ def cobros_dashboard(request):
 
 @login_required
 def buscar_estudiante_cobro(request):
-    """Buscar estudiante para asignar pagos"""
+    """Buscar estudiante o familia para asignar pagos"""
     if request.user.rol not in ['Secretaria', 'Administrador']:
         messages.error(request, 'No tienes permiso para acceder a esta página.')
         return redirect('plataform')
@@ -5329,6 +5873,47 @@ def buscar_estudiante_cobro(request):
     query = request.GET.get('q', '').strip()
     grado = request.GET.get('grado', '').strip()
     seccion = request.GET.get('seccion', '').strip()
+    
+    # REDIRECCIÓN AUTOMÁTICA: Si es un código de barras exacto de estudiante
+    if query and not grado and not seccion:
+        try:
+            estudiante_exacto = CustomUser.objects.get(
+                codigo_barras__iexact=query,
+                rol='Estudiante',
+                is_active=True
+            )
+            # Redirigir directamente a la vista rápida de facturación
+            return redirect(f'/facturas/nueva/?estudiante_id={estudiante_exacto.id}')
+        except CustomUser.DoesNotExist:
+            pass
+        except CustomUser.MultipleObjectsReturned:
+            pass
+    
+    # REDIRECCIÓN AUTOMÁTICA: Si es un código de familia exacto
+    from .models import GrupoFamiliar
+    if query and not grado and not seccion:
+        try:
+            familia_exacta = GrupoFamiliar.objects.get(
+                codigo_familia__iexact=query,
+                activo=True
+            )
+            # Redirigir directamente a facturar familia
+            return redirect('grupo_familiar_facturar', grupo_id=familia_exacta.id)
+        except GrupoFamiliar.DoesNotExist:
+            pass
+        except GrupoFamiliar.MultipleObjectsReturned:
+            pass
+    
+    # Buscar familias por código o apellido (búsqueda parcial)
+    familias = []
+    if query:
+        familias = GrupoFamiliar.objects.filter(
+            Q(codigo_familia__icontains=query) |
+            Q(apellido_familia__icontains=query),
+            activo=True
+        ).annotate(
+            num_estudiantes=Count('estudiantes')
+        ).order_by('apellido_familia')[:5]
     
     estudiantes = CustomUser.objects.filter(rol='Estudiante', is_active=True)
     
@@ -5366,9 +5951,10 @@ def buscar_estudiante_cobro(request):
     ).values_list('seccion', flat=True).distinct().order_by('seccion')
     
     context = {
-        'titulo': 'Buscar Estudiante para Cobro',
+        'titulo': 'Buscar Estudiante o Familia para Cobro',
         'anho_escolar': anho_escolar,
         'estudiantes': page_obj,
+        'familias': familias,
         'query': query,
         'grado': grado,
         'seccion': seccion,
@@ -5438,8 +6024,9 @@ def facturas_list(request):
     # Filtros
     estado = request.GET.get('estado', '')
     search = request.GET.get('search', '')
+    familia = request.GET.get('familia', '')
     
-    facturas = Factura.objects.filter(anho_escolar=anho_escolar).select_related('cliente')
+    facturas = Factura.objects.filter(anho_escolar=anho_escolar).select_related('cliente', 'cliente__grupo_familiar')
     
     if estado:
         facturas = facturas.filter(estado=estado)
@@ -5450,6 +6037,12 @@ def facturas_list(request):
             Q(cliente__first_name__icontains=search) |
             Q(cliente__last_name__icontains=search) |
             Q(cliente__cedula__icontains=search)
+        )
+    
+    if familia:
+        facturas = facturas.filter(
+            Q(cliente__grupo_familiar__codigo_familia__icontains=familia) |
+            Q(cliente__grupo_familiar__apellido_familia__icontains=familia)
         )
     
     facturas = facturas.order_by('-fecha_emision')
@@ -5466,6 +6059,7 @@ def facturas_list(request):
         'page_obj': page_obj,
         'estado': estado,
         'search': search,
+        'familia': familia,
     }
     return render(request, 'cobros/facturas_list.html', context)
 
@@ -5532,12 +6126,13 @@ def factura_crear_nueva(request):
                         'aplica_itbis': getattr(det.articulo, 'aplica_itbis', False),
                     })
                 elif det.concepto:
+                    # Incluir TODOS los conceptos, incluyendo mora
                     detalles.append({
                         'concepto_id': det.concepto.id,
                         'nombre': det.concepto.nombre,
                         'cantidad': float(det.cantidad),
                         'precio': float(det.precio_unitario),
-                        'descuento': float(det.descuento),
+                        'descuento': float( det.descuento),
                         'mes': det.mes,
                         'anio': det.anio,
                     })
@@ -5559,8 +6154,41 @@ def factura_crear_nueva(request):
     # Búsqueda de estudiante
     buscar = request.GET.get('buscar', '')
     estudiantes_encontrados = []
+    familias_encontradas = []
     
+    # REDIRECCIÓN AUTOMÁTICA: Si es un código de barras exacto de estudiante
+    if buscar and not request.GET.get('estudiante_id'):
+        try:
+            estudiante_exacto = CustomUser.objects.get(
+                codigo_barras__iexact=buscar,
+                rol='Estudiante',
+                is_active=True
+            )
+            # Redirigir con el estudiante seleccionado
+            return redirect(f'/facturas/nueva/?estudiante_id={estudiante_exacto.id}')
+        except CustomUser.DoesNotExist:
+            pass
+        except CustomUser.MultipleObjectsReturned:
+            pass
+    
+    # REDIRECCIÓN AUTOMÁTICA: Si es un código de familia exacto
+    from .models import GrupoFamiliar
+    if buscar and not request.GET.get('estudiante_id'):
+        try:
+            familia_exacta = GrupoFamiliar.objects.get(
+                codigo_familia__iexact=buscar,
+                activo=True
+            )
+            # Redirigir directamente a facturar familia
+            return redirect('grupo_familiar_facturar', grupo_id=familia_exacta.id)
+        except GrupoFamiliar.DoesNotExist:
+            pass
+        except GrupoFamiliar.MultipleObjectsReturned:
+            pass
+    
+    # Búsqueda de estudiantes y familias (si no hubo redirección)
     if buscar:
+        # Buscar estudiantes
         estudiantes_encontrados = CustomUser.objects.filter(
             rol='Estudiante',
             is_active=True
@@ -5571,6 +6199,15 @@ def factura_crear_nueva(request):
             Q(cedula__icontains=buscar) |
             Q(email__icontains=buscar)
         )[:10]
+        
+        # Buscar familias
+        familias_encontradas = GrupoFamiliar.objects.filter(
+            Q(codigo_familia__icontains=buscar) |
+            Q(apellido_familia__icontains=buscar),
+            activo=True
+        ).annotate(
+            num_estudiantes=Count('estudiantes')
+        ).order_by('apellido_familia')[:5]
     
     # Estudiante seleccionado
     estudiante_id = request.GET.get('estudiante_id', '')
@@ -5669,6 +6306,35 @@ def factura_crear_nueva(request):
 
             estudiante_post = CustomUser.objects.get(id=estudiante_id_post, rol='Estudiante')
             fecha_vencimiento = request.POST.get('fecha_vencimiento')
+            
+            # Si no se especifica fecha de vencimiento, calcularla automáticamente
+            # basada en el día de vencimiento del grupo familiar
+            if not fecha_vencimiento and estudiante_post.grupo_familiar:
+                from datetime import date
+                from calendar import monthrange
+                
+                dia_vencimiento = estudiante_post.grupo_familiar.dia_vencimiento
+                hoy = date.today()
+                
+                # Si ya pasó el día de vencimiento este mes, usar el próximo mes
+                if hoy.day > dia_vencimiento:
+                    # Próximo mes
+                    if hoy.month == 12:
+                        fecha_base = date(hoy.year + 1, 1, 1)
+                    else:
+                        fecha_base = date(hoy.year, hoy.month + 1, 1)
+                else:
+                    # Este mes
+                    fecha_base = hoy
+                
+                # Ajustar el día, manejando meses con menos días
+                try:
+                    fecha_vencimiento = fecha_base.replace(day=dia_vencimiento).strftime('%Y-%m-%d')
+                except ValueError:
+                    # Si el mes no tiene ese día (ej: 31 en febrero), usar el último día del mes
+                    ultimo_dia = monthrange(fecha_base.year, fecha_base.month)[1]
+                    fecha_vencimiento = fecha_base.replace(day=ultimo_dia).strftime('%Y-%m-%d')
+            
             observaciones = request.POST.get('observaciones', '')
             descuento_factura = Decimal(request.POST.get('descuento_factura', 0))
             impuesto_factura = Decimal(request.POST.get('impuesto', 0))
@@ -5875,6 +6541,71 @@ def factura_crear_nueva(request):
                 nombre_detalle = articulo.nombre if articulo else concepto.nombre
                 print(f"DEBUG - Detalle #{i+1} creado: {tipo_detalle} - {nombre_detalle} - Mes: {mes_valor}/{anio_valor}")
             
+            # Aplicar mora si la fecha de vencimiento ya pasó
+            print(f"DEBUG MORA - fecha_vencimiento recibida: {fecha_vencimiento} (tipo: {type(fecha_vencimiento)})")
+            if fecha_vencimiento:
+                from datetime import datetime, date
+                try:
+                    # Convertir fecha_vencimiento a date si es string
+                    if isinstance(fecha_vencimiento, str):
+                        fecha_venc_date = datetime.strptime(fecha_vencimiento, '%Y-%m-%d').date()
+                    else:
+                        fecha_venc_date = fecha_vencimiento
+                    
+                    hoy = date.today()
+                    print(f"DEBUG MORA - Hoy: {hoy} | Vencimiento: {fecha_venc_date} | Está vencida: {hoy > fecha_venc_date}")
+                    
+                    # Verificar si está vencida
+                    if hoy > fecha_venc_date:
+                        # Calcular el subtotal actual (antes de mora)
+                        subtotal_actual = sum(detalle.get_total() for detalle in factura.detalles.all())
+                        print(f"DEBUG MORA - Subtotal para calcular mora: RD${subtotal_actual}")
+                        
+                        # Obtener porcentaje de mora del estudiante
+                        porcentaje_mora = estudiante_post.get_porcentaje_mora()
+                        print(f"DEBUG MORA - Porcentaje de mora del estudiante {estudiante_post.get_full_name()}: {porcentaje_mora}%")
+                        print(f"DEBUG MORA - Grupo familiar: {estudiante_post.grupo_familiar}")
+                        if estudiante_post.grupo_familiar:
+                            print(f"DEBUG MORA - Mora del grupo: {estudiante_post.grupo_familiar.porcentaje_mora}%")
+                        print(f"DEBUG MORA - Mora individual: {estudiante_post.porcentaje_mora_individual}%")
+                        
+                        if porcentaje_mora > 0:
+                            monto_mora = (subtotal_actual * porcentaje_mora) / Decimal('100')
+                            print(f"DEBUG MORA - Monto mora a aplicar: RD${monto_mora}")
+                            
+                            # Crear o buscar concepto de mora
+                            concepto_mora, created = ConceptoPago.objects.get_or_create(
+                                tipo='otro',
+                                nombre='Mora por Pago Atrasado',
+                                defaults={
+                                    'monto': 0,  # El monto varía según cada caso
+                                    'descripcion': 'Recargo por pago fuera de fecha',
+                                    'activo': True
+                                }
+                            )
+                            
+                            # Agregar detalle de mora
+                            detalle_mora = DetalleFactura.objects.create(
+                                factura=factura,
+                                concepto=concepto_mora,
+                                descripcion=f'Mora ({porcentaje_mora}% sobre facturas vencidas)',
+                                cantidad=1,
+                                precio_unitario=monto_mora,
+                                descuento=0
+                            )
+                            print(f"DEBUG MORA - ✓ Mora aplicada exitosamente: {porcentaje_mora}% = RD${monto_mora} (Detalle ID: {detalle_mora.id})")
+                            detalles_creados += 1
+                        else:
+                            print(f"DEBUG MORA - ✗ NO se aplica mora: porcentaje es 0%")
+                    else:
+                        print(f"DEBUG MORA - ✗ NO se aplica mora: la factura no está vencida")
+                except Exception as e:
+                    print(f"DEBUG MORA - ✗✗✗ ERROR al aplicar mora: {e}")
+                    import traceback
+                    traceback.print_exc()
+            else:
+                print(f"DEBUG MORA - ✗ NO se aplica mora: no hay fecha_vencimiento")
+            
             # Recalcular totales de la factura
             factura.calcular_totales()
             factura.actualizar_estado()
@@ -6037,6 +6768,7 @@ def factura_crear_nueva(request):
         'anho_escolar': anho_escolar,
         'estudiante': estudiante_seleccionado,
         'estudiantes_encontrados': estudiantes_encontrados,
+        'familias_encontradas': familias_encontradas,
         'buscar': buscar,
         'conceptos': conceptos,
         'conceptos_json': json.dumps(conceptos_list),
@@ -6165,15 +6897,36 @@ def tarifa_estudiante_api(request):
 
 @login_required
 def tarifas_list(request):
-    """Lista las tarifas por estudiante (CRUD admin)."""
+    """Lista las tarifas por estudiante (CRUD admin) con búsqueda."""
     if request.user.rol not in ['Secretaria', 'Administrador']:
         messages.error(request, 'No tienes permiso para acceder a esta página.')
         return redirect('plataform')
 
     # Agrupar tarifas por estudiante
     from collections import defaultdict
+    from django.db.models import Q
     
-    tarifas_qs = TarifaEstudiante.objects.select_related('estudiante', 'concepto').filter(activo=True).order_by('estudiante__first_name', 'estudiante__last_name')
+    # Obtener parámetros de búsqueda
+    search_query = request.GET.get('search', '').strip()
+    tipo_tarifa = request.GET.get('tipo', '').strip()
+    mostrar_sin_tarifas = request.GET.get('sin_tarifas', '').strip() == '1'
+    
+    # Filtrar tarifas activas
+    tarifas_qs = TarifaEstudiante.objects.select_related('estudiante', 'concepto').filter(activo=True)
+    
+    # Aplicar búsqueda por nombre de estudiante
+    if search_query:
+        tarifas_qs = tarifas_qs.filter(
+            Q(estudiante__first_name__icontains=search_query) |
+            Q(estudiante__last_name__icontains=search_query) |
+            Q(estudiante__cedula__icontains=search_query)
+        )
+    
+    # Aplicar filtro por tipo de tarifa
+    if tipo_tarifa:
+        tarifas_qs = tarifas_qs.filter(concepto__tipo=tipo_tarifa)
+    
+    tarifas_qs = tarifas_qs.order_by('estudiante__first_name', 'estudiante__last_name')
     
     # Crear diccionario agrupado por estudiante
     tarifas_por_estudiante = defaultdict(lambda: {'mensualidad': None, 'inscripcion': None, 'transporte': None, 'estudiante': None})
@@ -6192,11 +6945,38 @@ def tarifas_list(request):
     # Convertir a lista para paginar
     tarifas_agrupadas = list(tarifas_por_estudiante.values())
     
+    # Buscar estudiantes sin tarifas
+    estudiantes_con_tarifas_ids = [grupo['estudiante'].id for grupo in tarifas_agrupadas if grupo['estudiante']]
+    estudiantes_sin_tarifas = CustomUser.objects.filter(
+        rol='Estudiante',
+        is_active=True
+    ).exclude(
+        id__in=estudiantes_con_tarifas_ids
+    ).order_by('first_name', 'last_name')
+    
+    # Si se solicita búsqueda de estudiantes sin tarifas
+    if search_query and mostrar_sin_tarifas:
+        estudiantes_sin_tarifas = estudiantes_sin_tarifas.filter(
+            Q(first_name__icontains=search_query) |
+            Q(last_name__icontains=search_query) |
+            Q(cedula__icontains=search_query)
+        )
+    
     paginator = Paginator(tarifas_agrupadas, 25)
     page = request.GET.get('page')
     tarifas = paginator.get_page(page)
     
-    return render(request, 'cobros/tarifas_list.html', {'tarifas': tarifas})
+    context = {
+        'tarifas': tarifas,
+        'search_query': search_query,
+        'tipo_tarifa': tipo_tarifa,
+        'total_estudiantes': len(tarifas_agrupadas),
+        'estudiantes_sin_tarifas': list(estudiantes_sin_tarifas[:20]),  # Limitar a 20
+        'total_sin_tarifas': estudiantes_sin_tarifas.count(),
+        'mostrar_sin_tarifas': mostrar_sin_tarifas,
+    }
+    
+    return render(request, 'cobros/tarifas_list.html', context)
 
 
 @login_required
@@ -6250,6 +7030,25 @@ def tarifa_create(request):
         'return_to': return_to,
         'requiere_codigo': requiere_codigo,
     })
+
+
+@login_required
+def obtener_concepto_monto(request, concepto_id):
+    """API para obtener el monto de un concepto seleccionado."""
+    if request.user.rol not in ['Secretaria', 'Administrador']:
+        return JsonResponse({'error': 'No autorizado'}, status=403)
+    
+    try:
+        concepto = ConceptoPago.objects.get(id=concepto_id, activo=True)
+        return JsonResponse({
+            'id': concepto.id,
+            'nombre': concepto.nombre,
+            'tipo': concepto.tipo,
+            'monto': float(concepto.monto),
+            'descripcion': concepto.descripcion or ''
+        })
+    except ConceptoPago.DoesNotExist:
+        return JsonResponse({'error': 'Concepto no encontrado'}, status=404)
 
 
 @login_required
@@ -6354,14 +7153,27 @@ def factura_detalle(request, factura_id):
     logger.warning(f"DEBUG - Factura {factura.numero_factura} tiene {detalles_count} detalles")
     print(f"DEBUG - Factura {factura.numero_factura} tiene {detalles_count} detalles")
     
+    # Calcular información de mora
+    mora_info = factura.calcular_mora()
+    tiene_mora_aplicada = False
+    monto_mora_aplicado = 0
+    
     for detalle in factura.detalles.all():
         item_nombre = detalle.concepto.nombre if detalle.concepto else (detalle.articulo.nombre if detalle.articulo else 'Sin item')
         logger.warning(f"  - Detalle: {detalle.descripcion} | Item: {item_nombre} | Mes: {detalle.mes} | Total: {detalle.get_total()}")
         print(f"  - Detalle: {detalle.descripcion} | Item: {item_nombre} | Mes: {detalle.mes} | Total: {detalle.get_total()}")
+        
+        # Verificar si hay un detalle de mora
+        if detalle.concepto and 'mora' in detalle.concepto.nombre.lower():
+            tiene_mora_aplicada = True
+            monto_mora_aplicado += detalle.get_total()
     
     context = {
         'titulo': f'Factura {factura.numero_factura}',
         'factura': factura,
+        'mora_info': mora_info,
+        'tiene_mora_aplicada': tiene_mora_aplicada,
+        'monto_mora_aplicado': monto_mora_aplicado,
     }
     return render(request, 'cobros/factura_detalle.html', context)
 
@@ -7917,3 +8729,1330 @@ def reportes_ventas(request):
             return redirect('reportes_ventas')
     
     return render(request, 'cobros/reportes_ventas.html', context)
+
+
+# ==========================================
+# LISTAS DE ESTUDIANTES POR CURSO
+# ==========================================
+
+@login_required
+def lista_estudiantes_curso_info(request):
+    """Lista de estudiantes con solo información personal"""
+    curso_id = request.GET.get('curso')
+    if not curso_id:
+        messages.error(request, 'Debe especificar un curso.')
+        return redirect('lista_cursos')
+    
+    curso = get_object_or_404(Curso, id=curso_id)
+    
+    # Obtener estudiantes únicos matriculados en el curso
+    estudiantes = CustomUser.objects.filter(
+        matriculas__materia__curso=curso,
+        rol='Estudiante'
+    ).distinct().order_by('first_name', 'last_name')
+    
+    context = {
+        'curso': curso,
+        'estudiantes': estudiantes,
+        'titulo': f'Lista de Estudiantes - {curso.nombre}',
+    }
+    
+    return render(request, 'est_forder/lista_estudiantes_info.html', context)
+
+
+@login_required
+def lista_estudiantes_curso_promedios(request):
+    """Lista de estudiantes con promedios por materia"""
+    curso_id = request.GET.get('curso')
+    if not curso_id:
+        messages.error(request, 'Debe especificar un curso.')
+        return redirect('lista_cursos')
+    
+    curso = get_object_or_404(Curso, id=curso_id)
+    
+    # Obtener materias del curso
+    materias = Materia.objects.filter(curso=curso).order_by('nombre')
+    
+    # Obtener estudiantes con sus matrículas
+    estudiantes_data = []
+    estudiantes = CustomUser.objects.filter(
+        matriculas__materia__curso=curso,
+        rol='Estudiante'
+    ).distinct().order_by('first_name', 'last_name')
+    
+    for estudiante in estudiantes:
+        # Obtener matrículas del estudiante para las materias de este curso
+        matriculas_dict = {}
+        matriculas = Matricula.objects.filter(
+            estudiante=estudiante,
+            materia__curso=curso
+        ).select_related('materia')
+        
+        for matricula in matriculas:
+            matriculas_dict[matricula.materia.id] = {
+                'promedio': matricula.promedio_final,
+                'estado': matricula.estado
+            }
+        
+        estudiantes_data.append({
+            'estudiante': estudiante,
+            'matriculas': matriculas_dict
+        })
+    
+    context = {
+        'curso': curso,
+        'materias': materias,
+        'estudiantes_data': estudiantes_data,
+        'titulo': f'Promedios de Estudiantes - {curso.nombre}',
+    }
+    
+    return render(request, 'est_forder/lista_estudiantes_promedios.html', context)
+
+
+@login_required
+def lista_estudiantes_curso_info_pdf(request):
+    """Genera PDF de la lista de estudiantes con información personal"""
+    curso_id = request.GET.get('curso')
+    if not curso_id:
+        messages.error(request, 'Debe especificar un curso.')
+        return redirect('lista_cursos')
+    
+    curso = get_object_or_404(Curso, id=curso_id)
+    
+    # Obtener estudiantes únicos matriculados en el curso
+    estudiantes = CustomUser.objects.filter(
+        matriculas__materia__curso=curso,
+        rol='Estudiante'
+    ).distinct().order_by('first_name', 'last_name')
+    
+    # Renderizar el template PDF
+    template = get_template("est_forder/lista_estudiantes_info_pdf.html")
+    html = template.render({
+        "curso": curso,
+        "estudiantes": estudiantes,
+        "request": request,
+        "STATIC_ROOT": settings.STATIC_ROOT,
+    })
+    
+    response = HttpResponse(content_type='application/pdf')
+    response['Content-Disposition'] = f'inline; filename="lista_estudiantes_info_{curso.id}.pdf"'
+    
+    # Función para resolver rutas de archivos estáticos
+    def link_callback(uri, rel):
+        import os
+        if os.path.isfile(uri):
+            return uri
+        if uri.startswith(settings.STATIC_ROOT):
+            return uri
+        clean_uri = uri.replace('/static/', '').replace('static/', '').lstrip('/')
+        for static_dir in getattr(settings, 'STATICFILES_DIRS', []):
+            path = os.path.join(static_dir, clean_uri)
+            if os.path.isfile(path):
+                return path
+        path = os.path.join(settings.STATIC_ROOT, clean_uri)
+        if os.path.isfile(path):
+            return path
+        return uri
+    
+    from xhtml2pdf import pisa
+    pisa_status = pisa.CreatePDF(html, dest=response, link_callback=link_callback)
+    
+    if pisa_status.err:
+        return HttpResponse('Error al generar PDF', status=500)
+    return response
+
+
+@login_required
+def lista_estudiantes_curso_promedios_pdf(request):
+    """Genera PDF de la lista de estudiantes con promedios por materia"""
+    curso_id = request.GET.get('curso')
+    if not curso_id:
+        messages.error(request, 'Debe especificar un curso.')
+        return redirect('lista_cursos')
+    
+    curso = get_object_or_404(Curso, id=curso_id)
+    
+    # Obtener materias del curso
+    materias = Materia.objects.filter(curso=curso).order_by('nombre')
+    
+    # Obtener estudiantes con sus matrículas
+    estudiantes_data = []
+    estudiantes = CustomUser.objects.filter(
+        matriculas__materia__curso=curso,
+        rol='Estudiante'
+    ).distinct().order_by('first_name', 'last_name')
+    
+    for estudiante in estudiantes:
+        matriculas_dict = {}
+        matriculas = Matricula.objects.filter(
+            estudiante=estudiante,
+            materia__curso=curso
+        ).select_related('materia')
+        
+        for matricula in matriculas:
+            matriculas_dict[matricula.materia.id] = {
+                'promedio': matricula.promedio_final,
+                'estado': matricula.estado
+            }
+        
+        estudiantes_data.append({
+            'estudiante': estudiante,
+            'matriculas': matriculas_dict
+        })
+    
+    # Renderizar el template PDF
+    template = get_template("est_forder/lista_estudiantes_promedios_pdf.html")
+    html = template.render({
+        "curso": curso,
+        "materias": materias,
+        "estudiantes_data": estudiantes_data,
+        "request": request,
+        "STATIC_ROOT": settings.STATIC_ROOT,
+    })
+    
+    response = HttpResponse(content_type='application/pdf')
+    response['Content-Disposition'] = f'inline; filename="lista_promedios_{curso.id}.pdf"'
+    
+    # Función para resolver rutas de archivos estáticos
+    def link_callback(uri, rel):
+        import os
+        if os.path.isfile(uri):
+            return uri
+        if uri.startswith(settings.STATIC_ROOT):
+            return uri
+        clean_uri = uri.replace('/static/', '').replace('static/', '').lstrip('/')
+        for static_dir in getattr(settings, 'STATICFILES_DIRS', []):
+            path = os.path.join(static_dir, clean_uri)
+            if os.path.isfile(path):
+                return path
+        path = os.path.join(settings.STATIC_ROOT, clean_uri)
+        if os.path.isfile(path):
+            return path
+        return uri
+    
+    from xhtml2pdf import pisa
+    pisa_status = pisa.CreatePDF(html, dest=response, link_callback=link_callback)
+    
+    if pisa_status.err:
+        return HttpResponse('Error al generar PDF', status=500)
+    return response
+
+
+# ============================================
+# VISTAS DE CONTABILIDAD - PLAN DE CUENTAS
+# ============================================
+
+from .models import PlanCuentas
+from .forms import PlanCuentasForm, PlanCuentasBusquedaForm
+from django.db.models import Q, Count
+
+@login_required
+def plan_cuentas_list(request):
+    """
+    Vista para listar todas las cuentas contables con búsqueda y filtros
+    """
+    # Verificar permisos
+    if request.user.rol not in ['Administrador', 'Director', 'Secretaria']:
+        messages.error(request, 'No tienes permiso para acceder a esta página.')
+        return redirect('plataform')
+    
+    # Obtener todas las cuentas
+    cuentas = PlanCuentas.objects.all()
+    
+    # Aplicar filtros desde el formulario
+    form = PlanCuentasBusquedaForm(request.GET)
+    
+    if form.is_valid():
+        busqueda = form.cleaned_data.get('busqueda')
+        tipo_cuenta = form.cleaned_data.get('tipo_cuenta')
+        activo = form.cleaned_data.get('activo')
+        es_detalle = form.cleaned_data.get('es_detalle')
+        
+        # Filtro de búsqueda
+        if busqueda:
+            cuentas = cuentas.filter(
+                Q(codigo__icontains=busqueda) |
+                Q(nombre__icontains=busqueda) |
+                Q(descripcion__icontains=busqueda)
+            )
+        
+        # Filtro por tipo de cuenta
+        if tipo_cuenta:
+            cuentas = cuentas.filter(tipo_cuenta=tipo_cuenta)
+        
+        # Filtro por estado activo
+        if activo == 'true':
+            cuentas = cuentas.filter(activo=True)
+        elif activo == 'false':
+            cuentas = cuentas.filter(activo=False)
+        
+        # Filtro por cuenta de detalle
+        if es_detalle == 'true':
+            cuentas = cuentas.filter(es_detalle=True)
+        elif es_detalle == 'false':
+            cuentas = cuentas.filter(es_detalle=False)
+    
+    # Ordenar por código
+    cuentas = cuentas.order_by('codigo')
+    
+    # Calcular estadísticas
+    stats = {
+        'total': PlanCuentas.objects.count(),
+        'activas': PlanCuentas.objects.filter(activo=True).count(),
+        'inactivas': PlanCuentas.objects.filter(activo=False).count(),
+        'detalle': PlanCuentas.objects.filter(es_detalle=True).count(),
+        'agrupacion': PlanCuentas.objects.filter(es_detalle=False).count(),
+        'activos': PlanCuentas.objects.filter(tipo_cuenta='ACTIVO').count(),
+        'pasivos': PlanCuentas.objects.filter(tipo_cuenta='PASIVO').count(),
+        'capital': PlanCuentas.objects.filter(tipo_cuenta='CAPITAL').count(),
+        'ingresos': PlanCuentas.objects.filter(tipo_cuenta='INGRESO').count(),
+        'gastos': PlanCuentas.objects.filter(tipo_cuenta='GASTO').count(),
+        'costos': PlanCuentas.objects.filter(tipo_cuenta='COSTO').count(),
+    }
+    
+    context = {
+        'cuentas': cuentas,
+        'form': form,
+        'stats': stats,
+    }
+    
+    return render(request, 'contabilidad/plan_cuentas_list.html', context)
+
+
+@login_required
+def plan_cuentas_crear(request):
+    """
+    Vista para crear una nueva cuenta contable
+    """
+    # Verificar permisos
+    if request.user.rol not in ['Administrador', 'Director']:
+        messages.error(request, 'No tienes permiso para acceder a esta página.')
+        return redirect('plan_cuentas_list')
+    
+    if request.method == 'POST':
+        form = PlanCuentasForm(request.POST)
+        if form.is_valid():
+            cuenta = form.save(commit=False)
+            cuenta.creado_por = request.user
+            cuenta.save()
+            messages.success(request, f'Cuenta contable "{cuenta.codigo} - {cuenta.nombre}" creada exitosamente.')
+            return redirect('plan_cuentas_list')
+    else:
+        form = PlanCuentasForm()
+    
+    context = {
+        'form': form,
+        'titulo': 'Crear Nueva Cuenta Contable',
+        'accion': 'Crear',
+    }
+    
+    return render(request, 'contabilidad/plan_cuentas_form.html', context)
+
+
+@login_required
+def plan_cuentas_editar(request, pk):
+    """
+    Vista para editar una cuenta contable existente
+    """
+    # Verificar permisos
+    if request.user.rol not in ['Administrador', 'Director']:
+        messages.error(request, 'No tienes permiso para acceder a esta página.')
+        return redirect('plan_cuentas_list')
+    
+    cuenta = get_object_or_404(PlanCuentas, pk=pk)
+    
+    # Verificar si la cuenta tiene movimientos
+    if cuenta.tiene_movimientos():
+        messages.warning(
+            request, 
+            'Esta cuenta tiene movimientos asociados. Solo puedes editar algunos campos.'
+        )
+    
+    if request.method == 'POST':
+        form = PlanCuentasForm(request.POST, instance=cuenta)
+        if form.is_valid():
+            cuenta_editada = form.save(commit=False)
+            cuenta_editada.modificado_por = request.user
+            cuenta_editada.save()
+            messages.success(request, f'Cuenta "{cuenta_editada.codigo} - {cuenta_editada.nombre}" actualizada exitosamente.')
+            return redirect('plan_cuentas_list')
+    else:
+        form = PlanCuentasForm(instance=cuenta)
+        
+        # Si tiene movimientos, deshabilitar algunos campos
+        if cuenta.tiene_movimientos():
+            form.fields['codigo'].disabled = True
+            form.fields['tipo_cuenta'].disabled = True
+            form.fields['naturaleza'].disabled = True
+    
+    context = {
+        'form': form,
+        'titulo': f'Editar Cuenta: {cuenta.codigo}',
+        'accion': 'Actualizar',
+        'cuenta': cuenta,
+    }
+    
+    return render(request, 'contabilidad/plan_cuentas_form.html', context)
+
+
+@login_required
+def plan_cuentas_detalle(request, pk):
+    """
+    Vista para ver los detalles de una cuenta contable
+    """
+    # Verificar permisos
+    if request.user.rol not in ['Administrador', 'Director', 'Secretaria']:
+        messages.error(request, 'No tienes permiso para acceder a esta página.')
+        return redirect('plataform')
+    
+    cuenta = get_object_or_404(PlanCuentas, pk=pk)
+    
+    # Obtener subcuentas
+    subcuentas = cuenta.get_subcuentas_activas()
+    
+    # Calcular saldo actualizado
+    saldo_calculado = cuenta.calcular_saldo()
+    
+    # Verificar si puede eliminarse
+    puede_eliminar = cuenta.puede_eliminarse()
+    
+    context = {
+        'cuenta': cuenta,
+        'subcuentas': subcuentas,
+        'saldo_calculado': saldo_calculado,
+        'puede_eliminar': puede_eliminar,
+        'ruta_completa': cuenta.get_ruta_completa(),
+    }
+    
+    return render(request, 'contabilidad/plan_cuentas_detalle.html', context)
+
+
+@login_required
+def plan_cuentas_eliminar(request, pk):
+    """
+    Vista para eliminar una cuenta contable
+    """
+    # Verificar permisos
+    if request.user.rol not in ['Administrador']:
+        messages.error(request, 'No tienes permiso para realizar esta acción.')
+        return redirect('plan_cuentas_list')
+    
+    cuenta = get_object_or_404(PlanCuentas, pk=pk)
+    
+    # Verificar si puede eliminarse
+    if not cuenta.puede_eliminarse():
+        messages.error(
+            request, 
+            'No se puede eliminar esta cuenta porque tiene movimientos asociados o subcuentas.'
+        )
+        return redirect('plan_cuentas_detalle', pk=pk)
+    
+    if request.method == 'POST':
+        codigo = cuenta.codigo
+        nombre = cuenta.nombre
+        cuenta.delete()
+        messages.success(request, f'Cuenta "{codigo} - {nombre}" eliminada exitosamente.')
+        return redirect('plan_cuentas_list')
+    
+    context = {
+        'cuenta': cuenta,
+    }
+    
+    return render(request, 'contabilidad/plan_cuentas_confirm_delete.html', context)
+
+
+@login_required
+def plan_cuentas_toggle_activo(request, pk):
+    """
+    Vista para activar/desactivar una cuenta contable (AJAX)
+    """
+    # Verificar permisos
+    if request.user.rol not in ['Administrador', 'Director']:
+        return JsonResponse({'error': 'No autorizado'}, status=403)
+    
+    if request.method == 'POST':
+        cuenta = get_object_or_404(PlanCuentas, pk=pk)
+        cuenta.activo = not cuenta.activo
+        cuenta.modificado_por = request.user
+        cuenta.save()
+        
+        return JsonResponse({
+            'success': True,
+            'activo': cuenta.activo,
+            'mensaje': f'Cuenta {"activada" if cuenta.activo else "desactivada"} exitosamente.'
+        })
+    
+    return JsonResponse({'error': 'Método no permitido'}, status=405)
+
+
+@login_required
+def plan_cuentas_obtener_subcuentas(request, pk):
+    """
+    API para obtener las subcuentas de una cuenta padre (AJAX)
+    Útil para actualizar dinámicamente formularios
+    """
+    if request.user.rol not in ['Administrador', 'Director', 'Secretaria']:
+        return JsonResponse({'error': 'No autorizado'}, status=403)
+    
+    try:
+        cuenta = PlanCuentas.objects.get(pk=pk, activo=True)
+        subcuentas = cuenta.get_subcuentas_activas().values(
+            'id', 'codigo', 'nombre', 'tipo_cuenta', 'es_detalle'
+        )
+        
+        return JsonResponse({
+            'cuenta_padre': {
+                'id': cuenta.id,
+                'codigo': cuenta.codigo,
+                'nombre': cuenta.nombre,
+            },
+            'subcuentas': list(subcuentas)
+        })
+    except PlanCuentas.DoesNotExist:
+        return JsonResponse({'error': 'Cuenta no encontrada'}, status=404)
+
+
+@login_required
+def plan_cuentas_estructura_json(request):
+    """
+    API para obtener la estructura completa del plan de cuentas en formato JSON jerárquico
+    Útil para visualizaciones tipo árbol
+    """
+    if request.user.rol not in ['Administrador', 'Director', 'Secretaria']:
+        return JsonResponse({'error': 'No autorizado'}, status=403)
+    
+    def construir_arbol(cuenta_padre=None):
+        """Función recursiva para construir el árbol de cuentas"""
+        if cuenta_padre:
+            cuentas = PlanCuentas.objects.filter(
+                cuenta_padre=cuenta_padre,
+                activo=True
+            ).order_by('codigo')
+        else:
+            cuentas = PlanCuentas.objects.filter(
+                cuenta_padre__isnull=True,
+                activo=True
+            ).order_by('codigo')
+        
+        resultado = []
+        for cuenta in cuentas:
+            nodo = {
+                'id': cuenta.id,
+                'codigo': cuenta.codigo,
+                'nombre': cuenta.nombre,
+                'tipo_cuenta': cuenta.get_tipo_cuenta_display(),
+                'saldo_actual': float(cuenta.saldo_actual),
+                'es_detalle': cuenta.es_detalle,
+                'nivel': cuenta.nivel,
+                'hijos': construir_arbol(cuenta)
+            }
+            resultado.append(nodo)
+        
+        return resultado
+    
+    estructura = construir_arbol()
+    
+    return JsonResponse({
+        'estructura': estructura,
+        'total_cuentas': PlanCuentas.objects.filter(activo=True).count()
+    })
+
+# ============================================
+# VISTAS DE ASIENTOS CONTABLES
+# ============================================
+
+from .models import AsientoContable, DetalleAsiento
+from .forms import AsientoContableForm, DetalleAsientoForm, AsientoBusquedaForm, AnularAsientoForm
+from decimal import Decimal
+import json
+
+@login_required
+def asientos_list(request):
+    """
+    Vista para listar todos los asientos contables con búsqueda y filtros
+    """
+    # Verificar permisos
+    if request.user.rol not in ['Administrador', 'Director', 'Secretaria']:
+        messages.error(request, 'No tienes permiso para acceder a esta página.')
+        return redirect('plataform')
+    
+    # Obtener todos los asientos
+    asientos = AsientoContable.objects.all().prefetch_related('detalles')
+    
+    # Aplicar filtros
+    form = AsientoBusquedaForm(request.GET)
+    
+    if form.is_valid():
+        busqueda = form.cleaned_data.get('busqueda')
+        tipo_asiento = form.cleaned_data.get('tipo_asiento')
+        estado = form.cleaned_data.get('estado')
+        fecha_desde = form.cleaned_data.get('fecha_desde')
+        fecha_hasta = form.cleaned_data.get('fecha_hasta')
+        
+        if busqueda:
+            asientos = asientos.filter(
+                Q(numero_asiento__icontains=busqueda) |
+                Q(concepto__icontains=busqueda) |
+                Q(referencia__icontains=busqueda)
+            )
+        
+        if tipo_asiento:
+            asientos = asientos.filter(tipo_asiento=tipo_asiento)
+        
+        if estado:
+            asientos = asientos.filter(estado=estado)
+        
+        if fecha_desde:
+            asientos = asientos.filter(fecha_asiento__gte=fecha_desde)
+        
+        if fecha_hasta:
+            asientos = asientos.filter(fecha_asiento__lte=fecha_hasta)
+    
+    # Calcular estadísticas
+    stats = {
+        'total': AsientoContable.objects.count(),
+        'borradores': AsientoContable.objects.filter(estado='BORRADOR').count(),
+        'contabilizados': AsientoContable.objects.filter(estado='CONTABILIZADO').count(),
+        'anulados': AsientoContable.objects.filter(estado='ANULADO').count(),
+        'total_debito': AsientoContable.objects.filter(
+            estado='CONTABILIZADO'
+        ).aggregate(total=Sum('total_debito'))['total'] or Decimal('0.00'),
+        'total_credito': AsientoContable.objects.filter(
+            estado='CONTABILIZADO'
+        ).aggregate(total=Sum('total_credito'))['total'] or Decimal('0.00'),
+    }
+    
+    context = {
+        'asientos': asientos,
+        'form': form,
+        'stats': stats,
+    }
+    
+    return render(request, 'contabilidad/asientos_list.html', context)
+
+
+@login_required
+def asiento_crear(request):
+    """
+    Vista para crear un nuevo asiento contable
+    """
+    # Verificar permisos
+    if request.user.rol not in ['Administrador', 'Director']:
+        messages.error(request, 'No tienes permiso para acceder a esta página.')
+        return redirect('asientos_list')
+    
+    if request.method == 'POST':
+        # Procesar formulario del asiento
+        form = AsientoContableForm(request.POST)
+        
+        # Obtener datos de las líneas (JSON)
+        lineas_json = request.POST.get('lineas_data', '[]')
+        
+        try:
+            lineas_data = json.loads(lineas_json)
+        except:
+            lineas_data = []
+        
+        if form.is_valid() and lineas_data:
+            # Crear el asiento
+            asiento = form.save(commit=False)
+            asiento.creado_por = request.user
+            asiento.save()
+            
+            # Crear las líneas
+            total_debito = Decimal('0.00')
+            total_credito = Decimal('0.00')
+            
+            for idx, linea_data in enumerate(lineas_data, start=1):
+                try:
+                    cuenta = PlanCuentas.objects.get(id=linea_data['cuenta_id'])
+                    
+                    detalle = DetalleAsiento(
+                        asiento=asiento,
+                        linea=idx,
+                        cuenta=cuenta,
+                        descripcion=linea_data['descripcion'],
+                        debito=Decimal(linea_data.get('debito', 0)),
+                        credito=Decimal(linea_data.get('credito', 0)),
+                        centro_costo=linea_data.get('centro_costo', ''),
+                        referencia_interna=linea_data.get('referencia', '')
+                    )
+                    detalle.save()
+                    
+                    total_debito += detalle.debito
+                    total_credito += detalle.credito
+                    
+                except Exception as e:
+                    messages.error(request, f'Error en línea {idx}: {str(e)}')
+                    asiento.delete()
+                    return redirect('asiento_crear')
+            
+            # Actualizar totales del asiento
+            asiento.total_debito = total_debito
+            asiento.total_credito = total_credito
+            asiento.save()
+            
+            messages.success(
+                request,
+                f'Asiento {asiento.numero_asiento} creado exitosamente.'
+            )
+            return redirect('asiento_detalle', pk=asiento.pk)
+        else:
+            if not lineas_data:
+                messages.error(request, 'Debe agregar al menos una línea al asiento.')
+    else:
+        form = AsientoContableForm()
+    
+    # Obtener cuentas activas de detalle para el selector
+    cuentas = PlanCuentas.objects.filter(
+        es_detalle=True,
+        activo=True
+    ).order_by('codigo')
+    
+    context = {
+        'form': form,
+        'cuentas': cuentas,
+        'titulo': 'Crear Nuevo Asiento Contable',
+    }
+    
+    return render(request, 'contabilidad/asiento_form.html', context)
+
+
+@login_required
+def asiento_detalle(request, pk):
+    """
+    Vista para ver los detalles de un asiento contable
+    """
+    # Verificar permisos
+    if request.user.rol not in ['Administrador', 'Director', 'Secretaria']:
+        messages.error(request, 'No tienes permiso para acceder a esta página.')
+        return redirect('plataform')
+    
+    asiento = get_object_or_404(AsientoContable, pk=pk)
+    detalles = asiento.detalles.all().select_related('cuenta')
+    
+    context = {
+        'asiento': asiento,
+        'detalles': detalles,
+    }
+    
+    return render(request, 'contabilidad/asiento_detalle.html', context)
+
+
+@login_required
+def asiento_contabilizar(request, pk):
+    """
+    Vista para contabilizar un asiento (cambiar de borrador a contabilizado)
+    """
+    # Verificar permisos
+    if request.user.rol not in ['Administrador', 'Director']:
+        messages.error(request, 'No tienes permiso para realizar esta acción.')
+        return redirect('asiento_detalle', pk=pk)
+    
+    asiento = get_object_or_404(AsientoContable, pk=pk)
+    
+    if request.method == 'POST':
+        if asiento.puede_contabilizarse():
+            try:
+                asiento.contabilizar(request.user)
+                messages.success(
+                    request,
+                    f'Asiento {asiento.numero_asiento} contabilizado exitosamente.'
+                )
+            except Exception as e:
+                messages.error(request, f'Error al contabilizar: {str(e)}')
+        else:
+            messages.error(
+                request,
+                'El asiento no puede ser contabilizado. Verifique que esté cuadrado y tenga líneas.'
+            )
+        
+        return redirect('asiento_detalle', pk=pk)
+    
+    context = {
+        'asiento': asiento,
+    }
+    
+    return render(request, 'contabilidad/asiento_confirm_contabilizar.html', context)
+
+
+@login_required
+def asiento_anular(request, pk):
+    """
+    Vista para anular un asiento contable
+    """
+    # Verificar permisos
+    if request.user.rol not in ['Administrador']:
+        messages.error(request, 'No tienes permiso para realizar esta acción.')
+        return redirect('asiento_detalle', pk=pk)
+    
+    asiento = get_object_or_404(AsientoContable, pk=pk)
+    
+    if not asiento.puede_anularse():
+        messages.error(request, 'Este asiento no puede ser anulado.')
+        return redirect('asiento_detalle', pk=pk)
+    
+    if request.method == 'POST':
+        form = AnularAsientoForm(request.POST)
+        if form.is_valid():
+            motivo = form.cleaned_data['motivo_anulacion']
+            try:
+                asiento.anular(request.user, motivo)
+                messages.success(
+                    request,
+                    f'Asiento {asiento.numero_asiento} anulado exitosamente.'
+                )
+                return redirect('asiento_detalle', pk=pk)
+            except Exception as e:
+                messages.error(request, f'Error al anular: {str(e)}')
+    else:
+        form = AnularAsientoForm()
+    
+    context = {
+        'asiento': asiento,
+        'form': form,
+    }
+    
+    return render(request, 'contabilidad/asiento_anular.html', context)
+
+
+@login_required
+def asiento_eliminar(request, pk):
+    """
+    Vista para eliminar un asiento (solo borradores)
+    """
+    # Verificar permisos
+    if request.user.rol not in ['Administrador']:
+        messages.error(request, 'No tienes permiso para realizar esta acción.')
+        return redirect('asiento_detalle', pk=pk)
+    
+    asiento = get_object_or_404(AsientoContable, pk=pk)
+    
+    if asiento.estado != 'BORRADOR':
+        messages.error(request, 'Solo se pueden eliminar asientos en borrador.')
+        return redirect('asiento_detalle', pk=pk)
+    
+    if request.method == 'POST':
+        numero = asiento.numero_asiento
+        asiento.delete()
+        messages.success(request, f'Asiento {numero} eliminado exitosamente.')
+        return redirect('asientos_list')
+    
+    context = {
+        'asiento': asiento,
+    }
+    
+    return render(request, 'contabilidad/asiento_confirm_delete.html', context)
+
+
+@login_required
+def asiento_imprimir(request, pk):
+    """
+    Vista para imprimir/generar PDF del asiento contable
+    """
+    # Verificar permisos
+    if request.user.rol not in ['Administrador', 'Director', 'Secretaria']:
+        messages.error(request, 'No tienes permiso para acceder a esta página.')
+        return redirect('plataform')
+    
+    asiento = get_object_or_404(AsientoContable, pk=pk)
+    detalles = asiento.detalles.all().select_related('cuenta')
+    
+    context = {
+        'asiento': asiento,
+        'detalles': detalles,
+    }
+    
+    return render(request, 'contabilidad/asiento_imprimir.html', context)
+
+
+# ============================================
+# DASHBOARD Y REPORTES CONTABLES
+# ============================================
+
+from django.db.models.functions import Coalesce
+
+@login_required
+def contabilidad_dashboard(request):
+    """
+    Dashboard principal de contabilidad con KPIs y resumen
+    """
+    if request.user.rol not in ['Administrador', 'Director', 'Secretaria']:
+        messages.error(request, 'No tienes permiso para acceder a esta página.')
+        return redirect('plataform')
+    
+    # Estadísticas generales
+    stats = {
+        'total_cuentas': PlanCuentas.objects.filter(activo=True).count(),
+        'cuentas_detalle': PlanCuentas.objects.filter(es_detalle=True, activo=True).count(),
+        'total_asientos': AsientoContable.objects.count(),
+        'asientos_borrador': AsientoContable.objects.filter(estado='BORRADOR').count(),
+        'asientos_contabilizados': AsientoContable.objects.filter(estado='CONTABILIZADO').count(),
+    }
+    
+    # Totales por tipo de cuenta
+    totales_tipo = {}
+    for tipo in ['ACTIVO', 'PASIVO', 'CAPITAL', 'INGRESO', 'GASTO', 'COSTO']:
+        total = PlanCuentas.objects.filter(
+            tipo_cuenta=tipo,
+            activo=True
+        ).aggregate(total=Sum('saldo_actual'))['total'] or Decimal('0.00')
+        totales_tipo[tipo] = total
+    
+    # Últimos asientos
+    ultimos_asientos = AsientoContable.objects.all()[:10]
+    
+    # Cuentas con mayor movimiento
+    cuentas_activas = PlanCuentas.objects.filter(
+        es_detalle=True,
+        activo=True
+    ).annotate(
+        num_movimientos=Count('movimientos_asiento')
+    ).order_by('-num_movimientos')[:10]
+    
+    context = {
+        'stats': stats,
+        'totales_tipo': totales_tipo,
+        'ultimos_asientos': ultimos_asientos,
+        'cuentas_activas': cuentas_activas,
+    }
+    
+    return render(request, 'contabilidad/dashboard.html', context)
+
+
+@login_required
+def libro_diario(request):
+    """
+    Libro Diario - Registro cronológico de todos los asientos contables
+    """
+    if request.user.rol not in ['Administrador', 'Director', 'Secretaria']:
+        messages.error(request, 'No tienes permiso para acceder a esta página.')
+        return redirect('plataform')
+    
+    # Filtros
+    fecha_desde = request.GET.get('fecha_desde')
+    fecha_hasta = request.GET.get('fecha_hasta')
+    estado = request.GET.get('estado', 'CONTABILIZADO')
+    
+    # Query base
+    asientos = AsientoContable.objects.all().prefetch_related('detalles__cuenta')
+    
+    # Aplicar filtros
+    if estado:
+        asientos = asientos.filter(estado=estado)
+    
+    if fecha_desde:
+        asientos = asientos.filter(fecha_asiento__gte=fecha_desde)
+    
+    if fecha_hasta:
+        asientos = asientos.filter(fecha_asiento__lte=fecha_hasta)
+    
+    asientos = asientos.order_by('fecha_asiento', 'numero_asiento')
+    
+    # Calcular totales
+    totales = asientos.aggregate(
+        total_debito=Sum('total_debito'),
+        total_credito=Sum('total_credito')
+    )
+    
+    context = {
+        'asientos': asientos,
+        'totales': totales,
+        'fecha_desde': fecha_desde,
+        'fecha_hasta': fecha_hasta,
+        'estado': estado,
+    }
+    
+    return render(request, 'contabilidad/libro_diario.html', context)
+
+
+@login_required
+def libro_mayor(request):
+    """
+    Libro Mayor - Movimientos agrupados por cuenta
+    """
+    if request.user.rol not in ['Administrador', 'Director', 'Secretaria']:
+        messages.error(request, 'No tienes permiso para acceder a esta página.')
+        return redirect('plataform')
+    
+    # Filtros
+    fecha_desde = request.GET.get('fecha_desde')
+    fecha_hasta = request.GET.get('fecha_hasta')
+    cuenta_id = request.GET.get('cuenta_id')
+    tipo_cuenta = request.GET.get('tipo_cuenta')
+    
+    # Obtener cuentas para el filtro
+    cuentas_list = PlanCuentas.objects.filter(
+        es_detalle=True,
+        activo=True
+    ).order_by('codigo')
+    
+    # Query de movimientos
+    movimientos = DetalleAsiento.objects.filter(
+        asiento__estado='CONTABILIZADO'
+    ).select_related('asiento', 'cuenta')
+    
+    # Aplicar filtros
+    if fecha_desde:
+        movimientos = movimientos.filter(asiento__fecha_asiento__gte=fecha_desde)
+    
+    if fecha_hasta:
+        movimientos = movimientos.filter(asiento__fecha_asiento__lte=fecha_hasta)
+    
+    if cuenta_id:
+        movimientos = movimientos.filter(cuenta_id=cuenta_id)
+    
+    if tipo_cuenta:
+        movimientos = movimientos.filter(cuenta__tipo_cuenta=tipo_cuenta)
+    
+    movimientos = movimientos.order_by('cuenta__codigo', 'asiento__fecha_asiento', 'asiento__numero_asiento')
+    
+    # Agrupar por cuenta
+    cuentas_con_movimientos = {}
+    for movimiento in movimientos:
+        cuenta_codigo = movimiento.cuenta.codigo
+        if cuenta_codigo not in cuentas_con_movimientos:
+            cuentas_con_movimientos[cuenta_codigo] = {
+                'cuenta': movimiento.cuenta,
+                'movimientos': [],
+                'total_debito': Decimal('0.00'),
+                'total_credito': Decimal('0.00'),
+                'saldo': Decimal('0.00'),
+            }
+        
+        cuentas_con_movimientos[cuenta_codigo]['movimientos'].append(movimiento)
+        cuentas_con_movimientos[cuenta_codigo]['total_debito'] += movimiento.debito
+        cuentas_con_movimientos[cuenta_codigo]['total_credito'] += movimiento.credito
+        
+        # Calcular saldo según naturaleza
+        if movimiento.cuenta.naturaleza == 'DEUDORA':
+            cuentas_con_movimientos[cuenta_codigo]['saldo'] += movimiento.debito - movimiento.credito
+        else:
+            cuentas_con_movimientos[cuenta_codigo]['saldo'] += movimiento.credito - movimiento.debito
+    
+    context = {
+        'cuentas_con_movimientos': cuentas_con_movimientos,
+        'cuentas_list': cuentas_list,
+        'fecha_desde': fecha_desde,
+        'fecha_hasta': fecha_hasta,
+        'cuenta_id': cuenta_id,
+        'tipo_cuenta': tipo_cuenta,
+    }
+    
+    return render(request, 'contabilidad/libro_mayor.html', context)
+
+
+@login_required
+def balance_comprobacion(request):
+    """
+    Balance de Comprobación - Sumas y Saldos de todas las cuentas
+    """
+    if request.user.rol not in ['Administrador', 'Director', 'Secretaria']:
+        messages.error(request, 'No tienes permiso para acceder a esta página.')
+        return redirect('plataform')
+    
+    # Filtros
+    fecha_hasta = request.GET.get('fecha_hasta')
+    tipo_cuenta = request.GET.get('tipo_cuenta')
+    
+    # Obtener todas las cuentas de detalle
+    cuentas = PlanCuentas.objects.filter(
+        es_detalle=True,
+        activo=True
+    ).order_by('codigo')
+    
+    if tipo_cuenta:
+        cuentas = cuentas.filter(tipo_cuenta=tipo_cuenta)
+    
+    # Calcular movimientos para cada cuenta
+    balance_data = []
+    totales = {
+        'debito': Decimal('0.00'),
+        'credito': Decimal('0.00'),
+        'saldo_deudor': Decimal('0.00'),
+        'saldo_acreedor': Decimal('0.00'),
+    }
+    
+    for cuenta in cuentas:
+        # Obtener movimientos contabilizados
+        movimientos = cuenta.movimientos_asiento.filter(
+            asiento__estado='CONTABILIZADO'
+        )
+        
+        if fecha_hasta:
+            movimientos = movimientos.filter(asiento__fecha_asiento__lte=fecha_hasta)
+        
+        # Calcular sumas
+        sumas = movimientos.aggregate(
+            debito=Sum('debito'),
+            credito=Sum('credito')
+        )
+        
+        debito = sumas['debito'] or Decimal('0.00')
+        credito = sumas['credito'] or Decimal('0.00')
+        
+        # Calcular saldo según naturaleza
+        if cuenta.naturaleza == 'DEUDORA':
+            saldo = debito - credito
+        else:
+            saldo = credito - debito
+        
+        # Solo mostrar cuentas con movimiento
+        if debito > 0 or credito > 0:
+            balance_data.append({
+                'cuenta': cuenta,
+                'debito': debito,
+                'credito': credito,
+                'saldo': saldo,
+                'saldo_deudor': saldo if saldo > 0 else Decimal('0.00'),
+                'saldo_acreedor': abs(saldo) if saldo < 0 else Decimal('0.00'),
+            })
+            
+            # Actualizar totales
+            totales['debito'] += debito
+            totales['credito'] += credito
+            if saldo > 0:
+                totales['saldo_deudor'] += saldo
+            else:
+                totales['saldo_acreedor'] += abs(saldo)
+    
+    context = {
+        'balance_data': balance_data,
+        'totales': totales,
+        'fecha_hasta': fecha_hasta,
+        'tipo_cuenta': tipo_cuenta,
+    }
+    
+    return render(request, 'contabilidad/balance_comprobacion.html', context)
+
+
+@login_required
+def estado_resultados(request):
+    """
+    Estado de Resultados (P&L) - Ingresos vs Gastos
+    """
+    if request.user.rol not in ['Administrador', 'Director', 'Secretaria']:
+        messages.error(request, 'No tienes permiso para acceder a esta página.')
+        return redirect('plataform')
+    
+    # Filtros
+    fecha_desde = request.GET.get('fecha_desde')
+    fecha_hasta = request.GET.get('fecha_hasta')
+    
+    # Obtener cuentas de ingresos y gastos
+    ingresos = PlanCuentas.objects.filter(
+        tipo_cuenta='INGRESO',
+        es_detalle=True,
+        activo=True
+    ).order_by('codigo')
+    
+    gastos = PlanCuentas.objects.filter(
+        tipo_cuenta__in=['GASTO', 'COSTO'],
+        es_detalle=True,
+        activo=True
+    ).order_by('codigo')
+    
+    # Calcular montos
+    ingresos_data = []
+    total_ingresos = Decimal('0.00')
+    
+    for cuenta in ingresos:
+        movimientos = cuenta.movimientos_asiento.filter(
+            asiento__estado='CONTABILIZADO'
+        )
+        
+        if fecha_desde:
+            movimientos = movimientos.filter(asiento__fecha_asiento__gte=fecha_desde)
+        if fecha_hasta:
+            movimientos = movimientos.filter(asiento__fecha_asiento__lte=fecha_hasta)
+        
+        monto = movimientos.aggregate(
+            total=Coalesce(Sum('credito'), Decimal('0.00')) - Coalesce(Sum('debito'), Decimal('0.00'))
+        )['total'] or Decimal('0.00')
+        
+        if monto != 0:
+            ingresos_data.append({
+                'cuenta': cuenta,
+                'monto': monto
+            })
+            total_ingresos += monto
+    
+    gastos_data = []
+    total_gastos = Decimal('0.00')
+    
+    for cuenta in gastos:
+        movimientos = cuenta.movimientos_asiento.filter(
+            asiento__estado='CONTABILIZADO'
+        )
+        
+        if fecha_desde:
+            movimientos = movimientos.filter(asiento__fecha_asiento__gte=fecha_desde)
+        if fecha_hasta:
+            movimientos = movimientos.filter(asiento__fecha_asiento__lte=fecha_hasta)
+        
+        monto = movimientos.aggregate(
+            total=Coalesce(Sum('debito'), Decimal('0.00')) - Coalesce(Sum('credito'), Decimal('0.00'))
+        )['total'] or Decimal('0.00')
+        
+        if monto != 0:
+            gastos_data.append({
+                'cuenta': cuenta,
+                'monto': monto
+            })
+            total_gastos += monto
+    
+    utilidad_neta = total_ingresos - total_gastos
+    
+    context = {
+        'ingresos_data': ingresos_data,
+        'gastos_data': gastos_data,
+        'total_ingresos': total_ingresos,
+        'total_gastos': total_gastos,
+        'utilidad_neta': utilidad_neta,
+        'fecha_desde': fecha_desde,
+        'fecha_hasta': fecha_hasta,
+    }
+    
+    return render(request, 'contabilidad/estado_resultados.html', context)
+
+
+@login_required
+def balance_general(request):
+    """
+    Balance General - Estado de Situación Financiera (Activos, Pasivos, Patrimonio)
+    """
+    if request.user.rol not in ['Administrador', 'Director', 'Secretaria']:
+        messages.error(request, 'No tienes permiso para acceder a esta página.')
+        return redirect('plataform')
+    
+    # Fecha de corte
+    fecha_corte = request.GET.get('fecha_corte')
+    
+    # Obtener cuentas por tipo
+    activos = PlanCuentas.objects.filter(
+        tipo_cuenta='ACTIVO',
+        es_detalle=True,
+        activo=True
+    ).order_by('codigo')
+    
+    pasivos = PlanCuentas.objects.filter(
+        tipo_cuenta='PASIVO',
+        es_detalle=True,
+        activo=True
+    ).order_by('codigo')
+    
+    patrimonio = PlanCuentas.objects.filter(
+        tipo_cuenta='CAPITAL',
+        es_detalle=True,
+        activo=True
+    ).order_by('codigo')
+    
+    # Calcular saldos
+    def calcular_saldos(cuentas, fecha_corte=None):
+        data = []
+        total = Decimal('0.00')
+        
+        for cuenta in cuentas:
+            movimientos = cuenta.movimientos_asiento.filter(
+                asiento__estado='CONTABILIZADO'
+            )
+            
+            if fecha_corte:
+                movimientos = movimientos.filter(asiento__fecha_asiento__lte=fecha_corte)
+            
+            if cuenta.naturaleza == 'DEUDORA':
+                saldo = movimientos.aggregate(
+                    total=Coalesce(Sum('debito'), Decimal('0.00')) - Coalesce(Sum('credito'), Decimal('0.00'))
+                )['total'] or Decimal('0.00')
+            else:
+                saldo = movimientos.aggregate(
+                    total=Coalesce(Sum('credito'), Decimal('0.00')) - Coalesce(Sum('debito'), Decimal('0.00'))
+                )['total'] or Decimal('0.00')
+            
+            if saldo != 0:
+                data.append({
+                    'cuenta': cuenta,
+                    'saldo': saldo
+                })
+                total += saldo
+        
+        return data, total
+    
+    activos_data, total_activos = calcular_saldos(activos, fecha_corte)
+    pasivos_data, total_pasivos = calcular_saldos(pasivos, fecha_corte)
+    patrimonio_data, total_patrimonio = calcular_saldos(patrimonio, fecha_corte)
+    
+    # El patrimonio debe equilibrar la ecuación contable
+    total_pasivo_patrimonio = total_pasivos + total_patrimonio
+    
+    context = {
+        'activos_data': activos_data,
+        'pasivos_data': pasivos_data,
+        'patrimonio_data': patrimonio_data,
+        'total_activos': total_activos,
+        'total_pasivos': total_pasivos,
+        'total_patrimonio': total_patrimonio,
+        'total_pasivo_patrimonio': total_pasivo_patrimonio,
+        'fecha_corte': fecha_corte,
+    }
+    
+    return render(request, 'contabilidad/balance_general.html', context)
+
+
+@login_required
+def consulta_cuenta(request, pk):
+    """
+    Consulta detallada de movimientos de una cuenta específica
+    """
+    if request.user.rol not in ['Administrador', 'Director', 'Secretaria']:
+        messages.error(request, 'No tienes permiso para acceder a esta página.')
+        return redirect('plataform')
+    
+    cuenta = get_object_or_404(PlanCuentas, pk=pk)
+    
+    # Filtros
+    fecha_desde = request.GET.get('fecha_desde')
+    fecha_hasta = request.GET.get('fecha_hasta')
+    
+    # Obtener movimientos
+    movimientos = cuenta.movimientos_asiento.filter(
+        asiento__estado='CONTABILIZADO'
+    ).select_related('asiento').order_by('asiento__fecha_asiento')
+    
+    if fecha_desde:
+        movimientos = movimientos.filter(asiento__fecha_asiento__gte=fecha_desde)
+    
+    if fecha_hasta:
+        movimientos = movimientos.filter(asiento__fecha_asiento__lte=fecha_hasta)
+    
+    # Calcular saldo corriente
+    saldo_actual = Decimal('0.00')
+    movimientos_con_saldo = []
+    
+    for mov in movimientos:
+        if cuenta.naturaleza == 'DEUDORA':
+            saldo_actual += mov.debito - mov.credito
+        else:
+            saldo_actual += mov.credito - mov.debito
+        
+        movimientos_con_saldo.append({
+            'movimiento': mov,
+            'saldo': saldo_actual
+        })
+    
+    # Totales
+    totales = movimientos.aggregate(
+        total_debito=Sum('debito'),
+        total_credito=Sum('credito')
+    )
+    
+    context = {
+        'cuenta': cuenta,
+        'movimientos_con_saldo': movimientos_con_saldo,
+        'totales': totales,
+        'saldo_final': saldo_actual,
+        'fecha_desde': fecha_desde,
+        'fecha_hasta': fecha_hasta,
+    }
+    
+    return render(request, 'contabilidad/consulta_cuenta.html', context)

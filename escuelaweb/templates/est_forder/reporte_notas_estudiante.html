@@ -41,9 +41,17 @@ Reporte de Notas - {{ estudiante.get_full_name }}
                 <div class="card-header bg-primary text-white">
                     <div class="d-flex justify-content-between align-items-center">
                         <h2 class="h4 mb-0">Reporte de Notas</h2>
-                        <button onclick="window.print()" class="btn btn-light">
-                            <i class="fas fa-print"></i> Imprimir Reporte
-                        </button>
+                        <div>
+                            <a href="{% url 'record_calificaciones_pdf' estudiante.id %}" class="btn btn-light me-2" target="_blank">
+                                <i class="fas fa-file-pdf"></i> Récord PDF - Primer Ciclo
+                            </a>
+                            <a href="{% url 'record_calificaciones_completo_pdf' estudiante.id %}" class="btn btn-info me-2" target="_blank">
+                                <i class="fas fa-file-alt"></i> Récord Completo - Ambos Ciclos
+                            </a>
+                            <button onclick="window.print()" class="btn btn-light">
+                                <i class="fas fa-print"></i> Imprimir Reporte
+                            </button>
+                        </div>
                     </div>
                 </div>
 
