@@ -1,0 +1,101 @@
+{% extends 'website/base.html' %}
+
+{% block title %}Asignar Estudiante - {{ grupo.apellido_familia }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-8 mx-auto">
+            <div class="card">
+                <div class="card-header bg-info text-white">
+                    <h4 class="mb-0"><i class="fas fa-user-plus me-2"></i>Asignar Estudiante al Grupo</h4>
+                    <p class="mb-0"><small>Grupo: {{ grupo.apellido_familia }} ({{ grupo.codigo_familia }})</small></p>
+                </div>
+                <div class="card-body">
+                    <!-- Buscador -->
+                    <form method="get" class="mb-4">
+                        <div class="input-group">
+                            <input type="text" class="form-control" name="buscar" value="{{ buscar }}" 
+                                   placeholder="Buscar por nombre, cédula o código de barras..." autofocus>
+                            <button class="btn btn-primary" type="submit">
+                                <i class="fas fa-search me-1"></i>Buscar
+                            </button>
+                        </div>
+                    </form>
+
+                    <!-- Resultados -->
+                    {% if estudiantes %}
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Estudiante</th>
+                                        <th>Cédula</th>
+                                        <th>Grado</th>
+                                        <th>Grupo Actual</th>
+                                        <th>Acción</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for estudiante in estudiantes %}
+                                    <tr>
+                                        <td>
+                                            <strong>{{ estudiante.get_full_name }}</strong><br>
+                                            <small class="text-muted">{{ estudiante.email }}</small>
+                                        </td>
+                                        <td>{{ estudiante.cedula|default:"-" }}</td>
+                                        <td>{{ estudiante.grado|default:"-" }} - {{ estudiante.seccion|default:"-" }}</td>
+                                        <td>
+                                            {% if estudiante.grupo_familiar %}
+                                                {% if estudiante.grupo_familiar.id == grupo.id %}
+                                                    <span class="badge bg-success">Este grupo</span>
+                                                {% else %}
+                                                    <span class="badge bg-warning text-dark">
+                                                        {{ estudiante.grupo_familiar.apellido_familia }}
+                                                    </span>
+                                                {% endif %}
+                                            {% else %}
+                                                <span class="text-muted">Sin grupo</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if estudiante.grupo_familiar.id == grupo.id %}
+                                                <span class="badge bg-secondary">Ya asignado</span>
+                                            {% else %}
+                                                <form method="post" style="display: inline;">
+                                                    {% csrf_token %}
+                                                    <input type="hidden" name="estudiante_id" value="{{ estudiante.id }}">
+                                                    <button type="submit" class="btn btn-sm btn-primary">
+                                                        <i class="fas fa-plus me-1"></i>Asignar
+                                                    </button>
+                                                </form>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% elif buscar %}
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle me-2"></i>
+                            No se encontraron estudiantes con el criterio de búsqueda "{{ buscar }}".
+                        </div>
+                    {% else %}
+                        <div class="alert alert-warning">
+                            <i class="fas fa-search me-2"></i>
+                            Utiliza el buscador para encontrar estudiantes.
+                        </div>
+                    {% endif %}
+
+                    <div class="mt-4">
+                        <a href="{% url 'grupo_familiar_detalle' grupo.id %}" class="btn btn-secondary">
+                            <i class="fas fa-arrow-left me-1"></i>Volver al Grupo
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

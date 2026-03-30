@@ -4,27 +4,202 @@
 
 {% block content %}
 <div class="container mt-4">
-    <div class="d-flex justify-content-between mb-3">
-        <h3>{{ grupo.nombre }}</h3>
-        <div class="d-flex gap-2">
-            <a href="{% url 'agregar_estudiantes_grupo' grupo.id %}" class="btn btn-primary">
-                <i class="fas fa-user-plus"></i> Agregar Estudiantes
-            </a>
-            <a href="{% url 'inscribir_grupo_en_curso' grupo.id %}{% if anho_id %}?anho={{ anho_id }}{% endif %}" class="btn btn-success">Inscribir en Curso</a>
-            <a href="{% url 'lista_grupos' %}{% if anho_id %}?anho={{ anho_id }}{% endif %}" class="btn btn-secondary">Volver</a>
+    <!-- Header Card -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-body">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <div>
+                    <h3 class="mb-2">
+                        <i class="fas fa-users text-primary"></i> {{ grupo.nombre }}
+                    </h3>
+                    <div class="text-muted">
+                        <span class="badge bg-primary me-2">
+                            <i class="fas fa-graduation-cap"></i> Grado: {{ grupo.grado }}
+                        </span>
+                        <span class="badge bg-info me-2">
+                            <i class="fas fa-layer-group"></i> Sección: {{ grupo.seccion }}
+                        </span>
+                        <span class="badge bg-secondary">
+                            <i class="fas fa-user"></i> Creado por: {{ grupo.creado_por.get_full_name }}
+                        </span>
+                    </div>
+                </div>
+                <div class="d-flex gap-2 flex-wrap">
+                    <a href="{% url 'agregar_estudiantes_grupo' grupo.id %}" class="btn btn-primary">
+                        <i class="fas fa-user-plus"></i> Agregar Estudiantes
+                    </a>
+                    <a href="{% url 'inscribir_grupo_en_curso' grupo.id %}{% if anho_id %}?anho={{ anho_id }}{% endif %}" class="btn btn-success">
+                        <i class="fas fa-book"></i> Inscribir en Curso
+                    </a>
+                    <a href="{% url 'lista_grupos' %}{% if anho_id %}?anho={{ anho_id }}{% endif %}" class="btn btn-secondary">
+                        <i class="fas fa-arrow-left"></i> Volver
+                    </a>
+                </div>
+            </div>
         </div>
     </div>
 
-    <p><strong>Grado:</strong> {{ grupo.grado }} &nbsp; <strong>Sección:</strong> {{ grupo.seccion }}</p>
-    <p><strong>Creado por:</strong> {{ grupo.creado_por.get_full_name }}</p>
+    <!-- Search Card -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-header bg-light">
+            <h5 class="mb-0">
+                <i class="fas fa-search"></i> Buscar Estudiantes
+            </h5>
+        </div>
+        <div class="card-body">
+            <form method="GET" action="{% url 'ver_grupo' grupo.id %}" class="row g-3">
+                {% if anho_id %}<input type="hidden" name="anho" value="{{ anho_id }}">{% endif %}
+                <div class="col-md-3">
+                    <label for="nombre" class="form-label"><i class="fas fa-user"></i> Nombre</label>
+                    <input type="text" class="form-control" id="nombre" name="nombre" value="{{ query_nombre }}" placeholder="Buscar por nombre">
+                </div>
+                <div class="col-md-3">
+                    <label for="apellido" class="form-label"><i class="fas fa-user"></i> Apellido</label>
+                    <input type="text" class="form-control" id="apellido" name="apellido" value="{{ query_apellido }}" placeholder="Buscar por apellido">
+                </div>
+                <div class="col-md-3">
+                    <label for="email" class="form-label"><i class="fas fa-envelope"></i> Email</label>
+                    <input type="email" class="form-control" id="email" name="email" value="{{ query_email }}" placeholder="Buscar por email">
+                </div>
+                <div class="col-md-3">
+                    <label for="cedula" class="form-label"><i class="fas fa-id-card"></i> Cédula</label>
+                    <input type="text" class="form-control" id="cedula" name="cedula" value="{{ query_cedula }}" placeholder="Buscar por cédula">
+                </div>
+                <div class="col-12">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-search"></i> Buscar
+                    </button>
+                    <a href="{% url 'ver_grupo' grupo.id %}{% if anho_id %}?anho={{ anho_id }}{% endif %}" class="btn btn-secondary">
+                        <i class="fas fa-eraser"></i> Limpiar
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
 
-    <h5>Estudiantes</h5>
-    <ul class="list-group">
-        {% for e in grupo.estudiantes.all %}
-        <li class="list-group-item">{{ e.get_full_name }} — {{ e.email }}</li>
-        {% empty %}
-        <li class="list-group-item text-muted">No hay estudiantes en este grupo.</li>
-        {% endfor %}
-    </ul>
+    <!-- Students Stats Card -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-body">
+            <h5 class="card-title mb-3">
+                <i class="fas fa-chart-bar text-success"></i> Resumen
+            </h5>
+            <div class="row">
+                <div class="col-md-4">
+                    <div class="p-3 bg-light rounded">
+                        <h4 class="mb-0 text-primary">{{ estudiantes.count }}</h4>
+                        <small class="text-muted">{% if query_nombre or query_apellido or query_email or query_cedula %}Estudiantes Encontrados{% else %}Total de Estudiantes{% endif %}</small>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="p-3 bg-light rounded">
+                        <h4 class="mb-0 text-info">{{ grupo.estudiantes.all.count }}</h4>
+                        <small class="text-muted">Total en el Grupo</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Students List Card -->
+    <div class="card shadow-sm">
+        <div class="card-header bg-primary text-white">
+            <h5 class="mb-0">
+                <i class="fas fa-user-graduate"></i> Lista de Estudiantes (Orden Alfabético)
+            </h5>
+        </div>
+        <div class="card-body p-0">
+            {% if estudiantes %}
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th style="width: 60px;" class="text-center">#</th>
+                                <th><i class="fas fa-user"></i> Nombre Completo</th>
+                                <th><i class="fas fa-envelope"></i> Email</th>
+                                <th><i class="fas fa-id-card"></i> Cédula</th>
+                                <th><i class="fas fa-phone"></i> Teléfono</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for e in estudiantes %}
+                            <tr>
+                                <td class="text-center">
+                                    <span class="badge bg-primary rounded-circle" style="width: 32px; height: 32px; display: inline-flex; align-items: center; justify-content: center; font-size: 14px;">
+                                        {{ forloop.counter }}
+                                    </span>
+                                </td>
+                                <td>
+                                    <strong>{{ e.get_full_name }}</strong>
+                                </td>
+                                <td>
+                                    <a href="mailto:{{ e.email }}" class="text-decoration-none">
+                                        {{ e.email }}
+                                    </a>
+                                </td>
+                                <td>
+                                    {% if e.cedula %}
+                                        {{ e.cedula }}
+                                    {% else %}
+                                        <span class="text-muted">-</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if e.telefono %}
+                                        {{ e.telefono }}
+                                    {% else %}
+                                        <span class="text-muted">-</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <div class="p-5 text-center text-muted">
+                    <i class="fas fa-users fa-3x mb-3 opacity-50"></i>
+                    <p class="mb-0">No hay estudiantes en este grupo.</p>
+                    <a href="{% url 'agregar_estudiantes_grupo' grupo.id %}" class="btn btn-primary mt-3">
+                        <i class="fas fa-user-plus"></i> Agregar Estudiantes
+                    </a>
+                </div>
+            {% endif %}
+        </div>
+    </div>
 </div>
+
+<style>
+    .badge {
+        font-weight: 500;
+    }
+    
+    .table-hover tbody tr:hover {
+        background-color: rgba(0, 123, 255, 0.05);
+    }
+    
+    .card {
+        border: none;
+        border-radius: 12px;
+    }
+    
+    .card-header {
+        border-radius: 12px 12px 0 0 !important;
+        padding: 1rem 1.5rem;
+    }
+    
+    .shadow-sm {
+        box-shadow: 0 0.125rem 0.5rem rgba(0, 0, 0, 0.075) !important;
+    }
+    
+    .btn {
+        border-radius: 8px;
+        padding: 0.5rem 1rem;
+        font-weight: 500;
+    }
+    
+    .bg-light {
+        background-color: #f8f9fa !important;
+        border: 1px solid #e9ecef;
+    }
+</style>
 {% endblock %}

@@ -96,6 +96,11 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    # Middlewares de seguridad personalizados
+    'escuelaweb.security_middleware.LoginSecurityMiddleware',
+    'escuelaweb.security_middleware.SessionSecurityMiddleware',
+    'escuelaweb.security_middleware.RateLimitMiddleware',
+    'escuelaweb.security_middleware.SecurityAuditMiddleware',
 ]
 
 ROOT_URLCONF = 'Escuela.urls'
@@ -244,3 +249,125 @@ if not DEBUG:
     SECURE_CONTENT_TYPE_NOSNIFF = True
     X_FRAME_OPTIONS = 'DENY'
 
+
+# ============================================
+# CONFIGURACIÓN DE CACHE (para Rate Limiting)
+# ============================================
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+        'LOCATION': 'unique-snowflake',
+        'OPTIONS': {
+            'MAX_ENTRIES': 10000
+        }
+    }
+}
+
+# ============================================
+# CONFIGURACIÓN DE SEGURIDAD AVANZADA
+# ============================================
+
+# JWT Configuration
+JWT_SECRET_KEY = os.getenv('JWT_SECRET_KEY', SECRET_KEY)
+JWT_ALGORITHM = 'HS256'
+JWT_ACCESS_TOKEN_LIFETIME = int(os.getenv('JWT_ACCESS_TOKEN_LIFETIME', '3600'))  # 1 hora
+JWT_REFRESH_TOKEN_LIFETIME = int(os.getenv('JWT_REFRESH_TOKEN_LIFETIME', '604800'))  # 7 días
+
+# Login Security
+MAX_LOGIN_ATTEMPTS = int(os.getenv('MAX_LOGIN_ATTEMPTS', '5'))
+LOGIN_BLOCK_DURATION = int(os.getenv('LOGIN_BLOCK_DURATION', '900'))  # 15 minutos en segundos
+
+# Session Security
+SESSION_COOKIE_HTTPONLY = True
+SESSION_COOKIE_SAMESITE = 'Lax'
+CSRF_COOKIE_HTTPONLY = True
+CSRF_COOKIE_SAMESITE = 'Lax'
+
+# Password Requirements
+PASSWORD_MIN_LENGTH = 8
+PASSWORD_REQUIRE_UPPERCASE = True
+PASSWORD_REQUIRE_LOWERCASE = True
+PASSWORD_REQUIRE_NUMBERS = True
+PASSWORD_REQUIRE_SPECIAL = True
+
+# Security Logging
+SECURITY_LOG_ENABLED = True
+SECURITY_LOG_RETENTION_DAYS = int(os.getenv('SECURITY_LOG_RETENTION_DAYS', '90'))
+
+# 2FA Configuration
+ENABLE_2FA = os.getenv('ENABLE_2FA', 'False') == 'True'
+
+# Rate Limiting Configuration
+RATE_LIMIT_ENABLED = True
+RATE_LIMIT_LOGIN_REQUESTS = 5
+RATE_LIMIT_LOGIN_WINDOW = 300  # 5 minutos en segundos
+RATE_LIMIT_API_REQUESTS = 100
+RATE_LIMIT_API_WINDOW = 60  # 1 minuto en segundos
+
+# ============================================
+# LOGGING CONFIGURATION
+# ============================================
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'formatters': {
+        'verbose': {
+            'format': '{levelname} {asctime} {module} {process:d} {thread:d} {message}',
+            'style': '{',
+        },
+        'simple': {
+            'format': '{levelname} {message}',
+            'style': '{',
+        },
+    },
+    'filters': {
+        'require_debug_false': {
+            '()': 'django.utils.log.RequireDebugFalse',
+        },
+    },
+    'handlers': {
+        'console': {
+            'level': 'INFO',
+            'class': 'logging.StreamHandler',
+            'formatter': 'simple'
+        },
+        'file': {
+            'level': 'WARNING',
+            'class': 'logging.handlers.RotatingFileHandler',
+            'filename': os.path.join(BASE_DIR, 'logs', 'django.log'),
+            'maxBytes': 1024 * 1024 * 5,  # 5 MB
+            'backupCount': 5,
+            'formatter': 'verbose',
+        },
+        'security_file': {
+            'level': 'INFO',
+            'class': 'logging.handlers.RotatingFileHandler',
+            'filename': os.path.join(BASE_DIR, 'logs', 'security.log'),
+            'maxBytes': 1024 * 1024 * 10,  # 10 MB
+            'backupCount': 10,
+            'formatter': 'verbose',
+        },
+    },
+    'loggers': {
+        'django': {
+            'handlers': ['console', 'file'],
+            'level': 'INFO',
+            'propagate': False,
+        },
+        'django.security': {
+            'handlers': ['security_file'],
+            'level': 'INFO',
+            'propagate': False,
+        },
+        'escuelaweb': {
+            'handlers': ['console', 'file'],
+            'level': 'INFO',
+            'propagate': False,
+        },
+    },
+}
+
+# Crear directorio de logs si no existe
+LOGS_DIR = os.path.join(BASE_DIR, 'logs')
+if not os.path.exists(LOGS_DIR):
+    os.makedirs(LOGS_DIR)

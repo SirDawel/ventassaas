@@ -25,6 +25,7 @@ from django.contrib.sites.shortcuts import get_current_site
 from django.core.mail import send_mail
 from django.db.models import Q, Count, F, Sum
 from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
 from django.template.loader import render_to_string
 from django.utils.encoding import force_bytes
 from django.utils.http import urlsafe_base64_decode, urlsafe_base64_encode
@@ -41,7 +42,7 @@ from .forms import TarifaEstudianteForm
 from .models import Estudiante, CustomUser, AnhoEscolar, Persona, Curso, Materia, Matricula
 from .models import TarifaEstudiante, ConceptoPago
 from .models import StudentGroup, Asistencia, AsistenciaPersonal
-from .decorators import admin_required
+from .decorators import admin_required, coordinador_required, coordinador_required
 
 # Define User model once
 User = get_user_model()
@@ -566,8 +567,8 @@ def custom_redirect(request):
 
 @login_required
 def user_list(request):
-    # Permitir acceso a Administrador y Secretaria
-    if request.user.rol not in ['Administrador', 'Secretaria']:
+    # Permitir acceso a Administrador, Director y Secretaria
+    if request.user.rol not in ['Administrador', 'Director', 'Secretaria']:
         messages.error(request, 'No tienes permiso para acceder a esta página.')
         return redirect('plataform')
     
@@ -630,8 +631,8 @@ def user_list(request):
 
 @login_required
 def user_create(request):
-    # Administradores y Secretaria pueden crear usuarios
-    if request.user.rol not in ['Administrador', 'Secretaria']:
+    # Administradores, Directores y Secretaria pueden crear usuarios
+    if request.user.rol not in ['Administrador', 'Director', 'Secretaria']:
         messages.error(request, 'No tienes permiso para acceder a esta página.')
         return redirect('plataform')
     
@@ -745,14 +746,14 @@ def user_update(request, user_id=None):
         user = get_object_or_404(CustomUser, id=user_id)
         editing = True
         
-        # Verificar permisos: Administradores y Secretaria pueden editar a cualquiera,
+        # Verificar permisos: Administradores, Directores y Secretaria pueden editar a cualquiera,
         # Usuarios comunes solo pueden cambiar su propia foto
-        if request.user.rol not in ['Administrador', 'Secretaria'] and request.user.id != user_id:
+        if request.user.rol not in ['Administrador', 'Director', 'Secretaria'] and request.user.id != user_id:
             messages.error(request, 'No tienes permiso para acceder a esta página.')
             return redirect('plataform')
     else:
-        # Administradores y Secretaria pueden crear usuarios
-        if request.user.rol not in ['Administrador', 'Secretaria']:
+        # Administradores, Directores y Secretaria pueden crear usuarios
+        if request.user.rol not in ['Administrador', 'Director', 'Secretaria']:
             messages.error(request, 'No tienes permiso para acceder a esta página.')
             return redirect('plataform')
         user = None
@@ -775,9 +776,9 @@ def user_update(request, user_id=None):
             else:
                 return redirect("user_profile", user_id=user.id)
         
-        # ----------- SOLO ADMINISTRADORES Y SECRETARIA PUEDEN EDITAR DATOS COMPLETOS -----------
-        if request.user.rol not in ['Administrador', 'Secretaria']:
-            messages.error(request, 'Solo los administradores y secretarias pueden editar información completa de usuarios.')
+        # ----------- SOLO ADMINISTRADORES, DIRECTORES Y SECRETARIA PUEDEN EDITAR DATOS COMPLETOS -----------
+        if request.user.rol not in ['Administrador', 'Director', 'Secretaria']:
+            messages.error(request, 'Solo los administradores, directores y secretarias pueden editar información completa de usuarios.')
             return redirect('user_profile', user_id=user.id)
 
         # ------------- FORMULARIO PARA CREAR O EDITAR -------------
@@ -951,8 +952,8 @@ def user_updateantes(request, user_id):
 @user_passes_test(is_superuser)
 @login_required
 def user_delete(request, user_id):
-    # Administradores y Secretaria pueden eliminar usuarios
-    if request.user.rol not in ['Administrador', 'Secretaria']:
+    # Administradores, Directores y Secretaria pueden eliminar usuarios
+    if request.user.rol not in ['Administrador', 'Director', 'Secretaria']:
         messages.error(request, 'No tienes permiso para acceder a esta página.')
         return redirect('plataform')
     
@@ -1099,6 +1100,7 @@ def user_list(request):
 """
 
 @login_required
+# user profile de Escuela urls.py
 def user_profile(request, user_id):
     # Solo administradores pueden ver perfiles de otros usuarios
     if request.user.rol != 'Administrador' and request.user.id != user_id:
@@ -1403,6 +1405,7 @@ def register_user(request):
 
 
 @login_required
+# urls de escuelaweb/urls.py
 @login_required
 def update_profile_picture(request):
     if request.method == 'POST':
@@ -1481,9 +1484,9 @@ def editar_anho_escolar(request, pk):
 def eliminar_anho_escolar(request, pk):
     anho = get_object_or_404(AnhoEscolar, pk=pk)
 
-    # Solo admin/superuser
-    if not (request.user.is_superuser or getattr(request.user, 'rol', None) == 'Administrador'):
-        messages.error(request, 'Solo administradores pueden eliminar años escolares.')
+    # Solo admin/director/superuser
+    if not (request.user.is_superuser or getattr(request.user, 'rol', None) in ['Administrador', 'Director']):
+        messages.error(request, 'Solo administradores y directores pueden eliminar años escolares.')
         return redirect('lista_anhos_escolares')
 
     from .models import CodigoAnulacion
@@ -1588,6 +1591,7 @@ def lista_cursosAntigua(request):
 @login_required
 def lista_cursos(request):
     anho_id = request.GET.get('anho')
+    q = request.GET.get('q', '').strip()
     anho = None
     
     # Valores usados para parsear nombre de curso en grado + sección
@@ -1610,8 +1614,9 @@ def lista_cursos(request):
         'Otros'
     ]
     secciones_list = ['A', 'B', 'C', 'D', 'E','F','G','H','I','J']
-    # Administrador
-    if request.user.rol == 'Administrador':
+    
+    # Administrador, Director y Coordinador ven todo
+    if request.user.rol in ['Administrador', 'Director', 'Coordinador']:
         if anho_id:
             anho = get_object_or_404(AnhoEscolar, id=anho_id)
             cursos = Curso.objects.filter(
@@ -1621,6 +1626,16 @@ def lista_cursos(request):
         else:
             cursos = Curso.objects.all().select_related('anho_escolar', 'profesor')
             titulo = "Lista de Cursos"
+
+        # Búsqueda por nombre, descripción o profesor
+        if q:
+            from django.db.models import Q
+            cursos = cursos.filter(
+                Q(nombre__icontains=q) |
+                Q(descripcion__icontains=q) |
+                Q(profesor__first_name__icontains=q) |
+                Q(profesor__last_name__icontains=q)
+            )
 
         # Anotar cada curso con grade/section parsed para la plantilla
         for c in cursos:
@@ -1644,11 +1659,14 @@ def lista_cursos(request):
             c.parsed_grade = parsed_grade
             c.parsed_section = parsed_section
 
+        cursos_con_profesor = sum(1 for c in cursos if c.profesor)
         return render(request, 'est_forder/cursos.html', {
             'cursos': cursos,
             'titulo': titulo,
             'anho': anho,
-            'anho_id': anho_id
+            'anho_id': anho_id,
+            'cursos_con_profesor': cursos_con_profesor,
+            'q': q,
         })
 
 
@@ -1685,11 +1703,21 @@ def lista_cursos(request):
                 c.parsed_grade = parsed_grade
                 c.parsed_section = parsed_section
 
+            # Búsqueda para Profesor
+            if q:
+                from django.db.models import Q
+                cursos = cursos.filter(
+                    Q(nombre__icontains=q) |
+                    Q(descripcion__icontains=q)
+                )
+            cursos_con_profesor = sum(1 for c in cursos if c.profesor)
             return render(request, 'est_forder/cursos.html', {
                 'cursos': cursos,
                 'titulo': titulo,
                 'anho': anho,
-                'anho_id': anho_id
+                'anho_id': anho_id,
+                'cursos_con_profesor': cursos_con_profesor,
+                'q': q,
             })
         else:
             cursos_por_anho = {}
@@ -1738,11 +1766,21 @@ def lista_cursos(request):
                 c.parsed_grade = parsed_grade
                 c.parsed_section = parsed_section
 
+            # Búsqueda para Estudiante
+            if q:
+                from django.db.models import Q
+                cursos = cursos.filter(
+                    Q(nombre__icontains=q) |
+                    Q(descripcion__icontains=q)
+                )
+            cursos_con_profesor = sum(1 for c in cursos if c.profesor)
             return render(request, 'est_forder/cursos.html', {
                 'cursos': cursos,
                 'titulo': titulo,
                 'anho': anho,
-                'anho_id': anho_id
+                'anho_id': anho_id,
+                'cursos_con_profesor': cursos_con_profesor,
+                'q': q,
             })
 
         else:
@@ -1781,10 +1819,14 @@ def agregar_cursoantiguo(request):
 @admin_required
 def inscribir_estudiante_curso(request, pk):
     curso = get_object_or_404(Curso, pk=pk)
-    estudiantes = CustomUser.objects.filter(rol='Estudiante').order_by('first_name', 'last_name')
-
+    
+    # Regular POST handling
     if request.method == 'POST':
         estudiante_id = request.POST.get('estudiante')
+        if not estudiante_id:
+            messages.error(request, 'Debe seleccionar un estudiante.')
+            return redirect(request.path)
+            
         estudiante = get_object_or_404(CustomUser, pk=estudiante_id)
 
         materias = Materia.objects.filter(curso=curso)
@@ -1795,13 +1837,51 @@ def inscribir_estudiante_curso(request, pk):
                 Matricula.objects.create(estudiante=estudiante, materia=materia, anho_escolar=curso.anho_escolar)
                 created += 1
 
-        messages.success(request, f'Se inscribió al estudiante en {created} materias del curso.')
+        if created > 0:
+            messages.success(request, f'Se inscribió a {estudiante.get_full_name()} en {created} materias del curso.')
+        else:
+            messages.warning(request, f'{estudiante.get_full_name()} ya estaba inscrito en todas las materias del curso.')
         return redirect(f"{reverse('lista_cursos')}?anho={curso.anho_escolar.id}")
+
+    # GET: Buscar estudiantes
+    query = request.GET.get('q', '').strip()
+    estudiantes = []
+    total_resultados = 0
+    resultados_limitados = False
+    LIMITE_RESULTADOS = 50
+    
+    # Solo buscar si hay al menos 2 caracteres
+    if query and len(query) >= 2:
+        estudiantes_query = CustomUser.objects.filter(
+            rol='Estudiante', 
+            is_active=True
+        ).filter(
+            Q(first_name__icontains=query) |
+            Q(last_name__icontains=query) |
+            Q(email__icontains=query) |
+            Q(cedula__icontains=query) |
+            Q(codigo_barras__icontains=query)
+        ).order_by('first_name', 'last_name')
+        
+        # Contar total de resultados
+        total_resultados = estudiantes_query.count()
+        
+        # Limitar a 50 resultados
+        estudiantes = list(estudiantes_query[:LIMITE_RESULTADOS])
+        
+        # Verificar si hay más resultados
+        if total_resultados > LIMITE_RESULTADOS:
+            resultados_limitados = True
 
     return render(request, 'est_forder/inscribir_estudiante_curso.html', {
         'curso': curso,
         'estudiantes': estudiantes,
-        'titulo': f'Inscribir estudiante en {curso.nombre}'
+        'titulo': f'Inscribir estudiante en {curso.nombre}',
+        'query': query,
+        'total_estudiantes': CustomUser.objects.filter(rol='Estudiante', is_active=True).count(),
+        'total_resultados': total_resultados,
+        'resultados_limitados': resultados_limitados,
+        'limite_resultados': LIMITE_RESULTADOS
     })
     
 
@@ -2088,9 +2168,9 @@ def eliminar_curso(request, pk):
     if not anho_id and curso.anho_escolar:
         anho_id = curso.anho_escolar.id
 
-    # Solo admin/superuser
-    if not (request.user.is_superuser or getattr(request.user, 'rol', None) == 'Administrador'):
-        messages.error(request, 'Solo administradores pueden eliminar cursos.')
+    # Solo admin/director/superuser
+    if not (request.user.is_superuser or getattr(request.user, 'rol', None) in ['Administrador', 'Director']):
+        messages.error(request, 'Solo administradores y directores pueden eliminar cursos.')
         return redirect('lista_cursos')
 
     from .models import CodigoAnulacion
@@ -2144,12 +2224,38 @@ def eliminar_curso(request, pk):
 
 @admin_required
 def lista_grupos(request):
-    grupos = StudentGroup.objects.select_related('creado_por').all().order_by('-created_at')
+    # Obtener parámetros de búsqueda
+    query_nombre = request.GET.get('nombre', '').strip()
+    query_grado = request.GET.get('grado', '').strip()
+    query_seccion = request.GET.get('seccion', '').strip()
+    
+    # Filtrar grupos
+    grupos = StudentGroup.objects.select_related('creado_por').all()
+    
+    if query_nombre:
+        grupos = grupos.filter(nombre__icontains=query_nombre)
+    if query_grado:
+        grupos = grupos.filter(grado__icontains=query_grado)
+    if query_seccion:
+        grupos = grupos.filter(seccion__icontains=query_seccion)
+    
+    grupos = grupos.order_by('-created_at')
+    
+    # Obtener valores únicos para filtros
+    grados = StudentGroup.objects.values_list('grado', flat=True).distinct().order_by('grado')
+    secciones = StudentGroup.objects.values_list('seccion', flat=True).distinct().order_by('seccion')
+    
     anho_id = request.GET.get('anho')  # Capturar anho_id si viene en la URL
+    
     return render(request, 'est_forder/grupos_list.html', {
         'grupos': grupos,
         'titulo': 'Grupos de Estudiantes',
-        'anho_id': anho_id
+        'anho_id': anho_id,
+        'query_nombre': query_nombre,
+        'query_grado': query_grado,
+        'query_seccion': query_seccion,
+        'grados': [g for g in grados if g],
+        'secciones': [s for s in secciones if s],
     })
 
 
@@ -2275,10 +2381,37 @@ def crear_grupo_por_usuarios(request):
 def ver_grupo(request, pk):
     grupo = get_object_or_404(StudentGroup, pk=pk)
     anho_id = request.GET.get('anho')  # Capturar anho_id si viene en la URL
+    
+    # Obtener parámetros de búsqueda
+    query_nombre = request.GET.get('nombre', '').strip()
+    query_apellido = request.GET.get('apellido', '').strip()
+    query_email = request.GET.get('email', '').strip()
+    query_cedula = request.GET.get('cedula', '').strip()
+    
+    # Filtrar estudiantes del grupo
+    estudiantes = grupo.estudiantes.all()
+    
+    if query_nombre:
+        estudiantes = estudiantes.filter(first_name__icontains=query_nombre)
+    if query_apellido:
+        estudiantes = estudiantes.filter(last_name__icontains=query_apellido)
+    if query_email:
+        estudiantes = estudiantes.filter(email__icontains=query_email)
+    if query_cedula:
+        estudiantes = estudiantes.filter(cedula__icontains=query_cedula)
+    
+    # Ordenar alfabéticamente por nombre
+    estudiantes_ordenados = estudiantes.order_by('first_name', 'last_name')
+    
     return render(request, 'est_forder/grupos_detail.html', {
         'grupo': grupo,
+        'estudiantes': estudiantes_ordenados,
         'titulo': grupo.nombre,
-        'anho_id': anho_id
+        'anho_id': anho_id,
+        'query_nombre': query_nombre,
+        'query_apellido': query_apellido,
+        'query_email': query_email,
+        'query_cedula': query_cedula,
     })
 
 
@@ -2508,11 +2641,13 @@ def lista_materiasFUNCIONALANTIGUA(request):
 @login_required
 def lista_materias(request):
     curso_id = request.GET.get('curso')
+    q = request.GET.get('q', '').strip()
     curso = get_object_or_404(Curso, id=curso_id)
     materias = Materia.objects.filter(curso_id=curso_id)
-    anho = None  # <-- inicializamos anho
+    anho = None
 
-    if request.user.rol == 'Administrador':
+    # Administrador, Director y Coordinador ven todo
+    if request.user.rol in ['Administrador', 'Director', 'Coordinador']:
         if curso_id:
             curso = get_object_or_404(Curso, id=curso_id)
             materias = Materia.objects.filter(curso=curso).select_related('curso', 'profesor')
@@ -2537,7 +2672,7 @@ def lista_materias(request):
             curso = get_object_or_404(Curso, id=curso_id)
             materias = Materia.objects.filter(curso=curso, matriculas__estudiante=request.user).distinct().select_related('profesor')
             titulo = f"Materias de {curso.nombre} - {curso.anho_escolar.nombre}"
-            anho = curso.anho_escolar  # <-- importante
+            anho = curso.anho_escolar
         else:
             cursos = Curso.objects.filter(materias__matriculas__estudiante=request.user).distinct().select_related('anho_escolar')
             materias_por_curso = {}
@@ -2547,8 +2682,17 @@ def lista_materias(request):
                 'materias_por_curso': materias_por_curso,
                 'titulo': "Mis Materias",
                 'curso_id': curso_id,
-                'anho': None  # <-- anho puede ser None si no hay curso_id
+                'anho': None
             })
+
+    # Filtro de búsqueda
+    if q:
+        materias = materias.filter(
+            Q(nombre__icontains=q) |
+            Q(codigo__icontains=q) |
+            Q(profesor__first_name__icontains=q) |
+            Q(profesor__last_name__icontains=q)
+        )
 
     # Agregar info de matrícula para estudiantes
     if request.user.rol == 'Estudiante':
@@ -2561,7 +2705,8 @@ def lista_materias(request):
         'curso': curso,
         'materias': materias,
         'titulo': f"Materias del curso {curso.nombre}",
-        'anho': anho
+        'anho': anho,
+        'q': q
     })
 
 from django.shortcuts import render, get_object_or_404
@@ -2953,11 +3098,8 @@ def agregar_materia1(request, curso_id):
         'curso_id': curso_id
     })
 
-@login_required
+@admin_required
 def agregar_materia(request, curso_id):
-    if request.user.rol != 'Administrador':
-        messages.error(request, "No tienes permisos para agregar materias.")
-        return redirect('lista_materias')
 
     curso = get_object_or_404(Curso, id=curso_id)
 
@@ -3015,12 +3157,11 @@ def editar_materia(request, pk):
     })
 
 
-@login_required
+@admin_required
 def eliminar_materia(request, pk):
     """
     Solo redirige a la vista de confirmación (no borra).
     """
-    # opcional: comprobar permiso aquí (ej: admin_required)
     return redirect('confirmar_eliminar_materia', pk=pk)
 
 
@@ -3033,9 +3174,9 @@ def confirmar_eliminar_materia(request, pk):
     materia = get_object_or_404(Materia, pk=pk)
     curso_id = materia.curso.id if materia.curso else None
 
-    # Solo admin/superuser
-    if not (request.user.is_superuser or getattr(request.user, 'rol', None) == 'Administrador'):
-        messages.error(request, 'Solo administradores pueden eliminar materias.')
+    # Solo admin/director/superuser
+    if not (request.user.is_superuser or getattr(request.user, 'rol', None) in ['Administrador', 'Director']):
+        messages.error(request, 'Solo administradores y directores pueden eliminar materias.')
         return redirect('lista_materias')
 
     from .models import CodigoAnulacion
@@ -3368,8 +3509,36 @@ def gestionar_matriculaAnt2s(request, materia_id):
     total_reprobados = 0
     total_en_progreso = 0
 
-    resultados = []
+    resultados = {}
     for m in matriculas:
+        # Obtenemos todas las notas de los 4 periodos y 4 competencias
+        notas = [
+            m.com_p1, m.com_p2, m.com_p3, m.com_p4,
+            m.log_p1, m.log_p2, m.log_p3, m.log_p4,
+            m.cie_p1, m.cie_p2, m.cie_p3, m.cie_p4,
+            m.eti_p1, m.eti_p2, m.eti_p3, m.eti_p4
+        ]
+
+        notas_validas = [n for n in notas if n is not None]
+        promedio_parcial = sum(notas_validas) / len(notas_validas) if notas_validas else None
+
+        if len(notas_validas) < len(notas):
+            estado = "En proceso"
+            nota_final = None
+        else:
+            nota_final = promedio_parcial
+            if nota_final >= 70:
+                estado = "Aprobado"
+            else:
+                estado = "Reprobado"
+
+        resultados[m.id] = {
+            "nota_final": nota_final,
+            "promedio_parcial": promedio_parcial,
+            "estado": estado
+        }
+
+    # ...existing code...
         # Ajusta según los campos de notas que tengas en tu modelo
         notas = [m.nota1, m.nota2, m.nota3, m.nota4] if hasattr(m, "nota1") else []
 
@@ -3440,29 +3609,86 @@ def gestionar_matriculas(request, materia_id):
 
     resultados = {}
     for m in matriculas:
-        # Obtenemos todas las notas de los 4 periodos y 4 competencias
-        notas = [
-            m.com_p1, m.com_p2, m.com_p3, m.com_p4,
-            m.log_p1, m.log_p2, m.log_p3, m.log_p4,
-            m.cie_p1, m.cie_p2, m.cie_p3, m.cie_p4,
-            m.eti_p1, m.eti_p2, m.eti_p3, m.eti_p4
-        ]
-
-        if any(n is None for n in notas):
-            estado = "En proceso"
-            nota_final = None
-            total_en_progreso += 1
-        else:
-            nota_final = sum(notas) / len(notas)
-            if nota_final >= 70:
-                estado = "Aprobado"
-                total_aprobados += 1
+        # Detectar si es materia modular o por períodos
+        if hasattr(materia, 'categoria') and materia.categoria == 'modular':
+            # Para materias modulares, usar RA 1-10
+            notas = [
+                m.ra_1, m.ra_2, m.ra_3, m.ra_4, m.ra_5,
+                m.ra_6, m.ra_7, m.ra_8, m.ra_9, m.ra_10
+            ]
+            
+            # Obtener pesos de los RA desde la configuración
+            if materia.ra_configuracion and 'valores' in materia.ra_configuracion:
+                pesos = materia.ra_configuracion['valores']
             else:
-                estado = "Reprobado"
-                total_reprobados += 1
+                # Si no hay configuración, usar pesos iguales (10% cada uno para 10 RAs)
+                pesos = [10.0] * 10
+            
+            # Calcular promedio ponderado
+            suma_ponderada = 0
+            suma_pesos_usados = 0
+            todas_completas = True
+            
+            for i, nota in enumerate(notas):
+                if nota is not None:
+                    peso = pesos[i] if i < len(pesos) else 10.0
+                    suma_ponderada += nota * (peso / 100.0)
+                    suma_pesos_usados += peso
+                else:
+                    todas_completas = False
+            
+            # Calcular promedios
+            if suma_pesos_usados > 0:
+                # Promedio parcial: normalizar según pesos usados y multiplicar por 10 para escala 0-100
+                promedio_parcial = (suma_ponderada * (100.0 / suma_pesos_usados)) * 10.0
+            else:
+                promedio_parcial = None
+            
+            # Si todas están completas, es nota final
+            if todas_completas and suma_ponderada > 0:
+                nota_final = suma_ponderada * 10.0  # Multiplicar por 10 para escala 0-100
+                if nota_final >= 70:  # Nota mínima de aprobación en escala 0-100
+                    estado = "Aprobado"
+                    total_aprobados += 1
+                else:
+                    estado = "Reprobado"
+                    total_reprobados += 1
+            else:
+                nota_final = None
+                estado = "En proceso"
+                total_en_progreso += 1
+                
+        else:
+            # Para materias por períodos, usar competencias
+            notas = [
+                m.com_p1, m.com_p2, m.com_p3, m.com_p4,
+                m.log_p1, m.log_p2, m.log_p3, m.log_p4,
+                m.cie_p1, m.cie_p2, m.cie_p3, m.cie_p4,
+                m.eti_p1, m.eti_p2, m.eti_p3, m.eti_p4
+            ]
+
+            # Calcular notas válidas (no None)
+            notas_validas = [n for n in notas if n is not None]
+            promedio_parcial = sum(notas_validas) / len(notas_validas) if notas_validas else None
+
+            # Si faltan notas, estado "En proceso" y nota_final es None
+            if len(notas_validas) < len(notas):
+                estado = "En proceso"
+                nota_final = None
+                total_en_progreso += 1
+            else:
+                # Todas las notas están completas
+                nota_final = promedio_parcial
+                if nota_final >= 70:
+                    estado = "Aprobado"
+                    total_aprobados += 1
+                else:
+                    estado = "Reprobado"
+                    total_reprobados += 1
 
         resultados[m.id] = {
             "nota_final": nota_final,
+            "promedio_parcial": promedio_parcial,
             "estado": estado
         }
 
@@ -3793,7 +4019,7 @@ def agregar_notas(request, materia_id):
     materia = get_object_or_404(Materia, id=materia_id)
 
     # Validar permisos
-    if not (request.user.rol == 'Administrador' or
+    if not (request.user.rol in ['Administrador', 'Director'] or
             (request.user.rol == 'Profesor' and materia.profesor == request.user)):
         messages.error(request, 'No tienes permiso para acceder a esta página.')
         return redirect('lista_cursos')
@@ -4323,6 +4549,8 @@ def reporte_notas_estudiante2(request, estudiante_id):
 
 @login_required
 def reporte_notas_estudiante(request, estudiante_id):
+    from .utils_notas import redondear_nota
+    
     estudiante = get_object_or_404(CustomUser, id=estudiante_id, rol='Estudiante')
     
     matriculas = Matricula.objects.filter(
@@ -4335,19 +4563,17 @@ def reporte_notas_estudiante(request, estudiante_id):
     ).order_by('materia__curso__anho_escolar', 'materia__curso', 'materia__nombre')
 
     # ===============================
-    #   🔥 CALCULAR TODAS LAS NOTAS
-    # ===============================
-    # ===============================
-    #   🔥 CALCULAR TODAS LAS NOTAS
+    #   🔥 CALCULAR TODAS LAS NOTAS CON REDONDEO CORRECTO
     # ===============================
     for m in matriculas:
         try:
-            # Convertir notas base
-            prom_com = float(m.prom_comunicativa) if m.prom_comunicativa is not None else None
-            prom_log = float(m.prom_logico) if m.prom_logico is not None else None
-            prom_cie = float(m.prom_cientifica) if m.prom_cientifica is not None else None
-            prom_eti = float(m.prom_etica) if m.prom_etica is not None else None
+            # Obtener promedios por competencia (ya están redondeados por el modelo)
+            prom_com = m.prom_comunicativa
+            prom_log = m.prom_logico
+            prom_cie = m.prom_cientifica
+            prom_eti = m.prom_etica
 
+            # Obtener exámenes
             ex_com = float(m.ex_com) if m.ex_com is not None else None
             ex_ext = float(m.ex_ext) if m.ex_ext is not None else None
             ex_esp = float(m.ex_esp) if m.ex_esp is not None else None
@@ -4360,30 +4586,30 @@ def reporte_notas_estudiante(request, estudiante_id):
             m.nota_final_oficial = None
 
             # Solo calcular si tiene los 4 promedios base
-            if None not in (prom_com, prom_log, prom_cie, prom_eti):
+            if m.promedio_final is not None:
 
-                # 1️⃣ Final directo
-                m.nota_final = round((prom_com + prom_log + prom_cie + prom_eti) / 4, 2)
+                # 1️⃣ Final directo (ya viene redondeado del modelo)
+                m.nota_final = m.promedio_final
 
-                # 2️⃣ Completivo
-                if m.nota_final < 70 and ex_com is not None:
-                    m.nota_final_completivo = round((m.nota_final * 0.5) + (ex_com * 0.5), 2)
+                # 2️⃣ Completivo (usa la función del modelo con redondeo correcto)
+                if m.nota_final < 70 and m.calificacion_completiva_final is not None:
+                    m.nota_final_completivo = m.calificacion_completiva_final
 
-                # 3️⃣ Extraordinario
-                if m.nota_final_completivo is not None and m.nota_final_completivo < 70 and ex_ext is not None:
-                    m.nota_final_extraordinario = round((m.nota_final * 0.3) + (ex_ext * 0.7), 2)
+                # 3️⃣ Extraordinario (usa la función del modelo con redondeo correcto)
+                if m.nota_final_completivo is not None and m.nota_final_completivo < 70 and m.calificacion_extraordinario_final is not None:
+                    m.nota_final_extraordinario = m.calificacion_extraordinario_final
 
                 # 4️⃣ Especial
                 if m.nota_final_extraordinario is not None and m.nota_final_extraordinario < 70 and ex_esp is not None:
-                    m.nota_final_especial = round(ex_esp, 2)
+                    m.nota_final_especial = redondear_nota(ex_esp, decimales=2)
 
                 # ================================
-                #    📌 Nota Final Oficial
+                #    📌 Nota Final Oficial (redondeada a entero)
                 # ================================
 
                 # Aprobado directo
                 if m.nota_final >= 70:
-                    m.nota_final_oficial = int(m.nota_final + 0.5)
+                    m.nota_final_oficial = redondear_nota(m.nota_final, decimales=0)
 
                 # Requiere completivo
                 elif m.nota_final < 70:
@@ -4394,7 +4620,7 @@ def reporte_notas_estudiante(request, estudiante_id):
 
                     # Tiene completivo y aprobó
                     elif m.nota_final_completivo >= 70:
-                        m.nota_final_oficial = int(m.nota_final_completivo + 0.5)
+                        m.nota_final_oficial = redondear_nota(m.nota_final_completivo, decimales=0)
 
                     else:
                         # Falta extraordinario → en proceso
@@ -4403,7 +4629,7 @@ def reporte_notas_estudiante(request, estudiante_id):
 
                         # Tiene extraordinario y aprobó
                         elif m.nota_final_extraordinario >= 70:
-                            m.nota_final_oficial = int(m.nota_final_extraordinario + 0.5)
+                            m.nota_final_oficial = redondear_nota(m.nota_final_extraordinario, decimales=0)
 
                         else:
                             # Falta especial → en proceso
@@ -4412,7 +4638,7 @@ def reporte_notas_estudiante(request, estudiante_id):
 
                             else:
                                 # Usa nota especial
-                                m.nota_final_oficial = int(m.nota_final_especial + 0.5)
+                                m.nota_final_oficial = redondear_nota(m.nota_final_especial, decimales=0)
 
                
                 
@@ -4440,9 +4666,9 @@ def reporte_notas_estudiante(request, estudiante_id):
     materias_reprobadas = sum(1 for m in matriculas if m.nota_final_oficial and m.nota_final_oficial < 70)
     materias_en_progreso = sum(1 for m in matriculas if m.nota_final_oficial is None)
 
-    # PROMEDIO GENERAL usando nota_final_oficial
+    # PROMEDIO GENERAL usando nota_final_oficial con redondeo correcto
     notas_finales = [m.nota_final_oficial for m in matriculas if m.nota_final_oficial is not None]
-    promedio_general = sum(notas_finales) / len(notas_finales) if notas_finales else None
+    promedio_general = redondear_nota(sum(notas_finales) / len(notas_finales), decimales=2) if notas_finales else None
 
     # ===============================
     #   🔥 CONTEXTO FINAL
@@ -4467,6 +4693,7 @@ def record_calificaciones_pdf(request, estudiante_id):
     from django.conf import settings
     import os
     from datetime import date
+    from .utils_notas import redondear_nota
     
     estudiante = get_object_or_404(CustomUser, id=estudiante_id, rol='Estudiante')
     
@@ -4480,35 +4707,43 @@ def record_calificaciones_pdf(request, estudiante_id):
         'materia__profesor'
     ).order_by('materia__curso__anho_escolar', 'materia__curso', 'materia__nombre')
 
-    # Calcular notas finales
+    # Calcular notas finales con redondeo correcto
     for m in matriculas:
         try:
-            prom_com = float(m.prom_comunicativa) if m.prom_comunicativa is not None else None
-            prom_log = float(m.prom_logico) if m.prom_logico is not None else None
-            prom_cie = float(m.prom_cientifica) if m.prom_cientifica is not None else None
-            prom_eti = float(m.prom_etica) if m.prom_etica is not None else None
+            # Obtener promedios por competencia (ya están redondeados por el modelo)
+            prom_com = m.prom_comunicativa
+            prom_log = m.prom_logico
+            prom_cie = m.prom_cientifica
+            prom_eti = m.prom_etica
+            
+            # Obtener exámenes
             ex_com = float(m.ex_com) if m.ex_com is not None else None
             ex_ext = float(m.ex_ext) if m.ex_ext is not None else None
             ex_esp = float(m.ex_esp) if m.ex_esp is not None else None
 
             m.nota_final_oficial = None
 
-            if None not in (prom_com, prom_log, prom_cie, prom_eti):
-                m.nota_final = round((prom_com + prom_log + prom_cie + prom_eti) / 4, 2)
+            # Calcular promedio final (ya usa redondeo correcto del modelo)
+            if m.promedio_final is not None:
+                m.nota_final = m.promedio_final
                 
+                # Si aprobó con el promedio regular
                 if m.nota_final >= 70:
-                    m.nota_final_oficial = int(m.nota_final + 0.5)
-                elif ex_com is not None:
-                    m.nota_final_completivo = round((m.nota_final * 0.5) + (ex_com * 0.5), 2)
+                    m.nota_final_oficial = redondear_nota(m.nota_final, decimales=0)
+                # Si tiene completivo
+                elif m.calificacion_completiva_final is not None:
+                    m.nota_final_completivo = m.calificacion_completiva_final
                     if m.nota_final_completivo >= 70:
-                        m.nota_final_oficial = int(m.nota_final_completivo + 0.5)
-                    elif ex_ext is not None:
-                        m.nota_final_extraordinario = round((m.nota_final * 0.3) + (ex_ext * 0.7), 2)
+                        m.nota_final_oficial = redondear_nota(m.nota_final_completivo, decimales=0)
+                    # Si tiene extraordinario
+                    elif m.calificacion_extraordinario_final is not None:
+                        m.nota_final_extraordinario = m.calificacion_extraordinario_final
                         if m.nota_final_extraordinario >= 70:
-                            m.nota_final_oficial = int(m.nota_final_extraordinario + 0.5)
+                            m.nota_final_oficial = redondear_nota(m.nota_final_extraordinario, decimales=0)
+                        # Si tiene especial
                         elif ex_esp is not None:
-                            m.nota_final_especial = round(ex_esp, 2)
-                            m.nota_final_oficial = int(m.nota_final_especial + 0.5)
+                            m.nota_final_especial = redondear_nota(ex_esp, decimales=2)
+                            m.nota_final_oficial = redondear_nota(m.nota_final_especial, decimales=0)
         except Exception as e:
             print(f"Error en matrícula {m.id}: {e}")
 
@@ -4596,6 +4831,7 @@ def record_calificaciones_completo_pdf(request, estudiante_id):
     from django.conf import settings
     import os
     from datetime import date
+    from .utils_notas import redondear_nota
     
     estudiante = get_object_or_404(CustomUser, id=estudiante_id, rol='Estudiante')
     
@@ -4617,35 +4853,43 @@ def record_calificaciones_completo_pdf(request, estudiante_id):
         for m in matriculas[:5]:  # Solo las primeras 5 para no saturar
             print(f"  - {m.materia.nombre} | Curso: {m.materia.curso.nombre} | Año: {m.materia.curso.anho_escolar.nombre}")
 
-    # Calcular notas finales
+    # Calcular notas finales con redondeo correcto
     for m in matriculas:
         try:
-            prom_com = float(m.prom_comunicativa) if m.prom_comunicativa is not None else None
-            prom_log = float(m.prom_logico) if m.prom_logico is not None else None
-            prom_cie = float(m.prom_cientifica) if m.prom_cientifica is not None else None
-            prom_eti = float(m.prom_etica) if m.prom_etica is not None else None
+            # Obtener promedios por competencia (ya están redondeados por el modelo)
+            prom_com = m.prom_comunicativa
+            prom_log = m.prom_logico
+            prom_cie = m.prom_cientifica
+            prom_eti = m.prom_etica
+            
+            # Obtener exámenes
             ex_com = float(m.ex_com) if m.ex_com is not None else None
             ex_ext = float(m.ex_ext) if m.ex_ext is not None else None
             ex_esp = float(m.ex_esp) if m.ex_esp is not None else None
 
             m.nota_final_oficial = None
 
-            if None not in (prom_com, prom_log, prom_cie, prom_eti):
-                m.nota_final = round((prom_com + prom_log + prom_cie + prom_eti) / 4, 2)
+            # Calcular promedio final (ya usa redondeo correcto del modelo)
+            if m.promedio_final is not None:
+                m.nota_final = m.promedio_final
                 
+                # Si aprobó con el promedio regular
                 if m.nota_final >= 70:
-                    m.nota_final_oficial = int(m.nota_final + 0.5)
-                elif ex_com is not None:
-                    m.nota_final_completivo = round((m.nota_final * 0.5) + (ex_com * 0.5), 2)
+                    m.nota_final_oficial = redondear_nota(m.nota_final, decimales=0)
+                # Si tiene completivo
+                elif m.calificacion_completiva_final is not None:
+                    m.nota_final_completivo = m.calificacion_completiva_final
                     if m.nota_final_completivo >= 70:
-                        m.nota_final_oficial = int(m.nota_final_completivo + 0.5)
-                    elif ex_ext is not None:
-                        m.nota_final_extraordinario = round((m.nota_final * 0.3) + (ex_ext * 0.7), 2)
+                        m.nota_final_oficial = redondear_nota(m.nota_final_completivo, decimales=0)
+                    # Si tiene extraordinario
+                    elif m.calificacion_extraordinario_final is not None:
+                        m.nota_final_extraordinario = m.calificacion_extraordinario_final
                         if m.nota_final_extraordinario >= 70:
-                            m.nota_final_oficial = int(m.nota_final_extraordinario + 0.5)
+                            m.nota_final_oficial = redondear_nota(m.nota_final_extraordinario, decimales=0)
+                        # Si tiene especial
                         elif ex_esp is not None:
-                            m.nota_final_especial = round(ex_esp, 2)
-                            m.nota_final_oficial = int(m.nota_final_especial + 0.5)
+                            m.nota_final_especial = redondear_nota(ex_esp, decimales=2)
+                            m.nota_final_oficial = redondear_nota(m.nota_final_especial, decimales=0)
         except Exception as e:
             print(f"Error en matrícula {m.id}: {e}")
 
@@ -4766,7 +5010,7 @@ def record_calificaciones_completo_pdf(request, estudiante_id):
 @login_required
 def seleccionar_materia_asistencia(request):
     """Vista para que el profesor seleccione la materia a la que va a pasar lista"""
-    if request.user.rol not in ['Profesor', 'Administrador']:
+    if request.user.rol not in ['Profesor', 'Administrador', 'Director']:
         messages.error(request, 'No tienes permiso para acceder a esta página.')
         return redirect('plataform')
     
@@ -5057,7 +5301,7 @@ def ponchar_asistencia_view(request):
 @login_required
 def generar_codigos_barras(request):
     """Genera códigos de barras únicos para usuarios que no los tienen"""
-    if request.user.rol not in ['Administrador', 'Secretaria']:
+    if request.user.rol not in ['Administrador', 'Director', 'Secretaria']:
         messages.error(request, 'No tienes permiso para acceder a esta función.')
         return redirect('plataform')
     
@@ -5293,7 +5537,7 @@ def ponchar_asistencia_api(request):
 @login_required
 def pasar_lista_personal(request):
     """Vista para registrar asistencia diaria del personal (Profesores/Staff)"""
-    if request.user.rol not in ['Secretaria', 'Administrador']:
+    if request.user.rol not in ['Secretaria', 'Administrador', 'Director']:
         messages.error(request, 'No tienes permiso para acceder a esta página.')
         return redirect('plataform')
     
@@ -5823,6 +6067,23 @@ def cobros_dashboard(request):
     # Monto total de facturas (incluyendo todo)
     monto_total_facturas = facturas_anho.aggregate(total=Sum('total'))['total'] or 0
     
+    # Facturas con mora
+    facturas_vencidas = facturas_anho.filter(
+        Q(estado='pendiente') | Q(estado='parcial')
+    ).count()
+    
+    # Facturas parciales
+    facturas_parcial = facturas_anho.filter(estado='parcial').count()
+    
+    # Facturas anuladas
+    facturas_anuladas = Factura.objects.filter(anho_escolar=anho_escolar, estado='anulada').count()
+    
+    # Promedio de factura
+    promedio_factura = monto_total_facturas / total_facturas if total_facturas > 0 else 0
+    
+    # Porcentaje de cobro
+    porcentaje_cobrado = (total_recaudado / monto_total_facturas * 100) if monto_total_facturas > 0 else 0
+    
     # Últimas facturas
     ultimas_facturas = facturas_anho.select_related(
         'cliente', 'anho_escolar'
@@ -5841,9 +6102,14 @@ def cobros_dashboard(request):
         'total_facturas': total_facturas,
         'facturas_pagadas': facturas_pagadas,
         'facturas_pendientes': facturas_pendientes,
+        'facturas_vencidas': facturas_vencidas,
+        'facturas_parcial': facturas_parcial,
+        'facturas_anuladas': facturas_anuladas,
         'total_recaudado': total_recaudado,
         'total_por_cobrar': total_por_cobrar,
         'monto_total_facturas': monto_total_facturas,
+        'promedio_factura': promedio_factura,
+        'porcentaje_cobrado': porcentaje_cobrado,
         'ultimas_facturas': ultimas_facturas,
         # Para compatibilidad con template existente
         'total_pagos': total_facturas,  # Usar facturas como "pagos"
@@ -6396,6 +6662,10 @@ def factura_crear_nueva(request):
             print(f"DEBUG - IDs Conceptos: {conceptos_ids}")
             print(f"DEBUG - IDs Artículos: {articulos_ids}")
             
+            # Variable para acumular mora de mensualidades vencidas
+            mora_acumulada = Decimal('0')
+            mensualidades_vencidas_info = []
+            
             # VALIDAR QUE HAYA AL MENOS UN DETALLE
             max_items = max(len(conceptos_ids), len(articulos_ids))
             if max_items == 0:
@@ -6495,6 +6765,40 @@ def factura_crear_nueva(request):
                                     'creado_por': request.user
                                 }
                             )
+                            
+                            # Calcular mora para esta mensualidad si está vencida
+                            if concepto.tipo == 'mensualidad' and estudiante_post.grupo_familiar:
+                                from datetime import date
+                                from calendar import monthrange
+                                
+                                # Obtener día de vencimiento del grupo familiar
+                                dia_vencimiento = estudiante_post.grupo_familiar.dia_vencimiento
+                                
+                                # Crear fecha de vencimiento de esta mensualidad
+                                try:
+                                    # Obtener el último día del mes si el día de vencimiento no existe
+                                    ultimo_dia_mes = monthrange(anio_valor, mes_valor)[1]
+                                    dia_venc_ajustado = min(dia_vencimiento, ultimo_dia_mes)
+                                    fecha_venc_mensualidad = date(anio_valor, mes_valor, dia_venc_ajustado)
+                                    
+                                    hoy = date.today()
+                                    
+                                    # Si la mensualidad está vencida, calcular mora
+                                    if hoy > fecha_venc_mensualidad:
+                                        porcentaje_mora = estudiante_post.get_porcentaje_mora()
+                                        if porcentaje_mora > 0:
+                                            monto_mora_mensualidad = (precio_valor * porcentaje_mora) / Decimal('100')
+                                            mora_acumulada += monto_mora_mensualidad
+                                            mensualidades_vencidas_info.append({
+                                                'mes': mes_valor,
+                                                'anio': anio_valor,
+                                                'monto_base': precio_valor,
+                                                'mora': monto_mora_mensualidad,
+                                                'fecha_vencimiento': fecha_venc_mensualidad
+                                            })
+                                            print(f"DEBUG MORA MENSUALIDAD - {mes_valor}/{anio_valor} vencida el {fecha_venc_mensualidad}: Mora RD${monto_mora_mensualidad} ({porcentaje_mora}% de RD${precio_valor})")
+                                except Exception as e:
+                                    print(f"DEBUG MORA - Error al calcular fecha vencimiento para {mes_valor}/{anio_valor}: {e}")
                     except Exception as e:
                         print(f"DEBUG: error al get_or_create Mensualidad: {e}")
 
@@ -6540,6 +6844,65 @@ def factura_crear_nueva(request):
                 tipo_detalle = 'Artículo' if articulo else 'Concepto'
                 nombre_detalle = articulo.nombre if articulo else concepto.nombre
                 print(f"DEBUG - Detalle #{i+1} creado: {tipo_detalle} - {nombre_detalle} - Mes: {mes_valor}/{anio_valor}")
+            
+            # Agregar concepto de mora acumulada si hay mensualidades vencidas
+            if mora_acumulada > 0:
+                print(f"DEBUG MORA ACUMULADA - Total: RD${mora_acumulada} de {len(mensualidades_vencidas_info)} mensualidades vencidas")
+                
+                # Crear o buscar concepto de mora
+                concepto_mora, created = ConceptoPago.objects.get_or_create(
+                    tipo='otro',
+                    nombre='Mora por Pago Atrasado',
+                    defaults={
+                        'monto': 0,
+                        'descripcion': 'Recargo por pago fuera de fecha',
+                        'activo': True
+                    }
+                )
+                
+                # Crear descripción detallada
+                porcentaje_mora = estudiante_post.get_porcentaje_mora()
+                descripcion_mora = f'Mora por Mensualidades Vencidas ({porcentaje_mora}%)'
+                if len(mensualidades_vencidas_info) > 0:
+                    meses_texto = ', '.join([f"{info['mes']}/{info['anio']}" for info in mensualidades_vencidas_info[:3]])
+                    if len(mensualidades_vencidas_info) > 3:
+                        meses_texto += f" y {len(mensualidades_vencidas_info) - 3} más"
+                    descripcion_mora += f' - Meses: {meses_texto}'
+                
+                # Agregar detalle de mora
+                detalle_mora = DetalleFactura.objects.create(
+                    factura=factura,
+                    concepto=concepto_mora,
+                    descripcion=descripcion_mora,
+                    cantidad=1,
+                    precio_unitario=mora_acumulada,
+                    descuento=0
+                )
+                print(f"DEBUG MORA - ✓ Mora agregada a factura: RD${mora_acumulada} (Detalle ID: {detalle_mora.id})")
+                detalles_creados += 1
+            elif estudiante_post.grupo_familiar:
+                # Si no hay mora pero el estudiante está en un grupo familiar, agregar mora en 0 para que se vea
+                concepto_mora, created = ConceptoPago.objects.get_or_create(
+                    tipo='otro',
+                    nombre='Mora por Pago Atrasado',
+                    defaults={
+                        'monto': 0,
+                        'descripcion': 'Recargo por pago fuera de fecha',
+                        'activo': True
+                    }
+                )
+                
+                # Agregar detalle de mora en 0
+                detalle_mora = DetalleFactura.objects.create(
+                    factura=factura,
+                    concepto=concepto_mora,
+                    descripcion='Mora - Sin cargo (pagos al día)',
+                    cantidad=1,
+                    precio_unitario=Decimal('0'),
+                    descuento=0
+                )
+                print(f"DEBUG MORA - Mora en $0 agregada (estudiante al día)")
+                detalles_creados += 1
             
             # Aplicar mora si la fecha de vencimiento ya pasó
             print(f"DEBUG MORA - fecha_vencimiento recibida: {fecha_vencimiento} (tipo: {type(fecha_vencimiento)})")
@@ -7395,9 +7758,9 @@ def anular_facturas_confirmar(request):
         messages.success(request, f'Se anularon {facturas_anuladas} factura(s) correctamente.')
         return redirect('facturas_list')
     
-    # Obtener código activo para mostrar (solo para administrador)
+    # Obtener código activo para mostrar (solo para administrador y director)
     codigo_activo = None
-    if request.user.rol == 'Administrador':
+    if request.user.rol in ['Administrador', 'Director']:
         codigo_activo = CodigoAnulacion.obtener_codigo_actual()
     
     context = {
@@ -7414,8 +7777,8 @@ def factura_anular(request, factura_id):
     from .models import Factura, CodigoAnulacion
     from django.utils import timezone
     
-    # Verificar permisos (solo Administrador y Secretaria pueden anular)
-    if request.user.rol not in ['Administrador', 'Secretaria']:
+    # Verificar permisos (solo Administrador, Director y Secretaria pueden anular)
+    if request.user.rol not in ['Administrador', 'Director', 'Secretaria']:
         messages.error(request, 'No tiene permisos para anular facturas.')
         return redirect('facturas_list')
     
@@ -7611,7 +7974,7 @@ def concepto_delete(request, pk):
 @login_required
 def inventario_lista_completa(request):
     """Lista completa de productos y servicios disponibles"""
-    if request.user.rol not in ['Administrador', 'Secretaria']:
+    if request.user.rol not in ['Administrador', 'Director', 'Secretaria']:
         messages.error(request, 'No tienes permiso para acceder a esta página.')
         return redirect('plataform')
     
@@ -7726,7 +8089,7 @@ def inventario_lista_completa(request):
 @login_required
 def inventario_dashboard(request):
     """Dashboard del inventario"""
-    if request.user.rol not in ['Administrador', 'Secretaria']:
+    if request.user.rol not in ['Administrador', 'Director', 'Secretaria']:
         messages.error(request, 'No tienes permiso para acceder a esta página.')
         return redirect('plataform')
     
@@ -7768,7 +8131,7 @@ def inventario_dashboard(request):
 @login_required
 def articulos_list(request):
     """Lista de artículos"""
-    if request.user.rol not in ['Administrador', 'Secretaria']:
+    if request.user.rol not in ['Administrador', 'Director', 'Secretaria']:
         messages.error(request, 'No tienes permiso para acceder a esta página.')
         return redirect('plataform')
     
@@ -7823,7 +8186,7 @@ def articulos_list(request):
 @login_required
 def inventario_articulos_pdf(request):
     """Genera PDF con la lista de todos los artículos/productos"""
-    if request.user.rol not in ['Administrador', 'Secretaria']:
+    if request.user.rol not in ['Administrador', 'Director', 'Secretaria']:
         messages.error(request, 'No tienes permiso para acceder a esta página.')
         return redirect('plataform')
     
@@ -7890,7 +8253,7 @@ def inventario_articulos_pdf(request):
 @login_required
 def inventario_servicios_pdf(request):
     """Genera PDF con la lista de todos los servicios/conceptos"""
-    if request.user.rol not in ['Administrador', 'Secretaria']:
+    if request.user.rol not in ['Administrador', 'Director', 'Secretaria']:
         messages.error(request, 'No tienes permiso para acceder a esta página.')
         return redirect('plataform')
     
@@ -7949,7 +8312,7 @@ def inventario_servicios_pdf(request):
 @login_required
 def articulo_eliminar(request, articulo_id):
     """Eliminar artículo con código de seguridad"""
-    if request.user.rol not in ['Administrador', 'Secretaria']:
+    if request.user.rol not in ['Administrador', 'Director', 'Secretaria']:
         messages.error(request, 'No tienes permiso para eliminar artículos.')
         return redirect('articulos_list')
     
@@ -8008,7 +8371,7 @@ def articulo_eliminar(request, articulo_id):
 @login_required
 def articulo_crear(request):
     """Crear nuevo artículo"""
-    if request.user.rol not in ['Administrador', 'Secretaria']:
+    if request.user.rol not in ['Administrador', 'Director', 'Secretaria']:
         messages.error(request, 'No tienes permiso para acceder a esta página.')
         return redirect('plataform')
     
@@ -8059,7 +8422,7 @@ def articulo_crear(request):
 @login_required
 def articulo_editar(request, articulo_id):
     """Editar artículo"""
-    if request.user.rol not in ['Administrador', 'Secretaria']:
+    if request.user.rol not in ['Administrador', 'Director', 'Secretaria']:
         messages.error(request, 'No tienes permiso para acceder a esta página.')
         return redirect('plataform')
     
@@ -8110,7 +8473,7 @@ def articulo_editar(request, articulo_id):
 @login_required
 def articulo_detalle(request, articulo_id):
     """Ver detalle del artículo"""
-    if request.user.rol not in ['Administrador', 'Secretaria']:
+    if request.user.rol not in ['Administrador', 'Director', 'Secretaria']:
         messages.error(request, 'No tienes permiso para acceder a esta página.')
         return redirect('plataform')
     
@@ -8134,7 +8497,7 @@ def articulo_detalle(request, articulo_id):
 @login_required
 def categorias_list(request):
     """Lista de categorías"""
-    if request.user.rol not in ['Administrador', 'Secretaria']:
+    if request.user.rol not in ['Administrador', 'Director', 'Secretaria']:
         messages.error(request, 'No tienes permiso para acceder a esta página.')
         return redirect('plataform')
     
@@ -8154,7 +8517,7 @@ def categorias_list(request):
 @login_required
 def categoria_crear(request):
     """Crear nueva categoría"""
-    if request.user.rol not in ['Administrador', 'Secretaria']:
+    if request.user.rol not in ['Administrador', 'Director', 'Secretaria']:
         messages.error(request, 'No tienes permiso para realizar esta acción.')
         return redirect('categorias_list')
     
@@ -8187,7 +8550,7 @@ def categoria_crear(request):
 @login_required
 def categoria_editar(request, categoria_id):
     """Editar categoría"""
-    if request.user.rol not in ['Administrador', 'Secretaria']:
+    if request.user.rol not in ['Administrador', 'Director', 'Secretaria']:
         messages.error(request, 'No tienes permiso para realizar esta acción.')
         return redirect('categorias_list')
     
@@ -8627,9 +8990,9 @@ def reportes_ventas(request):
     for venta in ventas_por_dia_semana:
         venta['nombre_dia'] = dias_semana.get(venta['dia_semana'], 'Desconocido')
     
-    # Lista de usuarios para filtro (solo para administradores)
+    # Lista de usuarios para filtro (solo para administradores y directores)
     usuarios_vendedores = None
-    if request.user.rol == 'Administrador':
+    if request.user.rol in ['Administrador', 'Director']:
         from .models import CustomUser
         usuarios_vendedores = CustomUser.objects.filter(
             rol__in=['Administrador', 'Secretaria'],

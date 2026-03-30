@@ -1,7 +1,10 @@
 from django import forms
 from django.contrib.auth.forms import UserCreationForm
 #from Escuela.escuelaweb.models import CustomUser, CustomUserManager, Persona, AnhoEscolar, Curso, Materia, Matricula
-from .models import CustomUser, CustomUserManager, Persona, AnhoEscolar, Curso, Materia, Matricula
+from .models import (
+    CustomUser, CustomUserManager, Persona, AnhoEscolar, Curso, Materia, Matricula,
+    ListaCotejo, CriterioListaCotejo, EvaluacionListaCotejo, CalificacionCotejo
+)
 
   # Importamos el modelo de usuario personalizado
 
@@ -124,6 +127,34 @@ class UserRegistrationForm(UserCreationForm):
     contacto_emergencia_nombre = forms.CharField(required=False)
     contacto_emergencia_telefono = forms.CharField(required=False)
     contacto_emergencia_parentesco = forms.CharField(required=False)
+    
+    # Configuración de mora individual (para estudiantes sin grupo familiar)
+    porcentaje_mora_individual = forms.DecimalField(
+        required=False,
+        initial=0,
+        min_value=0,
+        max_value=100,
+        decimal_places=2,
+        help_text="Porcentaje de mora para estudiante sin grupo familiar"
+    )
+    dia_vencimiento_individual = forms.IntegerField(
+        required=False,
+        initial=10,
+        min_value=1,
+        max_value=31,
+        label="Día de Vencimiento Individual",
+        help_text="Día del mes para vencimiento de pagos (estudiante sin grupo)"
+    )
+    
+    descuento_individual = forms.DecimalField(
+        required=False,
+        initial=0,
+        min_value=0,
+        max_value=100,
+        decimal_places=2,
+        label="Descuento Individual (%)",
+        help_text="Porcentaje de descuento para estudiante sin grupo familiar"
+    )
 
     class Meta:
         model = CustomUser
@@ -133,11 +164,32 @@ class UserRegistrationForm(UserCreationForm):
             "rol", "grado", "seccion", "especialidad", "departamento",
             "contacto_emergencia_nombre", "contacto_emergencia_telefono",
             "contacto_emergencia_parentesco",
+            "porcentaje_mora_individual", "dia_vencimiento_individual", "descuento_individual",
             "password1", "password2",
         ]
 
         widgets = {
             "fecha_nacimiento": forms.DateInput(attrs={"type": "date"}),
+            "dia_vencimiento_individual": forms.NumberInput(attrs={
+                "type": "number",
+                "min": "1",
+                "max": "31",
+                "placeholder": "10"
+            }),
+            "porcentaje_mora_individual": forms.NumberInput(attrs={
+                "type": "number",
+                "min": "0",
+                "max": "100",
+                "step": "0.01",
+                "placeholder": "0.00"
+            }),
+            "descuento_individual": forms.NumberInput(attrs={
+                "type": "number",
+                "min": "0",
+                "max": "100",
+                "step": "0.01",
+                "placeholder": "0.00"
+            }),
         }
 
     # --------------------------------------------
@@ -231,12 +283,18 @@ from .models import TarifaEstudiante
 class TarifaEstudianteForm(forms.ModelForm):
     class Meta:
         model = TarifaEstudiante
-        fields = ['estudiante', 'concepto', 'monto', 'observaciones', 'activo']
+        fields = ['estudiante', 'concepto', 'monto', 'observaciones', 'dia_vencimiento', 'activo']
         widgets = {
             'estudiante': forms.Select(attrs={'class': 'form-select'}),
             'concepto': forms.Select(attrs={'class': 'form-select'}),
             'monto': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
             'observaciones': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ej: Zona cercana, Zona lejana'}),
+            'dia_vencimiento': forms.NumberInput(attrs={
+                'class': 'form-control', 
+                'min': '1', 
+                'max': '31', 
+                'placeholder': 'Deja vacío para usar el del grupo familiar'
+            }),
             'activo': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
         }
 
@@ -251,6 +309,11 @@ class TarifaEstudianteForm(forms.ModelForm):
         ).exclude(
             Q(nombre__icontains='mensualidad tes') | Q(nombre__icontains='cuaderno')
         ).order_by('tipo', 'nombre')
+        
+        # Hacer los campos opcionales explícitamente
+        self.fields['observaciones'].required = False
+        self.fields['dia_vencimiento'].required = False
+        self.fields['dia_vencimiento'].help_text = 'Día del mes para vencimiento (1-31). Si no se especifica, usa el del grupo familiar.'
         
         for name, field in self.fields.items():
             if not isinstance(field.widget, (forms.Select, forms.CheckboxInput)):
@@ -318,6 +381,35 @@ class UserUpdateForm(forms.ModelForm):
         }),
         label="Contraseña (opcional)"
     )
+    
+    # Configuración de mora individual (para estudiantes sin grupo familiar)
+    porcentaje_mora_individual = forms.DecimalField(
+        required=False,
+        initial=0,
+        min_value=0,
+        max_value=100,
+        decimal_places=2,
+        label="Porcentaje de Mora Individual (%)",
+        help_text="Porcentaje de mora para estudiante sin grupo familiar"
+    )
+    dia_vencimiento_individual = forms.IntegerField(
+        required=False,
+        initial=10,
+        min_value=1,
+        max_value=31,
+        label="Día de Vencimiento Individual",
+        help_text="Día del mes para vencimiento de pagos (estudiante sin grupo)"
+    )
+    
+    descuento_individual = forms.DecimalField(
+        required=False,
+        initial=0,
+        min_value=0,
+        max_value=100,
+        decimal_places=2,
+        label="Descuento Individual (%)",
+        help_text="Porcentaje de descuento para estudiante sin grupo familiar"
+    )
 
     class Meta:
         model = CustomUser
@@ -325,10 +417,31 @@ class UserUpdateForm(forms.ModelForm):
             'email', 'first_name', 'last_name', 'fecha_nacimiento', 'genero',
             'direccion', 'telefono', 'cedula', 'rol', 'grado', 'seccion',
             'especialidad', 'departamento', 'contacto_emergencia_nombre',
-            'contacto_emergencia_telefono', 'contacto_emergencia_parentesco'
+            'contacto_emergencia_telefono', 'contacto_emergencia_parentesco',
+            'porcentaje_mora_individual', 'dia_vencimiento_individual', 'descuento_individual'
         ]
         widgets = {
             'fecha_nacimiento': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'dia_vencimiento_individual': forms.NumberInput(attrs={
+                'type': 'number',
+                'min': '1',
+                'max': '31',
+                'placeholder': '10'
+            }),
+            'porcentaje_mora_individual': forms.NumberInput(attrs={
+                'type': 'number',
+                'min': '0',
+                'max': '100',
+                'step': '0.01',
+                'placeholder': '0.00'
+            }),
+            'descuento_individual': forms.NumberInput(attrs={
+                'type': 'number',
+                'min': '0',
+                'max': '100',
+                'step': '0.01',
+                'placeholder': '0.00'
+            }),
         }
 
     def __init__(self, *args, **kwargs):
@@ -360,6 +473,9 @@ class UserUpdateForm(forms.ModelForm):
             self.fields['seccion'].initial = user.seccion
             self.fields['especialidad'].initial = user.especialidad
             self.fields['departamento'].initial = user.departamento
+            self.fields['porcentaje_mora_individual'].initial = user.porcentaje_mora_individual
+            self.fields['dia_vencimiento_individual'].initial = user.dia_vencimiento_individual
+            self.fields['descuento_individual'].initial = user.descuento_individual
 
     # VALIDACIÓN POR ROL
     def clean(self):
@@ -715,3 +831,701 @@ class MateriaForm(forms.ModelForm):
             else:
                 field.widget.attrs.update({'class': 'form-control'})
 
+
+# ============================================
+# FORMULARIOS DE CONTABILIDAD
+# ============================================
+
+from .models import PlanCuentas
+
+class PlanCuentasForm(forms.ModelForm):
+    """
+    Formulario para crear y editar cuentas contables
+    """
+    
+    class Meta:
+        model = PlanCuentas
+        fields = [
+            'codigo', 'nombre', 'descripcion', 'tipo_cuenta', 
+            'naturaleza', 'cuenta_padre', 'es_detalle', 
+            'saldo_inicial', 'activo', 'requiere_centro_costo', 
+            'requiere_tercero'
+        ]
+        widgets = {
+            'codigo': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Ej: 1.1.01.001',
+                'pattern': '[0-9.]+',
+                'title': 'Formato: números separados por puntos'
+            }),
+            'nombre': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Nombre de la cuenta contable'
+            }),
+            'descripcion': forms.Textarea(attrs={
+                'class': 'form-control',
+                'rows': 3,
+                'placeholder': 'Descripción detallada del uso de esta cuenta (opcional)'
+            }),
+            'tipo_cuenta': forms.Select(attrs={
+                'class': 'form-select'
+            }),
+            'naturaleza': forms.Select(attrs={
+                'class': 'form-select'
+            }),
+            'cuenta_padre': forms.Select(attrs={
+                'class': 'form-select'
+            }),
+            'es_detalle': forms.CheckboxInput(attrs={
+                'class': 'form-check-input'
+            }),
+            'activo': forms.CheckboxInput(attrs={
+                'class': 'form-check-input'
+            }),
+            'saldo_inicial': forms.NumberInput(attrs={
+                'class': 'form-control',
+                'step': '0.01',
+                'min': '0',
+                'placeholder': '0.00'
+            }),
+            'requiere_centro_costo': forms.CheckboxInput(attrs={
+                'class': 'form-check-input'
+            }),
+            'requiere_tercero': forms.CheckboxInput(attrs={
+                'class': 'form-check-input'
+            }),
+        }
+        labels = {
+            'codigo': 'Código de Cuenta',
+            'nombre': 'Nombre',
+            'descripcion': 'Descripción',
+            'tipo_cuenta': 'Tipo de Cuenta',
+            'naturaleza': 'Naturaleza',
+            'cuenta_padre': 'Cuenta Padre (opcional)',
+            'es_detalle': '¿Es cuenta de detalle?',
+            'activo': '¿Activo?',
+            'saldo_inicial': 'Saldo Inicial',
+            'requiere_centro_costo': '¿Requiere Centro de Costo?',
+            'requiere_tercero': '¿Requiere Tercero?',
+        }
+    
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        
+        # Filtrar solo cuentas activas y no de detalle como posibles padres
+        self.fields['cuenta_padre'].queryset = PlanCuentas.objects.filter(
+            activo=True,
+            es_detalle=False
+        ).order_by('codigo')
+        
+        # Hacer descripción opcional
+        self.fields['descripcion'].required = False
+        self.fields['cuenta_padre'].required = False
+        
+        # Marcar campos opcionales
+        self.fields['requiere_centro_costo'].required = False
+        self.fields['requiere_tercero'].required = False
+        
+        # Si estamos editando, excluir la cuenta actual de las opciones de padre
+        if self.instance and self.instance.pk:
+            self.fields['cuenta_padre'].queryset = self.fields['cuenta_padre'].queryset.exclude(
+                pk=self.instance.pk
+            )
+    
+    def clean_codigo(self):
+        """Validar formato del código de cuenta"""
+        codigo = self.cleaned_data.get('codigo')
+        
+        if not codigo:
+            raise forms.ValidationError('El código es obligatorio')
+        
+        # Validar formato: solo números y puntos
+        import re
+        if not re.match(r'^[0-9.]+$', codigo):
+            raise forms.ValidationError('El código solo puede contener números y puntos')
+        
+        # Validar que no empiece o termine con punto
+        if codigo.startswith('.') or codigo.endswith('.'):
+            raise forms.ValidationError('El código no puede empezar ni terminar con punto')
+        
+        # Validar que no tenga puntos consecutivos
+        if '..' in codigo:
+            raise forms.ValidationError('El código no puede tener puntos consecutivos')
+        
+        # Si estamos editando, excluir de la validación de duplicados la instancia actual
+        qs = PlanCuentas.objects.filter(codigo=codigo)
+        if self.instance and self.instance.pk:
+            qs = qs.exclude(pk=self.instance.pk)
+        
+        if qs.exists():
+            raise forms.ValidationError('Ya existe una cuenta con este código')
+        
+        return codigo
+    
+    def clean(self):
+        cleaned_data = super().clean()
+        cuenta_padre = cleaned_data.get('cuenta_padre')
+        es_detalle = cleaned_data.get('es_detalle')
+        codigo = cleaned_data.get('codigo')
+        
+        # Si tiene cuenta padre, validar jerarquía
+        if cuenta_padre:
+            # El código debe comenzar con el código del padre
+            if not codigo.startswith(cuenta_padre.codigo):
+                self.add_error(
+                    'codigo',
+                    f'El código debe comenzar con el código de la cuenta padre ({cuenta_padre.codigo})'
+                )
+            
+            # La cuenta padre no puede ser de detalle
+            if cuenta_padre.es_detalle:
+                self.add_error(
+                    'cuenta_padre',
+                    'La cuenta padre no puede ser una cuenta de detalle'
+                )
+        
+        # Si no es detalle, no puede tener saldo inicial
+        if not es_detalle and cleaned_data.get('saldo_inicial', 0) != 0:
+            self.add_error(
+                'saldo_inicial',
+                'Las cuentas de agrupación no pueden tener saldo inicial'
+            )
+        
+        return cleaned_data
+
+
+class PlanCuentasBusquedaForm(forms.Form):
+    """
+    Formulario para búsqueda y filtrado de cuentas contables
+    """
+    busqueda = forms.CharField(
+        required=False,
+        widget=forms.TextInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'Buscar por código o nombre...',
+        }),
+        label='Buscar'
+    )
+    
+    tipo_cuenta = forms.ChoiceField(
+        required=False,
+        choices=[('', 'Todos los tipos')] + PlanCuentas.TIPO_CUENTA_CHOICES,
+        widget=forms.Select(attrs={
+            'class': 'form-select'
+        }),
+        label='Tipo de Cuenta'
+    )
+    
+    activo = forms.ChoiceField(
+        required=False,
+        choices=[
+            ('', 'Todas'),
+            ('true', 'Solo activas'),
+            ('false', 'Solo inactivas'),
+        ],
+        widget=forms.Select(attrs={
+            'class': 'form-select'
+        }),
+        label='Estado'
+    )
+    
+    es_detalle = forms.ChoiceField(
+        required=False,
+        choices=[
+            ('', 'Todas'),
+            ('true', 'Solo cuentas de detalle'),
+            ('false', 'Solo cuentas agrupadores'),
+        ],
+        widget=forms.Select(attrs={
+            'class': 'form-select'
+        }),
+        label='Tipo'
+    )
+
+
+# ============================================
+# FORMULARIOS DE ASIENTOS CONTABLES
+# ============================================
+
+from .models import AsientoContable, DetalleAsiento
+
+class AsientoContableForm(forms.ModelForm):
+    """
+    Formulario para crear y editar asientos contables
+    """
+    
+    class Meta:
+        model = AsientoContable
+        fields = [
+            'numero_asiento', 'fecha_asiento', 'tipo_asiento',
+            'concepto', 'referencia'
+        ]
+        widgets = {
+            'numero_asiento': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'ASI-2026-001',
+                'readonly': 'readonly'
+            }),
+            'fecha_asiento': forms.DateInput(attrs={
+                'class': 'form-control',
+                'type': 'date'
+            }),
+            'tipo_asiento': forms.Select(attrs={
+                'class': 'form-select'
+            }),
+            'concepto': forms.Textarea(attrs={
+                'class': 'form-control',
+                'rows': 3,
+                'placeholder': 'Descripción general del asiento contable'
+            }),
+            'referencia': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Número de factura, recibo, etc. (opcional)'
+            }),
+        }
+        labels = {
+            'numero_asiento': 'Número de Asiento',
+            'fecha_asiento': 'Fecha',
+            'tipo_asiento': 'Tipo de Asiento',
+            'concepto': 'Concepto/Descripción',
+            'referencia': 'Referencia Externa',
+        }
+    
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['referencia'].required = False
+        
+        # Si es nuevo, generar número automáticamente
+        if not self.instance.pk:
+            self.fields['numero_asiento'].initial = self.generar_numero_asiento()
+    
+    def generar_numero_asiento(self):
+        """Genera el próximo número de asiento"""
+        from django.utils import timezone
+        anio_actual = timezone.now().year
+        
+        ultimo = AsientoContable.objects.filter(
+            numero_asiento__startswith=f'ASI-{anio_actual}-'
+        ).order_by('-numero_asiento').first()
+        
+        if ultimo:
+            # Extraer el número secuencial
+            try:
+                ultimo_num = int(ultimo.numero_asiento.split('-')[-1])
+                nuevo_num = ultimo_num + 1
+            except:
+                nuevo_num = 1
+        else:
+            nuevo_num = 1
+        
+        return f'ASI-{anio_actual}-{nuevo_num:04d}'
+
+
+class DetalleAsientoForm(forms.ModelForm):
+    """
+    Formulario para las líneas del asiento contable
+    """
+    
+    # Campos personalizados para mejor UX
+    tipo_movimiento = forms.ChoiceField(
+        choices=[
+            ('DEBITO', 'Débito'),
+            ('CREDITO', 'Crédito')
+        ],
+        widget=forms.Select(attrs={
+            'class': 'form-select tipo-movimiento'
+        }),
+        label='Tipo'
+    )
+    
+    monto = forms.DecimalField(
+        max_digits=15,
+        decimal_places=2,
+        min_value=0.01,
+        widget=forms.NumberInput(attrs={
+            'class': 'form-control monto-input',
+            'step': '0.01',
+            'min': '0.01',
+            'placeholder': '0.00'
+        }),
+        label='Monto'
+    )
+    
+    class Meta:
+        model = DetalleAsiento
+        fields = [
+            'cuenta', 'descripcion', 'centro_costo',
+            'tercero', 'referencia_interna'
+        ]
+        widgets = {
+            'cuenta': forms.Select(attrs={
+                'class': 'form-select cuenta-select'
+            }),
+            'descripcion': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Descripción del movimiento'
+            }),
+            'centro_costo': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Centro de costo (opcional)'
+            }),
+            'tercero': forms.Select(attrs={
+                'class': 'form-select'
+            }),
+            'referencia_interna': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Referencia (opcional)'
+            }),
+        }
+    
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        
+        # Filtrar solo cuentas de detalle activas
+        self.fields['cuenta'].queryset = PlanCuentas.objects.filter(
+            es_detalle=True,
+            activo=True
+        ).order_by('codigo')
+        
+        # Campos opcionales
+        self.fields['centro_costo'].required = False
+        self.fields['tercero'].required = False
+        self.fields['referencia_interna'].required = False
+        
+        # Si hay instancia, establecer valores
+        if self.instance and self.instance.pk:
+            if self.instance.debito > 0:
+                self.fields['tipo_movimiento'].initial = 'DEBITO'
+                self.fields['monto'].initial = self.instance.debito
+            else:
+                self.fields['tipo_movimiento'].initial = 'CREDITO'
+                self.fields['monto'].initial = self.instance.credito
+    
+    def save(self, commit=True):
+        """Override save para asignar débito o crédito según tipo"""
+        instance = super().save(commit=False)
+        
+        tipo = self.cleaned_data.get('tipo_movimiento')
+        monto = self.cleaned_data.get('monto')
+        
+        if tipo == 'DEBITO':
+            instance.debito = monto
+            instance.credito = 0
+        else:
+            instance.credito = monto
+            instance.debito = 0
+        
+        if commit:
+            instance.save()
+        
+        return instance
+
+
+class AsientoBusquedaForm(forms.Form):
+    """
+    Formulario para búsqueda y filtrado de asientos contables
+    """
+    busqueda = forms.CharField(
+        required=False,
+        widget=forms.TextInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'Buscar por número, concepto o referencia...',
+        }),
+        label='Buscar'
+    )
+    
+    tipo_asiento = forms.ChoiceField(
+        required=False,
+        choices=[('', 'Todos los tipos')] + AsientoContable.TIPO_ASIENTO_CHOICES,
+        widget=forms.Select(attrs={
+            'class': 'form-select'
+        }),
+        label='Tipo de Asiento'
+    )
+    
+    estado = forms.ChoiceField(
+        required=False,
+        choices=[('', 'Todos los estados')] + AsientoContable.ESTADO_CHOICES,
+        widget=forms.Select(attrs={
+            'class': 'form-select'
+        }),
+        label='Estado'
+    )
+    
+    fecha_desde = forms.DateField(
+        required=False,
+        widget=forms.DateInput(attrs={
+            'class': 'form-control',
+            'type': 'date'
+        }),
+        label='Desde'
+    )
+    
+    fecha_hasta = forms.DateField(
+        required=False,
+        widget=forms.DateInput(attrs={
+            'class': 'form-control',
+            'type': 'date'
+        }),
+        label='Hasta'
+    )
+
+
+class AnularAsientoForm(forms.Form):
+    """
+    Formulario para anular un asiento contable
+    """
+    motivo_anulacion = forms.CharField(
+        widget=forms.Textarea(attrs={
+            'class': 'form-control',
+            'rows': 4,
+            'placeholder': 'Explique el motivo de la anulación...'
+        }),
+        label='Motivo de Anulación',
+        help_text='Debe proporcionar una razón válida para anular este asiento'
+    )
+    
+    confirmar = forms.BooleanField(
+        required=True,
+        widget=forms.CheckboxInput(attrs={
+            'class': 'form-check-input'
+        }),
+        label='Confirmo que deseo anular este asiento contable'
+    )
+
+
+# ====================================================================
+#  FORMULARIOS PARA LISTAS DE COTEJO
+# ====================================================================
+
+class ListaCotejoForm(forms.ModelForm):
+    """Formulario para crear y editar listas de cotejo"""
+    
+    class Meta:
+        from .models import ListaCotejo
+        model = ListaCotejo
+        fields = [
+            'nombre', 'descripcion', 'tipo_evaluacion', 'materia',
+            'puntaje_total', 'es_plantilla', 'orden_criterios', 'activa'
+        ]
+        widgets = {
+            'nombre': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Ej: Lista de cotejo para evaluar cuaderno'
+            }),
+            'descripcion': forms.Textarea(attrs={
+                'class': 'form-control',
+                'rows': 3,
+                'placeholder': 'Descripción detallada (opcional)'
+            }),
+            'tipo_evaluacion': forms.Select(attrs={'class': 'form-select'}),
+            'materia': forms.Select(attrs={
+                'class': 'form-select',
+            }),
+            'puntaje_total': forms.NumberInput(attrs={
+                'class': 'form-control',
+                'step': '0.01',
+                'min': '0'
+            }),
+            'es_plantilla': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+            'orden_criterios': forms.Select(attrs={'class': 'form-select'}),
+            'activa': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+        }
+        labels = {
+            'nombre': 'Nombre de la Lista',
+            'descripcion': 'Descripción',
+            'tipo_evaluacion': 'Tipo de Evaluación',
+            'materia': 'Materia (opcional)',
+            'puntaje_total': 'Puntaje Total',
+            'es_plantilla': 'Es Plantilla Reutilizable',
+            'orden_criterios': 'Orden de Criterios',
+            'activa': 'Activa',
+        }
+        help_texts = {
+            'materia': 'Dejar en blanco para lista general/reutilizable',
+            'puntaje_total': 'Puntaje máximo (usualmente 10)',
+            'es_plantilla': 'Si es plantilla, puede ser reutilizada múltiples veces'
+        }
+
+
+class CriterioListaCotejoForm(forms.ModelForm):
+    """Formulario para crear y editar criterios de lista de cotejo"""
+    
+    class Meta:
+        from .models import CriterioListaCotejo
+        model = CriterioListaCotejo
+        fields = [
+            'descripcion', 'tipo_criterio', 'puntaje_maximo',
+            'orden', 'es_obligatorio', 'activo'
+        ]
+        widgets = {
+            'descripcion': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Ej: Completo las actividades en clase'
+            }),
+            'tipo_criterio': forms.Select(attrs={'class': 'form-select'}),
+            'puntaje_maximo': forms.NumberInput(attrs={
+                'class': 'form-control',
+                'step': '0.01',
+                'min': '0'
+            }),
+            'orden': forms.NumberInput(attrs={
+                'class': 'form-control',
+                'min': '0'
+            }),
+            'es_obligatorio': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+            'activo': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+        }
+        labels = {
+            'descripcion': 'Descripción del Criterio',
+            'tipo_criterio': 'Tipo de Criterio',
+            'puntaje_maximo': 'Puntaje Máximo',
+            'orden': 'Orden',
+            'es_obligatorio': 'Es Obligatorio',
+            'activo': 'Activo',
+        }
+
+
+# FormSet para gestionar múltiples criterios a la vez
+from django.forms import inlineformset_factory
+from .models import ListaCotejo, CriterioListaCotejo
+
+CriterioFormSet = inlineformset_factory(
+    ListaCotejo,
+    CriterioListaCotejo,
+    form=CriterioListaCotejoForm,
+    extra=1,  # Solo 1 formulario vacío extra
+    can_delete=True,
+    min_num=1,  # Mínimo 1 criterio
+    validate_min=True,
+)
+
+
+class EvaluacionListaCotejoForm(forms.ModelForm):
+    """Formulario para crear y editar evaluaciones con lista de cotejo"""
+    
+    class Meta:
+        from .models import EvaluacionListaCotejo
+        model = EvaluacionListaCotejo
+        fields = [
+            'lista_cotejo', 'nombre', 'descripcion', 'materia', 'curso',
+            'fecha_evaluacion', 'fecha_limite', 'estado',
+            'incluir_en_promedio', 'peso_en_promedio', 'observaciones_generales'
+        ]
+        widgets = {
+            'lista_cotejo': forms.Select(attrs={'class': 'form-select'}),
+            'nombre': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Ej: Evaluación de cuaderno - Marzo 2026'
+            }),
+            'descripcion': forms.Textarea(attrs={
+                'class': 'form-control',
+                'rows': 2,
+                'placeholder': 'Descripción (opcional)'
+            }),
+            'materia': forms.Select(attrs={'class': 'form-select'}),
+            'curso': forms.Select(attrs={'class': 'form-select'}),
+            'fecha_evaluacion': forms.DateInput(attrs={
+                'class': 'form-control',
+                'type': 'date'
+            }),
+            'fecha_limite': forms.DateInput(attrs={
+                'class': 'form-control',
+                'type': 'date'
+            }),
+            'estado': forms.Select(attrs={'class': 'form-select'}),
+            'incluir_en_promedio': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+            'peso_en_promedio': forms.NumberInput(attrs={
+                'class': 'form-control',
+                'step': '0.01',
+                'min': '0',
+                'max': '100'
+            }),
+            'observaciones_generales': forms.Textarea(attrs={
+                'class': 'form-control',
+                'rows': 3,
+                'placeholder': 'Observaciones generales (opcional)'
+            }),
+        }
+        labels = {
+            'lista_cotejo': 'Lista de Cotejo',
+            'nombre': 'Nombre de la Evaluación',
+            'descripcion': 'Descripción',
+            'materia': 'Materia',
+            'curso': 'Curso',
+            'fecha_evaluacion': 'Fecha de Evaluación',
+            'fecha_limite': 'Fecha Límite para Calificar',
+            'estado': 'Estado',
+            'incluir_en_promedio': 'Incluir en Promedio Final',
+            'peso_en_promedio': 'Peso en Promedio (%)',
+            'observaciones_generales': 'Observaciones Generales',
+        }
+
+
+class CalificacionCotejoForm(forms.ModelForm):
+    """Formulario para calificar un criterio individual"""
+    
+    class Meta:
+        from .models import CalificacionCotejo
+        model = CalificacionCotejo
+        fields = ['valor', 'cumple', 'observacion']
+        widgets = {
+            'valor': forms.NumberInput(attrs={
+                'class': 'form-control form-control-sm',
+                'step': '0.01'
+            }),
+            'cumple': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+            'observacion': forms.Textarea(attrs={
+                'class': 'form-control form-control-sm',
+                'rows': 2,
+                'placeholder': 'Observación (opcional)'
+            }),
+        }
+
+
+class BuscarListaCotejoForm(forms.Form):
+    """Formulario para buscar y filtrar listas de cotejo"""
+    
+    buscar = forms.CharField(
+        required=False,
+        widget=forms.TextInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'Buscar por nombre...'
+        }),
+        label='Buscar'
+    )
+    
+    tipo_evaluacion = forms.ChoiceField(
+        required=False,
+        choices=[('', 'Todos los tipos')],
+        widget=forms.Select(attrs={'class': 'form-select'}),
+        label='Tipo'
+    )
+    
+    materia = forms.ModelChoiceField(
+        required=False,
+        queryset=None,  # Se define en __init__
+        empty_label='Todas las materias',
+        widget=forms.Select(attrs={'class': 'form-select'}),
+        label='Materia'
+    )
+    
+    solo_plantillas = forms.BooleanField(
+        required=False,
+        widget=forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+        label='Solo Plantillas'
+    )
+    
+    def __init__(self, *args, **kwargs):
+        user = kwargs.pop('user', None)
+        super().__init__(*args, **kwargs)
+        
+        # Construir choices dinámicamente
+        from .models import Materia, ListaCotejo
+        self.fields['tipo_evaluacion'].choices = [('', 'Todos los tipos')] + ListaCotejo.TIPO_EVALUACION_CHOICES
+        
+        if user:
+            if user.rol == 'Profesor':
+                self.fields['materia'].queryset = Materia.objects.filter(profesor=user)
+            else:
+                self.fields['materia'].queryset = Materia.objects.all()

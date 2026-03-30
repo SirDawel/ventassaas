@@ -1,4 +1,5 @@
 {% extends 'website/base.html' %}
+{% load l10n %}
 
 {% block title %}{{ titulo }}{% endblock %}
 
@@ -58,7 +59,7 @@
                                     <div class="text-xs font-weight-bold text-danger text-uppercase mb-1">
                                         Total Adeudado
                                     </div>
-                                    <div class="h5 mb-0 font-weight-bold">RD${{ total_adeudado|floatformat:2 }}</div>
+                                    <div class="h5 mb-0 font-weight-bold">RD$ {{ total_adeudado|unlocalize|floatformat:2 }}</div>
                                 </div>
                                 <div class="col-auto">
                                     <i class="fas fa-exclamation-circle fa-2x text-gray-300"></i>
@@ -76,7 +77,7 @@
                                     <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
                                         Total Pagado
                                     </div>
-                                    <div class="h5 mb-0 font-weight-bold">RD${{ total_pagado|floatformat:2 }}</div>
+                                    <div class="h5 mb-0 font-weight-bold">RD$ {{ total_pagado|unlocalize|floatformat:2 }}</div>
                                 </div>
                                 <div class="col-auto">
                                     <i class="fas fa-check-circle fa-2x text-gray-300"></i>
@@ -94,7 +95,7 @@
                                     <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
                                         Saldo Pendiente
                                     </div>
-                                    <div class="h5 mb-0 font-weight-bold">RD${{ saldo_pendiente|floatformat:2 }}</div>
+                                    <div class="h5 mb-0 font-weight-bold">RD$ {{ saldo_pendiente|unlocalize|floatformat:2 }}</div>
                                 </div>
                                 <div class="col-auto">
                                     <i class="fas fa-wallet fa-2x text-gray-300"></i>
@@ -161,11 +162,11 @@
                                         <br><small class="text-muted">Mes {{ pago.mes }}/{{ pago.anio }}</small>
                                         {% endif %}
                                     </td>
-                                    <td>RD${{ pago.monto_total|floatformat:2 }}</td>
-                                    <td>RD${{ pago.monto_pagado|floatformat:2 }}</td>
+                                    <td>RD$ {{ pago.monto_total|unlocalize|floatformat:2 }}</td>
+                                    <td>RD$ {{ pago.monto_pagado|unlocalize|floatformat:2 }}</td>
                                     <td>
                                         {% if pago.saldo_pendiente > 0 %}
-                                        <span class="text-danger fw-bold">RD${{ pago.saldo_pendiente|floatformat:2 }}</span>
+                                        <span class="text-danger fw-bold">RD$ {{ pago.saldo_pendiente|unlocalize|floatformat:2 }}</span>
                                         {% else %}
                                         <span class="text-success">RD$0.00</span>
                                         {% endif %}

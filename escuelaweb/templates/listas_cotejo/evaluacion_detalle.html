@@ -1,0 +1,336 @@
+{% extends 'website/base.html' %}
+{% load static %}
+
+{% block title %}{{ titulo }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h2><i class="fas fa-clipboard-check me-2"></i>{{ evaluacion.nombre }}</h2>
+                    <p class="text-muted mb-0">
+                        {{ evaluacion.materia.nombre }} - {{ evaluacion.curso.nombre }}
+                    </p>
+                </div>
+                <div>
+                    <a href="{% url 'evaluacion_cotejo_lista' %}" class="btn btn-secondary">
+                        <i class="fas fa-arrow-left me-2"></i>Volver
+                    </a>
+                    <a href="{% url 'evaluacion_cotejo_calificar' evaluacion.id %}" class="btn btn-success">
+                        <i class="fas fa-edit me-2"></i>Calificar
+                    </a>
+                    <a href="{% url 'evaluacion_cotejo_reporte' evaluacion.id %}" class="btn btn-info" target="_blank">
+                        <i class="fas fa-print me-2"></i>Imprimir
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Mensajes -->
+    {% if messages %}
+    <div class="row">
+        <div class="col-12">
+            {% for message in messages %}
+            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    <div class="row">
+        <!-- Información General -->
+        <div class="col-lg-4">
+            <div class="card shadow mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="fas fa-info-circle me-2"></i>Información General</h5>
+                </div>
+                <div class="card-body">
+                    <table class="table table-sm">
+                        <tbody>
+                            <tr>
+                                <th>Estado:</th>
+                                <td>
+                                    <span class="badge 
+                                        {% if evaluacion.estado == 'publicada' %}bg-success
+                                        {% elif evaluacion.estado == 'finalizada' %}bg-info
+                                        {% elif evaluacion.estado == 'en_progreso' %}bg-warning
+                                        {% else %}bg-secondary
+                                        {% endif %}">
+                                        {{ evaluacion.get_estado_display }}
+                                    </span>
+                                </td>
+                            </tr>
+                            <tr>
+                                <th>Lista de Cotejo:</th>
+                                <td>
+                                    <a href="{% url 'lista_cotejo_detalle' evaluacion.lista_cotejo.id %}">
+                                        {{ evaluacion.lista_cotejo.nombre }}
+                                    </a>
+                                </td>
+                            </tr>
+                            <tr>
+                                <th>Materia:</th>
+                                <td>{{ evaluacion.materia.nombre }}</td>
+                            </tr>
+                            <tr>
+                                <th>Curso:</th>
+                                <td>{{ evaluacion.curso.nombre }}</td>
+                            </tr>
+                            <tr>
+                                <th>Evaluador:</th>
+                                <td>{{ evaluacion.evaluador.get_full_name }}</td>
+                            </tr>
+                            <tr>
+                                <th>Fecha Evaluación:</th>
+                                <td>{{ evaluacion.fecha_evaluacion|date:"d/m/Y" }}</td>
+                            </tr>
+                            {% if evaluacion.fecha_limite %}
+                            <tr>
+                                <th>Fecha Límite:</th>
+                                <td>{{ evaluacion.fecha_limite|date:"d/m/Y" }}</td>
+                            </tr>
+                            {% endif %}
+                            <tr>
+                                <th>Incluir en Promedio:</th>
+                                <td>
+                                    {% if evaluacion.incluir_en_promedio %}
+                                    <span class="badge bg-success">Sí ({{ evaluacion.peso_en_promedio }}%)</span>
+                                    {% else %}
+                                    <span class="badge bg-secondary">No</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            <tr>
+                                <th>Fecha Creación:</th>
+                                <td>{{ evaluacion.fecha_creacion|date:"d/m/Y H:i" }}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    {% if evaluacion.descripcion %}
+                    <div class="mt-3">
+                        <h6>Descripción:</h6>
+                        <p class="text-muted">{{ evaluacion.descripcion }}</p>
+                    </div>
+                    {% endif %}
+
+                    {% if evaluacion.observaciones_generales %}
+                    <div class="mt-3">
+                        <h6>Observaciones:</h6>
+                        <p class="text-muted">{{ evaluacion.observaciones_generales }}</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Estadísticas -->
+            <div class="card shadow mb-4">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0"><i class="fas fa-chart-bar me-2"></i>Estadísticas</h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <h6>Total Estudiantes:</h6>
+                        <h3 class="mb-0">{{ total_estudiantes }}</h3>
+                    </div>
+                    <div class="mb-3">
+                        <h6>Estudiantes Evaluados:</h6>
+                        <h3 class="mb-0">
+                            {{ estudiantes_evaluados }}
+                            <small class="text-muted">({{ porcentaje_completado }}%)</small>
+                        </h3>
+                    </div>
+                    <div class="progress mb-3" style="height: 25px;">
+                        <div class="progress-bar 
+                            {% if porcentaje_completado >= 100 %}bg-success
+                            {% elif porcentaje_completado >= 50 %}bg-warning
+                            {% else %}bg-danger
+                            {% endif %}" 
+                            role="progressbar" 
+                            style="width: {{ porcentaje_completado }}%"
+                            aria-valuenow="{{ porcentaje_completado }}" 
+                            aria-valuemin="0" 
+                            aria-valuemax="100">
+                            {{ porcentaje_completado }}%
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <h6>Promedio del Curso:</h6>
+                        <h3 class="mb-0">
+                            {% if promedio_curso %}
+                            {{ promedio_curso|floatformat:2 }}
+                            <small class="text-muted">/ {{ evaluacion.lista_cotejo.puntaje_total }}</small>
+                            {% else %}
+                            <span class="text-muted">No disponible</span>
+                            {% endif %}
+                        </h3>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Resultados de Estudiantes -->
+        <div class="col-lg-8">
+            <div class="card shadow mb-4">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-users me-2"></i>Resultados por Estudiante
+                        <span class="badge bg-light text-dark ms-2">{{ resumenes.count }}</span>
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if resumenes %}
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>#</th>
+                                    <th>Estudiante</th>
+                                    <th class="text-center">Puntaje Obtenido</th>
+                                    <th class="text-center">Porcentaje</th>
+                                    <th class="text-center">Estado</th>
+                                    <th class="text-center">Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for resumen in resumenes %}
+                                <tr>
+                                    <td>{{ forloop.counter }}</td>
+                                    <td>
+                                        <strong>{{ resumen.estudiante.get_full_name }}</strong>
+                                    </td>
+                                    <td class="text-center">
+                                        <strong>{{ resumen.puntaje_obtenido|floatformat:2 }}</strong>
+                                        <small class="text-muted">/ {{ evaluacion.lista_cotejo.puntaje_total }}</small>
+                                    </td>
+                                    <td class="text-center">
+                                        <span class="badge 
+                                            {% if resumen.porcentaje >= 70 %}bg-success
+                                            {% elif resumen.porcentaje >= 50 %}bg-warning
+                                            {% else %}bg-danger
+                                            {% endif %}">
+                                            {{ resumen.porcentaje|floatformat:1 }}%
+                                        </span>
+                                    </td>
+                                    <td class="text-center">
+                                        {% if resumen.esta_completo %}
+                                        <span class="badge bg-success">
+                                            <i class="fas fa-check"></i> Completo
+                                        </span>
+                                        {% else %}
+                                        <span class="badge bg-warning">
+                                            <i class="fas fa-exclamation-triangle"></i> Incompleto
+                                        </span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="text-center">
+                                        <div class="btn-group btn-group-sm">
+                                            <button type="button" 
+                                                    class="btn btn-info btn-sm" 
+                                                    onclick="verDetalle({{ resumen.estudiante.id }})"
+                                                    title="Ver Detalle">
+                                                <i class="fas fa-eye"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                            <tfoot class="table-light">
+                                <tr>
+                                    <th colspan="2" class="text-end">PROMEDIO:</th>
+                                    <th class="text-center">
+                                        {% if promedio_curso %}
+                                        {{ promedio_curso|floatformat:2 }}
+                                        {% else %}
+                                        -
+                                        {% endif %}
+                                    </th>
+                                    <th class="text-center">
+                                        {% if promedio_curso and evaluacion.lista_cotejo.puntaje_total %}
+                                        {% widthratio promedio_curso evaluacion.lista_cotejo.puntaje_total 100 %}%
+                                        {% else %}
+                                        -
+                                        {% endif %}
+                                    </th>
+                                    <th colspan="2"></th>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="alert alert-info mb-0">
+                        <i class="fas fa-info-circle me-2"></i>
+                        Aún no hay estudiantes evaluados. 
+                        <a href="{% url 'evaluacion_cotejo_calificar' evaluacion.id %}" class="alert-link">
+                            Comenzar a calificar
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Criterios de la Lista -->
+            <div class="card shadow mb-4">
+                <div class="card-header bg-warning text-dark">
+                    <h5 class="mb-0">
+                        <i class="fas fa-tasks me-2"></i>Criterios de Evaluación
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead class="table-light">
+                                <tr>
+                                    <th style="width: 50px;">#</th>
+                                    <th>Descripción</th>
+                                    <th class="text-center">Tipo</th>
+                                    <th class="text-center">Puntaje Máx.</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for criterio in evaluacion.lista_cotejo.criterios.all %}
+                                <tr>
+                                    <td class="text-center">
+                                        <span class="badge bg-primary">{{ criterio.orden }}</span>
+                                    </td>
+                                    <td>{{ criterio.descripcion }}</td>
+                                    <td class="text-center">
+                                        <span class="badge bg-info">{{ criterio.get_tipo_criterio_display }}</span>
+                                    </td>
+                                    <td class="text-center">
+                                        <strong>{{ criterio.puntaje_maximo }}</strong>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                            <tfoot class="table-light">
+                                <tr>
+                                    <th colspan="3" class="text-end">TOTAL:</th>
+                                    <th class="text-center">
+                                        <strong class="text-primary fs-5">{{ evaluacion.lista_cotejo.puntaje_total }}</strong>
+                                    </th>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function verDetalle(estudianteId) {
+    alert('Función de detalle individual por estudiante - En desarrollo');
+    // TODO: Implementar vista detallada de calificaciones por estudiante
+}
+</script>
+{% endblock %}

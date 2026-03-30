@@ -1,0 +1,340 @@
+{% extends 'website/base.html' %}
+{% load humanize %}
+
+{% block title %}Estado de Resultados - IEPM{% endblock %}
+
+{% block extra_css %}
+<style>
+    .filter-card {
+        background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+        color: white;
+        border-radius: 10px;
+        padding: 20px;
+        margin-bottom: 20px;
+    }
+    .filter-card .form-label {
+        color: white;
+        font-weight: 500;
+    }
+    .filter-card .form-control {
+        border: 2px solid rgba(255,255,255,0.3);
+        background: rgba(255,255,255,0.9);
+    }
+    .estado-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 20px;
+        border-radius: 8px;
+        margin-bottom: 20px;
+        text-align: center;
+    }
+    .estado-header h3 {
+        color: white;
+        margin: 0;
+    }
+    .seccion-ingresos {
+        background-color: #d4edda;
+    }
+    .seccion-gastos {
+        background-color: #f8d7da;
+    }
+    .subtotal-row {
+        background-color: #e9ecef;
+        font-weight: bold;
+    }
+    .utilidad-bruta {
+        background-color: #cce5ff;
+        font-weight: bold;
+        font-size: 1.05rem;
+    }
+    .utilidad-neta {
+        background-color: #28a745;
+        color: white;
+        font-weight: bold;
+        font-size: 1.15rem;
+    }
+    .perdida-neta {
+        background-color: #dc3545;
+        color: white;
+        font-weight: bold;
+        font-size: 1.15rem;
+    }
+    .cuenta-nivel-1 {
+        font-weight: bold;
+    }
+    .cuenta-nivel-2 {
+        padding-left: 20px;
+    }
+    .cuenta-nivel-3 {
+        padding-left: 40px;
+    }
+    .kpi-card {
+        border-radius: 10px;
+        padding: 15px;
+        color: white;
+        margin-bottom: 15px;
+    }
+    .kpi-ingresos {
+        background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+    }
+    .kpi-gastos {
+        background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+    }
+    .kpi-utilidad {
+        background: linear-gradient(135deg, #30cfd0 0%, #330867 100%);
+    }
+    @media print {
+        .no-print {
+            display: none;
+        }
+        .filter-card {
+            display: none;
+        }
+        .estado-header {
+            background: #333 !important;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+        }
+        body {
+            font-size: 10pt;
+        }
+        .table {
+            font-size: 9pt;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4 no-print">
+        <div class="col-12">
+            <h2><i class="fas fa-chart-bar"></i> Estado de Resultados</h2>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{% url 'index' %}">Inicio</a></li>
+                    <li class="breadcrumb-item"><a href="{% url 'contabilidad_dashboard' %}">Contabilidad</a></li>
+                    <li class="breadcrumb-item active">Estado de Resultados</li>
+                </ol>
+            </nav>
+        </div>
+    </div>
+
+    <!-- Filtros -->
+    <div class="filter-card no-print">
+        <form method="get" id="filterForm">
+            <div class="row">
+                <div class="col-md-5">
+                    <label for="fecha_desde" class="form-label">Fecha Desde</label>
+                    <input type="date" class="form-control" id="fecha_desde" name="fecha_desde" 
+                           value="{{ request.GET.fecha_desde }}" required>
+                </div>
+                <div class="col-md-5">
+                    <label for="fecha_hasta" class="form-label">Fecha Hasta</label>
+                    <input type="date" class="form-control" id="fecha_hasta" name="fecha_hasta" 
+                           value="{{ request.GET.fecha_hasta }}" required>
+                </div>
+                <div class="col-md-2 d-flex align-items-end">
+                    <button type="submit" class="btn btn-light w-100">
+                        <i class="fas fa-filter me-2"></i>Generar
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <!-- KPIs Resumen -->
+    <div class="row mb-4 no-print">
+        <div class="col-md-4">
+            <div class="kpi-card kpi-ingresos">
+                <h6>Total Ingresos</h6>
+                <h3>₲ {{ total_ingresos|intcomma }}</h3>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="kpi-card kpi-gastos">
+                <h6>Total Gastos</h6>
+                <h3>₲ {{ total_gastos|intcomma }}</h3>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="kpi-card kpi-utilidad">
+                <h6>Utilidad/Pérdida Neta</h6>
+                <h3>₲ {{ utilidad_neta|intcomma }}</h3>
+            </div>
+        </div>
+    </div>
+
+    <!-- Botones de Acción -->
+    <div class="row mb-3 no-print">
+        <div class="col-12">
+            <button onclick="window.print()" class="btn btn-secondary">
+                <i class="fas fa-print me-2"></i>Imprimir
+            </button>
+        </div>
+    </div>
+
+    <!-- Encabezado del Estado -->
+    <div class="estado-header">
+        <h3>Instituto de Educación PABLO MCAL</h3>
+        <h4>Estado de Resultados</h4>
+        <p class="mb-0">
+            Del {{ request.GET.fecha_desde|default:"inicio" }} al {{ request.GET.fecha_hasta|default:"hoy" }}
+        </p>
+    </div>
+
+    <!-- Estado de Resultados -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-bordered">
+                            <tbody>
+                                <!-- INGRESOS -->
+                                <tr class="seccion-ingresos">
+                                    <td colspan="2">
+                                        <strong><i class="fas fa-arrow-up me-2"></i>INGRESOS</strong>
+                                    </td>
+                                    <td></td>
+                                </tr>
+                                {% if cuentas_ingresos %}
+                                    {% for cuenta in cuentas_ingresos %}
+                                    <tr>
+                                        <td style="width: 15%;">{{ cuenta.codigo }}</td>
+                                        <td style="width: 55%;" class="cuenta-nivel-{{ cuenta.nivel|default:'1' }}">
+                                            {{ cuenta.nombre }}
+                                        </td>
+                                        <td style="width: 30%;" class="text-end">
+                                            ₲ {{ cuenta.saldo|intcomma }}
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                {% else %}
+                                    <tr>
+                                        <td colspan="3" class="text-center text-muted">No hay ingresos registrados</td>
+                                    </tr>
+                                {% endif %}
+                                <tr class="subtotal-row">
+                                    <td colspan="2" class="text-end">Total Ingresos:</td>
+                                    <td class="text-end">₲ {{ total_ingresos|intcomma }}</td>
+                                </tr>
+                                
+                                <!-- Espacio -->
+                                <tr>
+                                    <td colspan="3" style="height: 15px; background-color: white;"></td>
+                                </tr>
+                                
+                                <!-- GASTOS -->
+                                <tr class="seccion-gastos">
+                                    <td colspan="2">
+                                        <strong><i class="fas fa-arrow-down me-2"></i>GASTOS</strong>
+                                    </td>
+                                    <td></td>
+                                </tr>
+                                {% if cuentas_gastos %}
+                                    {% for cuenta in cuentas_gastos %}
+                                    <tr>
+                                        <td>{{ cuenta.codigo }}</td>
+                                        <td class="cuenta-nivel-{{ cuenta.nivel|default:'1' }}">
+                                            {{ cuenta.nombre }}
+                                        </td>
+                                        <td class="text-end">
+                                            ₲ {{ cuenta.saldo|intcomma }}
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                {% else %}
+                                    <tr>
+                                        <td colspan="3" class="text-center text-muted">No hay gastos registrados</td>
+                                    </tr>
+                                {% endif %}
+                                <tr class="subtotal-row">
+                                    <td colspan="2" class="text-end">Total Gastos:</td>
+                                    <td class="text-end">₲ {{ total_gastos|intcomma }}</td>
+                                </tr>
+                                
+                                <!-- Espacio -->
+                                <tr>
+                                    <td colspan="3" style="height: 20px; background-color: white;"></td>
+                                </tr>
+                                
+                                <!-- UTILIDAD/PÉRDIDA NETA -->
+                                <tr class="{% if utilidad_neta >= 0 %}utilidad-neta{% else %}perdida-neta{% endif %}">
+                                    <td colspan="2" class="text-end">
+                                        <i class="fas fa-{% if utilidad_neta >= 0 %}check-circle{% else %}times-circle{% endif %} me-2"></i>
+                                        {% if utilidad_neta >= 0 %}UTILIDAD NETA{% else %}PÉRDIDA NETA{% endif %}:
+                                    </td>
+                                    <td class="text-end">
+                                        ₲ {{ utilidad_neta|intcomma }}
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Análisis de Rentabilidad -->
+                    {% if total_ingresos > 0 %}
+                    <div class="alert alert-info mt-4">
+                        <h5><i class="fas fa-chart-pie me-2"></i>Análisis de Rentabilidad</h5>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <p class="mb-1">
+                                    <strong>Margen de Utilidad:</strong> 
+                                    {% widthratio utilidad_neta total_ingresos 100 %}%
+                                </p>
+                                <p class="mb-0">
+                                    <strong>Ratio Gastos/Ingresos:</strong> 
+                                    {% widthratio total_gastos total_ingresos 100 %}%
+                                </p>
+                            </div>
+                            <div class="col-md-6">
+                                <p class="mb-1">
+                                    <strong>Interpretación:</strong>
+                                    {% if utilidad_neta >= 0 %}
+                                        {% widthratio utilidad_neta total_ingresos 100 as margen %}
+                                        {% if margen >= 20 %}
+                                            <span class="text-success">Excelente rentabilidad</span>
+                                        {% elif margen >= 10 %}
+                                            <span class="text-success">Buena rentabilidad</span>
+                                        {% elif margen >= 5 %}
+                                            <span class="text-warning">Rentabilidad moderada</span>
+                                        {% else %}
+                                            <span class="text-warning">Rentabilidad baja</span>
+                                        {% endif %}
+                                    {% else %}
+                                        <span class="text-danger">Pérdida operacional</span>
+                                    {% endif %}
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const fechaDesde = document.getElementById('fecha_desde');
+        const fechaHasta = document.getElementById('fecha_hasta');
+        
+        // Si no hay fecha desde, poner primer día del año actual
+        if (!fechaDesde.value) {
+            const today = new Date();
+            const firstDay = new Date(today.getFullYear(), 0, 1);
+            fechaDesde.value = firstDay.toISOString().split('T')[0];
+        }
+        
+        // Si no hay fecha hasta, poner fecha actual
+        if (!fechaHasta.value) {
+            const today = new Date();
+            fechaHasta.value = today.toISOString().split('T')[0];
+        }
+    });
+</script>
+{% endblock %}

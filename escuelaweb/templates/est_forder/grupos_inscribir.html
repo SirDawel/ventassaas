@@ -4,34 +4,137 @@
 
 {% block content %}
 <div class="container mt-4">
-    <div class="card">
-        <div class="card-header">
-            <h4>{{ titulo }}</h4>
-            {% if anho_seleccionado %}
-            <div class="text-muted">Año Escolar: {{ anho_seleccionado.nombre }}</div>
-            {% endif %}
+    <!-- Header Card -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-body">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h3 class="mb-2">
+                        <i class="fas fa-book-open text-success"></i> {{ titulo }}
+                    </h3>
+                    <p class="text-muted mb-0">
+                        Grupo: <strong>{{ grupo.nombre }}</strong> — {{ grupo.grado }} {{ grupo.seccion }} — {{ grupo.estudiantes.count }} estudiante{{ grupo.estudiantes.count|pluralize }}
+                    </p>
+                </div>
+                <a href="{% url 'ver_grupo' grupo.id %}{% if anho_id %}?anho={{ anho_id }}{% endif %}" class="btn btn-secondary">
+                    <i class="fas fa-arrow-left"></i> Volver
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Year Selector Card -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-header bg-info text-white">
+            <h5 class="mb-0">
+                <i class="fas fa-calendar-alt"></i> Año Escolar
+            </h5>
         </div>
         <div class="card-body">
+            <div class="alert alert-info mb-3">
+                <i class="fas fa-info-circle"></i> 
+                Selecciona el año escolar para ver los cursos disponibles. Solo se mostrarán los cursos del año seleccionado.
+            </div>
+            <div class="row g-3">
+                {% for anho in anhos_escolares %}
+                <div class="col-md-3">
+                    <a href="{% url 'inscribir_grupo_en_curso' grupo.id %}?anho={{ anho.id }}" 
+                       class="btn {% if anho_seleccionado.id == anho.id %}btn-primary{% else %}btn-outline-primary{% endif %} w-100 d-flex flex-column align-items-center p-3">
+                        <i class="fas fa-calendar fa-2x mb-2"></i>
+                        <strong>{{ anho.nombre }}</strong>
+                        {% if anho_seleccionado.id == anho.id %}
+                        <small class="mt-1"><i class="fas fa-check-circle"></i> Seleccionado</small>
+                        {% endif %}
+                    </a>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Course Selection Card -->
+    <div class="card shadow-sm">
+        <div class="card-header bg-success text-white">
+            <h5 class="mb-0">
+                <i class="fas fa-book"></i> Inscribir en Curso
+            </h5>
+        </div>
+        <div class="card-body">
+            {% if anho_seleccionado %}
+            <div class="alert alert-success mb-4">
+                <i class="fas fa-calendar-check"></i> 
+                Mostrando cursos del año escolar: <strong>{{ anho_seleccionado.nombre }}</strong>
+            </div>
+            {% endif %}
+
+            {% if cursos %}
             <form method="post">
                 {% csrf_token %}
-                <div class="mb-3">
-                    <label class="form-label">Seleccionar Curso destino</label>
-                    <select name="curso" class="form-select" required>
-                        <option value="">-- Seleccionar --</option>
+                <div class="mb-4">
+                    <label class="form-label h5">
+                        <i class="fas fa-list"></i> Seleccionar Curso Destino
+                    </label>
+                    <select name="curso" class="form-select form-select-lg" required>
+                        <option value="">-- Selecciona un curso --</option>
                         {% for c in cursos %}
-                        <option value="{{ c.id }}">{{ c.nombre }}</option>
+                        <option value="{{ c.id }}">
+                            {{ c.nombre }} {% if c.grado %}({{ c.grado }} {{ c.seccion }}){% endif %}
+                        </option>
                         {% endfor %}
                     </select>
-                    {% if not cursos %}
-                    <div class="text-muted mt-2">No hay cursos disponibles para este año escolar.</div>
-                    {% endif %}
+                    <div class="form-text">
+                        <i class="fas fa-info-circle"></i> 
+                        Se crearán matrículas para todos los estudiantes del grupo en todas las materias del curso seleccionado.
+                    </div>
                 </div>
                 <div class="d-flex gap-2">
-                    <a href="{% url 'ver_grupo' grupo.id %}{% if anho_id %}?anho={{ anho_id }}{% endif %}" class="btn btn-secondary">Cancelar</a>
-                    <button class="btn btn-primary" type="submit" {% if not cursos %}disabled{% endif %}>Inscribir Grupo</button>
+                    <a href="{% url 'ver_grupo' grupo.id %}{% if anho_id %}?anho={{ anho_id }}{% endif %}" class="btn btn-secondary">
+                        <i class="fas fa-times"></i> Cancelar
+                    </a>
+                    <button class="btn btn-success" type="submit">
+                        <i class="fas fa-check"></i> Inscribir Grupo en Curso
+                    </button>
                 </div>
             </form>
+            {% else %}
+            <div class="alert alert-warning">
+                <i class="fas fa-exclamation-triangle"></i> 
+                No hay cursos disponibles para el año escolar seleccionado: <strong>{{ anho_seleccionado.nombre }}</strong>
+            </div>
+            <div class="text-center mt-4">
+                <p class="text-muted">Selecciona otro año escolar o crea un nuevo curso.</p>
+                <a href="{% url 'lista_cursos' %}{% if anho_id %}?anho={{ anho_id }}{% endif %}" class="btn btn-primary">
+                    <i class="fas fa-plus"></i> Ir a Cursos
+                </a>
+            </div>
+            {% endif %}
         </div>
     </div>
 </div>
+
+<style>
+    .card {
+        border: none;
+        border-radius: 12px;
+    }
+    
+    .card-header {
+        border-radius: 12px 12px 0 0 !important;
+        padding: 1rem 1.5rem;
+    }
+    
+    .shadow-sm {
+        box-shadow: 0 0.125rem 0.5rem rgba(0, 0, 0, 0.075) !important;
+    }
+    
+    .btn {
+        border-radius: 8px;
+        font-weight: 500;
+    }
+    
+    .form-select-lg {
+        padding: 0.75rem 1rem;
+        font-size: 1.1rem;
+    }
+</style>
 {% endblock %}

@@ -1,4 +1,5 @@
 {% extends 'website/base.html' %}
+{% load l10n %}
 
 {% block title %}{{ titulo }}{% endblock %}
 
@@ -30,6 +31,9 @@
                         <a href="{% url 'facturas_list' %}" class="btn btn-primary">
                             <i class="fas fa-file-invoice me-1"></i>Facturas
                         </a>
+                        <a href="{% url 'grupos_familiares_lista' %}" class="btn btn-secondary">
+                            <i class="fas fa-users me-1"></i>Familias
+                        </a>
                         <a href="{% url 'buscar_estudiante_cobro' %}" class="btn btn-info">
                             <i class="fas fa-user-plus me-1"></i>Estudiante
                         </a>
@@ -43,88 +47,218 @@
     </div>
 
     <!-- Statistics Cards -->
-    <div class="row mb-2">
-        <div class="col-xl-3 col-md-6 mb-2">
-            <div class="stat-card bg-primary-flat text-white">
+    <div class="row mb-3">
+        <!-- Total Recaudado -->
+        {% if total_recaudado is not None %}
+        <div class="col-xl-2 col-lg-3 col-md-4 col-sm-6 mb-3">
+            <div class="stat-card bg-success text-white h-100">
                 <div class="stat-card-body">
-                    <div class="stat-icon">
+                    <div class="stat-icon-small">
                         <i class="fas fa-dollar-sign"></i>
                     </div>
-                    <div class="stat-content">
-                        <div class="stat-label">Total Recaudado</div>
-                        <div class="stat-value" data-target="{{ total_recaudado }}">RD$0.00</div>
+                    <div class="stat-content-small">
+                        <div class="stat-label-small">Total Recaudado</div>
+                        <div class="stat-value-small">RD$ {{ total_recaudado|unlocalize|floatformat:0 }}</div>
                     </div>
-                </div>
-                <div class="stat-card-footer">
-                    <i class="fas fa-calendar-check me-1"></i>
-                    <span>Año Escolar Actual</span>
                 </div>
             </div>
         </div>
+        {% endif %}
 
-        <div class="col-xl-3 col-md-6 mb-2">
-            <div class="stat-card bg-success-flat text-white">
+        <!-- Facturas Cobradas (AZUL) -->
+        {% if facturas_pagadas is not None %}
+        <div class="col-xl-2 col-lg-3 col-md-4 col-sm-6 mb-3">
+            <div class="stat-card bg-primary text-white h-100">
                 <div class="stat-card-body">
-                    <div class="stat-icon">
+                    <div class="stat-icon-small">
                         <i class="fas fa-check-circle"></i>
                     </div>
-                    <div class="stat-content">
-                        <div class="stat-label">Pagos Completados</div>
-                        <div class="stat-value" data-target="{{ pagos_completados }}">0</div>
+                    <div class="stat-content-small">
+                        <div class="stat-label-small">Facturas Cobradas</div>
+                        <div class="stat-value-small">{{ facturas_pagadas }}</div>
                     </div>
-                </div>
-                <div class="stat-card-footer">
-                    <i class="fas fa-coins me-1"></i>
-                    <span>Transacciones exitosas</span>
                 </div>
             </div>
         </div>
+        {% endif %}
 
-        <div class="col-xl-3 col-md-6 mb-2">
-            <div class="stat-card bg-warning-flat text-white">
+        <!-- Facturas Pendientes -->
+        {% if facturas_pendientes is not None %}
+        <div class="col-xl-2 col-lg-3 col-md-4 col-sm-6 mb-3">
+            <div class="stat-card bg-warning text-white h-100">
                 <div class="stat-card-body">
-                    <div class="stat-icon">
+                    <div class="stat-icon-small">
                         <i class="fas fa-exclamation-circle"></i>
                     </div>
-                    <div class="stat-content">
-                        <div class="stat-label">Pagos Pendientes</div>
-                        <div class="stat-value" data-target="{{ pagos_pendientes }}">0</div>
+                    <div class="stat-content-small">
+                        <div class="stat-label-small">Fact. Pendientes</div>
+                        <div class="stat-value-small">{{ facturas_pendientes }}</div>
                     </div>
-                </div>
-                <div class="stat-card-footer">
-                    <i class="fas fa-hourglass-half me-1"></i>
-                    <span>En proceso de cobro</span>
                 </div>
             </div>
         </div>
+        {% endif %}
 
-        <div class="col-xl-3 col-md-6 mb-2">
-            <div class="stat-card bg-info-flat text-white">
+        <!-- Total de Facturas -->
+        {% if total_facturas is not None %}
+        <div class="col-xl-2 col-lg-3 col-md-4 col-sm-6 mb-3">
+            <div class="stat-card bg-info text-white h-100">
                 <div class="stat-card-body">
-                    <div class="stat-icon">
+                    <div class="stat-icon-small">
                         <i class="fas fa-receipt"></i>
                     </div>
-                    <div class="stat-content">
-                        <div class="stat-label">Total de Pagos</div>
-                        <div class="stat-value" data-target="{{ total_pagos }}">0</div>
+                    <div class="stat-content-small">
+                        <div class="stat-label-small">Total Facturas</div>
+                        <div class="stat-value-small">{{ total_facturas }}</div>
                     </div>
                 </div>
-                <div class="stat-card-footer">
-                    <i class="fas fa-database me-1"></i>
-                    <span>Base de datos completa</span>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Total Facturado -->
+        {% if monto_total_facturas is not None %}
+        <div class="col-xl-2 col-lg-3 col-md-4 col-sm-6 mb-3">
+            <div class="stat-card bg-dark text-white h-100">
+                <div class="stat-card-body">
+                    <div class="stat-icon-small">
+                        <i class="fas fa-chart-line"></i>
+                    </div>
+                    <div class="stat-content-small">
+                        <div class="stat-label-small">Total Facturado</div>
+                        <div class="stat-value-small">RD$ {{ monto_total_facturas|unlocalize|floatformat:0 }}</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Total Por Cobrar -->
+        {% if total_por_cobrar is not None %}
+        <div class="col-xl-2 col-lg-3 col-md-4 col-sm-6 mb-3">
+            <div class="stat-card bg-danger text-white h-100">
+                <div class="stat-card-body">
+                    <div class="stat-icon-small">
+                        <i class="fas fa-hourglass-half"></i>
+                    </div>
+                    <div class="stat-content-small">
+                        <div class="stat-label-small">Por Cobrar</div>
+                        <div class="stat-value-small">RD$ {{ total_por_cobrar|unlocalize|floatformat:0 }}</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Facturas Parciales -->
+        {% if facturas_parcial is not None %}
+        <div class="col-xl-2 col-lg-3 col-md-4 col-sm-6 mb-3">
+            <div class="stat-card text-white h-100" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                <div class="stat-card-body">
+                    <div class="stat-icon-small">
+                        <i class="fas fa-percentage"></i>
+                    </div>
+                    <div class="stat-content-small">
+                        <div class="stat-label-small">Fact. Parciales</div>
+                        <div class="stat-value-small">{{ facturas_parcial }}</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Facturas Vencidas -->
+        {% if facturas_vencidas is not None %}
+        <div class="col-xl-2 col-lg-3 col-md-4 col-sm-6 mb-3">
+            <div class="stat-card text-white h-100" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
+                <div class="stat-card-body">
+                    <div class="stat-icon-small">
+                        <i class="fas fa-calendar-times"></i>
+                    </div>
+                    <div class="stat-content-small">
+                        <div class="stat-label-small">Fact. Vencidas</div>
+                        <div class="stat-value-small">{{ facturas_vencidas }}</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Facturas Anuladas -->
+        {% if facturas_anuladas is not None %}
+        <div class="col-xl-2 col-lg-3 col-md-4 col-sm-6 mb-3">
+            <div class="stat-card bg-secondary text-white h-100">
+                <div class="stat-card-body">
+                    <div class="stat-icon-small">
+                        <i class="fas fa-ban"></i>
+                    </div>
+                    <div class="stat-content-small">
+                        <div class="stat-label-small">Fact. Anuladas</div>
+                        <div class="stat-value-small">{{ facturas_anuladas }}</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Promedio de Factura -->
+        {% if promedio_factura is not None %}
+        <div class="col-xl-2 col-lg-3 col-md-4 col-sm-6 mb-3">
+            <div class="stat-card text-white h-100" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
+                <div class="stat-card-body">
+                    <div class="stat-icon-small">
+                        <i class="fas fa-calculator"></i>
+                    </div>
+                    <div class="stat-content-small">
+                        <div class="stat-label-small">Promedio</div>
+                        <div class="stat-value-small">RD$ {{ promedio_factura|unlocalize|floatformat:0 }}</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Porcentaje Cobrado -->
+        {% if porcentaje_cobrado is not None %}
+        <div class="col-xl-2 col-lg-3 col-md-4 col-sm-6 mb-3">
+            <div class="stat-card text-white h-100" style="background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);">
+                <div class="stat-card-body">
+                    <div class="stat-icon-small">
+                        <i class="fas fa-chart-pie"></i>
+                    </div>
+                    <div class="stat-content-small">
+                        <div class="stat-label-small">% Cobrado</div>
+                        <div class="stat-value-small">{{ porcentaje_cobrado|floatformat:1 }}%</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Año Escolar Info -->
+        <div class="col-xl-2 col-lg-3 col-md-4 col-sm-6 mb-3">
+            <div class="stat-card text-white h-100" style="background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);">
+                <div class="stat-card-body">
+                    <div class="stat-icon-small">
+                        <i class="fas fa-calendar-alt"></i>
+                    </div>
+                    <div class="stat-content-small">
+                        <div class="stat-label-small">Año Escolar</div>
+                        <div class="stat-value-small" style="font-size: 1.2rem;">{{ anho_escolar.nombre }}</div>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Últimos pagos -->
+    <!-- Additional Statistics Row -->
     <div class="row">
         <div class="col-12">
             <div class="card">
                 <div class="card-header bg-primary text-white">
                     <div class="d-flex justify-content-between align-items-center">
                         <h5 class="m-0">
-                            <i class="fas fa-list me-2"></i>Últimos Pagos Registrados
+                            <i class="fas fa-file-invoice me-2"></i>Últimas Facturas Registradas
                         </h5>
                         <span class="badge bg-light text-primary">{{ ultimos_pagos|length }} registros</span>
                     </div>
@@ -135,53 +269,56 @@
                         <table class="table table-hover mb-0">
                             <thead>
                                 <tr>
+                                    <th><i class="fas fa-hashtag me-2"></i>Nº Factura</th>
                                     <th><i class="fas fa-calendar me-2"></i>Fecha</th>
-                                    <th><i class="fas fa-user me-2"></i>Estudiante</th>
-                                    <th><i class="fas fa-tag me-2"></i>Concepto</th>
-                                    <th><i class="fas fa-dollar-sign me-2"></i>Monto</th>
+                                    <th><i class="fas fa-user me-2"></i>Cliente</th>
+                                    <th><i class="fas fa-dollar-sign me-2"></i>Total</th>
+                                    <th><i class="fas fa-money-bill-wave me-2"></i>Pagado</th>
                                     <th><i class="fas fa-toggle-on me-2"></i>Estado</th>
                                     <th><i class="fas fa-cogs me-2"></i>Acciones</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                {% for pago in ultimos_pagos %}
+                                {% for factura in ultimos_pagos %}
                                 <tr>
-                                    <td>{{ pago.fecha_registro|date:"d/m/Y H:i" }}</td>
+                                    <td><strong class="text-primary">{{ factura.numero_factura }}</strong></td>
+                                    <td>{{ factura.fecha_emision|date:"d/m/Y H:i" }}</td>
                                     <td>
-                                        <strong>{{ pago.estudiante.get_full_name }}</strong>
-                                        <br><small class="text-muted">{{ pago.estudiante.email }}</small>
-                                    </td>
-                                    <td>
-                                        {{ pago.concepto.nombre }}
-                                        {% if pago.mes %}
-                                        <br><small class="text-muted">Mes: {{ pago.mes }}/{{ pago.anio }}</small>
+                                        {% if factura.cliente %}
+                                            <strong>{{ factura.cliente.get_full_name }}</strong>
+                                            <br><small class="text-muted">{{ factura.cliente.email|default:"Sin email" }}</small>
+                                        {% else %}
+                                            <span class="text-muted">Cliente no especificado</span>
                                         {% endif %}
                                     </td>
-                                    <td><strong class="text-success">RD${{ pago.monto_total|floatformat:2 }}</strong></td>
+                                    <td><strong class="text-dark">RD$ {{ factura.total|unlocalize|floatformat:2 }}</strong></td>
+                                    <td><strong class="text-success">RD$ {{ factura.monto_pagado|unlocalize|floatformat:2 }}</strong></td>
                                     <td>
-                                        {% if pago.estado == 'pagado' %}
-                                        <span class="badge bg-success"><i class="fas fa-check-circle me-1"></i>Pagado</span>
-                                        {% elif pago.estado == 'parcial' %}
+                                        {% if factura.estado == 'pagada' %}
+                                        <span class="badge bg-success"><i class="fas fa-check-circle me-1"></i>Pagada</span>
+                                        {% elif factura.estado == 'parcial' %}
                                         <span class="badge bg-warning"><i class="fas fa-clock me-1"></i>Parcial</span>
-                                        {% elif pago.estado == 'pendiente' %}
+                                        {% elif factura.estado == 'pendiente' %}
                                         <span class="badge bg-danger"><i class="fas fa-exclamation-circle me-1"></i>Pendiente</span>
+                                        {% elif factura.estado == 'anulada' %}
+                                        <span class="badge bg-secondary"><i class="fas fa-ban me-1"></i>Anulada</span>
                                         {% else %}
-                                        <span class="badge bg-secondary">{{ pago.get_estado_display }}</span>
+                                        <span class="badge bg-secondary">{{ factura.get_estado_display }}</span>
                                         {% endif %}
                                     </td>
                                     <td>
                                         <div class="btn-group btn-group-sm" role="group">
-                                            <button class="btn btn-info" title="Ver detalle">
+                                            <a href="{% url 'factura_detalle' factura.id %}" class="btn btn-info" title="Ver detalle">
                                                 <i class="fas fa-eye"></i>
-                                            </button>
-                                            {% if pago.estado != 'pagado' %}
-                                            <button class="btn btn-success" title="Registrar pago">
+                                            </a>
+                                            {% if factura.estado != 'pagada' and factura.estado != 'anulada' %}
+                                            <a href="{% url 'factura_registrar_pago' factura.id %}" class="btn btn-success" title="Registrar pago">
                                                 <i class="fas fa-money-bill"></i>
-                                            </button>
+                                            </a>
                                             {% endif %}
-                                            <button class="btn btn-secondary" title="Imprimir recibo">
+                                            <a href="{% url 'factura_recibo_pos' factura.id %}" class="btn btn-secondary" title="Imprimir recibo" target="_blank">
                                                 <i class="fas fa-print"></i>
-                                            </button>
+                                            </a>
                                         </div>
                                     </td>
                                 </tr>
@@ -192,7 +329,7 @@
                     {% else %}
                     <div class="alert alert-info m-3">
                         <i class="fas fa-info-circle me-2"></i>
-                        No hay pagos registrados aún.
+                        No hay facturas registradas aún.
                     </div>
                     {% endif %}
                 </div>
@@ -525,6 +662,89 @@
 .alert {
     border-radius: 4px;
     border: none;
+}
+
+/* ===== SMALL STAT CARDS ===== */
+.stat-card-body {
+    padding: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.stat-icon-small {
+    flex-shrink: 0;
+    width: 45px;
+    height: 45px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.2);
+}
+
+.stat-icon-small i {
+    font-size: 1.5rem;
+}
+
+.stat-content-small {
+    flex: 1;
+    min-width: 0;
+}
+
+.stat-label-small {
+    font-size: 0.7rem;
+    font-weight: 500;
+    opacity: 0.9;
+    margin-bottom: 0.25rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.stat-value-small {
+    font-size: 1.4rem;
+    font-weight: 700;
+    line-height: 1.2;
+    word-wrap: break-word;
+}
+
+.stat-card {
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    transition: all 0.3s ease;
+    border: none;
+}
+
+.stat-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .stat-value-small {
+        font-size: 1.2rem;
+    }
+    
+    .stat-label-small {
+        font-size: 0.65rem;
+    }
+    
+    .stat-icon-small {
+        width: 40px;
+        height: 40px;
+    }
+    
+    .stat-icon-small i {
+        font-size: 1.2rem;
+    }
+}
+
+@media (max-width: 576px) {
+    .stat-card-body {
+        padding: 0.75rem;
+    }
 }
 </style>
 {% endblock %}

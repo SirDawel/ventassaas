@@ -1,3 +1,4 @@
+{% load l10n %}
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -609,15 +610,15 @@
             <tr>
                 <td class="totales-highlight">
                     <span class="totales-label">💰 Total Ventas</span>
-                    <span class="totales-valor">RD${{ total_ventas|floatformat:2 }}</span>
+                    <span class="totales-valor">RD$ {{ total_ventas|unlocalize|floatformat:2 }}</span>
                 </td>
                 <td class="totales-success">
                     <span class="totales-label">✅ Cobrado</span>
-                    <span class="totales-valor">RD${{ total_cobrado|floatformat:2 }}</span>
+                    <span class="totales-valor">RD$ {{ total_cobrado|unlocalize|floatformat:2 }}</span>
                 </td>
                 <td class="totales-warning">
                     <span class="totales-label">⚠️ ITBIS</span>
-                    <span class="totales-valor">RD${{ total_impuestos|floatformat:2 }}</span>
+                    <span class="totales-valor">RD$ {{ total_impuestos|unlocalize|floatformat:2 }}</span>
                 </td>
                 <td class="totales-info">
                     <span class="totales-label">📋 Facturas</span>
@@ -625,11 +626,11 @@
                 </td>
                 <td class="totales-danger">
                     <span class="totales-label">💳 Créditos No Cobrados</span>
-                    <span class="totales-valor">RD${{ total_pendiente_cobro|floatformat:2 }}</span>
+                    <span class="totales-valor">RD$ {{ total_pendiente_cobro|unlocalize|floatformat:2 }}</span>
                 </td>
                 <td class="totales-danger">
                     <span class="totales-label">🏷️ Descuentos</span>
-                    <span class="totales-valor">RD${{ total_descuentos|floatformat:2 }}</span>
+                    <span class="totales-valor">RD$ {{ total_descuentos|unlocalize|floatformat:2 }}</span>
                 </td>
             </tr>
         </table>
@@ -678,7 +679,7 @@
             <tr>
                 <td><span class="badge badge-success">✅ PAGADAS</span></td>
                 <td class="text-center text-bold">{{ facturas_pagadas }}</td>
-                <td class="text-right text-bold text-success">RD${{ total_cobrado|floatformat:2 }}</td>
+                <td class="text-right text-bold text-success">RD$ {{ total_cobrado|unlocalize|floatformat:2 }}</td>
                 <td class="text-right text-bold">{{ tasa_pago|floatformat:1 }}%</td>
                 <td class="text-center">
                     <div style="background: linear-gradient(to right, #10b981 {{ tasa_pago|floatformat:0 }}%, #e5e7eb {{ tasa_pago|floatformat:0 }}%); height: 18px; border-radius: 4px; width: 100%;"></div>
@@ -694,7 +695,7 @@
             <tr>
                 <td><span class="badge badge-info">⏰ PENDIENTES</span></td>
                 <td class="text-center text-bold">{{ facturas_pendientes }}</td>
-                <td class="text-right text-bold text-danger">RD${{ total_pendiente_cobro|floatformat:2 }}</td>
+                <td class="text-right text-bold text-danger">RD$ {{ total_pendiente_cobro|unlocalize|floatformat:2 }}</td>
                 <td class="text-right text-bold">{{ pendiente_porcentaje|default:"0"|floatformat:1 }}%</td>
                 <td class="text-center" style="color: #3b82f6;">Por cobrar</td>
             </tr>
@@ -703,7 +704,7 @@
             <tr>
                 <td>TOTAL GENERAL</td>
                 <td class="text-center text-bold">{{ total_facturas }}</td>
-                <td class="text-right text-bold">RD${{ total_ventas|floatformat:2 }}</td>
+                <td class="text-right text-bold">RD$ {{ total_ventas|unlocalize|floatformat:2 }}</td>
                 <td class="text-right text-bold">100%</td>
                 <td class="text-center">-</td>
             </tr>
@@ -719,23 +720,23 @@
                     <div class="analysis-card-header">💰 Ingresos</div>
                     <div class="analysis-item">
                         <span class="analysis-item-label">Productos</span>
-                        <span class="analysis-item-value text-success">RD${{ ingresos_productos|floatformat:2 }}</span>
+                        <span class="analysis-item-value text-success">RD$ {{ ingresos_productos|unlocalize|floatformat:2 }}</span>
                     </div>
                     <div class="analysis-item">
                         <span class="analysis-item-label">Servicios</span>
-                        <span class="analysis-item-value">RD${{ ingresos_servicios|floatformat:2 }}</span>
+                        <span class="analysis-item-value">RD$ {{ ingresos_servicios|unlocalize|floatformat:2 }}</span>
                     </div>
                     <div class="analysis-item">
                         <span class="analysis-item-label">Mensualidades</span>
-                        <span class="analysis-item-value">RD${{ ingresos_mensualidades|floatformat:2 }}</span>
+                        <span class="analysis-item-value">RD$ {{ ingresos_mensualidades|unlocalize|floatformat:2 }}</span>
                     </div>
                     <div class="analysis-item highlight-row">
                         <span class="analysis-item-label">ITBIS</span>
-                        <span class="analysis-item-value text-itbis">RD${{ total_impuestos|floatformat:2 }}</span>
+                        <span class="analysis-item-value text-itbis">RD$ {{ total_impuestos|unlocalize|floatformat:2 }}</span>
                     </div>
                     <div class="analysis-item highlight-negative">
                         <span class="analysis-item-label">Descuentos</span>
-                        <span class="analysis-item-value text-danger">-RD${{ total_descuentos|floatformat:2 }}</span>
+                        <span class="analysis-item-value text-danger">-RD$ {{ total_descuentos|unlocalize|floatformat:2 }}</span>
                     </div>
                 </div>
             </td>
@@ -754,7 +755,7 @@
                                 {% else %}{{ metodo.metodo_pago }}
                                 {% endif %}
                             </span>
-                            <span class="analysis-item-value">RD${{ metodo.total|floatformat:2 }}</span>
+                            <span class="analysis-item-value">RD$ {{ metodo.total|unlocalize|floatformat:2 }}</span>
                         </div>
                         {% endfor %}
                     {% else %}
@@ -770,11 +771,11 @@
                     <div class="analysis-card-header">📈 Comparativa</div>
                     <div class="analysis-item">
                         <span class="analysis-item-label">Período Actual</span>
-                        <span class="analysis-item-value">RD${{ total_ventas|floatformat:2 }}</span>
+                        <span class="analysis-item-value">RD$ {{ total_ventas|unlocalize|floatformat:2 }}</span>
                     </div>
                     <div class="analysis-item">
                         <span class="analysis-item-label">Período Anterior</span>
-                        <span class="analysis-item-value">RD${{ total_ventas_anterior|floatformat:2 }}</span>
+                        <span class="analysis-item-value">RD$ {{ total_ventas_anterior|unlocalize|floatformat:2 }}</span>
                     </div>
                     <div class="analysis-item {% if variacion_porcentual >= 0 %}highlight-positive{% else %}highlight-negative{% endif %}">
                         <span class="analysis-item-label">Variación</span>
@@ -791,7 +792,7 @@
                     </div>
                     <div class="analysis-item highlight-negative">
                         <span class="analysis-item-label">💳 Pendiente de Cobro</span>
-                        <span class="analysis-item-value text-danger">RD${{ total_pendiente_cobro|floatformat:2 }}</span>
+                        <span class="analysis-item-value text-danger">RD$ {{ total_pendiente_cobro|unlocalize|floatformat:2 }}</span>
                     </div>
                 </div>
             </td>
@@ -818,16 +819,16 @@
                 <td class="text-center"><strong>{{ factura.numero_factura }}</strong></td>
                 <td class="text-center">{{ factura.fecha_emision|date:"d/m/Y" }}</td>
                 <td>{{ factura.cliente__first_name }} {{ factura.cliente__last_name }}</td>
-                <td class="text-right">RD${{ factura.total|floatformat:2 }}</td>
-                <td class="text-right text-success">RD${{ factura.monto_pagado|floatformat:2 }}</td>
-                <td class="text-right text-bold text-danger">RD${{ factura.saldo_pendiente|floatformat:2 }}</td>
+                <td class="text-right">RD$ {{ factura.total|unlocalize|floatformat:2 }}</td>
+                <td class="text-right text-success">RD$ {{ factura.monto_pagado|unlocalize|floatformat:2 }}</td>
+                <td class="text-right text-bold text-danger">RD$ {{ factura.saldo_pendiente|unlocalize|floatformat:2 }}</td>
             </tr>
             {% endfor %}
         </tbody>
         <tfoot>
             <tr>
                 <td colspan="5" class="text-right"><strong>TOTAL DEUDA:</strong></td>
-                <td class="text-right text-bold text-danger">RD${{ total_pendiente_cobro|floatformat:2 }}</td>
+                <td class="text-right text-bold text-danger">RD$ {{ total_pendiente_cobro|unlocalize|floatformat:2 }}</td>
             </tr>
         </tfoot>
     </table>
@@ -858,15 +859,15 @@
                 <td><strong>{{ articulo.articulo__codigo_barras }}</strong></td>
                 <td>{{ articulo.articulo__nombre }}</td>
                 <td class="text-center text-bold">{{ articulo.total_vendido|floatformat:0 }}</td>
-                <td class="text-right">RD${{ articulo.precio_promedio|default:"0.00"|floatformat:2 }}</td>
-                <td class="text-right text-bold text-success">RD${{ articulo.ingresos|floatformat:2 }}</td>
+                <td class="text-right">RD$ {{ articulo.precio_promedio|default:"0.00"|unlocalize|floatformat:2 }}</td>
+                <td class="text-right text-bold text-success">RD$ {{ articulo.ingresos|unlocalize|floatformat:2 }}</td>
             </tr>
             {% endfor %}
         </tbody>
         <tfoot>
             <tr>
                 <td colspan="5" class="text-right">TOTAL PRODUCTOS:</td>
-                <td class="text-right text-bold">RD${{ ingresos_productos|floatformat:2 }}</td>
+                <td class="text-right text-bold">RD$ {{ ingresos_productos|unlocalize|floatformat:2 }}</td>
             </tr>
         </tfoot>
     </table>
@@ -905,14 +906,14 @@
                     <td><strong>{{ item.codigo }}</strong></td>
                     <td>{{ item.nombre }}</td>
                     <td class="text-center text-bold">{{ item.cantidad|floatformat:0 }}</td>
-                    <td class="text-right text-bold">RD${{ item.ingresos|floatformat:2 }}</td>
+                    <td class="text-right text-bold">RD$ {{ item.ingresos|unlocalize|floatformat:2 }}</td>
                 </tr>
                 {% endfor %}
             </tbody>
             <tfoot>
                 <tr>
                     <td colspan="5" class="text-right">TOTAL GENERAL DE ITEMS:</td>
-                    <td class="text-right text-bold">RD${{ total_general_items|floatformat:2 }}</td>
+                    <td class="text-right text-bold">RD$ {{ total_general_items|unlocalize|floatformat:2 }}</td>
                 </tr>
                 <tr>
                     <td colspan="5" class="text-right">CANTIDAD DE ITEMS DIFERENTES:</td>
@@ -955,14 +956,14 @@
                     {% endif %}
                 </td>
                 <td class="text-center text-bold">{{ concepto.cantidad_ventas }}</td>
-                <td class="text-right text-bold text-success">RD${{ concepto.ingresos|floatformat:2 }}</td>
+                <td class="text-right text-bold text-success">RD$ {{ concepto.ingresos|unlocalize|floatformat:2 }}</td>
             </tr>
             {% endfor %}
         </tbody>
         <tfoot>
             <tr>
                 <td colspan="4" class="text-right">TOTAL SERVICIOS:</td>
-                <td class="text-right text-bold">RD${{ ingresos_servicios|floatformat:2 }}</td>
+                <td class="text-right text-bold">RD$ {{ ingresos_servicios|unlocalize|floatformat:2 }}</td>
             </tr>
         </tfoot>
     </table>

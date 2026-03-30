@@ -1,0 +1,315 @@
+{% extends 'website/base.html' %}
+{% load static %}
+
+{% block title %}{{ titulo }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <!-- Header -->
+            <div class="mb-4">
+                <h2><i class="fas fa-clipboard-check me-2"></i>{{ titulo }}</h2>
+                <p class="text-muted">Crea una nueva evaluación basada en una lista de cotejo existente</p>
+            </div>
+
+            <!-- Mensajes -->
+            {% if messages %}
+            {% for message in messages %}
+            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+            {% endfor %}
+            {% endif %}
+
+            <!-- Errores del Formulario -->
+            {% if form.non_field_errors %}
+            <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                <h6 class="alert-heading"><i class="fas fa-exclamation-triangle me-2"></i>Errores en el formulario:</h6>
+                <ul class="mb-0">
+                    {% for error in form.non_field_errors %}
+                    <li>{{ error }}</li>
+                    {% endfor %}
+                </ul>
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+            {% endif %}
+
+            <!-- Resumen de todos los errores de campos -->
+            {% if form.errors %}
+            <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                <h6 class="alert-heading"><i class="fas fa-exclamation-triangle me-2"></i>Se encontraron los siguientes errores:</h6>
+                <ul class="mb-0">
+                    {% for field, errors in form.errors.items %}
+                        {% if field != '__all__' %}
+                        <li><strong>
+                            {% if field == 'nombre' %}Nombre de la Evaluación
+                            {% elif field == 'lista_cotejo' %}Lista de Cotejo
+                            {% elif field == 'descripcion' %}Descripción
+                            {% elif field == 'materia' %}Materia
+                            {% elif field == 'curso' %}Curso
+                            {% elif field == 'fecha_evaluacion' %}Fecha de Evaluación
+                            {% elif field == 'fecha_limite' %}Fecha Límite para Calificar
+                            {% elif field == 'estado' %}Estado
+                            {% elif field == 'incluir_en_promedio' %}Incluir en Promedio Final
+                            {% elif field == 'peso_en_promedio' %}Peso en Promedio (%)
+                            {% elif field == 'observaciones_generales' %}Observaciones Generales
+                            {% else %}{{ field }}
+                            {% endif %}:</strong>
+                            {% for error in errors %}{{ error }}{% if not forloop.last %}, {% endif %}{% endfor %}
+                        </li>
+                        {% endif %}
+                    {% endfor %}
+                </ul>
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+            {% endif %}
+
+            <!-- Formulario -->
+            <form method="post" class="needs-validation" novalidate>
+                {% csrf_token %}
+                
+                <div class="card shadow mb-4">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="mb-0"><i class="fas fa-info-circle me-2"></i>Información de la Evaluación</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <!-- Nombre de la Evaluación -->
+                            <div class="col-md-12 mb-3">
+                                <label for="{{ form.nombre.id_for_label }}" class="form-label">
+                                    {{ form.nombre.label }}
+                                    <span class="text-danger">*</span>
+                                </label>
+                                {{ form.nombre }}
+                                <small class="form-text text-muted">Ejemplo: "Evaluación Trimestre 1 - Lista de Cotejo Matemáticas"</small>
+                                {% if form.nombre.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.nombre.errors %}{{ error }}{% endfor %}
+                                </div>
+                                {% endif %}
+                            </div>
+
+                            <!-- Descripción -->
+                            <div class="col-md-12 mb-3">
+                                <label for="{{ form.descripcion.id_for_label }}" class="form-label">
+                                    {{ form.descripcion.label }}
+                                </label>
+                                {{ form.descripcion }}
+                                <small class="form-text text-muted">Descripción breve de la evaluación (opcional)</small>
+                                {% if form.descripcion.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.descripcion.errors %}{{ error }}{% endfor %}
+                                </div>
+                                {% endif %}
+                            </div>
+
+                            <!-- Lista de Cotejo -->
+                            <div class="col-md-12 mb-3">
+                                <label for="{{ form.lista_cotejo.id_for_label }}" class="form-label">
+                                    {{ form.lista_cotejo.label }}
+                                    <span class="text-danger">*</span>
+                                </label>
+                                {{ form.lista_cotejo }}
+                                <small class="form-text text-muted">Selecciona la lista de cotejo que usarás para esta evaluación</small>
+                                {% if form.lista_cotejo.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.lista_cotejo.errors %}{{ error }}{% endfor %}
+                                </div>
+                                {% endif %}
+                            </div>
+
+                            <!-- Materia -->
+                            <div class="col-md-6 mb-3">
+                                <label for="{{ form.materia.id_for_label }}" class="form-label">
+                                    {{ form.materia.label }}
+                                    <span class="text-danger">*</span>
+                                </label>
+                                {{ form.materia }}
+                                {% if form.materia.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.materia.errors %}{{ error }}{% endfor %}
+                                </div>
+                                {% endif %}
+                            </div>
+
+                            <!-- Curso -->
+                            <div class="col-md-6 mb-3">
+                                <label for="{{ form.curso.id_for_label }}" class="form-label">
+                                    {{ form.curso.label }}
+                                    <span class="text-danger">*</span>
+                                </label>
+                                {{ form.curso }}
+                                {% if form.curso.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.curso.errors %}{{ error }}{% endfor %}
+                                </div>
+                                {% endif %}
+                            </div>
+
+                            <!-- Fecha de Evaluación -->
+                            <div class="col-md-6 mb-3">
+                                <label for="{{ form.fecha_evaluacion.id_for_label }}" class="form-label">
+                                    {{ form.fecha_evaluacion.label }}
+                                    <span class="text-danger">*</span>
+                                </label>
+                                {{ form.fecha_evaluacion }}
+                                {% if form.fecha_evaluacion.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.fecha_evaluacion.errors %}{{ error }}{% endfor %}
+                                </div>
+                                {% endif %}
+                            </div>
+
+                            <!-- Fecha Límite -->
+                            <div class="col-md-6 mb-3">
+                                <label for="{{ form.fecha_limite.id_for_label }}" class="form-label">
+                                    {{ form.fecha_limite.label }}
+                                </label>
+                                {{ form.fecha_limite }}
+                                <small class="form-text text-muted">Fecha límite para completar calificaciones (opcional)</small>
+                                {% if form.fecha_limite.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.fecha_limite.errors %}{{ error }}{% endfor %}
+                                </div>
+                                {% endif %}
+                            </div>
+
+                            <!-- Estado -->
+                            <div class="col-md-12 mb-3">
+                                <label for="{{ form.estado.id_for_label }}" class="form-label">
+                                    {{ form.estado.label }}
+                                </label>
+                                {{ form.estado }}
+                                <small class="form-text text-muted">
+                                    <i class="fas fa-info-circle"></i> 
+                                    Borrador: No visible. En progreso: Calificando. Finalizada: Completa. Publicada: Visible para estudiantes
+                                </small>
+                                {% if form.estado.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.estado.errors %}{{ error }}{% endfor %}
+                                </div>
+                                {% endif %}
+                            </div>
+
+                            <!-- Incluir en Promedio -->
+                            <div class="col-md-6 mb-3">
+                                <div class="form-check mt-4">
+                                    {{ form.incluir_en_promedio }}
+                                    <label class="form-check-label" for="{{ form.incluir_en_promedio.id_for_label }}">
+                                        {{ form.incluir_en_promedio.label }}
+                                    </label>
+                                </div>
+                                <small class="form-text text-muted">¿Incluir esta evaluación en el promedio final de la materia?</small>
+                                {% if form.incluir_en_promedio.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.incluir_en_promedio.errors %}{{ error }}{% endfor %}
+                                </div>
+                                {% endif %}
+                            </div>
+
+                            <!-- Peso en Promedio -->
+                            <div class="col-md-6 mb-3">
+                                <label for="{{ form.peso_en_promedio.id_for_label }}" class="form-label">
+                                    {{ form.peso_en_promedio.label }}
+                                </label>
+                                {{ form.peso_en_promedio }}
+                                <small class="form-text text-muted">Peso porcentual en la nota final (ejemplo: 20 para 20%)</small>
+                                {% if form.peso_en_promedio.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.peso_en_promedio.errors %}{{ error }}{% endfor %}
+                                </div>
+                                {% endif %}
+                            </div>
+
+                            <!-- Observaciones Generales -->
+                            <div class="col-md-12 mb-3">
+                                <label for="{{ form.observaciones_generales.id_for_label }}" class="form-label">
+                                    {{ form.observaciones_generales.label }}
+                                </label>
+                                {{ form.observaciones_generales }}
+                                <small class="form-text text-muted">Instrucciones o comentarios generales sobre esta evaluación</small>
+                                {% if form.observaciones_generales.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.observaciones_generales.errors %}{{ error }}{% endfor %}
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Información Adicional -->
+                <div class="card shadow mb-4 border-info">
+                    <div class="card-header bg-info text-white">
+                        <h6 class="mb-0"><i class="fas fa-lightbulb me-2"></i>¿Qué sucede después?</h6>
+                    </div>
+                    <div class="card-body">
+                        <ol class="mb-0">
+                            <li>Al crear la evaluación, serás redirigido a la pantalla de calificación masiva</li>
+                            <li>Podrás calificar a todos los estudiantes del curso seleccionado usando la tabla interactiva</li>
+                            <li>Las calificaciones se guardan automáticamente mientras escribes</li>
+                            <li>Cuando termines, puedes cambiar el estado a "Finalizada" o "Publicada"</li>
+                        </ol>
+                    </div>
+                </div>
+
+                <!-- Botones -->
+                <div class="d-grid gap-2 d-md-flex justify-content-md-end mb-4">
+                    <a href="{% url 'evaluacion_cotejo_lista' %}" class="btn btn-secondary">
+                        <i class="fas fa-times me-2"></i>Cancelar
+                    </a>
+                    <button type="submit" class="btn btn-success btn-lg">
+                        <i class="fas fa-plus-circle me-2"></i>Crear Evaluación
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Script para campos dinámicos -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const listaCotejoSelect = document.getElementById('{{ form.lista_cotejo.id_for_label }}');
+    const materiaSelect = document.getElementById('{{ form.materia.id_for_label }}');
+    
+    // Si se cambia la lista de cotejo, intentar auto-seleccionar la materia
+    if (listaCotejoSelect) {
+        listaCotejoSelect.addEventListener('change', function() {
+            const selectedOption = this.options[this.selectedIndex];
+            // Esta funcionalidad podría expandirse con AJAX para obtener info de la lista
+            console.log('Lista de cotejo seleccionada:', selectedOption.text);
+        });
+    }
+    
+    // Establecer fecha de hoy por defecto si está vacío
+    const fechaInput = document.getElementById('{{ form.fecha_evaluacion.id_for_label }}');
+    if (fechaInput && !fechaInput.value) {
+        const today = new Date().toISOString().split('T')[0];
+        fechaInput.value = today;
+    }
+});
+</script>
+
+<style>
+.form-control:focus, .form-select:focus {
+    border-color: #80bdff;
+    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+}
+
+.card {
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+.card-header {
+    border-bottom: 3px solid rgba(0, 0, 0, 0.1);
+}
+
+.text-danger {
+    font-weight: bold;
+}
+</style>
+{% endblock %}

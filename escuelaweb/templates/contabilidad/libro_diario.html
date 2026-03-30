@@ -1,0 +1,274 @@
+{% extends 'website/base.html' %}
+{% load humanize %}
+
+{% block title %}Libro Diario - IEPM{% endblock %}
+
+{% block extra_css %}
+<style>
+    .filter-card {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border-radius: 10px;
+        padding: 20px;
+        margin-bottom: 20px;
+    }
+    .filter-card .form-label {
+        color: white;
+        font-weight: 500;
+    }
+    .filter-card .form-control, .filter-card .form-select {
+        border: 2px solid rgba(255,255,255,0.3);
+        background: rgba(255,255,255,0.9);
+    }
+    .totals-card {
+        background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        color: white;
+        border-radius: 10px;
+        padding: 20px;
+        margin-top: 20px;
+    }
+    .totals-card h4 {
+        color: white;
+        margin-bottom: 15px;
+    }
+    .detalle-row {
+        background-color: #f8f9fa;
+        font-size: 0.9rem;
+    }
+    .asiento-header {
+        background-color: #e9ecef;
+        font-weight: bold;
+    }
+    @media print {
+        .no-print {
+            display: none;
+        }
+        .filter-card {
+            display: none;
+        }
+        body {
+            font-size: 10pt;
+        }
+        .table {
+            font-size: 9pt;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4 no-print">
+        <div class="col-12">
+            <h2><i class="fas fa-book-open"></i> Libro Diario</h2>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{% url 'index' %}">Inicio</a></li>
+                    <li class="breadcrumb-item"><a href="{% url 'contabilidad_dashboard' %}">Contabilidad</a></li>
+                    <li class="breadcrumb-item active">Libro Diario</li>
+                </ol>
+            </nav>
+        </div>
+    </div>
+
+    <!-- Filtros -->
+    <div class="filter-card no-print">
+        <form method="get" id="filterForm">
+            <div class="row">
+                <div class="col-md-3">
+                    <label for="fecha_desde" class="form-label">Fecha Desde</label>
+                    <input type="date" class="form-control" id="fecha_desde" name="fecha_desde" 
+                           value="{{ request.GET.fecha_desde }}">
+                </div>
+                <div class="col-md-3">
+                    <label for="fecha_hasta" class="form-label">Fecha Hasta</label>
+                    <input type="date" class="form-control" id="fecha_hasta" name="fecha_hasta" 
+                           value="{{ request.GET.fecha_hasta }}">
+                </div>
+                <div class="col-md-3">
+                    <label for="estado" class="form-label">Estado</label>
+                    <select class="form-select" id="estado" name="estado">
+                        <option value="">Todos</option>
+                        <option value="CONTABILIZADO" {% if request.GET.estado == 'CONTABILIZADO' %}selected{% endif %}>Contabilizado</option>
+                        <option value="BORRADOR" {% if request.GET.estado == 'BORRADOR' %}selected{% endif %}>Borrador</option>
+                        <option value="ANULADO" {% if request.GET.estado == 'ANULADO' %}selected{% endif %}>Anulado</option>
+                    </select>
+                </div>
+                <div class="col-md-3 d-flex align-items-end">
+                    <button type="submit" class="btn btn-light me-2">
+                        <i class="fas fa-filter me-2"></i>Filtrar
+                    </button>
+                    <a href="{% url 'libro_diario' %}" class="btn btn-outline-light">
+                        <i class="fas fa-eraser me-2"></i>Limpiar
+                    </a>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <!-- Botones de Acción -->
+    <div class="row mb-3 no-print">
+        <div class="col-12">
+            <button onclick="window.print()" class="btn btn-secondary">
+                <i class="fas fa-print me-2"></i>Imprimir
+            </button>
+            <a href="{% url 'asiento_crear' %}" class="btn btn-primary">
+                <i class="fas fa-plus me-2"></i>Nuevo Asiento
+            </a>
+        </div>
+    </div>
+
+    <!-- Encabezado para Impresión -->
+    <div class="row mb-3 d-none d-print-block">
+        <div class="col-12 text-center">
+            <h3>Instituto de Educación PABLO MCAL</h3>
+            <h4>Libro Diario</h4>
+            {% if request.GET.fecha_desde or request.GET.fecha_hasta %}
+            <p>
+                {% if request.GET.fecha_desde %}Desde: {{ request.GET.fecha_desde }}{% endif %}
+                {% if request.GET.fecha_hasta %}Hasta: {{ request.GET.fecha_hasta }}{% endif %}
+            </p>
+            {% endif %}
+            <hr>
+        </div>
+    </div>
+
+    <!-- Tabla de Asientos -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    {% if asientos %}
+                    <div class="table-responsive">
+                        <table class="table table-bordered">
+                            <thead class="table-dark">
+                                <tr>
+                                    <th style="width: 12%;">Fecha</th>
+                                    <th style="width: 15%;">Número</th>
+                                    <th style="width: 20%;">Cuenta</th>
+                                    <th style="width: 28%;">Concepto</th>
+                                    <th style="width: 12%;" class="text-end">Débito</th>
+                                    <th style="width: 12%;" class="text-end">Crédito</th>
+                                    <th style="width: 8%;" class="no-print">Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for asiento in asientos %}
+                                    <!-- Encabezado del Asiento -->
+                                    <tr class="asiento-header">
+                                        <td>{{ asiento.fecha_asiento|date:"d/m/Y" }}</td>
+                                        <td>
+                                            {{ asiento.numero_asiento }}
+                                            {% if asiento.estado == 'CONTABILIZADO' %}
+                                                <span class="badge bg-success ms-2">C</span>
+                                            {% elif asiento.estado == 'BORRADOR' %}
+                                                <span class="badge bg-secondary ms-2">B</span>
+                                            {% elif asiento.estado == 'ANULADO' %}
+                                                <span class="badge bg-danger ms-2">A</span>
+                                            {% endif %}
+                                        </td>
+                                        <td colspan="4">
+                                            <strong>{{ asiento.concepto }}</strong>
+                                        </td>
+                                        <td class="no-print">
+                                            <a href="{% url 'asiento_detalle' asiento.id %}" 
+                                               class="btn btn-sm btn-info" title="Ver detalle">
+                                                <i class="fas fa-eye"></i>
+                                            </a>
+                                        </td>
+                                    </tr>
+                                    
+                                    <!-- Detalles del Asiento -->
+                                    {% for detalle in asiento.detalles.all %}
+                                    <tr class="detalle-row">
+                                        <td></td>
+                                        <td></td>
+                                        <td>
+                                            {{ detalle.cuenta.codigo }} - {{ detalle.cuenta.nombre }}
+                                        </td>
+                                        <td>{{ detalle.concepto|default:"-" }}</td>
+                                        <td class="text-end">
+                                            {% if detalle.debito > 0 %}
+                                                ₲ {{ detalle.debito|intcomma }}
+                                            {% else %}
+                                                -
+                                            {% endif %}
+                                        </td>
+                                        <td class="text-end">
+                                            {% if detalle.credito > 0 %}
+                                                ₲ {{ detalle.credito|intcomma }}
+                                            {% else %}
+                                                -
+                                            {% endif %}
+                                        </td>
+                                        <td class="no-print"></td>
+                                    </tr>
+                                    {% endfor %}
+                                    
+                                    <!-- Totales del Asiento -->
+                                    <tr class="table-secondary">
+                                        <td colspan="4" class="text-end"><strong>Total:</strong></td>
+                                        <td class="text-end"><strong>₲ {{ asiento.total_debito|intcomma }}</strong></td>
+                                        <td class="text-end"><strong>₲ {{ asiento.total_credito|intcomma }}</strong></td>
+                                        <td class="no-print"></td>
+                                    </tr>
+                                    
+                                    <!-- Espacio entre asientos -->
+                                    <tr>
+                                        <td colspan="7" style="height: 10px; background-color: white;"></td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Totales Generales -->
+                    <div class="totals-card">
+                        <h4><i class="fas fa-calculator me-2"></i>Totales Generales</h4>
+                        <div class="row">
+                            <div class="col-md-4">
+                                <p class="mb-2"><strong>Total Débitos:</strong></p>
+                                <h4>₲ {{ total_debito|intcomma }}</h4>
+                            </div>
+                            <div class="col-md-4">
+                                <p class="mb-2"><strong>Total Créditos:</strong></p>
+                                <h4>₲ {{ total_credito|intcomma }}</h4>
+                            </div>
+                            <div class="col-md-4">
+                                <p class="mb-2"><strong>Diferencia:</strong></p>
+                                <h4>₲ {{ total_debito|add:total_credito|intcomma }}</h4>
+                            </div>
+                        </div>
+                    </div>
+                    {% else %}
+                    <p class="text-center text-muted mb-0">No se encontraron asientos con los filtros aplicados.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Auto-complete de fechas si no están seleccionadas
+document.addEventListener('DOMContentLoaded', function() {
+        const fechaDesde = document.getElementById('fecha_desde');
+        const fechaHasta = document.getElementById('fecha_hasta');
+        
+        // Si no hay fecha desde, poner primer día del mes actual
+        if (!fechaDesde.value) {
+            const today = new Date();
+            const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
+            fechaDesde.value = firstDay.toISOString().split('T')[0];
+        }
+        
+        // Si no hay fecha hasta, poner fecha actual
+        if (!fechaHasta.value) {
+            const today = new Date();
+            fechaHasta.value = today.toISOString().split('T')[0];
+        }
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ titulo }}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        @media print {
+            .no-print {
+                display: none !important;
+            }
+            body {
+                font-size: 11px;
+            }
+            .table {
+                font-size: 10px;
+            }
+            @page {
+                margin: 1cm;
+            }
+        }
+        
+        body {
+            font-family: Arial, sans-serif;
+        }
+        
+        .header-reporte {
+            border-bottom: 3px solid #0d6efd;
+            padding-bottom: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .info-box {
+            background-color: #f8f9fa;
+            padding: 10px;
+            border-radius: 5px;
+            margin-bottom: 15px;
+        }
+        
+        .table-reporte {
+            font-size: 11px;
+        }
+        
+        .table-reporte th {
+            background-color: #e9ecef;
+            font-weight: bold;
+            text-align: center;
+            vertical-align: middle;
+            padding: 8px 4px;
+        }
+        
+        .table-reporte td {
+            vertical-align: middle;
+            padding: 6px 4px;
+        }
+        
+        .criterio-header {
+            writing-mode: horizontal-tb;
+            min-width: 60px;
+            max-width: 80px;
+            font-size: 9px;
+        }
+        
+        .firma-section {
+            margin-top: 50px;
+            page-break-inside: avoid;
+        }
+        
+        .firma-line {
+            border-top: 1px solid #000;
+            width: 200px;
+            margin: 40px auto 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container-fluid">
+        <!-- Botón de impresión -->
+        <div class="text-end mb-3 no-print">
+            <button onclick="window.print()" class="btn btn-primary">
+                <i class="fas fa-print"></i> Imprimir
+            </button>
+            <button onclick="window.close()" class="btn btn-secondary">
+                Cerrar
+            </button>
+        </div>
+
+        <!-- Encabezado del Reporte -->
+        <div class="header-reporte">
+            <div class="row">
+                <div class="col-12 text-center">
+                    <h3 class="mb-1">REPORTE DE EVALUACIÓN - LISTA DE COTEJO</h3>
+                    <h5 class="text-muted">{{ evaluacion.nombre }}</h5>
+                </div>
+            </div>
+        </div>
+
+        <!-- Información General -->
+        <div class="row mb-4">
+            <div class="col-md-6">
+                <div class="info-box">
+                    <p class="mb-1"><strong>Materia:</strong> {{ evaluacion.materia.nombre }}</p>
+                    <p class="mb-1"><strong>Curso:</strong> {{ evaluacion.curso.nombre }}</p>
+                    <p class="mb-1"><strong>Profesor:</strong> {{ evaluacion.evaluador.get_full_name }}</p>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="info-box">
+                    <p class="mb-1"><strong>Fecha de Evaluación:</strong> {{ evaluacion.fecha_evaluacion|date:"d/m/Y" }}</p>
+                    <p class="mb-1"><strong>Lista de Cotejo:</strong> {{ evaluacion.lista_cotejo.nombre }}</p>
+                    <p class="mb-1"><strong>Puntaje Total:</strong> {{ evaluacion.lista_cotejo.puntaje_total }} puntos</p>
+                    <p class="mb-1"><strong>Fecha de Reporte:</strong> {{ fecha_reporte|date:"d/m/Y H:i" }}</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Descripción y Observaciones -->
+        {% if evaluacion.descripcion or evaluacion.observaciones_generales %}
+        <div class="row mb-4">
+            <div class="col-12">
+                {% if evaluacion.descripcion %}
+                <div class="alert alert-info">
+                    <strong>Descripción:</strong> {{ evaluacion.descripcion }}
+                </div>
+                {% endif %}
+                {% if evaluacion.observaciones_generales %}
+                <div class="alert alert-warning">
+                    <strong>Observaciones Generales:</strong> {{ evaluacion.observaciones_generales }}
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Criterios de Evaluación -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <h5 class="mb-3">Criterios de Evaluación</h5>
+                <table class="table table-bordered table-sm">
+                    <thead class="table-light">
+                        <tr>
+                            <th style="width: 50px;">#</th>
+                            <th>Descripción del Criterio</th>
+                            <th class="text-center" style="width: 100px;">Tipo</th>
+                            <th class="text-center" style="width: 100px;">Puntaje Máx.</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for criterio in criterios %}
+                        <tr>
+                            <td class="text-center">{{ criterio.orden }}</td>
+                            <td>{{ criterio.descripcion }}</td>
+                            <td class="text-center">{{ criterio.get_tipo_criterio_display }}</td>
+                            <td class="text-center"><strong>{{ criterio.puntaje_maximo }}</strong></td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                    <tfoot>
+                        <tr class="table-light">
+                            <th colspan="3" class="text-end">TOTAL:</th>
+                            <th class="text-center">{{ evaluacion.lista_cotejo.puntaje_total }}</th>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        </div>
+
+        <!-- Tabla de Calificaciones -->
+        <div class="row">
+            <div class="col-12">
+                <h5 class="mb-3">Resultados por Estudiante</h5>
+                <div class="table-responsive">
+                    <table class="table table-bordered table-reporte">
+                        <thead>
+                            <tr>
+                                <th style="width: 40px;">#</th>
+                                <th style="min-width: 200px;">Estudiante</th>
+                                {% for criterio in criterios %}
+                                <th class="criterio-header">
+                                    C{{ criterio.orden }}
+                                    <br>
+                                    <small>({{ criterio.puntaje_maximo }})</small>
+                                </th>
+                                {% endfor %}
+                                <th class="text-center bg-success text-white" style="width: 80px;">
+                                    <strong>TOTAL</strong>
+                                    <br>
+                                    <small>({{ evaluacion.lista_cotejo.puntaje_total }})</small>
+                                </th>
+                                <th class="text-center bg-info text-white" style="width: 60px;">
+                                    <strong>%</strong>
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for fila in matriz %}
+                            <tr>
+                                <td class="text-center">{{ forloop.counter }}</td>
+                                <td><strong>{{ fila.estudiante.get_full_name }}</strong></td>
+                                {% for calif in fila.calificaciones %}
+                                <td class="text-center">
+                                    {% if calif %}
+                                        {% if calif.criterio.tipo_criterio == 'binario' %}
+                                            {% if calif.valor %}✓{% else %}✗{% endif %}
+                                        {% else %}
+                                            {{ calif.valor|floatformat:1 }}
+                                        {% endif %}
+                                    {% else %}
+                                    -
+                                    {% endif %}
+                                </td>
+                                {% endfor %}
+                                <td class="text-center bg-light">
+                                    {% if fila.resumen %}
+                                    <strong>{{ fila.resumen.puntaje_obtenido|floatformat:2 }}</strong>
+                                    {% else %}
+                                    -
+                                    {% endif %}
+                                </td>
+                                <td class="text-center bg-light">
+                                    {% if fila.resumen %}
+                                    {{ fila.resumen.porcentaje|floatformat:1 }}%
+                                    {% else %}
+                                    -
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="{{ criterios.count|add:4 }}" class="text-center text-muted">
+                                    No hay estudiantes evaluados
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                        {% if matriz %}
+                        <tfoot class="table-light">
+                            <tr>
+                                <th colspan="2" class="text-end">PROMEDIO GENERAL:</th>
+                                {% for criterio in criterios %}
+                                <th class="text-center">
+                                    <!-- Calcular promedio por criterio si es necesario -->
+                                    -
+                                </th>
+                                {% endfor %}
+                                <th class="text-center bg-success text-white">
+                                    {% if matriz %}
+                                    {% with total_sum=0 count=0 %}
+                                        {% for fila in matriz %}
+                                            {% if fila.resumen %}
+                                                <!-- Promedio calculado en la vista sería mejor -->
+                                            {% endif %}
+                                        {% endfor %}
+                                    {% endwith %}
+                                    {% endif %}
+                                    -
+                                </th>
+                                <th class="text-center bg-info text-white">
+                                    -
+                                </th>
+                            </tr>
+                        </tfoot>
+                        {% endif %}
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Leyenda -->
+        <div class="row mt-4 mb-4">
+            <div class="col-12">
+                <div class="alert alert-secondary">
+                    <strong>Leyenda:</strong>
+                    <ul class="mb-0">
+                        <li><strong>C#:</strong> Número del criterio</li>
+                        <li><strong>✓:</strong> Cumple (criterio binario)</li>
+                        <li><strong>✗:</strong> No cumple (criterio binario)</li>
+                        <li><strong>-:</strong> Sin evaluar</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Estadísticas Adicionales -->
+        {% if matriz %}
+        <div class="row mb-4">
+            <div class="col-md-4">
+                <div class="card">
+                    <div class="card-body text-center">
+                        <h6>Total Estudiantes</h6>
+                        <h3>{{ matriz|length }}</h3>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card">
+                    <div class="card-body text-center">
+                        <h6>Criterios Evaluados</h6>
+                        <h3>{{ criterios.count }}</h3>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card">
+                    <div class="card-body text-center">
+                        <h6>Puntaje Máximo</h6>
+                        <h3>{{ evaluacion.lista_cotejo.puntaje_total }}</h3>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Sección de Firmas -->
+        <div class="firma-section">
+            <div class="row">
+                <div class="col-md-6 text-center">
+                    <div class="firma-line"></div>
+                    <p class="mb-0"><strong>{{ evaluacion.evaluador.get_full_name }}</strong></p>
+                    <p class="text-muted">Profesor(a)</p>
+                </div>
+                <div class="col-md-6 text-center">
+                    <div class="firma-line"></div>
+                    <p class="mb-0"><strong>Coordinación Académica</strong></p>
+                    <p class="text-muted">Firma y Sello</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://kit.fontawesome.com/your-fontawesome-kit.js"></script>
+</body>
+</html>

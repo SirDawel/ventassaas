@@ -1,0 +1,540 @@
+{% extends 'website/base.html' %}
+{% load static %}
+
+{% block title %}{{ titulo }} - {{ block.super }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    :root {
+        --asiento-primary: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    }
+    
+    .page-header {
+        background: var(--asiento-primary);
+        color: white;
+        padding: 2rem;
+        border-radius: 15px;
+        margin-bottom: 2rem;
+        box-shadow: 0 10px 30px rgba(102, 126, 234, 0.3);
+    }
+    
+    .form-card {
+        background: white;
+        border-radius: 15px;
+        padding: 2rem;
+        box-shadow: 0 5px 20px rgba(0,0,0,0.08);
+        margin-bottom: 2rem;
+    }
+    
+    .form-section-title {
+        color: #667eea;
+        font-size: 1.2rem;
+        font-weight: 700;
+        margin-bottom: 1.5rem;
+        padding-bottom: 0.5rem;
+        border-bottom: 2px solid #667eea;
+    }
+    
+    .lineas-table {
+        background: white;
+        border-radius: 10px;
+        overflow: hidden;
+    }
+    
+    .lineas-table thead {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+    }
+    
+    .lineas-table thead th {
+        padding: 1rem;
+        font-weight: 600;
+        border: none;
+    }
+    
+    .lineas-table tbody td {
+        padding: 0.5rem;
+        vertical-align: middle;
+    }
+    
+    .btn-agregar-linea {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border: none;
+        color: white;
+        padding: 0.75rem 2rem;
+        border-radius: 10px;
+        font-weight: 600;
+        transition: all 0.3s ease;
+    }
+    
+    .btn-agregar-linea:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        color: white;
+    }
+    
+    .btn-eliminar-linea {
+        padding: 0.4rem 0.8rem;
+        border-radius: 8px;
+    }
+    
+    .totales-section {
+        background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+        padding: 1.5rem;
+        border-radius: 10px;
+        margin-top: 1rem;
+    }
+    
+    .totales-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1rem;
+        font-size: 1.1rem;
+        font-weight: 600;
+    }
+    
+    .totales-row:last-child {
+        margin-bottom: 0;
+        padding-top: 1rem;
+        border-top: 2px solid white;
+    }
+    
+    .monto-debito {
+        color: #28a745;
+    }
+    
+    .monto-credito {
+        color: #dc3545;
+    }
+    
+    .monto-diferencia {
+        color: #667eea;
+        font-size: 1.3rem;
+    }
+    
+    .alert-cuadrado {
+        background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%);
+        border: none;
+        color: #155724;
+        font-weight: 600;
+    }
+    
+    .alert-descuadrado {
+        background: linear-gradient(135deg, #f8d7da 0%, #f4c2c7 100%);
+        border: none;
+        color: #721c24;
+        font-weight: 600;
+    }
+    
+    .form-control, .form-select {
+        border: 2px solid #e9ecef;
+        border-radius: 8px;
+        padding: 0.75rem;
+        transition: all 0.3s ease;
+    }
+    
+    .form-control:focus, .form-select:focus {
+        border-color: #667eea;
+        box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+    }
+    
+    .btn-guardar {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border: none;
+        color: white;
+        padding: 0.75rem 2rem;
+        border-radius: 10px;
+        font-weight: 600;
+        transition: all 0.3s ease;
+    }
+    
+    .btn-guardar:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        color: white;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <!-- Encabezado -->
+    <div class="page-header">
+        <div class="row align-items-center">
+            <div class="col-md-12">
+                <h2>
+                    <i class="fas fa-book"></i>
+                    {{ titulo }}
+                </h2>
+                <p class="mb-0 mt-2" style="opacity: 0.9;">Complete la información del asiento contable</p>
+            </div>
+        </div>
+    </div>
+    
+    <form method="post" id="form-asiento">
+        {% csrf_token %}
+        
+        <!-- Datos del Asiento -->
+        <div class="form-card">
+            <h4 class="form-section-title">
+                <i class="fas fa-info-circle me-2"></i>
+                Información del Asiento
+            </h4>
+            
+            <div class="row">
+                <div class="col-md-3">
+                    <label for="{{ form.fecha_asiento.id_for_label }}" class="form-label">
+                        Fecha <span class="text-danger">*</span>
+                    </label>
+                    {{ form.fecha_asiento }}
+                    {% if form.fecha_asiento.errors %}
+                    <div class="text-danger mt-1">{{ form.fecha_asiento.errors }}</div>
+                    {% endif %}
+                </div>
+                
+                <div class="col-md-3">
+                    <label for="{{ form.tipo_asiento.id_for_label }}" class="form-label">
+                        Tipo de Asiento <span class="text-danger">*</span>
+                    </label>
+                    {{ form.tipo_asiento }}
+                    {% if form.tipo_asiento.errors %}
+                    <div class="text-danger mt-1">{{ form.tipo_asiento.errors }}</div>
+                    {% endif %}
+                </div>
+                
+                <div class="col-md-6">
+                    <label for="{{ form.referencia.id_for_label }}" class="form-label">
+                        Referencia
+                    </label>
+                    {{ form.referencia }}
+                    {% if form.referencia.errors %}
+                    <div class="text-danger mt-1">{{ form.referencia.errors }}</div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <div class="row mt-3">
+                <div class="col-md-12">
+                    <label for="{{ form.concepto.id_for_label }}" class="form-label">
+                        Concepto <span class="text-danger">*</span>
+                    </label>
+                    {{ form.concepto }}
+                    {% if form.concepto.errors %}
+                    <div class="text-danger mt-1">{{ form.concepto.errors }}</div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <div class="row mt-3">
+                <div class="col-md-12">
+                    <label for="{{ form.notas.id_for_label }}" class="form-label">
+                        Notas Adicionales
+                    </label>
+                    {{ form.notas }}
+                    {% if form.notas.errors %}
+                    <div class="text-danger mt-1">{{ form.notas.errors }}</div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <!-- Líneas del Asiento -->
+        <div class="form-card">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h4 class="form-section-title mb-0">
+                    <i class="fas fa-list me-2"></i>
+                    Líneas del Asiento
+                </h4>
+                <button type="button" class="btn btn-agregar-linea" id="btn-agregar-linea">
+                    <i class="fas fa-plus me-2"></i>
+                    Agregar Línea
+                </button>
+            </div>
+            
+            <div class="table-responsive">
+                <table class="table lineas-table" id="tabla-lineas">
+                    <thead>
+                        <tr>
+                            <th width="5%">#</th>
+                            <th width="35%">Cuenta</th>
+                            <th width="30%">Descripción</th>
+                            <th width="10%">Débito</th>
+                            <th width="10%">Crédito</th>
+                            <th width="10%">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tbody-lineas">
+                        <!-- Las líneas se agregan dinámicamente aquí -->
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- Totales -->
+            <div class="totales-section">
+                <div class="totales-row">
+                    <span>Total Débito:</span>
+                    <span class="monto-debito" id="total-debito">Gs. 0</span>
+                </div>
+                <div class="totales-row">
+                    <span>Total Crédito:</span>
+                    <span class="monto-credito" id="total-credito">Gs. 0</span>
+                </div>
+                <div class="totales-row">
+                    <span>Diferencia:</span>
+                    <span class="monto-diferencia" id="diferencia">Gs. 0</span>
+                </div>
+            </div>
+            
+            <div class="mt-3" id="alert-cuadrado" style="display: none;">
+                <div class="alert alert-cuadrado">
+                    <i class="fas fa-check-circle me-2"></i>
+                    El asiento está cuadrado (Débito = Crédito)
+                </div>
+            </div>
+            
+            <div class="mt-3" id="alert-descuadrado" style="display: none;">
+                <div class="alert alert-descuadrado">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    El asiento no está cuadrado. Por favor revise los montos.
+                </div>
+            </div>
+        </div>
+        
+        <!-- Campo oculto para enviar las líneas -->
+        <input type="hidden" name="lineas_data" id="lineas_data">
+        
+        <!-- Botones de acción -->
+        <div class="form-card">
+            <div class="d-flex justify-content-between">
+                <a href="{% url 'asientos_list' %}" class="btn btn-secondary">
+                    <i class="fas fa-arrow-left me-2"></i>
+                    Volver
+                </a>
+                <button type="submit" class="btn btn-guardar" id="btn-guardar">
+                    <i class="fas fa-save me-2"></i>
+                    Guardar Asiento
+                </button>
+            </div>
+        </div>
+    </form>
+</div>
+
+<!-- Template para una línea -->
+<template id="template-linea">
+    <tr class="linea-item">
+        <td class="linea-numero">1</td>
+        <td>
+            <select class="form-select form-select-sm cuenta-select" required>
+                <option value="">Seleccionar cuenta...</option>
+                {% for cuenta in cuentas %}
+                <option value="{{ cuenta.id }}" data-codigo="{{ cuenta.codigo }}" data-nombre="{{ cuenta.nombre }}">
+                    {{ cuenta.codigo }} - {{ cuenta.nombre }}
+                </option>
+                {% endfor %}
+            </select>
+        </td>
+        <td>
+            <input type="text" class="form-control form-control-sm descripcion-input" placeholder="Descripción..." required>
+        </td>
+        <td>
+            <input type="number" class="form-control form-control-sm debito-input" placeholder="0" step="1" min="0" value="0">
+        </td>
+        <td>
+            <input type="number" class="form-control form-control-sm credito-input" placeholder="0" step="1" min="0" value="0">
+        </td>
+        <td>
+            <button type="button" class="btn btn-danger btn-sm btn-eliminar-linea">
+                <i class="fas fa-trash"></i>
+            </button>
+        </td>
+    </tr>
+</template>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    let contadorLineas = 0;
+    
+    // Agregar línea
+    document.getElementById('btn-agregar-linea').addEventListener('click', function() {
+        agregarLinea();
+    });
+    
+    function agregarLinea() {
+        contadorLineas++;
+        
+        const template = document.getElementById('template-linea');
+        const clone = template.content.cloneNode(true);
+        
+        // Actualizar número de línea
+        const tr = clone.querySelector('tr');
+        tr.dataset.lineaId = contadorLineas;
+        clone.querySelector('.linea-numero').textContent = contadorLineas;
+        
+        // Agregar event listeners
+        const debitoInput = clone.querySelector('.debito-input');
+        const creditoInput = clone.querySelector('.credito-input');
+        const btnEliminar = clone.querySelector('.btn-eliminar-linea');
+        
+        debitoInput.addEventListener('input', function() {
+            if (parseFloat(this.value) > 0) {
+                creditoInput.value = '0';
+                creditoInput.disabled = true;
+            } else {
+                creditoInput.disabled = false;
+            }
+            calcularTotales();
+        });
+        
+        creditoInput.addEventListener('input', function() {
+            if (parseFloat(this.value) > 0) {
+                debitoInput.value = '0';
+                debitoInput.disabled = true;
+            } else {
+                debitoInput.disabled = false;
+            }
+            calcularTotales();
+        });
+        
+        btnEliminar.addEventListener('click', function() {
+            eliminarLinea(this);
+        });
+        
+        document.getElementById('tbody-lineas').appendChild(clone);
+        renumerarLineas();
+    }
+    
+    function eliminarLinea(btn) {
+        const tr = btn.closest('tr');
+        tr.remove();
+        renumerarLineas();
+        calcularTotales();
+    }
+    
+    function renumerarLineas() {
+        const lineas = document.querySelectorAll('#tbody-lineas tr');
+        lineas.forEach((linea, index) => {
+            linea.querySelector('.linea-numero').textContent = index + 1;
+        });
+    }
+    
+    function calcularTotales() {
+        let totalDebito = 0;
+        let totalCredito = 0;
+        
+        const lineas = document.querySelectorAll('#tbody-lineas tr');
+        lineas.forEach(linea => {
+            const debito = parseFloat(linea.querySelector('.debito-input').value) || 0;
+            const credito = parseFloat(linea.querySelector('.credito-input').value) || 0;
+            
+            totalDebito += debito;
+            totalCredito += credito;
+        });
+        
+        const diferencia = Math.abs(totalDebito - totalCredito);
+        
+        // Actualizar visualización
+        document.getElementById('total-debito').textContent = 'Gs. ' + totalDebito.toLocaleString('es-PY');
+        document.getElementById('total-credito').textContent = 'Gs. ' + totalCredito.toLocaleString('es-PY');
+        document.getElementById('diferencia').textContent = 'Gs. ' + diferencia.toLocaleString('es-PY');
+        
+        // Mostrar/ocultar alertas
+        if (diferencia === 0 && totalDebito > 0) {
+            document.getElementById('alert-cuadrado').style.display = 'block';
+            document.getElementById('alert-descuadrado').style.display = 'none';
+        } else if (totalDebito > 0 || totalCredito > 0) {
+            document.getElementById('alert-cuadrado').style.display = 'none';
+            document.getElementById('alert-descuadrado').style.display = 'block';
+        } else {
+            document.getElementById('alert-cuadrado').style.display = 'none';
+            document.getElementById('alert-descuadrado').style.display = 'none';
+        }
+    }
+    
+    // Enviar formulario
+    document.getElementById('form-asiento').addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        // Recopilar las líneas
+        const lineas = [];
+        const lineasTr = document.querySelectorAll('#tbody-lineas tr');
+        
+        if (lineasTr.length === 0) {
+            alert('Debe agregar al menos una línea al asiento.');
+            return false;
+        }
+        
+        let valido = true;
+        
+        lineasTr.forEach((linea, index) => {
+            const cuentaSelect = linea.querySelector('.cuenta-select');
+            const descripcion = linea.querySelector('.descripcion-input').value;
+            const debito = parseFloat(linea.querySelector('.debito-input').value) || 0;
+            const credito = parseFloat(linea.querySelector('.credito-input').value) || 0;
+            
+            if (!cuentaSelect.value) {
+                alert(`Línea ${index + 1}: Debe seleccionar una cuenta.`);
+                valido = false;
+                return;
+            }
+            
+            if (!descripcion.trim()) {
+                alert(`Línea ${index + 1}: Debe ingresar una descripción.`);
+                valido = false;
+                return;
+            }
+            
+            if (debito === 0 && credito === 0) {
+                alert(`Línea ${index + 1}: Debe ingresar un monto en débito o crédito.`);
+                valido = false;
+                return;
+            }
+            
+            if (debito > 0 && credito > 0) {
+                alert(`Línea ${index + 1}: No puede tener monto en débito y crédito al mismo tiempo.`);
+                valido = false;
+                return;
+            }
+            
+            lineas.push({
+                cuenta_id: cuentaSelect.value,
+                descripcion: descripcion,
+                debito: debito,
+                credito: credito,
+                referencia: '',
+                centro_costo: ''
+            });
+        });
+        
+        if (!valido) {
+            return false;
+        }
+        
+        // Verificar que esté cuadrado
+        let totalDebito = 0;
+        let totalCredito = 0;
+        lineas.forEach(linea => {
+            totalDebito += linea.debito;
+            totalCredito += linea.credito;
+        });
+        
+        if (Math.abs(totalDebito - totalCredito) > 0.01) {
+            alert('El asiento no está cuadrado. La suma de débitos debe ser igual a la suma de créditos.');
+            return false;
+        }
+        
+        // Guardar en el campo oculto
+        document.getElementById('lineas_data').value = JSON.stringify(lineas);
+        
+        // Enviar el formulario
+        this.submit();
+    });
+    
+    // Agregar primera línea automáticamente
+    agregarLinea();
+});
+</script>
+{% endblock %}

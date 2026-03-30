@@ -1,0 +1,376 @@
+{% extends 'website/base.html' %}
+{% load static %}
+
+{% block title %}{{ titulo }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h2><i class="fas fa-edit me-2"></i>{{ titulo }}</h2>
+                    <p class="text-muted mb-0">{{ evaluacion.materia.nombre }} - {{ evaluacion.curso.nombre }}</p>
+                </div>
+                <div>
+                    <a href="{% url 'evaluacion_cotejo_detalle' evaluacion.id %}" class="btn btn-secondary">
+                        <i class="fas fa-arrow-left me-2"></i>Volver
+                    </a>
+                    <a href="{% url 'evaluacion_cotejo_reporte' evaluacion.id %}" class="btn btn-info" target="_blank">
+                        <i class="fas fa-print me-2"></i>Imprimir
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Información de la Lista de Cotejo -->
+    <div class="card shadow mb-4">
+        <div class="card-body">
+            <h5>{{ evaluacion.lista_cotejo.nombre }}</h5>
+            {% if evaluacion.lista_cotejo.descripcion %}
+            <p class="text-muted mb-0">{{ evaluacion.lista_cotejo.descripcion }}</p>
+            {% endif %}
+            <div class="mt-2">
+                <span class="badge bg-info">Puntaje Total: {{ evaluacion.lista_cotejo.puntaje_total }}</span>
+                <span class="badge bg-success">{{ criterios.count }} Criterios</span>
+                <span class="badge bg-primary">{{ matriz|length }} Estudiantes</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tabla de Calificación -->
+    <div class="card shadow">
+        <div class="card-header bg-primary text-white">
+            <h5 class="mb-0">
+                <i class="fas fa-table me-2"></i>Calificación Masiva
+            </h5>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive" style="max-height: 70vh; overflow-y: auto;">
+                <table class="table table-bordered table-hover mb-0 tabla-cotejo">
+                    <thead class="table-light" style="position: sticky; top: 0; z-index: 10;">
+                        <tr>
+                            <th style="position: sticky; left: 0; background-color: #f8f9fa; z-index: 11; min-width: 200px;">
+                                Estudiante
+                            </th>
+                            {% for criterio in criterios %}
+                            <th class="text-center" style="min-width: 100px;" title="{{ criterio.descripcion }}">
+                                <small>{{ criterio.descripcion|truncatewords:5 }}</small>
+                                <br>
+                                <span class="badge bg-secondary">{{ criterio.puntaje_maximo }} pts</span>
+                                <br>
+                                <span class="badge bg-info">{{ criterio.get_tipo_criterio_display }}</span>
+                            </th>
+                            {% endfor %}
+                            <th class="text-center bg-success text-white" style="min-width: 100px;">
+                                <strong>TOTAL</strong>
+                                <br>
+                                <small>{{ evaluacion.lista_cotejo.puntaje_total }} pts</small>
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for fila in matriz %}
+                        <tr data-estudiante-id="{{ fila.estudiante.id }}">
+                            <td style="position: sticky; left: 0; background-color: white; font-weight: bold;">
+                                {{ fila.estudiante.get_full_name }}
+                            </td>
+                            {% for item in fila.calificaciones %}
+                            <td class="text-center celda-calificacion" 
+                                data-estudiante-id="{{ fila.estudiante.id }}"
+                                data-criterio-id="{{ item.criterio.id }}">
+                                
+                                {% if item.criterio.tipo_criterio == 'binario' %}
+                                    <!-- Checkbox para binario -->
+                                    <div class="form-check form-check-inline" style="min-height: 48px; display: flex; align-items: center; justify-content: center;">
+                                        <input type="checkbox" 
+                                               class="form-check-input calificacion-input" 
+                                               style="width: 24px; height: 24px; cursor: pointer;"
+                                               value="1"
+                                               {% if item.calificacion and item.calificacion.valor %}checked{% endif %}
+                                               data-estudiante="{{ fila.estudiante.id }}"
+                                               data-criterio="{{ item.criterio.id }}"
+                                               data-tipo="binario">
+                                    </div>
+                                {% else %}
+                                    <!-- Input numérico para otros tipos -->
+                                    <input type="number" 
+                                           class="form-control form-control-sm text-center calificacion-input" 
+                                           min="0" 
+                                           max="{{ item.criterio.valor_maximo }}"
+                                           step="0.01"
+                                           placeholder="0"
+                                           value="{% if item.calificacion and item.calificacion.valor %}{{ item.calificacion.valor }}{% endif %}"
+                                           data-estudiante="{{ fila.estudiante.id }}"
+                                           data-criterio="{{ item.criterio.id }}"
+                                           data-tipo="numerico">
+                                    <small class="text-muted">/ {{ item.criterio.valor_maximo }}</small>
+                                {% endif %}
+                                
+                                <!-- Indicador de guardado -->
+                                <span class="save-indicator" style="display: none;">
+                                    <i class="fas fa-check text-success"></i>
+                                </span>
+                            </td>
+                            {% endfor %}
+                            <td class="text-center bg-light total-estudiante" data-estudiante-id="{{ fila.estudiante.id }}">
+                                <strong class="total-valor">-</strong>
+                                <br>
+                                <small class="total-porcentaje text-muted">-</small>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="{{ criterios.count|add:2 }}" class="text-center text-muted py-4">
+                                <i class="fas fa-users-slash fa-2x mb-2"></i>
+                                <p>No hay estudiantes matriculados en este curso</p>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <div class="card-footer bg-light">
+            <div class="row">
+                <div class="col-md-8">
+                    <p class="mb-0"><i class="fas fa-info-circle me-2"></i>Los cambios se guardan automáticamente al modificar cada calificación.</p>
+                </div>
+                <div class="col-md-4 text-end">
+                    <strong>Estado:</strong> <span id="save-status" class="badge bg-secondary">Listo</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Botones de Acción -->
+    <div class="card shadow mt-4">
+        <div class="card-body">
+            <div class="row align-items-center">
+                <div class="col-md-6">
+                    <h6 class="mb-2"><i class="fas fa-info-circle me-2"></i>Cambiar Estado de Evaluación</h6>
+                    <form method="post" action="{% url 'evaluacion_cotejo_cambiar_estado' evaluacion.id %}" class="d-inline" id="formEstado">
+                        {% csrf_token %}
+                        <div class="input-group">
+                            <select name="estado" class="form-select" id="estadoSelect">
+                                <option value="borrador" {% if evaluacion.estado == 'borrador' %}selected{% endif %}>Borrador</option>
+                                <option value="en_progreso" {% if evaluacion.estado == 'en_progreso' %}selected{% endif %}>En Progreso</option>
+                                <option value="finalizada" {% if evaluacion.estado == 'finalizada' %}selected{% endif %}>Finalizada</option>
+                                <option value="publicada" {% if evaluacion.estado == 'publicada' %}selected{% endif %}>Publicada</option>
+                            </select>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save me-2"></i>Actualizar Estado
+                            </button>
+                        </div>
+                        <small class="text-muted d-block mt-1">
+                            Estado actual: 
+                            <span class="badge 
+                                {% if evaluacion.estado == 'publicada' %}bg-success
+                                {% elif evaluacion.estado == 'finalizada' %}bg-info
+                                {% elif evaluacion.estado == 'en_progreso' %}bg-warning
+                                {% else %}bg-secondary
+                                {% endif %}">
+                                {{ evaluacion.get_estado_display }}
+                            </span>
+                        </small>
+                    </form>
+                </div>
+                <div class="col-md-6 text-end">
+                    <div class="btn-group" role="group">
+                        <a href="{% url 'evaluacion_cotejo_detalle' evaluacion.id %}" class="btn btn-secondary">
+                            <i class="fas fa-eye me-2"></i>Ver Detalle
+                        </a>
+                        <a href="{% url 'evaluacion_cotejo_reporte' evaluacion.id %}" class="btn btn-info" target="_blank">
+                            <i class="fas fa-print me-2"></i>Imprimir Reporte
+                        </a>
+                        <a href="{% url 'evaluacion_cotejo_lista' %}" class="btn btn-success">
+                            <i class="fas fa-check me-2"></i>Finalizar y Volver
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const inputs = document.querySelectorAll('.calificacion-input');
+    const statusBadge = document.getElementById('save-status');
+    
+    // Debounce function para evitar muchas peticiones
+    function debounce(func, wait) {
+        let timeout;
+        return function executedFunction(...args) {
+            const later = () => {
+                clearTimeout(timeout);
+                func(...args);
+            };
+            clearTimeout(timeout);
+            timeout = setTimeout(later, wait);
+        };
+    }
+    
+    // Función para guardar calificación
+    async function guardarCalificacion(input) {
+        const estudianteId = input.dataset.estudiante;
+        const criterioId = input.dataset.criterio;
+        const tipo = input.dataset.tipo;
+        let valor;
+        
+        if (tipo === 'binario') {
+            valor = input.checked ? 1 : 0;
+        } else {
+            valor = input.value || 0;
+        }
+        
+        // Actualizar UI
+        statusBadge.textContent = 'Guardando...';
+        statusBadge.className = 'badge bg-warning';
+        
+        try {
+            const response = await fetch('{% url "evaluacion_cotejo_guardar_calificacion" evaluacion.id %}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'X-CSRFToken': '{{ csrf_token }}'
+                },
+                body: new URLSearchParams({
+                    'estudiante_id': estudianteId,
+                    'criterio_id': criterioId,
+                    'valor': valor
+                })
+            });
+            
+            const data = await response.json();
+            
+            if (data.success) {
+                // Actualizar total del estudiante
+                const totalCell = document.querySelector(`.total-estudiante[data-estudiante-id="${estudianteId}"]`);
+                if (totalCell) {
+                    totalCell.querySelector('.total-valor').textContent = parseFloat(data.resumen_puntaje).toFixed(2);
+                    totalCell.querySelector('.total-porcentaje').textContent = `(${data.resumen_porcentaje.toFixed(1)}%)`;
+                    
+                    // Color según porcentaje
+                    if (data.resumen_porcentaje >= 70) {
+                        totalCell.classList.remove('bg-danger', 'bg-warning');
+                        totalCell.classList.add('bg-success', 'text-white');
+                    } else if (data.resumen_porcentaje >= 50) {
+                        totalCell.classList.remove('bg-danger', 'bg-success');
+                        totalCell.classList.add('bg-warning');
+                    } else {
+                        totalCell.classList.remove('bg-warning', 'bg-success');
+                        totalCell.classList.add('bg-danger', 'text-white');
+                    }
+                }
+                
+                // Mostrar indicador de guardado
+                const cell = input.closest('.celda-calificacion');
+                const indicator = cell.querySelector('.save-indicator');
+                if (indicator) {
+                    indicator.style.display = 'inline';
+                    setTimeout(() => {
+                        indicator.style.display = 'none';
+                    }, 2000);
+                }
+                
+                statusBadge.textContent = 'Guardado';
+                statusBadge.className = 'badge bg-success';
+                setTimeout(() => {
+                    statusBadge.textContent = 'Listo';
+                    statusBadge.className = 'badge bg-secondary';
+                }, 3000);
+            } else {
+                throw new Error(data.error || 'Error al guardar');
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            statusBadge.textContent = 'Error al guardar';
+            statusBadge.className = 'badge bg-danger';
+            alert('Error al guardar la calificación. Por favor, intente nuevamente.');
+        }
+    }
+    
+    // Adjuntar eventos a los inputs
+    const debouncedSave = debounce(guardarCalificacion, 500);
+    
+    inputs.forEach(input => {
+        if (input.type === 'checkbox') {
+            input.addEventListener('change', () => guardarCalificacion(input));
+        } else {
+            input.addEventListener('input', () => debouncedSave(input));
+            input.addEventListener('blur', () => guardarCalificacion(input));
+        }
+    });
+    
+    // Calcular totales iniciales al cargar
+    document.querySelectorAll('.total-estudiante').forEach(totalCell => {
+        const estudianteId = totalCell.dataset.estudianteId;
+        const row = document.querySelector(`tr[data-estudiante-id="${estudianteId}"]`);
+        if (row) {
+            let total = 0;
+            row.querySelectorAll('.calificacion-input').forEach(input => {
+                if (input.type === 'checkbox') {
+                    if (input.checked) total += 1;
+                } else {
+                    total += parseFloat(input.value || 0);
+                }
+            });
+            if (total > 0) {
+                totalCell.querySelector('.total-valor').textContent = total.toFixed(2);
+            }
+        }
+    });
+});
+</script>
+
+<style>
+.tabla-cotejo {
+    font-size: 0.9rem;
+}
+
+.tabla-cotejo th {
+    white-space: nowrap;
+    vertical-align: middle;
+}
+
+.tabla-cotejo td {
+    padding: 0.5rem;
+}
+
+.celda-calificacion {
+    position: relative;
+}
+
+.save-indicator {
+    position: absolute;
+    top: 5px;
+    right: 5px;
+}
+
+.calificacion-input {
+    border: 2px solid transparent;
+    transition: all 0.3s ease;
+}
+
+.calificacion-input:focus {
+    border-color: #0d6efd;
+    box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+}
+
+.form-check-input:checked {
+    background-color: #28a745;
+    border-color: #28a745;
+}
+
+@media print {
+    .card-footer,
+    .btn {
+        display: none !important;
+    }
+}
+</style>
+
+{% endblock %}

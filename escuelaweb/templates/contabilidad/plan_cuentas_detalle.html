@@ -1,0 +1,558 @@
+{% extends 'website/base.html' %}
+{% load l10n %}
+{% block content %}
+
+<style>
+  /* ===== VARIABLES MODERNAS ===== */
+  :root {
+    --detalle-primary: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    --detalle-shadow: 0 8px 30px rgba(0,0,0,0.12);
+    --detalle-hover-shadow: 0 12px 40px rgba(0,0,0,0.18);
+  }
+
+  /* ===== HEADER DEL DETALLE ===== */
+  .detalle-header {
+    background: var(--detalle-primary);
+    border-radius: 20px;
+    padding: 2rem;
+    margin-bottom: 2rem;
+    box-shadow: var(--detalle-shadow);
+    color: white;
+    position:relative;
+    overflow: hidden;
+  }
+
+  .detalle-header::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    right: -50%;
+    width: 200%;
+    height: 200%;
+    background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+    animation: float 20s ease-in-out infinite;
+  }
+
+  @keyframes float {
+    0%, 100% { transform: translate(0, 0) rotate(0deg); }
+    50% { transform: translate(-30px, -30px) rotate(180deg); }
+  }
+
+  .cuenta-codigo-grande {
+    font-family: 'Courier New', monospace;
+    font-size: 2.5rem;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+    position: relative;
+    z-index: 1;
+  }
+
+  .cuenta-nombre-grande {
+    font-size: 1.5rem;
+    opacity: 0.95;
+    position: relative;
+    z-index: 1;
+  }
+
+  /* ===== CONTENEDOR DE INFORMACIÓN ===== */
+  .info-container {
+    background: white;
+    border-radius: 20px;
+    box-shadow: var(--detalle-shadow);
+    padding: 2rem;
+    margin-bottom: 2rem;
+  }
+
+  .info-section {
+    margin-bottom: 2rem;
+  }
+
+  .info-section:last-child {
+    margin-bottom: 0;
+  }
+
+  .info-section h4 {
+    color: #2d3748;
+    font-weight: 700;
+    margin-bottom: 1.5rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 3px solid #667eea;
+  }
+
+  .info-row {
+    display: flex;
+    padding: 1rem;
+    border-radius: 10px;
+    margin-bottom: 0.75rem;
+    transition: all 0.3s ease;
+  }
+
+  .info-row:hover {
+    background: #f7fafc;
+  }
+
+  .info-label {
+    font-weight: 600;
+    color: #667eea;
+    min-width: 200px;
+    display: flex;
+    align-items: center;
+  }
+
+  .info-label i {
+    margin-right: 0.75rem;
+    width: 20px;
+  }
+
+  .info-value {
+    color: #2d3748;
+    font-weight: 500;
+    flex: 1;
+  }
+
+  /* ===== BADGES ===== */
+  .cuenta-badge-large {
+    display: inline-block;
+    padding: 0.5rem 1.25rem;
+    border-radius: 25px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .badge-activo {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+  }
+
+  .badge-pasivo {
+    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    color: white;
+  }
+
+  .badge-capital {
+    background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+    color: white;
+  }
+
+  .badge-ingreso {
+    background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+    color: white;
+  }
+
+  .badge-gasto {
+    background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+    color: white;
+  }
+
+  .badge-costo {
+    background: linear-gradient(135deg, #30cfd0 0%, #330867 100%);
+    color: white;
+  }
+
+  .badge-activa {
+    background-color: #48bb78;
+    color: white;
+  }
+
+  .badge-inactiva {
+    background-color: #cbd5e0;
+    color: #4a5568;
+  }
+
+  /* ===== SALDO CARD ===== */
+  .saldo-card {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 15px;
+    padding: 2rem;
+    color: white;
+    text-align: center;
+    box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
+    margin-bottom: 2rem;
+  }
+
+  .saldo-label {
+    font-size: 1rem;
+    opacity: 0.9;
+    margin-bottom: 0.5rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+
+  .saldo-valor {
+    font-size: 3rem;
+    font-weight: 700;
+    margin-bottom: 0;
+  }
+
+  .saldo-diferencia {
+    font-size: 0.9rem;
+    margin-top: 0.5rem;
+    opacity: 0.85;
+  }
+
+  /* ===== SUBCUENTAS TABLE ===== */
+  .subcuentas-container {
+    background: white;
+    border-radius: 20px;
+    box-shadow: var(--detalle-shadow);
+    padding: 2rem;
+    margin-bottom: 2rem;
+  }
+
+  .subcuenta-item {
+    background: #f7fafc;
+    border-radius: 10px;
+    padding: 1rem;
+    margin-bottom: 0.75rem;
+    transition: all 0.3s ease;
+    border-left: 4px solid #667eea;
+  }
+
+  .subcuenta-item:hover {
+    background: #edf2f7;
+    transform: translateX(5px);
+  }
+
+  .subcuenta-codigo {
+    font-family: 'Courier New', monospace;
+    font-weight: 700;
+    color: #2d3748;
+  }
+
+  .subcuenta-nombre {
+    color: #4a5568;
+  }
+
+  /* ===== BOTONES DE ACCIÓN ===== */
+  .btn-action-large {
+    padding: 0.875rem 2rem;
+    border-radius: 10px;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    border: none;
+    margin: 0.25rem;
+  }
+
+  .btn-volver {
+    background: #e2e8f0;
+    color: #4a5568;
+  }
+
+  .btn-volver:hover {
+    background: #cbd5e0;
+    transform: translateY(-2px);
+  }
+
+  .btn-editar-large {
+    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    color: white;
+  }
+
+  .btn-editar-large:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(240, 147, 251, 0.4);
+    color: white;
+  }
+
+  .btn-eliminar-large {
+    background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+    color: white;
+  }
+
+  .btn-eliminar-large:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(247, 112, 154, 0.4);
+    color: white;
+  }
+
+  /* ===== ALERT BOXES ===== */
+  .alert-custom {
+    border-radius: 15px;
+    padding: 1.25rem;
+    margin-bottom: 1.5rem;
+    border: none;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+  }
+
+  .alert-warning-custom {
+    background: linear-gradient(135deg, #ffeaa7 0%, #fdcb6e 100%);
+    color: #6c5ce7;
+  }
+
+  .alert-info-custom {
+    background: linear-gradient(135deg, #74b9ff 0%, #a29bfe 100%);
+    color: #2d3436;
+  }
+</style>
+
+<div class="container py-4">
+  <!-- Header -->
+  <div class="detalle-header">
+    <div class="cuenta-codigo-grande">{{ cuenta.codigo }}</div>
+    <div class="cuenta-nombre-grande">{{ cuenta.nombre }}</div>
+  </div>
+
+  <!-- Saldo Card -->
+  <div class="saldo-card">
+    <div class="saldo-label">Saldo Actual</div>
+    <div class="saldo-valor">${{ cuenta.saldo_actual|floatformat:2|unlocalize }}</div>
+    <div class="saldo-diferencia">
+      Saldo Inicial: ${{ cuenta.saldo_inicial|floatformat:2|unlocalize }}
+      {% if saldo_calculado != cuenta.saldo_actual %}
+      <br>Saldo Calculado: ${{ saldo_calculado|floatformat:2|unlocalize }}
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="col-lg-8">
+      <!-- Información General -->
+      <div class="info-container">
+        <div class="info-section">
+          <h4><i class="fas fa-info-circle"></i> Información General</h4>
+          
+          <div class="info-row">
+            <div class="info-label">
+              <i class="fas fa-hashtag"></i>
+              Código
+            </div>
+            <div class="info-value">
+              <span style="font-family: 'Courier New', monospace; font-weight: 700; font-size: 1.1rem;">
+                {{ cuenta.codigo }}
+              </span>
+            </div>
+          </div>
+
+          <div class="info-row">
+            <div class="info-label">
+              <i class="fas fa-tag"></i>
+              Nombre
+            </div>
+            <div class="info-value">{{ cuenta.nombre }}</div>
+          </div>
+
+          {% if cuenta.descripcion %}
+          <div class="info-row">
+            <div class="info-label">
+              <i class="fas fa-align-left"></i>
+              Descripción
+            </div>
+            <div class="info-value">{{ cuenta.descripcion }}</div>
+          </div>
+          {% endif %}
+
+          <div class="info-row">
+            <div class="info-label">
+              <i class="fas fa-sitemap"></i>
+              Ruta Completa
+            </div>
+            <div class="info-value">{{ ruta_completa }}</div>
+          </div>
+        </div>
+
+        <!-- Clasificación Contable -->
+        <div class="info-section">
+          <h4><i class="fas fa-list-ul"></i> Clasificación Contable</h4>
+          
+          <div class="info-row">
+            <div class="info-label">
+              <i class="fas fa-layer-group"></i>
+              Tipo de Cuenta
+            </div>
+            <div class="info-value">
+              <span class="cuenta-badge-large badge-{{ cuenta.tipo_cuenta|lower }}">
+                {{ cuenta.get_tipo_cuenta_display }}
+              </span>
+            </div>
+          </div>
+
+          <div class="info-row">
+            <div class="info-label">
+              <i class="fas fa-balance-scale"></i>
+              Naturaleza
+            </div>
+            <div class="info-value">
+              <span class="badge bg-secondary">{{ cuenta.get_naturaleza_display }}</span>
+            </div>
+          </div>
+
+          <div class="info-row">
+            <div class="info-label">
+              <i class="fas fa-level-up-alt"></i>
+              Nivel Jerárquico
+            </div>
+            <div class="info-value">Nivel {{ cuenta.nivel }}</div>
+          </div>
+
+          {% if cuenta.cuenta_padre %}
+          <div class="info-row">
+            <div class="info-label">
+              <i class="fas fa-link"></i>
+              Cuenta Padre
+            </div>
+            <div class="info-value">
+              <a href="{% url 'plan_cuentas_detalle' cuenta.cuenta_padre.pk %}">
+                {{ cuenta.cuenta_padre.codigo }} - {{ cuenta.cuenta_padre.nombre }}
+              </a>
+            </div>
+          </div>
+          {% endif %}
+        </div>
+
+        <!-- Estado y Configuración -->
+        <div class="info-section">
+          <h4><i class="fas fa-cog"></i> Estado y Configuración</h4>
+          
+          <div class="info-row">
+            <div class="info-label">
+              <i class="fas fa-toggle-on"></i>
+              Estado
+            </div>
+            <div class="info-value">
+              {% if cuenta.activo %}
+              <span class="cuenta-badge-large badge-activa">
+                <i class="fas fa-check-circle"></i> Activa
+              </span>
+              {% else %}
+              <span class="cuenta-badge-large badge-inactiva">
+                <i class="fas fa-times-circle"></i> Inactiva
+              </span>
+              {% endif %}
+            </div>
+          </div>
+
+          <div class="info-row">
+            <div class="info-label">
+              <i class="fas fa-file-alt"></i>
+              Tipo de Cuenta
+            </div>
+            <div class="info-value">
+              {% if cuenta.es_detalle %}
+              <span class="badge bg-primary">Cuenta de Detalle</span>
+              <small class="text-muted d-block mt-1">Acepta movimientos contables</small>
+              {% else %}
+              <span class="badge bg-warning text-dark">Cuenta Agrupadora</span>
+              <small class="text-muted d-block mt-1">Solo para organización</small>
+              {% endif %}
+            </div>
+          </div>
+
+          {% if cuenta.requiere_centro_costo %}
+          <div class="info-row">
+            <div class="info-label">
+              <i class="fas fa-building"></i>
+              Centro de Costo
+            </div>
+            <div class="info-value">
+              <span class="badge bg-info">Requerido</span>
+            </div>
+          </div>
+          {% endif %}
+
+          {% if cuenta.requiere_tercero %}
+          <div class="info-row">
+            <div class="info-label">
+              <i class="fas fa-user-tie"></i>
+              Tercero
+            </div>
+            <div class="info-value">
+              <span class="badge bg-info">Requerido</span>
+            </div>
+          </div>
+          {% endif %}
+        </div>
+
+        <!-- Auditoría -->
+        <div class="info-section">
+          <h4><i class="fas fa-history"></i> Auditoría</h4>
+          
+          <div class="info-row">
+            <div class="info-label">
+              <i class="fas fa-calendar-plus"></i>
+              Fecha de Creación
+            </div>
+            <div class="info-value">
+              {{ cuenta.fecha_creacion|date:"d/m/Y H:i" }}
+              {% if cuenta.creado_por %}
+              <br><small class="text-muted">Por: {{ cuenta.creado_por.get_full_name }}</small>
+              {% endif %}
+            </div>
+          </div>
+
+          {% if cuenta.fecha_modificacion %}
+          <div class="info-row">
+            <div class="info-label">
+              <i class="fas fa-calendar-check"></i>
+              Última Modificación
+            </div>
+            <div class="info-value">
+              {{ cuenta.fecha_modificacion|date:"d/m/Y H:i" }}
+              {% if cuenta.modificado_por %}
+              <br><small class="text-muted">Por: {{ cuenta.modificado_por.get_full_name }}</small>
+              {% endif %}
+            </div>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <div class="col-lg-4">
+      <!-- Subcuentas -->
+      {% if subcuentas %}
+      <div class="subcuentas-container">
+        <h4><i class="fas fa-sitemap"></i> Subcuentas ({{ subcuentas.count }})</h4>
+        {% for subcuenta in subcuentas %}
+        <div class="subcuenta-item">
+          <div class="subcuenta-codigo">{{ subcuenta.codigo }}</div>
+          <div class="subcuenta-nombre">{{ subcuenta.nombre }}</div>
+          <div class="mt-2">
+            <a href="{% url 'plan_cuentas_detalle' subcuenta.pk %}" class="btn btn-sm btn-outline-primary">
+              Ver Detalle
+            </a>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+      {% endif %}
+
+      <!-- Alerts -->
+      {% if not puede_eliminar %}
+      <div class="alert alert-warning-custom">
+        <i class="fas fa-exclamation-triangle"></i>
+        <strong>No se puede eliminar</strong>
+        <p class="mb-0 mt-2">Esta cuenta tiene movimientos asociados o subcuentas.</p>
+      </div>
+      {% endif %}
+
+      {% if cuenta.tiene_movimientos %}
+      <div class="alert alert-info-custom">
+        <i class="fas fa-info-circle"></i>
+        <strong>Cuenta con Movimientos</strong>
+        <p class="mb-0 mt-2">Esta cuenta tiene registros contables asociados.</p>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Botones de Acción -->
+  <div class="text-center mt-4">
+    <a href="{% url 'plan_cuentas_list' %}" class="btn btn-action-large btn-volver">
+      <i class="fas fa-arrow-left"></i> Volver al Listado
+    </a>
+    {% if request.user.rol in 'Administrador,Director' %}
+    <a href="{% url 'plan_cuentas_editar' cuenta.pk %}" class="btn btn-action-large btn-editar-large">
+      <i class="fas fa-edit"></i> Editar
+    </a>
+    {% endif %}
+    {% if request.user.rol == 'Administrador' and puede_eliminar %}
+    <a href="{% url 'plan_cuentas_eliminar' cuenta.pk %}" class="btn btn-action-large btn-eliminar-large">
+      <i class="fas fa-trash"></i> Eliminar
+    </a>
+    {% endif %}
+  </div>
+</div>
+
+{% endblock %}

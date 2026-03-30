@@ -1,116 +1,886 @@
 {% extends 'website/base.html' %}
+{% load l10n %}
 {% block content %}
-<div class="container mt-3">
+
+<style>
+  /* ===== VARIABLES MODERNAS ===== */
+  :root {
+    --tarifa-primary: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    --tarifa-success: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+    --tarifa-warning: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    --tarifa-shadow: 0 8px 30px rgba(0,0,0,0.12);
+    --tarifa-hover-shadow: 0 12px 40px rgba(0,0,0,0.18);
+  }
+
+  /* ===== HEADER MODERNO ===== */
+  .tarifas-header {
+    background: var(--tarifa-primary);
+    border-radius: 20px;
+    padding: 2rem;
+    margin-bottom: 2rem;
+    box-shadow: var(--tarifa-shadow);
+    color: white;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .tarifas-header::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    right: -50%;
+    width: 200%;
+    height: 200%;
+    background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+    animation: float 20s ease-in-out infinite;
+  }
+
+  @keyframes float {
+    0%, 100% { transform: translate(0, 0) rotate(0deg); }
+    50% { transform: translate(-30px, -30px) rotate(180deg); }
+  }
+
+  .tarifas-header h2 {
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+    position: relative;
+    z-index: 1;
+  }
+
+  .tarifas-header p {
+    opacity: 0.95;
+    margin-bottom: 0;
+    position: relative;
+    z-index: 1;
+  }
+
+  /* ===== STATS CARDS ===== */
+  .stats-card {
+    background: white;
+    border-radius: 15px;
+    padding: 1.5rem;
+    box-shadow: var(--tarifa-shadow);
+    transition: all 0.3s ease;
+    border: none;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .stats-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: var(--tarifa-primary);
+  }
+
+  .stats-card:hover {
+    transform: translateY(-5px);
+    box-shadow: var(--tarifa-hover-shadow);
+  }
+
+  .stats-icon {
+    width: 60px;
+    height: 60px;
+    border-radius: 15px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.8rem;
+    margin-bottom: 1rem;
+  }
+
+  .stats-icon.primary {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+  }
+
+  .stats-icon.warning {
+    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    box-shadow: 0 5px 15px rgba(240, 147, 251, 0.4);
+  }
+
+  .stats-value {
+    font-size: 2rem;
+    font-weight: 700;
+    color: #2d3748;
+    margin-bottom: 0.25rem;
+  }
+
+  .stats-label {
+    color: #718096;
+    font-size: 0.9rem;
+    font-weight: 500;
+  }
+
+  /* ===== BUSCADOR MODERNO ===== */
+  .search-card {
+    background: white;
+    border-radius: 20px;
+    padding: 1.5rem;
+    box-shadow: var(--tarifa-shadow);
+    margin-bottom: 2rem;
+  }
+
+  .search-input-group {
+    position: relative;
+  }
+
+  .search-input-group .form-control {
+    border-radius: 12px;
+    border: 2px solid #e2e8f0;
+    padding: 0.75rem 3rem 0.75rem 1rem;
+    font-size: 0.95rem;
+    transition: all 0.3s ease;
+  }
+
+  .search-input-group .form-control:focus {
+    border-color: #667eea;
+    box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
+  }
+
+  .search-icon {
+    position: absolute;
+    right: 15px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #a0aec0;
+    pointer-events: none;
+  }
+
+  .filter-select {
+    border-radius: 12px;
+    border: 2px solid #e2e8f0;
+    padding: 0.75rem 1rem;
+    transition: all 0.3s ease;
+  }
+
+  .filter-select:focus {
+    border-color: #667eea;
+    box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
+  }
+
+  .btn-search, .btn-clear {
+    border-radius: 12px;
+    padding: 0.75rem 1.5rem;
+    font-weight: 600;
+    transition: all 0.3s ease;
+  }
+
+  .btn-search {
+    background: var(--tarifa-primary);
+    border: none;
+    color: white;
+  }
+
+  .btn-search:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+  }
+
+  .btn-clear {
+    background: #f7fafc;
+    border: 2px solid #e2e8f0;
+    color: #4a5568;
+  }
+
+  .btn-clear:hover {
+    background: #edf2f7;
+    border-color: #cbd5e0;
+  }
+
+  /* ===== TARJETAS DE CONCEPTOS ===== */
+  .conceptos-card {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 15px;
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+    color: white;
+    box-shadow: var(--tarifa-shadow);
+  }
+
+  .conceptos-card h5 {
+    font-weight: 700;
+    margin-bottom: 0.75rem;
+  }
+
+  .conceptos-card p {
+    opacity: 0.95;
+    margin-bottom: 1rem;
+    font-size: 0.9rem;
+  }
+
+  .conceptos-card .btn {
+    border-radius: 10px;
+    font-weight: 600;
+    padding: 0.5rem 1rem;
+    transition: all 0.3s ease;
+  }
+
+  .conceptos-card .btn-light:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+  }
+
+  /* ===== TABLA MODERNA ===== */
+  .tarifas-table-card {
+    background: white;
+    border-radius: 20px;
+    padding: 1.5rem;
+    box-shadow: var(--tarifa-shadow);
+    overflow: hidden;
+  }
+
+  .table-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
+    border-bottom: 2px solid #e2e8f0;
+  }
+
+  .table-header h4 {
+    font-weight: 700;
+    color: #2d3748;
+    margin: 0;
+  }
+
+  .btn-create {
+    background: var(--tarifa-primary);
+    border: none;
+    border-radius: 12px;
+    padding: 0.75rem 1.5rem;
+    font-weight: 600;
+    color: white;
+    transition: all 0.3s ease;
+  }
+
+  .btn-create:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+    color: white;
+  }
+
+  .modern-table {
+    border-collapse: separate;
+    border-spacing: 0;
+  }
+
+  .modern-table thead th {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    font-weight: 600;
+    text-transform: uppercase;
+    font-size: 0.85rem;
+    letter-spacing: 0.5px;
+    padding: 1rem;
+    border: none;
+  }
+
+  .modern-table thead th:first-child {
+    border-radius: 12px 0 0 0;
+  }
+
+  .modern-table thead th:last-child {
+    border-radius: 0 12px 0 0;
+  }
+
+  .modern-table tbody tr {
+    transition: all 0.3s ease;
+    border-bottom: 1px solid #e2e8f0;
+  }
+
+  .modern-table tbody tr:hover {
+    background: #f7fafc;
+    transform: scale(1.01);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+  }
+
+  .modern-table tbody td {
+    padding: 1rem;
+    vertical-align: middle;
+  }
+
+  .student-name {
+    font-weight: 600;
+    color: #2d3748;
+    font-size: 1rem;
+  }
+
+  /* ===== BADGES MODERNOS ===== */
+  .tarifa-badge {
+    padding: 0.5rem 1rem;
+    border-radius: 10px;
+    font-weight: 600;
+    font-size: 0.9rem;
+    display: inline-block;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  }
+
+  .tarifa-badge.mensualidad {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+  }
+
+  .tarifa-badge.inscripcion {
+    background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+    color: white;
+  }
+
+  .tarifa-badge.transporte {
+    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    color: white;
+  }
+
+  /* ===== BOTONES DE ACCIÓN ===== */
+  .action-btn {
+    width: 38px;
+    height: 38px;
+    border-radius: 10px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+    border: 2px solid;
+    margin: 0 0.2rem;
+  }
+
+  .action-btn:hover {
+    transform: translateY(-3px) scale(1.1);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  }
+
+  .action-btn.primary {
+    background: rgba(102, 126, 234, 0.1);
+    border-color: #667eea;
+    color: #667eea;
+  }
+
+  .action-btn.primary:hover {
+    background: #667eea;
+    color: white;
+  }
+
+  .action-btn.success {
+    background: rgba(17, 153, 142, 0.1);
+    border-color: #11998e;
+    color: #11998e;
+  }
+
+  .action-btn.success:hover {
+    background: #11998e;
+    color: white;
+  }
+
+  .action-btn.warning {
+    background: rgba(240, 147, 251, 0.1);
+    border-color: #f093fb;
+    color: #f093fb;
+  }
+
+  .action-btn.warning:hover {
+    background: #f093fb;
+    color: white;
+  }
+
+  .action-btn.secondary {
+    background: rgba(113, 128, 150, 0.1);
+    border-color: #718096;
+    color: #718096;
+  }
+
+  .action-btn.secondary:hover {
+    background: #718096;
+    color: white;
+  }
+
+  /* ===== PAGINACIÓN MODERNA ===== */
+  .modern-pagination {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 0.5rem;
+    margin-top: 2rem;
+    padding-top: 1.5rem;
+    border-top: 2px solid #e2e8f0;
+  }
+
+  .modern-pagination .page-link {
+    border: 2px solid #e2e8f0;
+    border-radius: 10px;
+    padding: 0.5rem 1rem;
+    color: #667eea;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    margin: 0 0.25rem;
+  }
+
+  .modern-pagination .page-link:hover {
+    background: var(--tarifa-primary);
+    border-color: transparent;
+    color: white;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+  }
+
+  .modern-pagination .page-item.disabled .page-link {
+    background: #f7fafc;
+    border-color: #e2e8f0;
+    color: #a0aec0;
+  }
+
+  /* ===== EMPTY STATE ===== */
+  .empty-state {
+    text-align: center;
+    padding: 3rem 1rem;
+  }
+
+  .empty-state i {
+    font-size: 4rem;
+    color: #cbd5e0;
+    margin-bottom: 1rem;
+  }
+
+  .empty-state h5 {
+    color: #4a5568;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+  }
+
+  .empty-state p {
+    color: #a0aec0;
+  }
+
+  /* ===== SIN TARIFAS CARD ===== */
+  .sin-tarifas-card {
+    background: white;
+    border-radius: 20px;
+    padding: 1.5rem;
+    box-shadow: var(--tarifa-shadow);
+    margin-bottom: 2rem;
+    border-left: 5px solid #f093fb;
+  }
+
+  .sin-tarifas-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+    cursor: pointer;
+    padding: 0.5rem;
+    border-radius: 12px;
+    transition: all 0.3s ease;
+  }
+
+  .sin-tarifas-header:hover {
+    background: #f7fafc;
+  }
+
+  .sin-tarifas-header h5 {
+    font-weight: 700;
+    color: #2d3748;
+    margin: 0;
+  }
+
+  .toggle-icon {
+    transition: transform 0.3s ease;
+  }
+
+  .toggle-icon.rotated {
+    transform: rotate(180deg);
+  }
+
+  .estudiantes-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 1rem;
+    margin-top: 1rem;
+  }
+
+  .estudiante-card {
+    background: linear-gradient(135deg, #f7fafc 0%, #edf2f7 100%);
+    border-radius: 12px;
+    padding: 1rem;
+    border: 2px solid #e2e8f0;
+    transition: all 0.3s ease;
+  }
+
+  .estudiante-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+    border-color: #667eea;
+  }
+
+  .estudiante-info {
+    margin-bottom: 0.75rem;
+  }
+
+  .estudiante-name {
+    font-weight: 600;
+    color: #2d3748;
+    margin-bottom: 0.25rem;
+  }
+
+  .estudiante-cedula {
+    font-size: 0.85rem;
+    color: #718096;
+  }
+
+  .btn-asignar {
+    background: var(--tarifa-primary);
+    border: none;
+    border-radius: 8px;
+    padding: 0.5rem 1rem;
+    font-weight: 600;
+    color: white;
+    width: 100%;
+    transition: all 0.3s ease;
+    font-size: 0.9rem;
+  }
+
+  .btn-asignar:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+    color: white;
+  }
+
+  .sin-tarifas-badge {
+    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    color: white;
+    padding: 0.25rem 0.75rem;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    font-weight: 600;
+  }
+
+  /* ===== RESPONSIVE ===== */
+  @media (max-width: 768px) {
+    .tarifas-header {
+      padding: 1.5rem;
+    }
+
+    .stats-card {
+      margin-bottom: 1rem;
+    }
+
+    .table-responsive {
+      border-radius: 12px;
+      overflow-x: auto;
+    }
+
+    .action-btn {
+      width: 34px;
+      height: 34px;
+    }
+  }
+</style>
+
+<div class="container-fluid mt-4 px-4">
   
+  <!-- Header -->
+  <div class="tarifas-header">
+    <h2><i class="fas fa-tags me-2"></i>Gestión de Tarifas</h2>
+    <p>Administre las tarifas personalizadas de mensualidad, inscripción y transporte para cada estudiante</p>
+  </div>
+
+  <!-- Stats -->
+  <div class="row mb-4">
+    <div class="col-md-6">
+      <div class="stats-card">
+        <div class="stats-icon primary">
+          <i class="fas fa-users text-white"></i>
+        </div>
+        <div class="stats-value">{{ total_estudiantes }}</div>
+        <div class="stats-label">Estudiantes con Tarifas</div>
+      </div>
+    </div>
+    <div class="col-md-6">
+      <div class="stats-card">
+        <div class="stats-icon warning">
+          <i class="fas fa-exclamation-triangle text-white"></i>
+        </div>
+        <div class="stats-value">{{ total_sin_tarifas }}</div>
+        <div class="stats-label">Estudiantes Sin Tarifas</div>
+      </div>
+    </div>
+  </div>
+
   {% if user.rol == 'Administrador' %}
   <!-- Sección de Conceptos Estándar (Solo Administrador) -->
-  <div class="card mb-4 border-primary">
-    <div class="card-header bg-primary text-white">
-      <div class="d-flex justify-content-between align-items-center">
-        <h5 class="mb-0">
-          <i class="fas fa-cog me-2"></i>Conceptos de Pago (Tarifas Estándar)
-        </h5>
-        <a href="{% url 'conceptos_list' %}" class="btn btn-light btn-sm">
+  <div class="conceptos-card">
+    <div class="d-flex justify-content-between align-items-center">
+      <div>
+        <h5><i class="fas fa-cog me-2"></i>Conceptos de Pago (Tarifas Estándar)</h5>
+        <p class="mb-0">
+          <i class="fas fa-info-circle me-1"></i>
+          Configure aquí los montos base para mensualidad, inscripción y transporte. 
+          Estos valores se utilizan como referencia al crear tarifas para estudiantes.
+        </p>
+      </div>
+      <div class="d-flex gap-2">
+        <a href="{% url 'concepto_create' %}" class="btn btn-light">
+          <i class="fas fa-plus me-1"></i>Nuevo Concepto
+        </a>
+        <a href="{% url 'conceptos_list' %}" class="btn btn-outline-light">
           <i class="fas fa-eye me-1"></i>Ver Todos
         </a>
       </div>
     </div>
-    <div class="card-body">
-      <p class="text-muted small mb-2">
-        <i class="fas fa-info-circle me-1"></i>
-        Configure aquí los montos base para mensualidad, inscripción y transporte. 
-        Estos valores se utilizan como referencia al crear tarifas para estudiantes.
-      </p>
-      <a href="{% url 'concepto_create' %}" class="btn btn-primary btn-sm">
-        <i class="fas fa-plus me-1"></i>Nuevo Concepto
-      </a>
+  </div>
+  {% endif %}
+
+  <!-- Estudiantes Sin Tarifas -->
+  {% if estudiantes_sin_tarifas %}
+  <div class="sin-tarifas-card">
+    <div class="sin-tarifas-header" data-bs-toggle="collapse" data-bs-target="#sinTarifasCollapse" aria-expanded="false" aria-controls="sinTarifasCollapse">
+      <div>
+        <h5><i class="fas fa-user-times me-2"></i>Estudiantes Sin Tarifas Asignadas <span class="sin-tarifas-badge">{{ total_sin_tarifas }}</span></h5>
+        <p class="text-muted mb-0 small">Click para expandir y asignar tarifas a estos estudiantes</p>
+      </div>
+      <i class="fas fa-chevron-down toggle-icon" id="toggleIcon"></i>
+    </div>
+    
+    <div class="collapse" id="sinTarifasCollapse">
+      <div class="estudiantes-grid">
+        {% for estudiante in estudiantes_sin_tarifas %}
+        <div class="estudiante-card">
+          <div class="estudiante-info">
+            <div class="estudiante-name">
+              <i class="fas fa-user-graduate me-1"></i>
+              {{ estudiante.get_full_name }}
+            </div>
+            {% if estudiante.cedula %}
+            <div class="estudiante-cedula">
+              <i class="fas fa-id-card me-1"></i>
+              {{ estudiante.cedula }}
+            </div>
+            {% endif %}
+          </div>
+          <a href="{% url 'tarifa_create' %}?estudiante={{ estudiante.id }}" class="btn btn-asignar">
+            <i class="fas fa-plus me-1"></i>
+            Asignar Tarifa
+          </a>
+        </div>
+        {% endfor %}
+      </div>
+      {% if total_sin_tarifas > 20 %}
+      <div class="text-center mt-3">
+        <p class="text-muted small">
+          <i class="fas fa-info-circle me-1"></i>
+          Mostrando los primeros 20 estudiantes de {{ total_sin_tarifas }} sin tarifas
+        </p>
+      </div>
+      {% endif %}
     </div>
   </div>
   {% endif %}
-  
-  <!-- Sección de Tarifas por Estudiante -->
-  <div class="d-flex justify-content-between align-items-center mb-3">
-    <h4><i class="fas fa-users me-2"></i>Tarifas por Estudiante</h4>
-    <a href="{% url 'tarifa_create' %}" class="btn btn-primary">
-      <i class="fas fa-plus me-1"></i>Crear Tarifa
-    </a>
-  </div>
-  <table class="table table-striped">
-    <thead>
-      <tr>
-        <th>Estudiante</th>
-        <th>Mensualidad</th>
-        <th>Inscripción</th>
-        <th>Transporte</th>
-        <th>Acciones</th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for grupo in tarifas %}
-      <tr>
-        <td><strong>{{ grupo.estudiante.get_full_name }}</strong></td>
-        <td>
-          {% if grupo.mensualidad %}
-            <span class="badge bg-primary">RD${{ grupo.mensualidad.monto|floatformat:2 }}</span>
-          {% else %}
-            <span class="text-muted">-</span>
-          {% endif %}
-        </td>
-        <td>
-          {% if grupo.inscripcion %}
-            <span class="badge bg-success">RD${{ grupo.inscripcion.monto|floatformat:2 }}</span>
-          {% else %}
-            <span class="text-muted">-</span>
-          {% endif %}
-        </td>
-        <td>
-          {% if grupo.transporte %}
-            <span class="badge bg-warning text-dark">RD${{ grupo.transporte.monto|floatformat:2 }}</span>
-            {% if grupo.transporte.observaciones %}
-              <br><small class="text-muted">{{ grupo.transporte.observaciones }}</small>
-            {% endif %}
-          {% else %}
-            <span class="text-muted">-</span>
-          {% endif %}
-        </td>
-        <td>
-          <div class="btn-group btn-group-sm" role="group">
-            {% if grupo.mensualidad %}
-            <a href="{% url 'tarifa_edit' grupo.mensualidad.pk %}" class="btn btn-outline-primary" title="Editar Mensualidad">
-              <i class="fas fa-calendar"></i>
-            </a>
-            {% endif %}
-            {% if grupo.inscripcion %}
-            <a href="{% url 'tarifa_edit' grupo.inscripcion.pk %}" class="btn btn-outline-success" title="Editar Inscripción">
-              <i class="fas fa-graduation-cap"></i>
-            </a>
-            {% endif %}
-            {% if grupo.transporte %}
-            <a href="{% url 'tarifa_edit' grupo.transporte.pk %}" class="btn btn-outline-warning" title="Editar Transporte">
-              <i class="fas fa-bus"></i>
-            </a>
-            {% endif %}
-            <a href="{% url 'tarifa_create' %}?estudiante={{ grupo.estudiante.id }}" class="btn btn-outline-secondary" title="Agregar Tarifa">
-              <i class="fas fa-plus"></i>
+
+  <!-- Buscador -->
+  <div class="search-card">
+    <form method="get" action="{% url 'tarifas_list' %}">
+      <div class="row g-3">
+        <div class="col-md-5">
+          <div class="search-input-group">
+            <input type="text" name="search" class="form-control" 
+                   placeholder="Buscar por nombre, apellido o cédula..." 
+                   value="{{ search_query }}">
+            <i class="fas fa-search search-icon"></i>
+          </div>
+        </div>
+        <div class="col-md-2">
+          <select name="tipo" class="form-select filter-select">
+            <option value="">Todos los tipos</option>
+            <option value="mensualidad" {% if tipo_tarifa == 'mensualidad' %}selected{% endif %}>Mensualidad</option>
+            <option value="inscripcion" {% if tipo_tarifa == 'inscripcion' %}selected{% endif %}>Inscripción</option>
+            <option value="transporte" {% if tipo_tarifa == 'transporte' %}selected{% endif %}>Transporte</option>
+          </select>
+        </div>
+        <div class="col-md-2">
+          <select name="sin_tarifas" class="form-select filter-select">
+            <option value="">Con tarifas</option>
+            <option value="1" {% if mostrar_sin_tarifas %}selected{% endif %}>Sin tarifas</option>
+          </select>
+        </div>
+        <div class="col-md-3">
+          <div class="d-flex gap-2">
+            <button type="submit" class="btn btn-search flex-grow-1">
+              <i class="fas fa-search me-2"></i>Buscar
+            </button>
+            <a href="{% url 'tarifas_list' %}" class="btn btn-clear">
+              <i class="fas fa-times"></i>
             </a>
           </div>
-        </td>
-      </tr>
-      {% empty %}
-      <tr><td colspan="5" class="text-center text-muted">No hay tarifas registradas.</td></tr>
-      {% endfor %}
-    </tbody>
-  </table>
-  <nav>
-    <ul class="pagination">
-      {% if tarifas.has_previous %}
-        <li class="page-item"><a class="page-link" href="?page={{ tarifas.previous_page_number }}">Anterior</a></li>
-      {% endif %}
-      <li class="page-item disabled"><span class="page-link">Página {{ tarifas.number }} de {{ tarifas.paginator.num_pages }}</span></li>
-      {% if tarifas.has_next %}
-        <li class="page-item"><a class="page-link" href="?page={{ tarifas.next_page_number }}">Siguiente</a></li>
-      {% endif %}
-    </ul>
-  </nav>
+        </div>
+      </div>
+    </form>
+  </div>
+
+  <!-- Tabla de Tarifas -->
+  <div class="tarifas-table-card">
+    <div class="table-header">
+      <h4><i class="fas fa-list me-2"></i>Tarifas por Estudiante</h4>
+      <a href="{% url 'tarifa_create' %}" class="btn btn-create">
+        <i class="fas fa-plus me-2"></i>Crear Tarifa
+      </a>
+    </div>
+
+    <div class="table-responsive">
+      <table class="table modern-table">
+        <thead>
+          <tr>
+            <th><i class="fas fa-user me-2"></i>Estudiante</th>
+            <th><i class="fas fa-calendar me-2"></i>Mensualidad</th>
+            <th><i class="fas fa-graduation-cap me-2"></i>Inscripción</th>
+            <th><i class="fas fa-bus me-2"></i>Transporte</th>
+            <th><i class="fas fa-cogs me-2"></i>Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for grupo in tarifas %}
+          <tr>
+            <td>
+              <div class="student-name">{{ grupo.estudiante.get_full_name }}</div>
+              {% if grupo.estudiante.cedula %}
+              <small class="text-muted">Cédula: {{ grupo.estudiante.cedula }}</small>
+              {% endif %}
+            </td>
+            <td>
+              {% if grupo.mensualidad %}
+                <span class="tarifa-badge mensualidad">
+                  RD$ {{ grupo.mensualidad.monto|unlocalize|floatformat:2 }}
+                </span>
+              {% else %}
+                <span class="text-muted">-</span>
+              {% endif %}
+            </td>
+            <td>
+              {% if grupo.inscripcion %}
+                <span class="tarifa-badge inscripcion">
+                  RD$ {{ grupo.inscripcion.monto|floatformat:2 }}
+                </span>
+              {% else %}
+                <span class="text-muted">-</span>
+              {% endif %}
+            </td>
+            <td>
+              {% if grupo.transporte %}
+                <span class="tarifa-badge transporte">
+                  RD$ {{ grupo.transporte.monto|floatformat:2 }}
+                </span>
+                {% if grupo.transporte.observaciones %}
+                  <br><small class="text-muted fst-italic">{{ grupo.transporte.observaciones }}</small>
+                {% endif %}
+              {% else %}
+                <span class="text-muted">-</span>
+              {% endif %}
+            </td>
+            <td>
+              <div class="d-flex flex-wrap">
+                {% if grupo.mensualidad %}
+                <a href="{% url 'tarifa_edit' grupo.mensualidad.pk %}" 
+                   class="action-btn primary" 
+                   title="Editar Mensualidad"
+                   data-bs-toggle="tooltip">
+                  <i class="fas fa-calendar"></i>
+                </a>
+                {% endif %}
+                {% if grupo.inscripcion %}
+                <a href="{% url 'tarifa_edit' grupo.inscripcion.pk %}" 
+                   class="action-btn success" 
+                   title="Editar Inscripción"
+                   data-bs-toggle="tooltip">
+                  <i class="fas fa-graduation-cap"></i>
+                </a>
+                {% endif %}
+                {% if grupo.transporte %}
+                <a href="{% url 'tarifa_edit' grupo.transporte.pk %}" 
+                   class="action-btn warning" 
+                   title="Editar Transporte"
+                   data-bs-toggle="tooltip">
+                  <i class="fas fa-bus"></i>
+                </a>
+                {% endif %}
+                <a href="{% url 'tarifa_create' %}?estudiante={{ grupo.estudiante.id }}" 
+                   class="action-btn secondary" 
+                   title="Agregar Tarifa"
+                   data-bs-toggle="tooltip">
+                  <i class="fas fa-plus"></i>
+                </a>
+              </div>
+            </td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="5">
+              <div class="empty-state">
+                <i class="fas fa-inbox"></i>
+                <h5>No hay tarifas registradas</h5>
+                <p>{% if search_query %}No se encontraron resultados para "{{ search_query }}"{% else %}Comience creando tarifas para los estudiantes{% endif %}</p>
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Paginación -->
+    {% if tarifas.has_other_pages %}
+    <nav>
+      <ul class="modern-pagination">
+        {% if tarifas.has_previous %}
+          <li class="page-item">
+            <a class="page-link" href="?page={{ tarifas.previous_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}{% if tipo_tarifa %}&tipo={{ tipo_tarifa }}{% endif %}{% if mostrar_sin_tarifas %}&sin_tarifas=1{% endif %}">
+              <i class="fas fa-chevron-left me-1"></i>Anterior
+            </a>
+          </li>
+        {% endif %}
+        
+        <li class="page-item disabled">
+          <span class="page-link">
+            Página {{ tarifas.number }} de {{ tarifas.paginator.num_pages }}
+          </span>
+        </li>
+        
+        {% if tarifas.has_next %}
+          <li class="page-item">
+            <a class="page-link" href="?page={{ tarifas.next_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}{% if tipo_tarifa %}&tipo={{ tipo_tarifa }}{% endif %}{% if mostrar_sin_tarifas %}&sin_tarifas=1{% endif %}">
+              Siguiente<i class="fas fa-chevron-right ms-1"></i>
+            </a>
+          </li>
+        {% endif %}
+      </ul>
+    </nav>
+    {% endif %}
+  </div>
+
 </div>
+
+<script>
+// Inicializar tooltips
+document.addEventListener('DOMContentLoaded', function() {
+  var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+  var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+    return new bootstrap.Tooltip(tooltipTriggerEl);
+  });
+
+  // Toggle icon rotation para sin tarifas
+  const sinTarifasCollapse = document.getElementById('sinTarifasCollapse');
+  const toggleIcon = document.getElementById('toggleIcon');
+  
+  if (sinTarifasCollapse && toggleIcon) {
+    sinTarifasCollapse.addEventListener('show.bs.collapse', function () {
+      toggleIcon.classList.add('rotated');
+    });
+    
+    sinTarifasCollapse.addEventListener('hide.bs.collapse', function () {
+      toggleIcon.classList.remove('rotated');
+    });
+  }
+});
+</script>
+
 {% endblock %}

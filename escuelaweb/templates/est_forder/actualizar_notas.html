@@ -191,8 +191,33 @@ Actualizar Notas - {{ matricula.estudiante.get_full_name }}
                                     <td><input type="number" name="eti_p4" class="form-control" step="0.1" value="{{ matricula.eti_p4|default:'' }}"></td>
                                     <td>{{ matricula.prom_etica|default:"-" }}</td>
                                 </tr>
+                                
+                                <!-- Fila de Promedio Final -->
+                                <tr style="border-top: 2px solid #5c6bc0; background-color: #f0f4ff;">
+                                    <td colspan="5" class="text-end" style="font-weight: 600; color: #5c6bc0;">
+                                        <i class="fas fa-calculator me-2"></i>PROMEDIO FINAL:
+                                    </td>
+                                    <td style="font-weight: 700; color: #5c6bc0; font-size: 1.1rem;">
+                                        {% if matricula.promedio_final %}
+                                            {{ matricula.promedio_final|floatformat:2 }}
+                                            {% if matricula.promedio_final >= 70 %}
+                                                <span class="badge bg-success ms-2">APROBADO</span>
+                                            {% else %}
+                                                <span class="badge bg-danger ms-2">REPROBADO</span>
+                                            {% endif %}
+                                        {% else %}
+                                            <span class="text-muted">-</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
                             </tbody>
                         </table>
+
+                        <div class="alert alert-info mt-3" role="alert">
+                            <i class="fas fa-info-circle me-2"></i>
+                            <strong>Nota:</strong> Los promedios se calculan automáticamente usando redondeo matemático estándar 
+                            (0.5 redondea hacia arriba). El promedio final es el promedio de las 4 competencias (P1, P2, P3, P4).
+                        </div>
 
                         <div class="d-flex justify-content-between mt-4">
                             <a href="{% url 'gestionar_matriculas' matricula.materia.id %}" class="btn btn-secondary">

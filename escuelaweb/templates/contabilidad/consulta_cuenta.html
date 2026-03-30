@@ -1,0 +1,446 @@
+{% extends 'website/base.html' %}
+{% load humanize %}
+
+{% block title %}Consulta de Cuenta - {{ cuenta.nombre }} - IEPM{% endblock %}
+
+{% block extra_css %}
+<style>
+    .cuenta-info-card {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border-radius: 10px;
+        padding: 25px;
+        margin-bottom: 20px;
+    }
+    .cuenta-info-card h3 {
+        color: white;
+        margin-bottom: 15px;
+    }
+    .info-item {
+        margin-bottom: 10px;
+    }
+    .info-label {
+        font-weight: 600;
+        opacity: 0.9;
+    }
+    .filter-card {
+        background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+        color: white;
+        border-radius: 10px;
+        padding: 20px;
+        margin-bottom: 20px;
+    }
+    .filter-card .form-label {
+        color: white;
+        font-weight: 500;
+    }
+    .filter-card .form-control {
+        border: 2px solid rgba(255,255,255,0.3);
+        background: rgba(255,255,255,0.9);
+    }
+    .saldo-card {
+        border-radius: 10px;
+        padding: 20px;
+        color: white;
+        margin-bottom: 20px;
+        text-align: center;
+    }
+    .saldo-inicial {
+        background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+    }
+    .saldo-debitos {
+        background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+    }
+    .saldo-creditos {
+        background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+    }
+    .saldo-final {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    }
+    .movimiento-debito {
+        background-color: #d4edda;
+    }
+    .movimiento-credito {
+        background-color: #f8d7da;
+    }
+    .saldo-deudor {
+        color: #28a745;
+        font-weight: bold;
+    }
+    .saldo-acreedor {
+        color: #dc3545;
+        font-weight: bold;
+    }
+    @media print {
+        .no-print {
+            display: none;
+        }
+        .filter-card {
+            display: none;
+        }
+        .cuenta-info-card {
+            background: #333 !important;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+        }
+        body {
+            font-size: 10pt;
+        }
+        .table {
+            font-size: 9pt;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4 no-print">
+        <div class="col-12">
+            <h2><i class="fas fa-search-dollar"></i> Consulta de Cuenta</h2>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{% url 'index' %}">Inicio</a></li>
+                    <li class="breadcrumb-item"><a href="{% url 'contabilidad_dashboard' %}">Contabilidad</a></li>
+                    <li class="breadcrumb-item"><a href="{% url 'plan_cuentas_list' %}">Plan de Cuentas</a></li>
+                    <li class="breadcrumb-item active">{{ cuenta.nombre }}</li>
+                </ol>
+            </nav>
+        </div>
+    </div>
+
+    <!-- Información de la Cuenta -->
+    <div class="cuenta-info-card">
+        <h3><i class="fas fa-folder-open me-2"></i>{{ cuenta.codigo }} - {{ cuenta.nombre }}</h3>
+        <div class="row">
+            <div class="col-md-3">
+                <div class="info-item">
+                    <div class="info-label">Tipo de Cuenta:</div>
+                    <div>{{ cuenta.get_tipo_cuenta_display }}</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="info-item">
+                    <div class="info-label">Naturaleza:</div>
+                    <div>{{ cuenta.get_naturaleza_display }}</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="info-item">
+                    <div class="info-label">Estado:</div>
+                    <div>
+                        {% if cuenta.activo %}
+                            <span class="badge bg-success">Activa</span>
+                        {% else %}
+                            <span class="badge bg-secondary">Inactiva</span>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="info-item">
+                    <div class="info-label">Tipo de Detalle:</div>
+                    <div>
+                        {% if cuenta.es_detalle %}
+                            <span class="badge bg-primary">Cuenta de Detalle</span>
+                        {% else %}
+                            <span class="badge bg-info">Cuenta de Grupo</span>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% if cuenta.descripcion %}
+        <div class="row mt-3">
+            <div class="col-12">
+                <div class="info-item">
+                    <div class="info-label">Descripción:</div>
+                    <div>{{ cuenta.descripcion }}</div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Filtros -->
+    <div class="filter-card no-print">
+        <form method="get" id="filterForm">
+            <div class="row">
+                <div class="col-md-4">
+                    <label for="fecha_desde" class="form-label">Fecha Desde</label>
+                    <input type="date" class="form-control" id="fecha_desde" name="fecha_desde" 
+                           value="{{ request.GET.fecha_desde }}">
+                </div>
+                <div class="col-md-4">
+                    <label for="fecha_hasta" class="form-label">Fecha Hasta</label>
+                    <input type="date" class="form-control" id="fecha_hasta" name="fecha_hasta" 
+                           value="{{ request.GET.fecha_hasta }}">
+                </div>
+                <div class="col-md-4 d-flex align-items-end">
+                    <button type="submit" class="btn btn-light me-2">
+                        <i class="fas fa-filter me-2"></i>Filtrar
+                    </button>
+                    <a href="{% url 'consulta_cuenta' cuenta.id %}" class="btn btn-outline-light">
+                        <i class="fas fa-eraser me-2"></i>Limpiar
+                    </a>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <!-- Saldos Resumen -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="saldo-card saldo-inicial">
+                <h6>Saldo Inicial</h6>
+                <h4>₲ {{ saldo_inicial|intcomma }}</h4>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="saldo-card saldo-debitos">
+                <h6>Total Débitos</h6>
+                <h4>₲ {{ total_debitos|intcomma }}</h4>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="saldo-card saldo-creditos">
+                <h6>Total Créditos</h6>
+                <h4>₲ {{ total_creditos|intcomma }}</h4>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="saldo-card saldo-final">
+                <h6>Saldo Final</h6>
+                <h4>₲ {{ saldo_final|intcomma }}</h4>
+            </div>
+        </div>
+    </div>
+
+    <!-- Botones de Acción -->
+    <div class="row mb-3 no-print">
+        <div class="col-12">
+            <button onclick="window.print()" class="btn btn-secondary">
+                <i class="fas fa-print me-2"></i>Imprimir
+            </button>
+            <a href="{% url 'libro_mayor' %}?cuenta={{ cuenta.id }}" class="btn btn-info">
+                <i class="fas fa-book me-2"></i>Ver en Libro Mayor
+            </a>
+            <a href="{% url 'plan_cuentas_editar' cuenta.id %}" class="btn btn-warning">
+                <i class="fas fa-edit me-2"></i>Editar Cuenta
+            </a>
+        </div>
+    </div>
+
+    <!-- Encabezado para Impresión -->
+    <div class="row mb-3 d-none d-print-block">
+        <div class="col-12 text-center">
+            <h3>Instituto de Educación PABLO MCAL</h3>
+            <h4>Consulta de Cuenta</h4>
+            <p>{{ cuenta.codigo }} - {{ cuenta.nombre }}</p>
+            {% if request.GET.fecha_desde or request.GET.fecha_hasta %}
+            <p>
+                {% if request.GET.fecha_desde %}Desde: {{ request.GET.fecha_desde }}{% endif %}
+                {% if request.GET.fecha_hasta %}Hasta: {{ request.GET.fecha_hasta }}{% endif %}
+            </p>
+            {% endif %}
+            <hr>
+        </div>
+    </div>
+
+    <!-- Tabla de Movimientos -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-dark text-white">
+                    <h5 class="mb-0"><i class="fas fa-list me-2"></i>Movimientos de la Cuenta</h5>
+                </div>
+                <div class="card-body">
+                    {% if movimientos %}
+                    <div class="table-responsive">
+                        <table class="table table-bordered table-hover">
+                            <thead class="table-secondary">
+                                <tr>
+                                    <th style="width: 10%;">Fecha</th>
+                                    <th style="width: 12%;">Asiento</th>
+                                    <th style="width: 8%;">Estado</th>
+                                    <th style="width: 30%;">Concepto</th>
+                                    <th style="width: 12%;" class="text-end">Débito</th>
+                                    <th style="width: 12%;" class="text-end">Crédito</th>
+                                    <th style="width: 12%;" class="text-end">Saldo</th>
+                                    <th style="width: 4%;" class="no-print">Ver</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for detalle in movimientos %}
+                                <tr class="{% if detalle.debito > 0 %}movimiento-debito{% else %}movimiento-credito{% endif %}">
+                                    <td>{{ detalle.asiento.fecha_asiento|date:"d/m/Y" }}</td>
+                                    <td>{{ detalle.asiento.numero_asiento }}</td>
+                                    <td>
+                                        {% if detalle.asiento.estado == 'CONTABILIZADO' %}
+                                            <span class="badge bg-success">C</span>
+                                        {% elif detalle.asiento.estado == 'BORRADOR' %}
+                                            <span class="badge bg-secondary">B</span>
+                                        {% elif detalle.asiento.estado == 'ANULADO' %}
+                                            <span class="badge bg-danger">A</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ detalle.concepto|default:detalle.asiento.concepto }}</td>
+                                    <td class="text-end">
+                                        {% if detalle.debito > 0 %}
+                                            ₲ {{ detalle.debito|intcomma }}
+                                        {% else %}
+                                            -
+                                        {% endif %}
+                                    </td>
+                                    <td class="text-end">
+                                        {% if detalle.credito > 0 %}
+                                            ₲ {{ detalle.credito|intcomma }}
+                                        {% else %}
+                                            -
+                                        {% endif %}
+                                    </td>
+                                    <td class="text-end">
+                                        {% if detalle.saldo >= 0 %}
+                                            <span class="saldo-deudor">₲ {{ detalle.saldo|intcomma }}</span>
+                                        {% else %}
+                                            <span class="saldo-acreedor">₲ {{ detalle.saldo|intcomma }}</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="no-print">
+                                        <a href="{% url 'asiento_detalle' detalle.asiento.id %}" 
+                                           class="btn btn-sm btn-info" title="Ver asiento">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                            <tfoot class="table-dark">
+                                <tr>
+                                    <td colspan="4" class="text-end"><strong>Totales:</strong></td>
+                                    <td class="text-end"><strong>₲ {{ total_debitos|intcomma }}</strong></td>
+                                    <td class="text-end"><strong>₲ {{ total_creditos|intcomma }}</strong></td>
+                                    <td class="text-end">
+                                        <strong>
+                                            {% if saldo_final >= 0 %}
+                                                <span class="saldo-deudor">₲ {{ saldo_final|intcomma }}</span>
+                                            {% else %}
+                                                <span class="saldo-acreedor">₲ {{ saldo_final|intcomma }}</span>
+                                            {% endif %}
+                                        </strong>
+                                    </td>
+                                    <td class="no-print"></td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+
+                    <!-- Estadísticas Adicionales -->
+                    <div class="alert alert-info mt-4">
+                        <h5><i class="fas fa-chart-pie me-2"></i>Estadísticas del Período</h5>
+                        <div class="row">
+                            <div class="col-md-3">
+                                <p class="mb-1"><strong>Total Movimientos:</strong></p>
+                                <p class="mb-0">{{ movimientos|length }} registros</p>
+                            </div>
+                            <div class="col-md-3">
+                                <p class="mb-1"><strong>Promedio Débito:</strong></p>
+                                <p class="mb-0">
+                                    {% if movimientos %}
+                                        ₲ {% widthratio total_debitos movimientos|length 1|intcomma %}
+                                    {% else %}
+                                        ₲ 0
+                                    {% endif %}
+                                </p>
+                            </div>
+                            <div class="col-md-3">
+                                <p class="mb-1"><strong>Promedio Crédito:</strong></p>
+                                <p class="mb-0">
+                                    {% if movimientos %}
+                                        ₲ {% widthratio total_creditos movimientos|length 1|intcomma %}
+                                    {% else %}
+                                        ₲ 0
+                                    {% endif %}
+                                </p>
+                            </div>
+                            <div class="col-md-3">
+                                <p class="mb-1"><strong>Movimiento Neto:</strong></p>
+                                <p class="mb-0">
+                                    {% with neto=total_debitos|add:total_creditos %}
+                                        ₲ {{ neto|intcomma }}
+                                    {% endwith %}
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                    {% else %}
+                    <p class="text-center text-muted mb-0">
+                        No hay movimientos registrados para esta cuenta en el período seleccionado.
+                    </p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Cuentas Relacionadas (si tiene cuenta padre o hijos) -->
+    {% if cuenta.cuenta_padre or cuenta.cuentas_hijas.exists %}
+    <div class="row mt-4 no-print">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-secondary text-white">
+                    <h5 class="mb-0"><i class="fas fa-sitemap me-2"></i>Cuentas Relacionadas</h5>
+                </div>
+                <div class="card-body">
+                    {% if cuenta.cuenta_padre %}
+                    <div class="mb-3">
+                        <strong>Cuenta Padre:</strong>
+                        <a href="{% url 'consulta_cuenta' cuenta.cuenta_padre.id %}" class="btn btn-sm btn-outline-primary ms-2">
+                            <i class="fas fa-arrow-up me-1"></i>
+                            {{ cuenta.cuenta_padre.codigo }} - {{ cuenta.cuenta_padre.nombre }}
+                        </a>
+                    </div>
+                    {% endif %}
+                    
+                    {% if cuenta.cuentas_hijas.exists %}
+                    <div>
+                        <strong>Cuentas Hijas:</strong>
+                        <div class="mt-2">
+                            {% for hija in cuenta.cuentas_hijas.all %}
+                            <a href="{% url 'consulta_cuenta' hija.id %}" class="btn btn-sm btn-outline-success me-2 mb-2">
+                                <i class="fas fa-arrow-down me-1"></i>
+                                {{ hija.codigo }} - {{ hija.nombre }}
+                            </a>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const fechaDesde = document.getElementById('fecha_desde');
+        const fechaHasta = document.getElementById('fecha_hasta');
+        
+        // Si no hay fecha desde, poner primer día del mes actual
+        if (!fechaDesde.value) {
+            const today = new Date();
+            const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
+            fechaDesde.value = firstDay.toISOString().split('T')[0];
+        }
+        
+        // Si no hay fecha hasta, poner fecha actual
+        if (!fechaHasta.value) {
+            const today = new Date();
+            fechaHasta.value = today.toISOString().split('T')[0];
+        }
+    });
+</script>
+{% endblock %}

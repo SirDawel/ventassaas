@@ -1,0 +1,501 @@
+{% extends 'website/base.html' %}
+{% load l10n %}
+
+{% block title %}Facturar - {{ grupo.apellido_familia }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h2><i class="fas fa-file-invoice-dollar me-2"></i>Facturar Mensualidades</h2>
+                    <p class="text-muted mb-0">Grupo Familiar: <strong>{{ grupo.apellido_familia }}</strong> ({{ grupo.codigo_familia }})</p>
+                </div>
+                <div>
+                    <a href="/facturas/nueva/?estudiante_id=546" class="btn btn-secondary">
+                        <i class="fas fa-arrow-left me-2"></i>Volver a Facturación
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="fas fa-users me-2"></i>Seleccionar Estudiantes</h5>
+                </div>
+                <div class="card-body">
+                    <form method="post" id="facturarForm">
+                        {% csrf_token %}
+                        
+                        {% if estudiantes_data %}
+                            <div class="table-responsive mb-4">
+                                <table class="table table-hover">
+                                    <thead>
+                                        <tr>
+                                            <th width="50">
+                                                <input type="checkbox" id="selectAll" checked>
+                                            <th width="50">
+                                                <input type="checkbox" id="selectAll" checked>
+                                            </th>
+                                            <th>Estudiante</th>
+                                            <th>Grado</th>
+                                            <th>Meses Pagados</th>
+                                            <th class="text-end">Monto Base</th>
+                                            <th class="text-end">Descuento</th>
+                                            <th class="text-end">Total</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for data in estudiantes_data %}
+                                        <tr>
+                                            <td>
+                                                <input type="checkbox" name="estudiantes" value="{{ data.estudiante.id }}" 
+                                                       class="estudiante-checkbox" checked 
+                                                       data-meses-pagados="{{ data.meses_pagados|join:',' }}"
+                                                       data-monto-base="{{ data.monto_base }}"
+                                                       data-descuento="{{ data.descuento }}"
+                                                       data-monto-final="{{ data.monto_final }}">
+                                            </td>
+                                            <td>
+                                                <strong>{{ data.estudiante.get_full_name }}</strong><br>
+                                                <small class="text-muted">{{ data.estudiante.cedula|default:"Sin cédula" }}</small>
+                                            </td>
+                                            <td>{{ data.estudiante.grado }} - {{ data.estudiante.seccion }}</td>
+                                            <td>
+                                                {% if data.meses_pagados %}
+                                                    <span class="badge bg-info" title="Meses ya pagados en {{ anio_actual }}">
+                                                        {{ data.meses_pagados|length }} mes{{ data.meses_pagados|length|pluralize:"es" }}
+                                                    </span>
+                                                {% else %}
+                                                    <span class="text-muted">Ninguno</span>
+                                                {% endif %}
+                                            </td>
+                                            <td class="text-end">RD$ {{ data.monto_base|unlocalize|floatformat:2 }}</td>
+                                            <td class="text-end">
+                                                {% if data.descuento > 0 %}
+                                                    <span class="text-success">-RD$ {{ data.descuento|unlocalize|floatformat:2 }}</span>
+                                                {% else %}
+                                                    -
+                                                {% endif %}
+                                            </td>
+                                            <td class="text-end"><strong>RD$ {{ data.monto_final|unlocalize|floatformat:2 }}</strong></td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            <!-- Información de Pago -->
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Meses a Facturar <span class="text-danger">*</span></label>
+                                    <div class="border rounded p-3" style="max-height: 250px; overflow-y: auto;">
+                                        <div class="form-check mb-2">
+                                            <input class="form-check-input" type="checkbox" id="selectAllMeses">
+                                            <label class="form-check-label fw-bold" for="selectAllMeses">
+                                                Seleccionar Todos
+                                            </label>
+                                        </div>
+                                        <hr>
+                                        {% for m, nombre in meses %}
+                                        <div class="form-check mb-2">
+                                            <input class="form-check-input mes-checkbox" type="checkbox" 
+                                                   name="meses" value="{{ m }}" id="mes{{ m }}"
+                                                   {% if m == mes_actual %}checked{% endif %}>
+                                            <label class="form-check-label" for="mes{{ m }}">
+                                                {{ nombre }}
+                                            </label>
+                                        </div>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                                
+                                <div class="col-md-6 mb-3">
+                                    <label for="anio" class="form-label">Año <span class="text-danger">*</span></label>
+                                    <input type="number" class="form-control" id="anio" name="anio" required 
+                                           value="{{ anio_actual }}" min="2020" max="2030">
+                                </div>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="metodo_pago" class="form-label">Método de Pago</label>
+                                    <select class="form-select" id="metodo_pago" name="metodo_pago">
+                                        <option value="efectivo">Efectivo</option>
+                                        <option value="transferencia">Transferencia Bancaria</option>
+                                        <option value="tarjeta">Tarjeta</option>
+                                        <option value="cheque">Cheque</option>
+                                        <option value="mixto">Mixto</option>
+                                    </select>
+                                </div>
+                                
+                                <div class="col-md-6 mb-3">
+                                    <label for="monto_pagado" class="form-label">Monto Pagado</label>
+                                    <input type="number" class="form-control" id="monto_pagado" name="monto_pagado" 
+                                           min="0" step="0.01" value="0" placeholder="0.00">
+                                    <small class="form-text text-muted">Dejar en 0 para factura pendiente</small>
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="observaciones" class="form-label">Observaciones</label>
+                                <textarea class="form-control" id="observaciones" name="observaciones" rows="2" 
+                                          placeholder="Notas adicionales..."></textarea>
+                            </div>
+
+                            <div class="d-flex justify-content-between">
+                                <a href="/facturas/nueva/?estudiante_id=546" class="btn btn-secondary">
+                                    <i class="fas fa-times me-1"></i>Cancelar
+                                </a>
+                                <button type="submit" class="btn btn-success btn-lg">
+                                    <i class="fas fa-file-invoice me-1"></i>Generar Facturas
+                                </button>
+                            </div>
+                        {% else %}
+                            <div class="alert alert-warning">
+                                <i class="fas fa-exclamation-triangle me-2"></i>
+                                No hay estudiantes con tarifa configurada en este grupo familiar.
+                            </div>
+                        {% endif %}
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Resumen -->
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0"><i class="fas fa-calculator me-2"></i>Resumen de Pago</h5>
+                </div>
+                <div class="card-body">
+                    <p><strong>Grupo:</strong> {{ grupo.apellido_familia }}</p>
+                    <p><strong>Código:</strong> {{ grupo.codigo_familia }}</p>
+                    <p><strong>Estudiantes disponibles:</strong> {{ estudiantes_data|length }}</p>
+                    
+                    {% if grupo.descuento_general > 0 %}
+                        <div class="alert alert-success py-2 mb-2">
+                            <i class="fas fa-tag me-2"></i>
+                            Descuento familiar: <strong>{{ grupo.descuento_general }}%</strong>
+                        </div>
+                    {% endif %}
+                    
+                    {% if grupo.porcentaje_mora > 0 %}
+                        <div class="alert alert-warning py-2 mb-3">
+                            <i class="fas fa-exclamation-triangle me-2"></i>
+                            Mora por atraso: <strong>{{ grupo.porcentaje_mora }}%</strong>
+                            <br><small>Se aplica automáticamente a meses vencidos (después del día {{ grupo.dia_vencimiento }})</small>
+                        </div>
+                    {% endif %}
+                    
+                    <hr>
+                    
+                    <!-- Cálculo Dinámico -->
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between mb-2">
+                            <span>Estudiantes seleccionados:</span>
+                            <strong id="numEstudiantes">0</strong>
+                        </div>
+                        <div class="d-flex justify-content-between mb-2">
+                            <span>Meses seleccionados:</span>
+                            <strong id="numMeses">0</strong>
+                        </div>
+                        <div class="d-flex justify-content-between mb-2">
+                            <span>Conceptos totales:</span>
+                            <strong id="numConceptos">0</strong>
+                        </div>
+                    </div>
+                    
+                    <hr>
+                    
+                    <div class="bg-light p-3 rounded mb-3">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h5 class="mb-0">TOTAL A PAGAR:</h5>
+                            <h4 class="mb-0 text-success" id="totalAPagar">RD$ 0.00</h4>
+                        </div>
+                        
+                        <div class="d-flex justify-content-between mb-2">
+                            <span class="text-muted">Subtotal:</span>
+                            <span id="subtotalDisplay">RD$ 0.00</span>
+                        </div>
+                        <div class="d-flex justify-content-between mb-2">
+                            <span class="text-success">Descuento:</span>
+                            <span class="text-success" id="descuentoDisplay">RD$ 0.00</span>
+                        </div>
+                        <div class="d-flex justify-content-between mb-2" id="moraRow" style="display: none;">
+                            <span class="text-warning"><i class="fas fa-exclamation-triangle me-1"></i>Mora:</span>
+                            <span class="text-warning fw-bold" id="moraDisplay">RD$ 0.00</span>
+                        </div>
+                    </div>
+                    
+                    <!-- Cambio -->
+                    <div id="cambioSection" class="bg-warning bg-opacity-10 p-3 rounded" style="display: none;">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <i class="fas fa-hand-holding-usd me-2"></i>
+                                <strong>CAMBIO A DEVOLVER:</strong>
+                            </div>
+                            <h4 class="mb-0 text-warning" id="cambioDevolver">RD$ 0.00</h4>
+                        </div>
+                    </div>
+                    
+                    <p class="text-muted mb-0 mt-3">
+                        <small><i class="fas fa-info-circle me-1"></i>Se generará una factura individual por estudiante</small>
+                    </p>
+                </div>
+            </div>
+
+            <div class="card mt-3">
+                <div class="card-header bg-warning text-dark">
+                    <h6 class="mb-0"><i class="fas fa-lightbulb me-2"></i>Información</h6>
+                </div>
+                <div class="card-body">
+                    <ul class="mb-0">
+                        <li><strong>Una factura por estudiante:</strong> Cada estudiante recibirá UNA factura con todos los meses seleccionados</li>
+                        <li><strong>Múltiples meses:</strong> Puedes seleccionar varios meses (ej: Enero, Febrero, Marzo) y se crearán 3 líneas en la misma factura</li>
+                        <li><strong>Descuento automático:</strong> El descuento familiar ({{ grupo.descuento_general }}%) se aplica a cada línea</li>
+                        <li><strong class="text-danger">Meses pagados deshabilitados:</strong> Si TODOS los estudiantes seleccionados ya pagaron un mes, ese mes se deshabilita</li>
+                        <li><strong class="text-info">Exclusión inteligente:</strong> Si solo algunos estudiantes pagaron un mes, se crea factura solo para los que no lo pagaron</li>
+                        <li>Las facturas creadas aquí son las mismas del sistema principal de facturación</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Obtener año actual del contexto
+const anioActual = {{ anio_actual }};
+
+// Función para actualizar el estado de los checkboxes de meses
+function actualizarEstadoMeses() {
+    const estudiantesSeleccionados = document.querySelectorAll('.estudiante-checkbox:checked');
+    const anioSeleccionado = document.getElementById('anio').value;
+    const mesesCheckboxes = document.querySelectorAll('.mes-checkbox');
+    
+    if (estudiantesSeleccionados.length === 0) {
+        // Si no hay estudiantes seleccionados, habilitar todos los meses
+        mesesCheckboxes.forEach(cb => {
+            cb.disabled = false;
+            cb.parentElement.style.opacity = '1';
+        });
+        return;
+    }
+    
+    // Para cada mes, verificar si TODOS los estudiantes seleccionados lo tienen pagado
+    mesesCheckboxes.forEach(mesCheckbox => {
+        const mes = mesCheckbox.value;
+        const claveMes = `${mes}-${anioSeleccionado}`;
+        
+        let todosLoPagaron = true;
+        
+        estudiantesSeleccionados.forEach(estudianteCheckbox => {
+            const mesesPagadosStr = estudianteCheckbox.getAttribute('data-meses-pagados');
+            const mesesPagados = mesesPagadosStr ? mesesPagadosStr.split(',').filter(m => m) : [];
+            
+            if (!mesesPagados.includes(claveMes)) {
+                todosLoPagaron = false;
+            }
+        });
+        
+        // Deshabilitar el mes si TODOS los estudiantes seleccionados ya lo pagaron
+        if (todosLoPagaron && estudiantesSeleccionados.length > 0) {
+            mesCheckbox.disabled = true;
+            mesCheckbox.checked = false;
+            mesCheckbox.parentElement.style.opacity = '0.5';
+            mesCheckbox.parentElement.title = 'Todos los estudiantes seleccionados ya pagaron este mes';
+        } else {
+            mesCheckbox.disabled = false;
+            mesCheckbox.parentElement.style.opacity = '1';
+            mesCheckbox.parentElement.title = '';
+        }
+    });
+}
+
+document.getElementById('selectAll').addEventListener('change', function() {
+    const checkboxes = document.querySelectorAll('.estudiante-checkbox');
+    checkboxes.forEach(cb => cb.checked = this.checked);
+    actualizarEstadoMeses();
+    calcularTotales();
+});
+
+// Actualizar estado de meses cuando cambie el año
+document.getElementById('anio').addEventListener('change', function() {
+    actualizarEstadoMeses();
+    calcularTotales();
+});
+
+// Seleccionar/deseleccionar todos los meses (solo los habilitados)
+document.getElementById('selectAllMeses').addEventListener('change', function() {
+    const checkboxes = document.querySelectorAll('.mes-checkbox:not(:disabled)');
+    checkboxes.forEach(cb => cb.checked = this.checked);
+    calcularTotales();
+});
+
+// ===== CÁLCULO DINÁMICO DE TOTALES =====
+function calcularTotales() {
+    const estudiantesSeleccionados = document.querySelectorAll('.estudiante-checkbox:checked');
+    const mesesSeleccionados = document.querySelectorAll('.mes-checkbox:checked');
+    const montoPagadoInput = document.getElementById('monto_pagado');
+    
+    const numEstudiantes = estudiantesSeleccionados.length;
+    const numMeses = mesesSeleccionados.length;
+    const numConceptos = numEstudiantes * numMeses;
+    
+    // Actualizar contadores
+    document.getElementById('numEstudiantes').textContent = numEstudiantes;
+    document.getElementById('numMeses').textContent = numMeses;
+    document.getElementById('numConceptos').textContent = numConceptos;
+    
+    // Calcular totales
+    let subtotal = 0;
+    let descuentoTotal = 0;
+    
+    estudiantesSeleccionados.forEach(checkbox => {
+        const montoBase = parseFloat(checkbox.getAttribute('data-monto-base')) || 0;
+        const descuento = parseFloat(checkbox.getAttribute('data-descuento')) || 0;
+        
+        // Multiplicar por número de meses
+        subtotal += montoBase * numMeses;
+        descuentoTotal += descuento * numMeses;
+    });
+    
+    const subtotalConDescuento = subtotal - descuentoTotal;
+    
+    // Calcular mora si aplica
+    let moraTotal = 0;
+    const porcentajeMora = {{ grupo.porcentaje_mora|unlocalize }};
+    const diaVencimiento = {{ grupo.dia_vencimiento }};
+    const anioSeleccionado = parseInt(document.getElementById('anio').value);
+    
+    if (porcentajeMora > 0 && mesesSeleccionados.length > 0) {
+        // Obtener fecha actual
+        const hoy = new Date();
+        
+        // Verificar si algún mes seleccionado está vencido
+        let hayMesesVencidos = false;
+        mesesSeleccionados.forEach(checkbox => {
+            const mes = parseInt(checkbox.value);
+            const fechaVencimiento = new Date(anioSeleccionado, mes - 1, diaVencimiento);
+            
+            if (hoy > fechaVencimiento) {
+                hayMesesVencidos = true;
+            }
+        });
+        
+        // Aplicar mora si hay meses vencidos
+        if (hayMesesVencidos) {
+            moraTotal = subtotalConDescuento * (porcentajeMora / 100);
+            document.getElementById('moraRow').style.display = 'flex';
+        } else {
+            document.getElementById('moraRow').style.display = 'none';
+        }
+    } else {
+        document.getElementById('moraRow').style.display = 'none';
+    }
+    
+    const total = subtotalConDescuento + moraTotal;
+    
+    // Actualizar displays
+    document.getElementById('subtotalDisplay').textContent = `RD$ ${subtotal.toFixed(2)}`;
+    document.getElementById('descuentoDisplay').textContent = `-RD$ ${descuentoTotal.toFixed(2)}`;
+    document.getElementById('moraDisplay').textContent = `+RD$ ${moraTotal.toFixed(2)}`;
+    document.getElementById('totalAPagar').textContent = `RD$ ${total.toFixed(2)}`;
+    
+    // Calcular cambio
+    const montoPagado = parseFloat(montoPagadoInput.value) || 0;
+    const cambio = montoPagado - total;
+    
+    if (montoPagado > 0 && cambio >= 0) {
+        document.getElementById('cambioSection').style.display = 'block';
+        document.getElementById('cambioDevolver').textContent = `RD$ ${cambio.toFixed(2)}`;
+        document.getElementById('cambioDevolver').className = cambio > 0 ? 'mb-0 text-warning' : 'mb-0 text-success';
+    } else if (montoPagado > 0 && cambio < 0) {
+        document.getElementById('cambioSection').style.display = 'block';
+        document.getElementById('cambioDevolver').textContent = `Falta: RD$ ${Math.abs(cambio).toFixed(2)}`;
+        document.getElementById('cambioDevolver').className = 'mb-0 text-danger';
+    } else {
+        document.getElementById('cambioSection').style.display = 'none';
+    }
+}
+
+// Escuchar cambios en checkboxes de estudiantes
+document.querySelectorAll('.estudiante-checkbox').forEach(checkbox => {
+    checkbox.addEventListener('change', function() {
+        actualizarEstadoMeses();
+        calcularTotales();
+    });
+});
+
+// Escuchar cambios en checkboxes de meses
+document.querySelectorAll('.mes-checkbox').forEach(checkbox => {
+    checkbox.addEventListener('change', calcularTotales);
+});
+
+// Escuchar cambios en monto pagado
+document.getElementById('monto_pagado').addEventListener('input', calcularTotales);
+
+// Calcular totales al cargar la página
+document.addEventListener('DOMContentLoaded', function() {
+    actualizarEstadoMeses();
+    calcularTotales();
+});
+
+// Validar que al menos un estudiante y un mes estén seleccionados
+document.getElementById('facturarForm').addEventListener('submit', function(e) {
+    const estudiantesChecked = document.querySelectorAll('.estudiante-checkbox:checked');
+    const mesesChecked = document.querySelectorAll('.mes-checkbox:checked');
+    const anioSeleccionado = document.getElementById('anio').value;
+    
+    if (estudiantesChecked.length === 0) {
+        e.preventDefault();
+        alert('Debes seleccionar al menos un estudiante para facturar.');
+        return;
+    }
+    
+    if (mesesChecked.length === 0) {
+        e.preventDefault();
+        alert('Debes seleccionar al menos un mes para facturar.');
+        return;
+    }
+    
+    // Verificar meses pagados por cada estudiante seleccionado (solo algunos estudiantes)
+    let advertencias = [];
+    
+    estudiantesChecked.forEach(checkbox => {
+        const mesesPagadosStr = checkbox.getAttribute('data-meses-pagados');
+        if (mesesPagadosStr) {
+            const mesesPagados = mesesPagadosStr.split(',').filter(m => m);
+            
+            // Verificar si algún mes seleccionado ya está pagado
+            mesesChecked.forEach(mesCheckbox => {
+                const mes = mesCheckbox.value;
+                const claveMes = `${mes}-${anioSeleccionado}`;
+                
+                if (mesesPagados.includes(claveMes)) {
+                    const nombreEstudiante = checkbox.closest('tr').querySelector('strong').textContent;
+                    const nombreMes = mesCheckbox.parentElement.querySelector('label').textContent.trim();
+                    advertencias.push(`${nombreEstudiante} ya tiene pagado ${nombreMes} ${anioSeleccionado}`);
+                }
+            });
+        }
+    });
+    
+    if (advertencias.length > 0) {
+        const mensaje = 'ADVERTENCIA: Algunos estudiantes ya pagaron ciertos meses y serán excluidos automáticamente:\n\n' + 
+                       advertencias.join('\n') + 
+                       '\n\nSe creará UNA factura por estudiante con los meses no pagados.\n¿Deseas continuar?';
+        
+        if (!confirm(mensaje)) {
+            e.preventDefault();
+            return;
+        }
+    }
+});
+</script>
+{% endblock %}

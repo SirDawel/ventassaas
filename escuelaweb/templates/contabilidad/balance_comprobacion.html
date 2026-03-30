@@ -1,0 +1,302 @@
+{% extends 'website/base.html' %}
+{% load humanize %}
+{% load custom_filters %}
+
+{% block title %}Balance de Comprobación - IEPM{% endblock %}
+
+{% block extra_css %}
+<style>
+    .filter-card {
+        background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+        color: white;
+        border-radius: 10px;
+        padding: 20px;
+        margin-bottom: 20px;
+    }
+    .filter-card .form-label {
+        color: white;
+        font-weight: 500;
+    }
+    .filter-card .form-control, .filter-card .form-select {
+        border: 2px solid rgba(255,255,255,0.3);
+        background: rgba(255,255,255,0.9);
+    }
+    .balance-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 20px;
+        border-radius: 8px;
+        margin-bottom: 20px;
+        text-align: center;
+    }
+    .balance-header h3 {
+        color: white;
+        margin: 0;
+    }
+    .tipo-cuenta-header {
+        background-color: #6c757d;
+        color: white;
+        font-weight: bold;
+    }
+    .totales-generales {
+        background-color: #212529;
+        color: white;
+        font-weight: bold;
+        font-size: 1.1rem;
+    }
+    .totales-tipo {
+        background-color: #495057;
+        color: white;
+        font-weight: bold;
+    }
+    .saldo-deudor {
+        color: #28a745;
+    }
+    .saldo-acreedor {
+        color: #dc3545;
+    }
+    .cuenta-nivel-1 {
+        font-weight: bold;
+    }
+    .cuenta-nivel-2 {
+        padding-left: 20px;
+    }
+    .cuenta-nivel-3 {
+        padding-left: 40px;
+    }
+    @media print {
+        .no-print {
+            display: none;
+        }
+        .filter-card {
+            display: none;
+        }
+        .balance-header {
+            background: #333 !important;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+        }
+        body {
+            font-size: 10pt;
+        }
+        .table {
+            font-size: 8pt;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4 no-print">
+        <div class="col-12">
+            <h2><i class="fas fa-balance-scale"></i> Balance de Comprobación</h2>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{% url 'index' %}">Inicio</a></li>
+                    <li class="breadcrumb-item"><a href="{% url 'contabilidad_dashboard' %}">Contabilidad</a></li>
+                    <li class="breadcrumb-item active">Balance de Comprobación</li>
+                </ol>
+            </nav>
+        </div>
+    </div>
+
+    <!-- Filtros -->
+    <div class="filter-card no-print">
+        <form method="get" id="filterForm">
+            <div class="row">
+                <div class="col-md-4">
+                    <label for="fecha_desde" class="form-label">Fecha Desde</label>
+                    <input type="date" class="form-control" id="fecha_desde" name="fecha_desde" 
+                           value="{{ request.GET.fecha_desde }}">
+                </div>
+                <div class="col-md-4">
+                    <label for="fecha_hasta" class="form-label">Fecha Hasta</label>
+                    <input type="date" class="form-control" id="fecha_hasta" name="fecha_hasta" 
+                           value="{{ request.GET.fecha_hasta }}">
+                </div>
+                <div class="col-md-4 d-flex align-items-end">
+                    <button type="submit" class="btn btn-light me-2">
+                        <i class="fas fa-filter me-2"></i>Filtrar
+                    </button>
+                    <a href="{% url 'balance_comprobacion' %}" class="btn btn-outline-light">
+                        <i class="fas fa-eraser me-2"></i>Limpiar
+                    </a>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <!-- Botones de Acción -->
+    <div class="row mb-3 no-print">
+        <div class="col-12">
+            <button onclick="window.print()" class="btn btn-secondary">
+                <i class="fas fa-print me-2"></i>Imprimir
+            </button>
+        </div>
+    </div>
+
+    <!-- Encabezado del Balance -->
+    <div class="balance-header">
+        <h3>Instituto de Educación PABLO MCAL</h3>
+        <h4>Balance de Comprobación</h4>
+        {% if request.GET.fecha_desde or request.GET.fecha_hasta %}
+        <p class="mb-0">
+            {% if request.GET.fecha_desde %}Desde: {{ request.GET.fecha_desde }}{% endif %}
+            {% if request.GET.fecha_hasta %} - Hasta: {{ request.GET.fecha_hasta }}{% endif %}
+        </p>
+        {% else %}
+        <p class="mb-0">Al {{ fecha_actual|date:"d/m/Y" }}</p>
+        {% endif %}
+    </div>
+
+    <!-- Tabla del Balance -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    {% if cuentas_agrupadas %}
+                    <div class="table-responsive">
+                        <table class="table table-bordered table-sm">
+                            <thead class="table-dark">
+                                <tr>
+                                    <th style="width: 12%;">Código</th>
+                                    <th style="width: 30%;">Cuenta</th>
+                                    <th style="width: 12%;" class="text-end">Débitos</th>
+                                    <th style="width: 12%;" class="text-end">Créditos</th>
+                                    <th style="width: 12%;" class="text-end">Saldo Deudor</th>
+                                    <th style="width: 12%;" class="text-end">Saldo Acreedor</th>
+                                    <th style="width: 10%;" class="no-print">Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for tipo, cuentas in cuentas_agrupadas.items %}
+                                    <!-- Encabezado de Tipo de Cuenta -->
+                                    <tr class="tipo-cuenta-header">
+                                        <td colspan="7">
+                                            <i class="fas fa-folder me-2"></i>{{ tipo }}
+                                        </td>
+                                    </tr>
+                                    
+                                    {% for cuenta in cuentas %}
+                                    <tr>
+                                        <td>{{ cuenta.codigo }}</td>
+                                        <td class="cuenta-nivel-{{ cuenta.nivel|default:'1' }}">
+                                            {{ cuenta.nombre }}
+                                        </td>
+                                        <td class="text-end">₲ {{ cuenta.total_debito|intcomma }}</td>
+                                        <td class="text-end">₲ {{ cuenta.total_credito|intcomma }}</td>
+                                        <td class="text-end">
+                                            {% if cuenta.saldo_deudor > 0 %}
+                                                <span class="saldo-deudor">₲ {{ cuenta.saldo_deudor|intcomma }}</span>
+                                            {% else %}
+                                                -
+                                            {% endif %}
+                                        </td>
+                                        <td class="text-end">
+                                            {% if cuenta.saldo_acreedor > 0 %}
+                                                <span class="saldo-acreedor">₲ {{ cuenta.saldo_acreedor|intcomma }}</span>
+                                            {% else %}
+                                                -
+                                            {% endif %}
+                                        </td>
+                                        <td class="no-print">
+                                            <a href="{% url 'consulta_cuenta' cuenta.id %}" 
+                                               class="btn btn-sm btn-info" title="Consultar">
+                                                <i class="fas fa-search"></i>
+                                            </a>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                    
+                                    <!-- Subtotal por Tipo -->
+                                    <tr class="totales-tipo">
+                                        <td colspan="2" class="text-end">Subtotal {{ tipo }}:</td>
+                                        <td class="text-end">₲ {{ totales_por_tipo|get_item:tipo|get_item:'debito'|intcomma }}</td>
+                                        <td class="text-end">₲ {{ totales_por_tipo|get_item:tipo|get_item:'credito'|intcomma }}</td>
+                                        <td class="text-end">₲ {{ totales_por_tipo|get_item:tipo|get_item:'saldo_deudor'|intcomma }}</td>
+                                        <td class="text-end">₲ {{ totales_por_tipo|get_item:tipo|get_item:'saldo_acreedor'|intcomma }}</td>
+                                        <td class="no-print"></td>
+                                    </tr>
+                                    
+                                    <!-- Espacio entre tipos -->
+                                    <tr>
+                                        <td colspan="7" style="height: 10px; background-color: white;"></td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                            <tfoot class="totales-generales">
+                                <tr>
+                                    <td colspan="2" class="text-end">TOTALES GENERALES:</td>
+                                    <td class="text-end">₲ {{ totales.total_debito|intcomma }}</td>
+                                    <td class="text-end">₲ {{ totales.total_credito|intcomma }}</td>
+                                    <td class="text-end">₲ {{ totales.total_saldo_deudor|intcomma }}</td>
+                                    <td class="text-end">₲ {{ totales.total_saldo_acreedor|intcomma }}</td>
+                                    <td class="no-print"></td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+
+                    <!-- Verificación de Balance -->
+                    <div class="row mt-4">
+                        <div class="col-12">
+                            <div class="alert alert-{% if totales.total_debito == totales.total_credito %}success{% else %}danger{% endif %}">
+                                <h5>
+                                    <i class="fas fa-{% if totales.total_debito == totales.total_credito %}check-circle{% else %}exclamation-triangle{% endif %} me-2"></i>
+                                    Verificación del Balance
+                                </h5>
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <p class="mb-1"><strong>Total Débitos:</strong> ₲ {{ totales.total_debito|intcomma }}</p>
+                                        <p class="mb-1"><strong>Total Créditos:</strong> ₲ {{ totales.total_credito|intcomma }}</p>
+                                        <p class="mb-0">
+                                            <strong>Diferencia:</strong> 
+                                            ₲ {{ totales.total_debito|add:totales.total_credito|intcomma }}
+                                        </p>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <p class="mb-1"><strong>Total Saldos Deudores:</strong> ₲ {{ totales.total_saldo_deudor|intcomma }}</p>
+                                        <p class="mb-0"><strong>Total Saldos Acreedores:</strong> ₲ {{ totales.total_saldo_acreedor|intcomma }}</p>
+                                    </div>
+                                </div>
+                                {% if totales.total_debito == totales.total_credito %}
+                                <p class="mb-0 mt-2">
+                                    <i class="fas fa-check me-2"></i>
+                                    Los débitos y créditos están balanceados correctamente.
+                                </p>
+                                {% else %}
+                                <p class="mb-0 mt-2">
+                                    <i class="fas fa-exclamation-triangle me-2"></i>
+                                    ADVERTENCIA: Los débitos y créditos no están balanceados.
+                                </p>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    {% else %}
+                    <p class="text-center text-muted mb-0">
+                        No hay movimientos registrados para el período seleccionado.
+                    </p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const fechaDesde = document.getElementById('fecha_desde');
+        const fechaHasta = document.getElementById('fecha_hasta');
+        
+        // Si no hay fecha hasta, poner fecha actual
+        if (!fechaHasta.value) {
+            const today = new Date();
+            fechaHasta.value = today.toISOString().split('T')[0];
+        }
+    });
+</script>
+{% endblock %}

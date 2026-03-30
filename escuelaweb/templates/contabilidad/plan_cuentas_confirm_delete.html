@@ -1,0 +1,377 @@
+{% extends 'website/base.html' %}
+{% load l10n %}
+{% block content %}
+
+<style>
+  /* ===== VARIABLES MODERNAS ===== */
+  :root {
+    --delete-danger: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+    --delete-shadow: 0 8px 30px rgba(0,0,0,0.12);
+  }
+
+  /* ===== CONTENEDOR DE CONFIRMACIÓN ===== */
+  .confirm-container {
+    max-width: 700px;
+    margin: 4rem auto;
+  }
+
+  .confirm-card {
+    background: white;
+    border-radius: 20px;
+    box-shadow: var(--delete-shadow);
+    overflow: hidden;
+  }
+
+  .confirm-header {
+    background: var(--delete-danger);
+    padding: 2rem;
+    text-align: center;
+    color: white;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .confirm-header::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    right: -50%;
+    width: 200%;
+    height: 200%;
+    background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+    animation: float 20s ease-in-out infinite;
+  }
+
+  @keyframes float {
+    0%, 100% { transform: translate(0, 0) rotate(0deg); }
+    50% { transform: translate(-30px, -30px) rotate(180deg); }
+  }
+
+  .confirm-icon {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 1rem;
+    position: relative;
+    z-index: 1;
+  }
+
+  .confirm-icon i {
+    font-size: 2.5rem;
+    color: white;
+  }
+
+  .confirm-header h2 {
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+    position: relative;
+    z-index: 1;
+  }
+
+  .confirm-header p {
+    opacity: 0.95;
+    font-size: 1.1rem;
+    margin-bottom: 0;
+    position: relative;
+    z-index: 1;
+  }
+
+  .confirm-body {
+    padding: 2rem;
+  }
+
+  /* ===== INFORMACIÓN DE LA CUENTA ===== */
+  .cuenta-info-box {
+    background: linear-gradient(135deg, #fa709a15 0%, #fee14015 100%);
+    border-left: 4px solid #fa709a;
+    border-radius: 10px;
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+  }
+
+  .cuenta-info-item {
+    display: flex;
+    margin-bottom: 1rem;
+  }
+
+  .cuenta-info-item:last-child {
+    margin-bottom: 0;
+  }
+
+  .cuenta-info-label {
+    font-weight: 600;
+    color: #718096;
+    min-width: 120px;
+  }
+
+  .cuenta-info-value {
+    color: #2d3748;
+    font-weight: 500;
+  }
+
+  .cuenta-codigo-destacado {
+    font-family: 'Courier New', monospace;
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: #fa709a;
+  }
+
+  /* ===== MENSAJE DE ADVERTENCIA ===== */
+  .warning-message {
+    background: #fff5f5;
+    border: 2px solid #fc8181;
+    border-radius: 15px;
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+  }
+
+  .warning-message-header {
+    display: flex;
+    align-items: center;
+    margin-bottom: 1rem;
+  }
+
+  .warning-icon {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    background: #fc8181;
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    margin-right: 1rem;
+  }
+
+  .warning-title {
+    font-weight: 700;
+    color: #c53030;
+    font-size: 1.1rem;
+  }
+
+  .warning-list {
+    margin-left: 66px;
+    margin-bottom: 0;
+  }
+
+  .warning-list li {
+    color: #742a2a;
+    margin-bottom: 0.5rem;
+  }
+
+  /* ===== BOTONES ===== */
+  .btn-confirmar-eliminar {
+    background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+    color: white;
+    border: none;
+    border-radius: 10px;
+    padding: 0.875rem 2.5rem;
+    font-weight: 600;
+    font-size: 1rem;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(247, 112, 154, 0.3);
+  }
+
+  .btn-confirmar-eliminar:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(247, 112, 154, 0.4);
+    color: white;
+  }
+
+  .btn-cancelar-eliminar {
+    background: #e2e8f0;
+    color: #4a5568;
+    border: none;
+    border-radius: 10px;
+    padding: 0.875rem 2.5rem;
+    font-weight: 600;
+    font-size: 1rem;
+    transition: all 0.3s ease;
+  }
+
+  .btn-cancelar-eliminar:hover {
+    background: #cbd5e0;
+    transform: translateY(-2px);
+    color: #4a5568;
+  }
+
+  /* ===== CHECKBOX DE CONFIRMACIÓN ===== */
+  .confirm-checkbox-container {
+    background: #f7fafc;
+    border-radius: 10px;
+    padding: 1.25rem;
+    margin-bottom: 2rem;
+  }
+
+  .confirm-checkbox {
+    display: flex;
+    align-items: center;
+  }
+
+  .confirm-checkbox input[type="checkbox"] {
+    width: 1.5rem;
+    height: 1.5rem;
+    margin-right: 1rem;
+    cursor: pointer;
+  }
+
+  .confirm-checkbox label {
+    font-weight: 500;
+    color: #2d3748;
+    cursor: pointer;
+    margin-bottom: 0;
+  }
+
+  /* ===== RESPONSIVE ===== */
+  @media (max-width: 768px) {
+    .confirm-container {
+      margin: 2rem 1rem;
+    }
+
+    .confirm-header,
+    .confirm-body {
+      padding: 1.5rem;
+    }
+
+    .btn-confirmar-eliminar,
+    .btn-cancelar-eliminar {
+      width: 100%;
+      margin-bottom: 0.5rem;
+    }
+  }
+</style>
+
+<div class="container">
+  <div class="confirm-container">
+    <div class="confirm-card">
+      <!-- Header -->
+      <div class="confirm-header">
+        <div class="confirm-icon">
+          <i class="fas fa-exclamation-triangle"></i>
+        </div>
+        <h2>Confirmar Eliminación</h2>
+        <p>¿Está seguro que desea eliminar esta cuenta?</p>
+      </div>
+
+      <!-- Body -->
+      <div class="confirm-body">
+        <!-- Información de la Cuenta -->
+        <div class="cuenta-info-box">
+          <h5 class="mb-3"><i class="fas fa-info-circle"></i> Cuenta a Eliminar</h5>
+          
+          <div class="cuenta-info-item">
+            <div class="cuenta-info-label">Código:</div>
+            <div class="cuenta-info-value">
+              <span class="cuenta-codigo-destacado">{{ cuenta.codigo }}</span>
+            </div>
+          </div>
+
+          <div class="cuenta-info-item">
+            <div class="cuenta-info-label">Nombre:</div>
+            <div class="cuenta-info-value">{{ cuenta.nombre }}</div>
+          </div>
+
+          <div class="cuenta-info-item">
+            <div class="cuenta-info-label">Tipo:</div>
+            <div class="cuenta-info-value">{{ cuenta.get_tipo_cuenta_display }}</div>
+          </div>
+
+          <div class="cuenta-info-item">
+            <div class="cuenta-info-label">Naturaleza:</div>
+            <div class="cuenta-info-value">{{ cuenta.get_naturaleza_display }}</div>
+          </div>
+
+          <div class="cuenta-info-item">
+            <div class="cuenta-info-label">Saldo Actual:</div>
+            <div class="cuenta-info-value">
+              <strong>${{ cuenta.saldo_actual|floatformat:2|unlocalize }}</strong>
+            </div>
+          </div>
+
+          {% if cuenta.cuenta_padre %}
+          <div class="cuenta-info-item">
+            <div class="cuenta-info-label">Cuenta Padre:</div>
+            <div class="cuenta-info-value">
+              {{ cuenta.cuenta_padre.codigo }} - {{ cuenta.cuenta_padre.nombre }}
+            </div>
+          </div>
+          {% endif %}
+        </div>
+
+        <!-- Mensaje de Advertencia -->
+        <div class="warning-message">
+          <div class="warning-message-header">
+            <div class="warning-icon">
+              <i class="fas fa-exclamation-circle"></i>
+            </div>
+            <div class="warning-title">¡Advertencia! Esta acción no se puede deshacer</div>
+          </div>
+          <ul class="warning-list">
+            <li>La cuenta será eliminada permanentemente del sistema</li>
+            <li>No podrá recuperar esta información después de eliminarla</li>
+            <li>Asegúrese de que esta cuenta no tiene movimientos pendientes</li>
+            <li>Si tiene dudas, considere desactivarla en lugar de eliminarla</li>
+          </ul>
+        </div>
+
+        <!-- Checkbox de Confirmación -->
+        <div class="confirm-checkbox-container">
+          <div class="confirm-checkbox">
+            <input type="checkbox" id="confirm-delete-checkbox" required>
+            <label for="confirm-delete-checkbox">
+              Entiendo que esta acción es irreversible y deseo eliminar esta cuenta
+            </label>
+          </div>
+        </div>
+
+        <!-- Formulario -->
+        <form method="post" id="delete-form">
+          {% csrf_token %}
+          
+          <div class="d-flex justify-content-center gap-2">
+            <a href="{% url 'plan_cuentas_detalle' cuenta.pk %}" class="btn btn-cancelar-eliminar">
+              <i class="fas fa-times"></i> Cancelar
+            </a>
+            <button type="submit" class="btn btn-confirmar-eliminar" id="btn-confirmar" disabled>
+              <i class="fas fa-trash"></i> Sí, Eliminar Cuenta
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    const checkbox = document.getElementById('confirm-delete-checkbox');
+    const btnConfirmar = document.getElementById('btn-confirmar');
+    const form = document.getElementById('delete-form');
+
+    // Habilitar/deshabilitar botón según checkbox
+    checkbox.addEventListener('change', function() {
+      btnConfirmar.disabled = !this.checked;
+    });
+
+    // Confirmación adicional al enviar
+    form.addEventListener('submit', function(e) {
+      if (!checkbox.checked) {
+        e.preventDefault();
+        alert('Debe confirmar que desea eliminar la cuenta marcando la casilla.');
+        return false;
+      }
+
+      if (!confirm('¿Está TOTALMENTE seguro que desea eliminar esta cuenta? Esta acción NO se puede deshacer.')) {
+        e.preventDefault();
+        return false;
+      }
+    });
+  });
+</script>
+
+{% endblock %}

@@ -1,0 +1,153 @@
+{% extends 'website/base.html' %}
+
+{% block title %}Crear Grupo Familiar{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-8 mx-auto">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0"><i class="fas fa-plus-circle me-2"></i>Crear Nuevo Grupo Familiar</h4>
+                </div>
+                <div class="card-body">
+                    <form method="post">
+                        {% csrf_token %}
+                        
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="codigo_familia" class="form-label">Código de Familia (Código de Barras) <span class="text-danger">*</span></label>
+                                <div class="input-group">
+                                    <input type="text" class="form-control" id="codigo_familia" name="codigo_familia" 
+                                           value="{{ codigo_sugerido }}" required placeholder="Ej: FA000001" 
+                                           style="text-transform: uppercase;">
+                                    <button class="btn btn-outline-secondary" type="button" id="btnGenerarCodigo" title="Generar nuevo código">
+                                        <i class="fas fa-sync-alt"></i>
+                                    </button>
+                                </div>
+                                <small class="form-text text-muted">
+                                    <i class="fas fa-barcode"></i> Código único generado automáticamente (compatible con lectores de código de barras)
+                                </small>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <label for="apellido_familia" class="form-label">Apellido de la Familia <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="apellido_familia" name="apellido_familia" 
+                                       required placeholder="Ej: González">
+                            </div>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="telefono_contacto" class="form-label">Teléfono de Contacto</label>
+                                <input type="tel" class="form-control" id="telefono_contacto" name="telefono_contacto" 
+                                       placeholder="809-555-1234">
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <label for="email_contacto" class="form-label">Email de Contacto</label>
+                                <input type="email" class="form-control" id="email_contacto" name="email_contacto" 
+                                       placeholder="familia@example.com">
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="direccion" class="form-label">Dirección</label>
+                            <textarea class="form-control" id="direccion" name="direccion" rows="2" 
+                                      placeholder="Dirección completa de la familia"></textarea>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="descuento_general" class="form-label">Descuento General (%)</label>
+                                <input type="number" class="form-control" id="descuento_general" name="descuento_general" 
+                                       min="0" max="100" step="0.01" value="0" placeholder="0">
+                                <small class="form-text text-muted">Descuento aplicado a todas las mensualidades</small>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <label for="porcentaje_mora" class="form-label">Porcentaje de Mora (%)</label>
+                                <input type="number" class="form-control" id="porcentaje_mora" name="porcentaje_mora" 
+                                       min="0" max="100" step="0.01" value="0" placeholder="0">
+                                <small class="form-text text-muted">Recargo por pagos vencidos</small>
+                            </div>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="dia_vencimiento" class="form-label">Día de Vencimiento</label>
+                                <input type="number" class="form-control" id="dia_vencimiento" name="dia_vencimiento" 
+                                       min="1" max="31" value="10" placeholder="10">
+                                <small class="form-text text-muted">Día del mes en que vencen las mensualidades</small>
+                            </div>
+
+                            <div class="col-md-6">
+                                <label class="form-label">Estado</label>
+                                <div class="form-check mt-2">
+                                    <input class="form-check-input" type="checkbox" id="activo" name="activo" checked>
+                                    <label class="form-check-label" for="activo">
+                                        Grupo Activo
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="notas" class="form-label">Notas</label>
+                            <textarea class="form-control" id="notas" name="notas" rows="3" 
+                                      placeholder="Información adicional sobre la familia"></textarea>
+                        </div>
+
+                        <div class="d-flex justify-content-between">
+                            <a href="{% url 'grupos_familiares_lista' %}" class="btn btn-secondary">
+                                <i class="fas fa-times me-1"></i>Cancelar
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save me-1"></i>Crear Grupo Familiar
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const btnGenerarCodigo = document.getElementById('btnGenerarCodigo');
+    const inputCodigo = document.getElementById('codigo_familia');
+    
+    // Función para generar un nuevo código de familia con número aleatorio
+    function generarNuevoCodigo() {
+        // Generar número aleatorio de 6 dígitos (100000-999999)
+        const numeroAleatorio = Math.floor(Math.random() * 900000) + 100000;
+        
+        // Generar nuevo código con formato FA + 6 dígitos aleatorios
+        const nuevoCodigo = 'FA' + numeroAleatorio;
+        inputCodigo.value = nuevoCodigo;
+        
+        // Efecto visual
+        inputCodigo.classList.add('bg-success', 'bg-opacity-10');
+        setTimeout(() => {
+            inputCodigo.classList.remove('bg-success', 'bg-opacity-10');
+        }, 500);
+    }
+    
+    // Evento click del botón
+    if (btnGenerarCodigo) {
+        btnGenerarCodigo.addEventListener('click', function(e) {
+            e.preventDefault();
+            generarNuevoCodigo();
+            
+            // Animación del botón
+            this.innerHTML = '<i class="fas fa-check"></i>';
+            setTimeout(() => {
+                this.innerHTML = '<i class="fas fa-sync-alt"></i>';
+            }, 1000);
+        });
+    }
+});
+</script>
+
+{% endblock %}

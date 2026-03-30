@@ -1,4 +1,5 @@
 {% extends 'website/base.html' %}
+{% load l10n %}
 
 {% block title %}{{ titulo }}{% endblock %}
 
@@ -71,7 +72,7 @@
                             <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
                                 Total Adeudado
                             </div>
-                            <div class="h5 mb-0 font-weight-bold text-gray-800">RD${{ total_adeudado|floatformat:2 }}</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">RD$ {{ total_adeudado|unlocalize|floatformat:2 }}</div>
                         </div>
                         <div class="col-auto">
                             <i class="fas fa-dollar-sign fa-2x text-gray-300"></i>
@@ -89,7 +90,7 @@
                             <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
                                 Total Pagado
                             </div>
-                            <div class="h5 mb-0 font-weight-bold text-gray-800">RD${{ total_pagado|floatformat:2 }}</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">RD$ {{ total_pagado|unlocalize|floatformat:2 }}</div>
                         </div>
                         <div class="col-auto">
                             <i class="fas fa-check-circle fa-2x text-gray-300"></i>
@@ -107,7 +108,7 @@
                             <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
                                 Saldo Pendiente
                             </div>
-                            <div class="h5 mb-0 font-weight-bold text-gray-800">RD${{ saldo_pendiente|floatformat:2 }}</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">RD$ {{ saldo_pendiente|unlocalize|floatformat:2 }}</div>
                         </div>
                         <div class="col-auto">
                             <i class="fas fa-exclamation-triangle fa-2x text-gray-300"></i>
@@ -201,15 +202,15 @@
                                             <span class="text-muted">-</span>
                                         {% endif %}
                                     </td>
-                                    <td>RD${{ factura.total|floatformat:2 }}
+                                    <td>RD$ {{ factura.total|unlocalize|floatformat:2 }}
                                         {% if factura.total == 0 %}
                                         <span class="badge bg-danger ms-1" title="Factura sin detalles">⚠</span>
                                         {% endif %}
                                     </td>
-                                    <td>RD${{ factura.monto_pagado|floatformat:2 }}</td>
+                                    <td>RD$ {{ factura.monto_pagado|unlocalize|floatformat:2 }}</td>
                                     <td>
                                         <strong class="{% if factura.saldo_pendiente > 0 %}text-warning{% else %}text-success{% endif %}">
-                                            RD${{ factura.saldo_pendiente|floatformat:2 }}
+                                            RD$ {{ factura.saldo_pendiente|unlocalize|floatformat:2 }}
                                         </strong>
                                     </td>
                                     <td>

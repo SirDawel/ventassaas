@@ -1,0 +1,391 @@
+{% extends 'website/base.html' %}
+{% load static %}
+
+{% block title %}Asiento {{ asiento.numero_asiento }} - {{ block.super }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    :root {
+        --asiento-primary: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    }
+    
+    .page-header {
+        background: var(--asiento-primary);
+        color: white;
+        padding: 2rem;
+        border-radius: 15px;
+        margin-bottom: 2rem;
+        box-shadow: 0 10px 30px rgba(102, 126, 234, 0.3);
+    }
+    
+    .info-card {
+        background: white;
+        border-radius: 15px;
+        padding: 2rem;
+        box-shadow: 0 5px 20px rgba(0,0,0,0.08);
+        margin-bottom: 2rem;
+    }
+    
+    .info-section {
+        margin-bottom: 1.5rem;
+    }
+    
+    .info-label {
+        color: #6c757d;
+        font-size: 0.9rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        margin-bottom: 0.5rem;
+    }
+    
+    .info-value {
+        color: #212529;
+        font-size: 1.1rem;
+        font-weight: 500;
+    }
+    
+    .badge-estado {
+        padding: 0.5rem 1rem;
+        border-radius: 20px;
+        font-weight: 600;
+        font-size: 0.9rem;
+        text-transform: uppercase;
+    }
+    
+    .badge-BORRADOR {
+        background-color: #fff3cd;
+        color: #856404;
+    }
+    
+    .badge-CONTABILIZADO {
+        background-color: #d4edda;
+        color: #155724;
+    }
+    
+    .badge-ANULADO {
+        background-color: #f8d7da;
+        color: #721c24;
+    }
+    
+    .detalles-table {
+        background: white;
+        border-radius: 15px;
+        overflow: hidden;
+        box-shadow: 0 5px 20px rgba(0,0,0,0.08);
+    }
+    
+    .detalles-table thead {
+        background: var(--asiento-primary);
+        color: white;
+    }
+    
+    .detalles-table thead th {
+        padding: 1rem;
+        font-weight: 600;
+        border: none;
+    }
+    
+    .detalles-table tbody td {
+        padding: 1rem;
+        vertical-align: middle;
+    }
+    
+    .detalles-table tfoot {
+        background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+        font-weight: 700;
+        font-size: 1.1rem;
+    }
+    
+    .detalles-table tfoot td {
+        padding: 1.5rem 1rem;
+    }
+    
+    .monto-debito {
+        color: #28a745;
+        font-weight: 700;
+    }
+    
+    .monto-credito {
+        color: #dc3545;
+        font-weight: 700;
+    }
+    
+    .alert-cuadrado {
+        background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%);
+        border: none;
+        color: #155724;
+        font-weight: 600;
+    }
+    
+    .alert-descuadrado {
+        background: linear-gradient(135deg, #f8d7da 0%, #f4c2c7 100%);
+        border: none;
+        color: #721c24;
+        font-weight: 600;
+    }
+    
+    .alert-anulado {
+        background: linear-gradient(135deg, #f8d7da 0%, #f4c2c7 100%);
+        border: 2px solid #dc3545;
+    }
+    
+    .botones-accion {
+        display: flex;
+        gap: 1rem;
+        flex-wrap: wrap;
+    }
+    
+    .btn-action {
+        padding: 0.75rem 1.5rem;
+        border-radius: 10px;
+        font-weight: 600;
+        transition: all 0.3s ease;
+    }
+    
+    .btn-action:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+    }
+    
+    .cuenta-info {
+        font-size: 0.85rem;
+        color: #6c757d;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <!-- Encabezado -->
+    <div class="page-header">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <h2>
+                    <i class="fas fa-book"></i>
+                    Asiento {{ asiento.numero_asiento }}
+                </h2>
+                <p class="mb-0 mt-2" style="opacity: 0.9;">
+                    {{ asiento.concepto }}
+                </p>
+            </div>
+            <div class="col-md-4 text-end">
+                <span class="badge-estado badge-{{ asiento.estado }}">
+                    {{ asiento.get_estado_display }}
+                </span>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Alertas -->
+    {% if asiento.estado == 'ANULADO' %}
+    <div class="alert alert-anulado">
+        <h5><i class="fas fa-exclamation-triangle me-2"></i>Asiento Anulado</h5>
+        <p class="mb-0">
+            <strong>Motivo:</strong> {{ asiento.motivo_anulacion }}<br>
+            <strong>Anulado por:</strong> {{ asiento.anulado_por.get_full_name }} el {{ asiento.fecha_anulacion|date:"d/m/Y H:i" }}
+        </p>
+    </div>
+    {% endif %}
+    
+    {% if asiento.esta_cuadrado %}
+    <div class="alert alert-cuadrado">
+        <i class="fas fa-check-circle me-2"></i>
+        El asiento está cuadrado (Débito = Crédito)
+    </div>
+    {% else %}
+    <div class="alert alert-descuadrado">
+        <i class="fas fa-exclamation-triangle me-2"></i>
+        <strong>Advertencia:</strong> El asiento no está cuadrado. Diferencia: Gs. {{ asiento.total_debito|floatformat:0|add:"-"|add:asiento.total_credito|floatformat:0 }}
+    </div>
+    {% endif %}
+    
+    <!-- Información del Asiento -->
+    <div class="row">
+        <div class="col-md-8">
+            <div class="info-card">
+                <h4 class="mb-4">
+                    <i class="fas fa-info-circle me-2"></i>
+                    Información del Asiento
+                </h4>
+                
+                <div class="row">
+                    <div class="col-md-4 info-section">
+                        <div class="info-label">Número</div>
+                        <div class="info-value">{{ asiento.numero_asiento }}</div>
+                    </div>
+                    <div class="col-md-4 info-section">
+                        <div class="info-label">Fecha</div>
+                        <div class="info-value">{{ asiento.fecha_asiento|date:"d/m/Y" }}</div>
+                    </div>
+                    <div class="col-md-4 info-section">
+                        <div class="info-label">Tipo</div>
+                        <div class="info-value">{{ asiento.get_tipo_asiento_display }}</div>
+                    </div>
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-6 info-section">
+                        <div class="info-label">Referencia</div>
+                        <div class="info-value">{{ asiento.referencia|default:"N/A" }}</div>
+                    </div>
+                    <div class="col-md-6 info-section">
+                        <div class="info-label">Creado Por</div>
+                        <div class="info-value">{{ asiento.creado_por.get_full_name }}</div>
+                    </div>
+                </div>
+                
+                <div class="info-section">
+                    <div class="info-label">Concepto</div>
+                    <div class="info-value">{{ asiento.concepto }}</div>
+                </div>
+                
+                {% if asiento.notas %}
+                <div class="info-section">
+                    <div class="info-label">Notas</div>
+                    <div class="info-value">{{ asiento.notas }}</div>
+                </div>
+                {% endif %}
+                
+                <div class="row">
+                    <div class="col-md-4 info-section">
+                        <div class="info-label">Creado</div>
+                        <div class="info-value" style="font-size: 0.9rem;">{{ asiento.fecha_creacion|date:"d/m/Y H:i" }}</div>
+                    </div>
+                    
+                    {% if asiento.contabilizado_por %}
+                    <div class="col-md-4 info-section">
+                        <div class="info-label">Contabilizado Por</div>
+                        <div class="info-value" style="font-size: 0.9rem;">
+                            {{ asiento.contabilizado_por.get_full_name }}<br>
+                            <small>{{ asiento.fecha_contabilizacion|date:"d/m/Y H:i" }}</small>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4">
+            <div class="info-card">
+                <h4 class="mb-4">
+                    <i class="fas fa-calculator me-2"></i>
+                    Totales
+                </h4>
+                
+                <div class="info-section">
+                    <div class="info-label">Total Débito</div>
+                    <div class="info-value monto-debito">Gs. {{ asiento.total_debito|floatformat:0 }}</div>
+                </div>
+                
+                <div class="info-section">
+                    <div class="info-label">Total Crédito</div>
+                    <div class="info-value monto-credito">Gs. {{ asiento.total_credito|floatformat:0 }}</div>
+                </div>
+                
+                <hr>
+                
+                <div class="info-section">
+                    <div class="info-label">Diferencia</div>
+                    <div class="info-value" style="color: #667eea; font-size: 1.3rem;">
+                        Gs. {{ asiento.total_debito|floatformat:0|add:"-"|add:asiento.total_credito|floatformat:0 }}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Detalles del Asiento -->
+    <div class="info-card">
+        <h4 class="mb-4">
+            <i class="fas fa-list me-2"></i>
+            Líneas del Asiento
+        </h4>
+        
+        <div class="table-responsive">
+            <table class="table detalles-table">
+                <thead>
+                    <tr>
+                        <th width="5%">#</th>
+                        <th width="40%">Cuenta</th>
+                        <th width="35%">Descripción</th>
+                        <th width="10%" class="text-end">Débito</th>
+                        <th width="10%" class="text-end">Crédito</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for detalle in detalles %}
+                    <tr>
+                        <td>{{ detalle.linea }}</td>
+                        <td>
+                            <strong>{{ detalle.cuenta.codigo }}</strong><br>
+                            <span class="cuenta-info">{{ detalle.cuenta.nombre }}</span>
+                        </td>
+                        <td>{{ detalle.descripcion }}</td>
+                        <td class="text-end">
+                            {% if detalle.debito > 0 %}
+                            <span class="monto-debito">Gs. {{ detalle.debito|floatformat:0 }}</span>
+                            {% else %}
+                            -
+                            {% endif %}
+                        </td>
+                        <td class="text-end">
+                            {% if detalle.credito > 0 %}
+                            <span class="monto-credito">Gs. {{ detalle.credito|floatformat:0 }}</span>
+                            {% else %}
+                            -
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+                <tfoot>
+                    <tr>
+                        <td colspan="3" class="text-end">TOTALES:</td>
+                        <td class="text-end monto-debito">Gs. {{ asiento.total_debito|floatformat:0 }}</td>
+                        <td class="text-end monto-credito">Gs. {{ asiento.total_credito|floatformat:0 }}</td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+    </div>
+    
+    <!-- Botones de Acción -->
+    <div class="info-card">
+        <div class="botones-accion">
+            <a href="{% url 'asientos_list' %}" class="btn btn-secondary btn-action">
+                <i class="fas fa-arrow-left me-2"></i>
+                Volver al Listado
+            </a>
+            
+            <a href="{% url 'asiento_imprimir' asiento.pk %}" class="btn btn-info btn-action" target="_blank">
+                <i class="fas fa-print me-2"></i>
+                Imprimir
+            </a>
+            
+            {% if asiento.estado == 'BORRADOR' %}
+                {% if request.user.rol == 'Administrador' or request.user.rol == 'Director' %}
+                <a href="{% url 'asiento_contabilizar' asiento.pk %}" class="btn btn-success btn-action">
+                    <i class="fas fa-check me-2"></i>
+                    Contabilizar
+                </a>
+                {% endif %}
+                
+                {% if request.user.rol == 'Administrador' %}
+                <a href="{% url 'asiento_eliminar' asiento.pk %}" class="btn btn-danger btn-action">
+                    <i class="fas fa-trash me-2"></i>
+                    Eliminar
+                </a>
+                {% endif %}
+            {% endif %}
+            
+            {% if asiento.estado == 'CONTABILIZADO' and request.user.rol == 'Administrador' %}
+            <a href="{% url 'asiento_anular' asiento.pk %}" class="btn btn-warning btn-action">
+                <i class="fas fa-ban me-2"></i>
+                Anular Asiento
+            </a>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -31,9 +31,12 @@
                     <form method="get" id="searchForm">
                         <div class="row">
                             <div class="col-md-4 mb-3">
-                                <label for="q" class="form-label">Buscar por nombre, email, cédula o código</label>
+                                <label for="q" class="form-label">Buscar estudiante o código de familia</label>
                                 <input type="text" class="form-control" id="q" name="q" 
-                                       value="{{ query }}" placeholder="Escribe para buscar...">
+                                       value="{{ query }}" placeholder="Código de barras, nombre, cédula..." autofocus>
+                                <small class="form-text text-muted">
+                                    <i class="fas fa-magic text-success"></i> Código de barras exacto: redirección automática a facturar
+                                </small>
                             </div>
                             <div class="col-md-3 mb-3">
                                 <label for="grado" class="form-label">Grado</label>
@@ -66,7 +69,81 @@
         </div>
     </div>
 
-    <!-- Resultados -->
+    <!-- Resultados de Familias -->
+    {% if familias %}
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card shadow border-success">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-users me-2"></i>
+                        Grupos Familiares encontrados 
+                        <span class="badge bg-light text-success">{{ familias|length }}</span>
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Código Familia</th>
+                                    <th>Apellido</th>
+                                    <th>Estudiantes</th>
+                                    <th>Descuento</th>
+                                    <th>Contacto</th>
+                                    <th>Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for familia in familias %}
+                                <tr class="tabla-clickable" onclick="window.location.href='{% url 'grupo_familiar_facturar' familia.id %}';" style="cursor: pointer;" title="Click para facturar directamente">
+                                    <td>
+                                        <strong><code>{{ familia.codigo_familia }}</code></strong>
+                                    </td>
+                                    <td>
+                                        <strong>{{ familia.apellido_familia }}</strong>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-info">{{ familia.num_estudiantes }} estudiante{{ familia.num_estudiantes|pluralize }}</span>
+                                    </td>
+                                    <td>
+                                        {% if familia.descuento_general > 0 %}
+                                            <span class="badge bg-success">{{ familia.descuento_general }}% desc.</span>
+                                        {% else %}
+                                            -
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if familia.telefono_contacto %}
+                                            <small>{{ familia.telefono_contacto }}</small>
+                                        {% else %}
+                                            -
+                                        {% endif %}
+                                    </td>
+                                    <td onclick="event.stopPropagation();">
+                                        <div class="btn-group btn-group-sm" role="group">
+                                            <a href="{% url 'grupo_familiar_facturar' familia.id %}" 
+                                               class="btn btn-success" title="Facturar familia">
+                                                <i class="fas fa-file-invoice-dollar"></i> Facturar
+                                            </a>
+                                            <a href="{% url 'grupo_familiar_detalle' familia.id %}" 
+                                               class="btn btn-info" title="Ver detalles">
+                                                <i class="fas fa-eye"></i> Ver
+                                            </a>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Resultados de Estudiantes -->
     <div class="row">
         <div class="col-12">
             <div class="card shadow">
@@ -93,7 +170,7 @@
                             </thead>
                             <tbody>
                                 {% for estudiante in estudiantes %}
-                                <tr>
+                                <tr class="tabla-clickable" onclick="window.location.href='/facturas/nueva/?estudiante_id={{ estudiante.id }}';" style="cursor: pointer;" title="Click para facturar directamente">
                                     <td>
                                         <strong>{{ estudiante.get_full_name }}</strong>
                                         {% if estudiante.cedula %}
@@ -110,15 +187,23 @@
                                         -
                                         {% endif %}
                                     </td>
-                                    <td>
+                                    <td onclick="event.stopPropagation();">
                                         <div class="btn-group btn-group-sm" role="group">
-                                            <a href="{% url 'factura_crear' estudiante.id %}" 
+                                            <a href="/facturas/nueva/?estudiante_id={{ estudiante.id }}" 
                                                class="btn btn-success" title="Nueva factura">
                                                 <i class="fas fa-file-invoice"></i> Factura
                                             </a>
                                             <a href="{% url 'facturas_estudiante' estudiante.id %}" 
                                                class="btn btn-primary" title="Ver facturas">
                                                 <i class="fas fa-list"></i> Ver Facturas
+                                            </a>
+                                            <a href="/tarifas/crear/?estudiante={{ estudiante.id }}&return_to=factura" 
+                                               class="btn btn-warning" title="Agregar tarifa">
+                                                <i class="fas fa-plus"></i> Agregar Tarifa
+                                            </a>
+                                            <a href="{% url 'update_user' estudiante.id %}" 
+                                               class="btn btn-info" title="Editar usuario (incluye configurar mora individual)">
+                                                <i class="fas fa-user-edit"></i> Editar
                                             </a>
                                         </div>
                                     </td>
@@ -167,4 +252,24 @@
         </div>
     </div>
 </div>
+
+<style>
+    /* Efecto hover para filas clicables */
+    .tabla-clickable:hover {
+        background-color: #f0f8ff !important;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        transition: all 0.2s ease;
+    }
+    
+    .tabla-clickable:active {
+        background-color: #e6f3ff !important;
+        transform: scale(0.99);
+    }
+    
+    /* Asegurar que los botones en la columna de acciones no activen el click de la fila */
+    .tabla-clickable td:last-child {
+        pointer-events: all;
+    }
+</style>
+
 {% endblock %}

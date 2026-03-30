@@ -18,6 +18,7 @@ Reporte General - {{ curso.nombre }}
         border-radius: 4px 4px 0 0;
         border-bottom: 1px solid rgba(255,255,255,0.15);
         padding: 0.8rem 1rem;
+        margin-left: 0%;
     }
     
     .card-body {
@@ -108,95 +109,377 @@ Reporte General - {{ curso.nombre }}
     
     .encabezado-institucional {
         text-align: center;
-        border-bottom: 2px solid #5c6bc0;
-        padding-bottom: 0.2rem;
-        margin-bottom: 0.3rem;
+        padding-bottom: 0.3rem;
+        margin-bottom: 0.5rem;
     }
     
     .encabezado-institucional img {
-        height: 20px;
-        margin-bottom: 0.1rem;
+        height: 50px;
+        margin-bottom: 0.2rem;
     }
     
     .encabezado-institucional h2 {
-        font-size: 0.75rem;
+        font-size: 0.9rem;
         font-weight: 700;
         color: #2c3e50;
-        margin: 0.05rem 0;
-        line-height: 1.1;
+        margin: 0.1rem 0;
+        line-height: 1.2;
     }
     
     .encabezado-institucional h4 {
-        font-size: 0.7rem;
+        font-size: 0.8rem;
         font-weight: 600;
         color: #5c6bc0;
-        margin: 0.05rem 0;
-        line-height: 1.1;
+        margin: 0.1rem 0;
+        line-height: 1.2;
     }
     
     .encabezado-institucional p {
-        font-size: 0.6rem;
-        margin: 0.02rem 0;
+        font-size: 0.7rem;
+        margin: 0.05rem 0;
         color: #6c757d;
-        line-height: 1.1;
+        line-height: 1.2;
     }
     
     @media print {
 
     @page {
         size: A4 portrait;
-        margin: 15mm;
+        margin: 6mm;
+    }
+
+    * {
+        box-sizing: border-box;
     }
 
     body {
-        font-size: 12px;
-        color: #000;
+        font-family: Arial, Helvetica, sans-serif !important;
+        font-size: 6px !important;
+        color: #000 !important;
+        line-height: 1.1 !important;
+        margin: 0 !important;
+        padding: 0 !important;
     }
 
-    .btn,
-    .print-btn {
-        display: none !important;
-    }
-
-    .container {
+    html, body {
         width: 100% !important;
+        height: 100% !important;
+    }
+
+    body * {
         max-width: 100% !important;
     }
 
+    /* Ocultar botones e interfaz de navegación */
+    .btn,
+    .print-btn,
+    button,
+    .nav,
+    .navbar,
+    .breadcrumb {
+        display: none !important;
+    }
+
+    /* FORZAR ancho completo a todos los containers del reporte */
+    .rg-container,
+    .rg-container-fluid,
+    .rg-container-sm,
+    .rg-container-md,
+    .rg-container-lg,
+    .rg-container-xl {
+        width: 100% !important;
+        max-width: 100% !important;
+        padding: 0 !important;
+        margin: 0 !important;
+    }
+
+    /* Ocultar el card wrapper principal */
+    .rg-container > .card { 
+        width: 100% !important;   
+        border: none !important;
+        box-shadow: none !important;
+        margin: 0 !important;
+        padding: 0 !important;
+    }
+
+    .rg-container > .card > .card-header {
+        display: none !important;
+    }
+
+    .rg-container > .card > .card-body {
+        padding: 0 !important;
+        margin: 0 !important;
+    }
+
+    /* PÁGINA POR ESTUDIANTE */
     .student-page {
-        page-break-after: always;
-        page-break-inside: avoid;
-        width: 100%;
+        page-break-after: always !important;
+        page-break-inside: avoid !important;
+        width: 100% !important;
+        margin: 0 !important;
+        padding: 0 !important;
     }
 
     .student-page:last-child {
-        page-break-after: auto;
+        page-break-after: auto !important;
     }
 
-    .card {
-        border: none;
-        box-shadow: none;
+    /* Card interno del estudiante */
+    .student-page > .card,
+    .student-page .card {
+        border: none !important;
+        box-shadow: none !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        width: 100% !important;
     }
 
-    .table {
-        width: 100%;
-        font-size: 11px;
+    .student-page .card-header {
+        padding: 0 !important;
+        margin: 0 !important;
+        border: none !important;
     }
 
-    .table th,
-    .table td {
-        padding: 6px;
+    .student-page .card-body {
+        padding: 0 !important;
+        margin: 0 !important;
     }
 
+    /* ENCABEZADO INSTITUCIONAL - Compacto */
     .encabezado-institucional {
-        border-bottom: 2px solid #000;
-        padding-bottom: 10px;
-        margin-bottom: 15px;
+        text-align: center !important;
+        padding-bottom: 3px !important;
+        margin-bottom: 4px !important;
     }
 
     .encabezado-institucional img {
-        height: 80px;
-        margin-bottom: 10px;
+        height: 28px !important;
+        margin-bottom: 2px !important;
+    }
+
+    .encabezado-institucional h2 {
+        font-size: 10px !important;
+        margin: 1px 0 !important;
+        font-weight: bold !important;
+        line-height: 1.1 !important;
+    }
+
+    .encabezado-institucional h4 {
+        font-size: 8px !important;
+        margin: 1px 0 !important;
+        font-weight: bold !important;
+        line-height: 1.1 !important;
+    }
+
+    .encabezado-institucional p {
+        font-size: 6px !important;
+        margin: 0.5px 0 !important;
+        line-height: 1 !important;
+    }
+
+    /* INFORMACIÓN DEL ESTUDIANTE - Layout compacto */
+    .row {
+        width: 100% !important;
+        margin: 0 0 3px 0 !important;
+        padding: 0 !important;
+        display: table !important;
+        border-collapse: collapse !important;
+    }
+
+    .col-md-6 {
+        width: 50% !important;
+        display: table-cell !important;
+        vertical-align: top !important;
+        padding: 0 1px !important;
+        margin: 0 !important;
+        float: none !important;
+    }
+
+    .info-section {
+        background-color: #f5f5f5 !important;
+        padding: 3px !important;
+        border: 1px solid #ccc !important;
+        margin: 0 !important;
+        page-break-inside: avoid !important;
+        height: 100% !important;
+    }
+
+    .info-section h4 {
+        font-size: 7px !important;
+        font-weight: bold !important;
+        margin: 0 0 2px 0 !important;
+        text-transform: uppercase !important;
+        line-height: 1 !important;
+    }
+
+    .info-section p {
+        font-size: 6px !important;
+        margin: 0.5px 0 !important;
+        line-height: 1.1 !important;
+    }
+
+    /* TABLAS DE CALIFICACIONES - Compactas */
+    .table-responsive {
+        overflow: visible !important;
+        margin: 3px 0 !important;
+        padding: 0 !important;
+    }
+
+    .table {
+        width: 100% !important;
+        border-collapse: collapse !important;
+        margin: 3px 0 !important;
+        font-size: 6px !important;
+        page-break-inside: auto !important;
+    }
+
+    .table thead {
+        display: table-header-group !important;
+    }
+
+    .table tbody {
+        display: table-row-group !important;
+    }
+
+    .table tr {
+        page-break-inside: avoid !important;
+        page-break-after: auto !important;
+    }
+
+    .table th {
+        background-color: #e0e0e0 !important;
+        border: 1px solid #000 !important;
+        padding: 1.5px !important;
+        font-weight: bold !important;
+        text-align: center !important;
+        font-size: 6px !important;
+        line-height: 1 !important;
+    }
+
+    .table td {
+        border: 1px solid #999 !important;
+        padding: 1.5px !important;
+        text-align: center !important;
+        font-size: 6px !important;
+        line-height: 1.1 !important;
+    }
+
+    .table td.text-start,
+    .table td.left {
+        text-align: left !important;
+    }
+
+    .table td strong {
+        font-weight: bold !important;
+    }
+
+    /* BADGES - Compactos */
+    .badge {
+        padding: 1px 2px !important;
+        font-size: 5.5px !important;
+        font-weight: bold !important;
+        border: 1px solid #000 !important;
+        display: inline-block !important;
+        line-height: 1 !important;
+    }
+
+    .bg-success,
+    .badge-success {
+        background-color: #d4edda !important;
+        color: #000 !important;
+    }
+
+    .bg-danger,
+    .badge-danger {
+        background-color: #f8d7da !important;
+        color: #000 !important;
+    }
+
+    .bg-warning,
+    .badge-warning {
+        background-color: #fff3cd !important;
+        color: #000 !important;
+    }
+
+    .bg-info,
+    .badge-info {
+        background-color: #d1ecf1 !important;
+        color: #000 !important;
+    }
+
+    .bg-secondary,
+    .badge-secondary {
+        background-color: #e2e3e5 !important;
+        color: #000 !important;
+    }
+
+    /* MÓDULOS FORMATIVOS - Compactos */
+    .card.border-info {
+        border: 1px solid #000 !important;
+        margin: 3px 0 !important;
+        page-break-inside: avoid !important;
+        box-shadow: none !important;
+    }
+
+    .card.border-info .card-header {
+        background-color: #d1ecf1 !important;
+        color: #000 !important;
+        padding: 2px 4px !important;
+        font-size: 7px !important;
+        font-weight: bold !important;
+        border: none !important;
+        line-height: 1.1 !important;
+    }
+
+    .card.border-info .card-body {
+        padding: 3px !important;
+    }
+
+    .card.border-info .table {
+        font-size: 5.5px !important;
+        margin: 1px 0 !important;
+    }
+
+    .card.border-info .table th {
+        padding: 1px !important;
+        font-size: 5.5px !important;
+        line-height: 1 !important;
+    }
+
+    .card.border-info .table td {
+        padding: 1px !important;
+        font-size: 5.5px !important;
+        line-height: 1 !important;
+    }
+
+    .card.border-info .table-sm th,
+    .card.border-info .table-sm td {
+        padding: 1px !important;
+        font-size: 5.5px !important;
+        line-height: 1 !important;
+    }
+
+    .card.border-info small {
+        font-size: 5px !important;
+    }
+
+    /* Otros ajustes */
+    .mb-2, .mb-3, .mt-3, .my-2, .my-3 {
+        margin: 2px 0 !important;
+    }
+
+    .p-2, .p-3 {
+        padding: 2px !important;
+    }
+
+    br {
+        line-height: 1 !important;
+    }
+
+    /* Forzar colores sólidos para impresión */
+    * {
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
     }
 
 }
@@ -204,36 +487,36 @@ Reporte General - {{ curso.nombre }}
 </style>
 
 <script>
-// Forzar estilos de impresión
+// Script mejorado para impresión
 window.addEventListener('beforeprint', function() {
-    document.body.style.fontSize = '5pt';
-    document.documentElement.style.fontSize = '5pt';
+    console.log('Preparando impresión...');
     
-    // Aplicar estilos a todas las páginas de estudiantes
+    // Forzar ancho completo en todos los containers del reporte
+    var containers = document.querySelectorAll('.rg-container, .rg-container-fluid');
+    containers.forEach(function(el) {
+        el.style.width = '100%';
+        el.style.maxWidth = '100%';
+        el.style.padding = '0';
+        el.style.margin = '0';
+    });
+    
+    // Asegurar que student-page ocupe todo
     var pages = document.querySelectorAll('.student-page');
-    pages.forEach(function(page) {
-        page.style.transform = 'scale(0.85)';
-        page.style.transformOrigin = 'top left';
-        page.style.fontSize = '5pt';
+    pages.forEach(function(el) {
+        el.style.width = '100%';
+        el.style.margin = '0';
+        el.style.padding = '0';
     });
 });
 
 window.addEventListener('afterprint', function() {
-    document.body.style.fontSize = '';
-    document.documentElement.style.fontSize = '';
-    
-    var pages = document.querySelectorAll('.student-page');
-    pages.forEach(function(page) {
-        page.style.transform = '';
-        page.style.transformOrigin = '';
-        page.style.fontSize = '';
-    });
+    console.log('Impresión finalizada');
 });
 </script>
 {% endblock %}
 
 {% block content %}
-<div class="container mt-3">
+<div class="rg-container mt-3">
     <div class="card mb-3">
         <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
             <h5 class="m-0"><i class="fas fa-chart-bar me-2"></i>Reporte General - {{ curso.nombre }}</h5>
@@ -253,7 +536,7 @@ window.addEventListener('afterprint', function() {
                 <div class="card mb-3">
                     <div class="card-header bg-light encabezado-institucional">
                         
-                        <img src="/static/img/logo_poli.jpeg" alt="Logo" style="height:80px; margin-bottom:10px;">                         
+                        <img src="/static/img/logo_poli.jpeg" alt="Logo" style="height:35px; margin-bottom:3px;">                         
                         
                         <h2>Politécnico Prof. José Ramón Rodríguez Herrera</h2>
                         <p>Calle Atile Gomez, Sector La Mina, Hato del Padre, San Juan</p>

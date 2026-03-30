@@ -2,10 +2,72 @@ from django.contrib import admin
 
 # Register your models here.
 from django.contrib.auth import get_user_model
-admin.site.register(get_user_model())
+from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 
-from .models import Asistencia, AsistenciaPersonal
+# Admin personalizado para CustomUser
+@admin.register(get_user_model())
+class CustomUserAdmin(BaseUserAdmin):
+    list_display = ('email', 'first_name', 'last_name', 'rol', 'is_active', 'is_staff')
+    list_filter = ('rol', 'is_active', 'is_staff', 'genero')
+    search_fields = ('email', 'first_name', 'last_name', 'cedula')
+    ordering = ('email',)
+    
+    fieldsets = (
+        (None, {'fields': ('email', 'password')}),
+        ('Información Personal', {'fields': ('first_name', 'last_name', 'fecha_nacimiento', 'genero', 'cedula')}),
+        ('Contacto', {'fields': ('telefono', 'direccion')}),
+        ('Rol y Datos Académicos/Laborales', {'fields': ('rol', 'grado', 'seccion', 'especialidad', 'departamento')}),
+        ('Grupo Familiar', {'fields': ('grupo_familiar',)}),
+        ('Configuración de Mora Individual', {
+            'fields': ('porcentaje_mora_individual', 'dia_vencimiento_individual'),
+            'description': 'Esta configuración solo aplica si el estudiante NO está en un grupo familiar'
+        }),
+        ('Configuración de Descuento Individual', {
+            'fields': ('descuento_individual',),
+            'description': 'Este descuento solo aplica si el estudiante NO está en un grupo familiar'
+        }),
+        ('Contacto de Emergencia', {'fields': ('contacto_emergencia_nombre', 'contacto_emergencia_telefono', 'contacto_emergencia_parentesco')}),
+        ('Permisos', {'fields': ('is_active', 'is_staff', 'is_superuser', 'groups', 'user_permissions')}),
+        ('Fechas Importantes', {'fields': ('last_login', 'date_joined', 'fecha_ingreso', 'fecha_salida')}),
+    )
+    
+    add_fieldsets = (
+        (None, {
+            'classes': ('wide',),
+            'fields': ('email', 'first_name', 'last_name', 'rol', 'password1', 'password2'),
+        }),
+    )
+
+from .models import Asistencia, AsistenciaPersonal, GrupoFamiliar
 from .models import TarifaEstudiante
+from .models import AsientoContable, DetalleAsiento
+
+# Registro de Grupo Familiar
+@admin.register(GrupoFamiliar)
+class GrupoFamiliarAdmin(admin.ModelAdmin):
+    list_display = ('codigo_familia', 'apellido_familia', 'cantidad_estudiantes', 'descuento_general', 'activo', 'fecha_creacion')
+    list_filter = ('activo', 'fecha_creacion')
+    search_fields = ('codigo_familia', 'apellido_familia', 'telefono_contacto', 'email_contacto')
+    readonly_fields = ('fecha_creacion', 'actualizado', 'creado_por')
+    
+    fieldsets = (
+        ('Información Básica', {
+            'fields': ('codigo_familia', 'apellido_familia', 'activo')
+        }),
+        ('Contacto', {
+            'fields': ('telefono_contacto', 'email_contacto', 'direccion')
+        }),
+        ('Configuración de Pagos', {
+            'fields': ('descuento_general',)
+        }),
+        ('Notas', {
+            'fields': ('notas',)
+        }),
+        ('Auditoría', {
+            'fields': ('creado_por', 'fecha_creacion', 'actualizado'),
+            'classes': ('collapse',)
+        }),
+    )
 
 @admin.register(Asistencia)
 class AsistenciaAdmin(admin.ModelAdmin):
@@ -98,3 +160,548 @@ class TarifaEstudianteAdmin(admin.ModelAdmin):
     search_fields = ('estudiante__first_name', 'estudiante__last_name', 'estudiante__email', 'concepto__nombre')
     ordering = ('-fecha_creacion',)
 
+
+# ============================================
+# ADMIN DE CONTABILIDAD - Plan de Cuentas
+# ============================================
+
+from .models import PlanCuentas
+
+@admin.register(PlanCuentas)
+class PlanCuentasAdmin(admin.ModelAdmin):
+    list_display = (
+        'codigo', 'nombre', 'tipo_cuenta', 'naturaleza', 
+        'nivel', 'es_detalle', 'saldo_actual', 'activo'
+    )
+    list_filter = (
+        'tipo_cuenta', 'naturaleza', 'nivel', 
+        'es_detalle', 'activo', 'requiere_centro_costo', 'requiere_tercero'
+    )
+    search_fields = ('codigo', 'nombre', 'descripcion')
+    ordering = ('codigo',)
+    readonly_fields = (
+        'nivel', 'fecha_creacion', 'fecha_modificacion', 
+        'creado_por', 'modificado_por', 'saldo_calculado_display'
+    )
+    
+    fieldsets = (
+        ('Información Básica', {
+            'fields': ('codigo', 'nombre', 'descripcion')
+        }),
+        ('Clasificación Contable', {
+            'fields': ('tipo_cuenta', 'naturaleza', 'nivel', 'cuenta_padre')
+        }),
+        ('Configuración', {
+            'fields': ('es_detalle', 'activo', 'requiere_centro_costo', 'requiere_tercero')
+        }),
+        ('Saldos', {
+            'fields': ('saldo_inicial', 'saldo_actual', 'saldo_calculado_display')
+        }),
+        ('Auditoría', {
+            'fields': ('fecha_creacion', 'fecha_modificacion', 'creado_por', 'modificado_por'),
+            'classes': ('collapse',)
+        }),
+    )
+    
+    def saldo_calculado_display(self, obj):
+        """Muestra el saldo calculado comparado con el saldo actual"""
+        saldo_calc = obj.calcular_saldo()
+        if saldo_calc != obj.saldo_actual:
+            return f"${saldo_calc:,.2f} (Diferencia: ${saldo_calc - obj.saldo_actual:,.2f})"
+        return f"${saldo_calc:,.2f} ✓"
+    saldo_calculado_display.short_description = 'Saldo Calculado'
+    
+    def save_model(self, request, obj, form, change):
+        """Guardar el usuario que crea o modifica la cuenta"""
+        if not change:  # Si es nuevo
+            obj.creado_por = request.user
+        else:  # Si es modificación
+            obj.modificado_por = request.user
+        super().save_model(request, obj, form, change)
+    
+    def get_readonly_fields(self, request, obj=None):
+        """Si la cuenta tiene movimientos, algunos campos no se pueden editar"""
+        readonly = list(self.readonly_fields)
+        if obj and obj.tiene_movimientos():
+            readonly.extend(['codigo', 'tipo_cuenta', 'naturaleza', 'cuenta_padre'])
+        return readonly
+
+# ============================================
+# ADMINISTRACIÓN DE ASIENTOS CONTABLES
+# ============================================
+
+class DetalleAsientoInline(admin.TabularInline):
+    """Inline para mostrar las líneas del asiento"""
+    model = DetalleAsiento
+    extra = 0
+    fields = ['linea', 'cuenta', 'descripcion', 'debito', 'credito', 'centro_costo']
+    readonly_fields = ['linea']
+    
+    def has_add_permission(self, request, obj=None):
+        # No permitir agregar líneas desde el admin si ya está contabilizado
+        if obj and obj.estado != 'BORRADOR':
+            return False
+        return super().has_add_permission(request, obj)
+    
+    def has_delete_permission(self, request, obj=None):
+        # No permitir eliminar líneas desde el admin si ya está contabilizado
+        if obj and obj.estado != 'BORRADOR':
+            return False
+        return super().has_delete_permission(request, obj)
+
+
+@admin.register(AsientoContable)
+class AsientoContableAdmin(admin.ModelAdmin):
+    """Administración de asientos contables"""
+    list_display = [
+        'numero_asiento',
+        'fecha_asiento',
+        'tipo_asiento',
+        'concepto_corto',
+        'total_debito',
+        'total_credito',
+        'estado',
+        'cuadrado_display',
+        'creado_por',
+    ]
+    list_filter = [
+        'estado',
+        'tipo_asiento',
+        'fecha_asiento',
+    ]
+    search_fields = [
+        'numero_asiento',
+        'concepto',
+        'referencia',
+    ]
+    readonly_fields = [
+        'numero_asiento',
+        'total_debito',
+        'total_credito',
+        'cuadrado_display',
+        'creado_por',
+        'fecha_creacion',
+        'contabilizado_por',
+        'fecha_contabilizacion',
+        'anulado_por',
+    ]
+    date_hierarchy = 'fecha_asiento'
+    inlines = [DetalleAsientoInline]
+    
+    fieldsets = (
+        ('Información del Asiento', {
+            'fields': (
+                'numero_asiento',
+                'fecha_asiento',
+                'tipo_asiento',
+                'concepto',
+                'referencia',
+            )
+        }),
+        ('Totales', {
+            'fields': (
+                'total_debito',
+                'total_credito',
+                'cuadrado_display',
+            )
+        }),
+        ('Estado', {
+            'fields': (
+                'estado',
+                'notas',
+            )
+        }),
+        ('Información de Auditoría', {
+            'fields': (
+                ('creado_por', 'fecha_creacion'),
+                ('contabilizado_por', 'fecha_contabilizacion'),
+                'anulado_por',
+                'motivo_anulacion',
+            ),
+            'classes': ('collapse',),
+        }),
+    )
+    
+    def concepto_corto(self, obj):
+        """Muestra un concepto recortado"""
+        if len(obj.concepto) > 50:
+            return f"{obj.concepto[:47]}..."
+        return obj.concepto
+    concepto_corto.short_description = 'Concepto'
+    
+    def cuadrado_display(self, obj):
+        """Muestra si el asiento está cuadrado"""
+        if obj.esta_cuadrado():
+            return "✓ Cuadrado"
+        return "✗ Descuadrado"
+    cuadrado_display.short_description = 'Estado'
+    cuadrado_display.boolean = True
+    
+    def get_readonly_fields(self, request, obj=None):
+        """Campos de solo lectura según el estado"""
+        readonly = list(self.readonly_fields)
+        
+        # Si el asiento está contabilizado o anulado, todo es readonly
+        if obj and obj.estado in ['CONTABILIZADO', 'ANULADO']:
+            readonly.extend([
+                'fecha_asiento',
+                'tipo_asiento',
+                'concepto',
+                'referencia',
+                'notas',
+                'estado',
+            ])
+        
+        return readonly
+    
+    def has_delete_permission(self, request, obj=None):
+        # Solo se pueden eliminar borradores
+        if obj and obj.estado != 'BORRADOR':
+            return False
+        return super().has_delete_permission(request, obj)
+    
+    def save_model(self, request, obj, form, change):
+        """Establecer el usuario que crea el asiento"""
+        if not change:
+            obj.creado_por = request.user
+        super().save_model(request, obj, form, change)
+
+
+@admin.register(DetalleAsiento)
+class DetalleAsientoAdmin(admin.ModelAdmin):
+    """Administración de detalles de asientos"""
+    list_display = [
+        'asiento',
+        'linea',
+        'cuenta',
+        'descripcion_corta',
+        'debito',
+        'credito',
+    ]
+    list_filter = [
+        'asiento__fecha_asiento',
+        'asiento__estado',
+    ]
+    search_fields = [
+        'asiento__numero_asiento',
+        'cuenta__codigo',
+        'cuenta__nombre',
+        'descripcion',
+    ]
+    
+    def descripcion_corta(self, obj):
+        """Muestra una descripción recortada"""
+        if len(obj.descripcion) > 40:
+            return f"{obj.descripcion[:37]}..."
+        return obj.descripcion
+    descripcion_corta.short_description = 'Descripción'
+    
+    def has_delete_permission(self, request, obj=None):
+        # Solo se pueden eliminar líneas de borradores
+        if obj and obj.asiento.estado != 'BORRADOR':
+            return False
+        return super().has_delete_permission(request, obj)
+
+
+# ============================================
+# MODELOS DE SEGURIDAD
+# ============================================
+
+from .models import LoginAttempt, SecurityLog, UserSession, TwoFactorAuth
+
+
+@admin.register(LoginAttempt)
+class LoginAttemptAdmin(admin.ModelAdmin):
+    list_display = ('email', 'ip_address', 'exitoso', 'user', 'fecha', 'razon_fallo', 'esta_bloqueado')
+    list_filter = ('exitoso', 'fecha')
+    search_fields = ('email', 'ip_address', 'razon_fallo')
+    date_hierarchy = 'fecha'
+    ordering = ('-fecha',)
+    readonly_fields = ('email', 'ip_address', 'user_agent', 'exitoso', 'fecha', 'razon_fallo', 'user')
+    actions = ['desbloquear_cuentas']
+    
+    def has_add_permission(self, request):
+        return False  # No permitir crear manualmente
+    
+    def has_change_permission(self, request, obj=None):
+        return False  # Solo lectura
+    
+    def esta_bloqueado(self, obj):
+        """Indica si el email de este intento está actualmente bloqueado"""
+        from django.utils.html import format_html
+        if LoginAttempt.is_blocked(obj.email):
+            return format_html('<span style="color: red; font-weight: bold;">🔒 BLOQUEADO</span>')
+        return format_html('<span style="color: green;">✓ Activo</span>')
+    esta_bloqueado.short_description = 'Estado de Cuenta'
+    
+    def desbloquear_cuentas(self, request, queryset):
+        """Acción para desbloquear cuentas seleccionadas"""
+        emails_unicos = queryset.values_list('email', flat=True).distinct()
+        total_desbloqueados = 0
+        
+        for email in emails_unicos:
+            count = LoginAttempt.unblock_account(email)
+            if count > 0:
+                total_desbloqueados += 1
+                
+                # Registrar evento de seguridad
+                from .models import SecurityLog
+                SecurityLog.log_event(
+                    tipo_evento='ACCOUNT_UNLOCKED',
+                    descripcion=f'Cuenta desbloqueada manualmente por {request.user.email}',
+                    email=email,
+                    usuario=None,
+                    ip_address=request.META.get('REMOTE_ADDR'),
+                    nivel_severidad='INFO',
+                    metadata={'admin_user': request.user.email}
+                )
+        
+        self.message_user(
+            request, 
+            f'{total_desbloqueados} cuenta(s) desbloqueada(s) exitosamente.'
+        )
+    desbloquear_cuentas.short_description = 'Desbloquear cuentas seleccionadas'
+    
+    fieldsets = (
+        ('Información del Intento', {
+            'fields': ('email', 'user', 'exitoso', 'razon_fallo')
+        }),
+        ('Información de Red', {
+            'fields': ('ip_address', 'user_agent')
+        }),
+        ('Fecha', {
+            'fields': ('fecha',)
+        }),
+    )
+
+
+@admin.register(SecurityLog)
+class SecurityLogAdmin(admin.ModelAdmin):
+    list_display = ('fecha', 'usuario', 'email', 'tipo_evento', 'nivel_severidad', 'descripcion_corta', 'ip_address')
+    list_filter = ('tipo_evento', 'nivel_severidad', 'fecha')
+    search_fields = ('usuario__email', 'email', 'descripcion', 'ip_address')
+    date_hierarchy = 'fecha'
+    ordering = ('-fecha',)
+    readonly_fields = ('usuario', 'email', 'tipo_evento', 'nivel_severidad', 'descripcion', 
+                      'ip_address', 'user_agent', 'fecha', 'metadata')
+    
+    def has_add_permission(self, request):
+        return False  # No permitir crear manualmente
+    
+    def has_change_permission(self, request, obj=None):
+        return False  # Solo lectura
+    
+    def descripcion_corta(self, obj):
+        """Muestra una descripción recortada"""
+        if len(obj.descripcion) > 50:
+            return f"{obj.descripcion[:47]}..."
+        return obj.descripcion
+    descripcion_corta.short_description = 'Descripción'
+    
+    fieldsets = (
+        ('Usuario', {
+            'fields': ('usuario', 'email')
+        }),
+        ('Evento', {
+            'fields': ('tipo_evento', 'nivel_severidad', 'descripcion')
+        }),
+        ('Información de Red', {
+            'fields': ('ip_address', 'user_agent')
+        }),
+        ('Fecha', {
+            'fields': ('fecha',)
+        }),
+        ('Metadata', {
+            'fields': ('metadata',),
+            'classes': ('collapse',)
+        }),
+    )
+
+
+@admin.register(UserSession)
+class UserSessionAdmin(admin.ModelAdmin):
+    list_display = ('usuario', 'ip_address', 'fecha_inicio', 'fecha_ultima_actividad', 'activa', 'fecha_cierre')
+    list_filter = ('activa', 'fecha_inicio')
+    search_fields = ('usuario__email', 'ip_address', 'session_key')
+    date_hierarchy = 'fecha_inicio'
+    ordering = ('-fecha_inicio',)
+    readonly_fields = ('usuario', 'session_key', 'ip_address', 'user_agent', 
+                      'fecha_inicio', 'fecha_ultima_actividad', 'fecha_cierre')
+    
+    actions = ['cerrar_sesiones']
+    
+    def has_add_permission(self, request):
+        return False  # No permitir crear manualmente
+    
+    def cerrar_sesiones(self, request, queryset):
+        """Acción para cerrar sesiones seleccionadas"""
+        for sesion in queryset.filter(activa=True):
+            sesion.cerrar_sesion()
+        self.message_user(request, f'{queryset.filter(activa=True).count()} sesiones cerradas.')
+    cerrar_sesiones.short_description = 'Cerrar sesiones seleccionadas'
+    
+    fieldsets = (
+        ('Usuario', {
+            'fields': ('usuario',)
+        }),
+        ('Sesión', {
+            'fields': ('session_key', 'activa')
+        }),
+        ('Información de Red', {
+            'fields': ('ip_address', 'user_agent')
+        }),
+        ('Fechas', {
+            'fields': ('fecha_inicio', 'fecha_ultima_actividad', 'fecha_cierre')
+        }),
+    )
+
+
+@admin.register(TwoFactorAuth)
+class TwoFactorAuthAdmin(admin.ModelAdmin):
+    list_display = ('usuario', 'habilitado', 'fecha_habilitacion', 'ultimo_uso')
+    list_filter = ('habilitado', 'fecha_habilitacion')
+    search_fields = ('usuario__email',)
+    readonly_fields = ('usuario', 'secret_key', 'backup_codes', 
+                      'fecha_habilitacion', 'ultimo_uso')
+    
+    def has_add_permission(self, request):
+        return False  # No permitir crear manualmente
+    
+    fieldsets = (
+        ('Usuario', {
+            'fields': ('usuario', 'habilitado')
+        }),
+        ('Configuración 2FA', {
+            'fields': ('secret_key', 'backup_codes'),
+            'classes': ('collapse',)
+        }),
+        ('Auditoría', {
+            'fields': ('fecha_habilitacion', 'ultimo_uso')
+        }),
+    )
+
+
+# ============================================
+# Modelos de Evaluaciones con Rúbricas
+# ============================================
+from .models import EvaluacionRubrica, CalificacionCriterio, Rubrica, CriterioRubrica, NivelDesempeno
+
+@admin.register(Rubrica)
+class RubricaAdmin(admin.ModelAdmin):
+    list_display = ('nombre', 'materia', 'tipo_actividad', 'total_criterios', 'total_ponderacion', 'puntaje_maximo', 'activa', 'fecha_creacion')
+    list_filter = ('tipo_actividad', 'activa', 'fecha_creacion', 'materia__curso')
+    search_fields = ('nombre', 'materia__nombre', 'descripcion', 'creado_por__email')
+    date_hierarchy = 'fecha_creacion'
+    ordering = ('-fecha_creacion',)
+    readonly_fields = ('fecha_creacion', 'total_criterios', 'total_ponderacion', 'puntaje_maximo', 'ponderacion_valida')
+    
+    fieldsets = (
+        ('Información Básica', {
+            'fields': ('nombre', 'materia', 'tipo_actividad', 'descripcion')
+        }),
+        ('Estado', {
+            'fields': ('activa',)
+        }),
+        ('Estadísticas', {
+            'fields': ('total_criterios', 'total_ponderacion', 'puntaje_maximo', 'ponderacion_valida'),
+            'classes': ('collapse',)
+        }),
+        ('Auditoría', {
+            'fields': ('creado_por', 'fecha_creacion'),
+            'classes': ('collapse',)
+        }),
+    )
+
+
+@admin.register(CriterioRubrica)
+class CriterioRubricaAdmin(admin.ModelAdmin):
+    list_display = ('nombre', 'rubrica', 'ponderacion', 'orden')
+    list_filter = ('rubrica__materia', 'rubrica')
+    search_fields = ('nombre', 'descripcion', 'rubrica__nombre')
+    ordering = ('rubrica', 'orden')
+    
+    fieldsets = (
+        ('Información Básica', {
+            'fields': ('rubrica', 'nombre', 'descripcion')
+        }),
+        ('Configuración', {
+            'fields': ('ponderacion', 'orden')
+        }),
+    )
+
+
+@admin.register(NivelDesempeno)
+class NivelDesempenoAdmin(admin.ModelAdmin):
+    list_display = ('criterio', 'nivel', 'puntaje', 'get_rubrica')
+    list_filter = ('nivel', 'criterio__rubrica')
+    search_fields = ('criterio__nombre', 'descriptor')
+    ordering = ('criterio', '-puntaje')
+    
+    def get_rubrica(self, obj):
+        return obj.criterio.rubrica.nombre
+    get_rubrica.short_description = 'Rúbrica'
+    
+    fieldsets = (
+        ('Información Básica', {
+            'fields': ('criterio', 'nivel', 'puntaje')
+        }),
+        ('Descripción', {
+            'fields': ('descriptor',)
+        }),
+    )
+
+
+@admin.register(EvaluacionRubrica)
+class EvaluacionRubricaAdmin(admin.ModelAdmin):
+    list_display = ('titulo', 'rubrica', 'materia', 'curso', 'fecha_evaluacion', 'periodo', 'total_estudiantes', 'activa')
+    list_filter = ('activa', 'periodo', 'fecha_evaluacion', 'materia__curso')
+    search_fields = ('titulo', 'descripcion', 'rubrica__nombre', 'materia__nombre')
+    date_hierarchy = 'fecha_evaluacion'
+    ordering = ('-fecha_evaluacion',)
+    readonly_fields = ('fecha_creacion', 'total_estudiantes', 'puntaje_promedio')
+    
+    fieldsets = (
+        ('Información Básica', {
+            'fields': ('titulo', 'descripcion', 'rubrica')
+        }),
+        ('Configuración Académica', {
+            'fields': ('materia', 'curso', 'periodo', 'fecha_evaluacion')
+        }),
+        ('Estado', {
+            'fields': ('activa',)
+        }),
+        ('Estadísticas', {
+            'fields': ('total_estudiantes', 'puntaje_promedio'),
+            'classes': ('collapse',)
+        }),
+        ('Auditoría', {
+            'fields': ('creada_por', 'fecha_creacion'),
+            'classes': ('collapse',)
+        }),
+    )
+
+
+@admin.register(CalificacionCriterio)
+class CalificacionCriterioAdmin(admin.ModelAdmin):
+    list_display = ('estudiante', 'evaluacion', 'criterio', 'nivel_otorgado', 'puntaje_ponderado', 'fecha_calificacion')
+    list_filter = ('evaluacion__periodo', 'evaluacion__materia', 'nivel_otorgado__nivel')
+    search_fields = ('estudiante__first_name', 'estudiante__last_name', 'evaluacion__titulo', 'criterio__nombre')
+    date_hierarchy = 'fecha_calificacion'
+    ordering = ('-fecha_calificacion',)
+    readonly_fields = ('fecha_calificacion', 'puntaje_ponderado')
+    
+    fieldsets = (
+        ('Evaluación', {
+            'fields': ('evaluacion', 'estudiante')
+        }),
+        ('Calificación', {
+            'fields': ('criterio', 'nivel_otorgado', 'puntaje_ponderado')
+        }),
+        ('Observaciones', {
+            'fields': ('observaciones',)
+        }),
+        ('Auditoría', {
+            'fields': ('fecha_calificacion',),
+            'classes': ('collapse',)
+        }),
+    )

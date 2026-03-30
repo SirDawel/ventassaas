@@ -1,0 +1,182 @@
+{% extends 'website/base.html' %}
+{% load static %}
+
+{% block title %}{{ titulo }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <!-- Encabezado -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h2><i class="fas fa-clipboard-list me-2"></i>{{ titulo }}</h2>
+                    <p class="text-muted">Gestiona plantillas de listas de cotejo reutilizables</p>
+                </div>
+                <a href="{% url 'lista_cotejo_crear' %}" class="btn btn-primary">
+                    <i class="fas fa-plus me-2"></i>Nueva Lista de Cotejo
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Formulario de Búsqueda/Filtros -->
+    <div class="card shadow mb-4">
+        <div class="card-header bg-light">
+            <h5 class="mb-0"><i class="fas fa-filter me-2"></i>Filtros</h5>
+        </div>
+        <div class="card-body">
+            <form method="get" class="row g-3">
+                <div class="col-md-4">
+                    {{ form.buscar }}
+                </div>
+                <div class="col-md-3">
+                    {{ form.tipo_evaluacion }}
+                </div>
+                <div class="col-md-3">
+                    {{ form.materia }}
+                </div>
+                <div class="col-md-2 d-flex align-items-center">
+                    <div class="form-check">
+                        {{ form.solo_plantillas }}
+                        <label class="form-check-label" for="{{ form.solo_plantillas.id_for_label }}">
+                            Solo Plantillas
+                        </label>
+                    </div>
+                </div>
+                <div class="col-12">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-search me-2"></i>Buscar
+                    </button>
+                    <a href="{% url 'listas_cotejo_lista' %}" class="btn btn-secondary">
+                        <i class="fas fa-times me-2"></i>Limpiar
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Mensajes -->
+    {% if messages %}
+    <div class="row">
+        <div class="col-12">
+            {% for message in messages %}
+            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Listado de Listas de Cotejo -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-list me-2"></i>
+                        Listas de Cotejo Disponibles
+                        <span class="badge bg-light text-dark ms-2">{{ listas.count }}</span>
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if listas %}
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Nombre</th>
+                                    <th>Tipo</th>
+                                    <th>Materia</th>
+                                    <th class="text-center">Criterios</th>
+                                    <th class="text-center">Evaluaciones</th>
+                                    <th class="text-center">Puntaje Total</th>
+                                    <th class="text-center">Estado</th>
+                                    <th class="text-center">Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for lista in listas %}
+                                <tr>
+                                    <td>
+                                        <strong>{{ lista.nombre }}</strong>
+                                        {% if lista.es_plantilla %}
+                                        <span class="badge bg-info ms-2">
+                                            <i class="fas fa-copy"></i> Plantilla
+                                        </span>
+                                        {% endif %}
+                                        {% if lista.descripcion %}
+                                        <br><small class="text-muted">{{ lista.descripcion|truncatewords:15 }}</small>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-secondary">
+                                            {{ lista.get_tipo_evaluacion_display }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        {% if lista.materia %}
+                                        {{ lista.materia.nombre }}
+                                        {% else %}
+                                        <span class="text-muted">General</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="text-center">
+                                        <span class="badge bg-primary">
+                                            {{ lista.num_criterios }}
+                                        </span>
+                                    </td>
+                                    <td class="text-center">
+                                        <span class="badge bg-success">
+                                            {{ lista.num_evaluaciones }}
+                                        </span>
+                                    </td>
+                                    <td class="text-center">
+                                        <strong>{{ lista.puntaje_total }}</strong>
+                                    </td>
+                                    <td class="text-center">
+                                        {% if lista.activa %}
+                                        <span class="badge bg-success">Activa</span>
+                                        {% else %}
+                                        <span class="badge bg-secondary">Inactiva</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="text-center">
+                                        <div class="btn-group btn-group-sm">
+                                            <a href="{% url 'lista_cotejo_detalle' lista.id %}" 
+                                               class="btn btn-info" 
+                                               title="Ver Detalle">
+                                                <i class="fas fa-eye"></i>
+                                            </a>
+                                            <a href="{% url 'lista_cotejo_editar' lista.id %}" 
+                                               class="btn btn-warning" 
+                                               title="Editar">
+                                                <i class="fas fa-edit"></i>
+                                            </a>
+                                            <a href="{% url 'evaluacion_cotejo_crear' %}?lista_id={{ lista.id }}" 
+                                               class="btn btn-success" 
+                                               title="Crear Evaluación">
+                                                <i class="fas fa-plus-circle"></i>
+                                            </a>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="alert alert-info mb-0">
+                        <i class="fas fa-info-circle me-2"></i>
+                        No hay listas de cotejo registradas. 
+                        <a href="{% url 'lista_cotejo_crear' %}" class="alert-link">Crear una nueva</a>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,370 @@
+{% extends 'website/base.html' %}
+
+{% block title %}{{ titulo }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <!-- Header Card -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-body">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h3 class="mb-2">
+                        <i class="fas fa-tasks text-success"></i> {{ titulo }}
+                    </h3>
+                    <p class="text-muted mb-1"><strong>Materia:</strong> {{ rubrica.materia.nombre }} - {{ rubrica.materia.curso.nombre }}</p>
+                    <p class="text-muted mb-0"><strong>Tipo:</strong> {{ rubrica.get_tipo_actividad_display }}</p>
+                </div>
+                <div>
+                    <a href="{% url 'rubricas' %}" class="btn btn-secondary">
+                        <i class="fas fa-arrow-left"></i> Volver a Rúbricas
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Alerta Informativa del Sistema de Puntaje -->
+    {% if not rubrica.ponderacion_valida and rubrica.total_criterios > 0 %}
+    <div class="alert alert-warning shadow-sm">
+        <h5><i class="fas fa-exclamation-triangle me-2"></i>Advertencia: Ponderaciones Inconsistentes</h5>
+        <p class="mb-2">
+            La suma actual de ponderaciones es <strong>{{ rubrica.total_ponderacion }}%</strong>. 
+            Para que la rúbrica funcione correctamente, la suma debe ser exactamente <strong>100%</strong>.
+        </p>
+        <hr>
+        <p class="mb-0">
+            <strong>Sistema de puntaje:</strong> Cada nivel otorga 1-5 puntos base que se multiplican por la ponderación del criterio. 
+            El puntaje final se normaliza a escala de 0-10.
+        </p>
+    </div>
+    {% else %}
+    <div class="alert alert-info shadow-sm">
+        <h5><i class="fas fa-info-circle me-2"></i>Sistema de Puntaje</h5>
+        <p class="mb-2">
+            <strong>Escala:</strong> Los puntajes se calculan en escala de 0-10 puntos.
+        </p>
+        <p class="mb-2">
+            <strong>Niveles de desempeño:</strong> Excelente (5) → Muy Bueno (4) → Bueno (3) → Regular (2) → Necesita Mejorar (1)
+        </p>
+        <p class="mb-0">
+            <strong>Cálculo:</strong> Cada criterio contribuye: <code>nivel × ponderación% × 2</code>. 
+            <br><em>Ejemplo: Nivel Excelente (5) con 20% = 5 × 0.20 × 2 = 2.0 puntos</em>
+        </p>
+    </div>
+    {% endif %}
+
+    <!-- Información de la Rúbrica -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card shadow-sm text-center">
+                <div class="card-body">
+                    <h5 class="text-muted">Total Criterios</h5>
+                    <h2 class="text-primary">{{ rubrica.total_criterios }}</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card shadow-sm text-center">
+                <div class="card-body">
+                    <h5 class="text-muted">Ponderación Total</h5>
+                    <h2 class="{% if rubrica.ponderacion_valida %}text-success{% else %}text-warning{% endif %}">
+                        {{ rubrica.total_ponderacion }}%
+                    </h2>
+                    {% if not rubrica.ponderacion_valida %}
+                    <small class="text-warning"><i class="fas fa-exclamation-triangle"></i> Debe sumar 100%</small>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card shadow-sm text-center">
+                <div class="card-body">
+                    <h5 class="text-muted">Niveles por Criterio</h5>
+                    <h2 class="text-info">5</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card shadow-sm text-center">
+                <div class="card-body">
+                    <h5 class="text-muted">Estado</h5>
+                    <h2>
+                        {% if rubrica.activa %}
+                        <span class="badge bg-success">Activa</span>
+                        {% else %}
+                        <span class="badge bg-secondary">Inactiva</span>
+                        {% endif %}
+                    </h2>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Agregar Criterio -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-header bg-success text-white">
+            <h5 class="mb-0"><i class="fas fa-plus-circle me-2"></i>Agregar Nuevo Criterio</h5>
+        </div>
+        <div class="card-body">
+            <form method="post">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="agregar_criterio">
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label for="nombre_criterio" class="form-label">Nombre del Criterio <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="nombre_criterio" name="nombre_criterio" required 
+                               placeholder="Ej: Contenido y Profundidad">
+                        <small class="text-muted">Aspecto específico a evaluar</small>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <label for="ponderacion" class="form-label">Ponderación (%) <span class="text-danger">*</span></label>
+                        <input type="number" class="form-control" id="ponderacion" name="ponderacion" 
+                               value="20.00" step="0.01" min="0" max="100" required>
+                        <small class="text-muted">Peso en la evaluación final</small>
+                    </div>
+                    <div class="col-md-3 mb-3 d-flex align-items-end">
+                        <button type="submit" class="btn btn-success w-100">
+                            <i class="fas fa-plus-circle me-1"></i>Agregar Criterio
+                        </button>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-12 mb-3">
+                        <label for="descripcion_criterio" class="form-label">Descripción (Opcional)</label>
+                        <textarea class="form-control" id="descripcion_criterio" name="descripcion_criterio" rows="2"
+                                  placeholder="Descripción detallada de qué se evaluará en este criterio"></textarea>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Lista de Criterios -->
+    <div class="card shadow-sm">
+        <div class="card-header bg-info text-white">
+            <div class="d-flex justify-content-between align-items-center">
+                <h5 class="mb-0"><i class="fas fa-list me-2"></i>Criterios de Evaluación ({{ criterios.count }})</h5>
+                {% if criterios.count > 0 %}
+                <form method="post" style="display: inline;">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="distribuir_ponderaciones">
+                    <button type="submit" class="btn btn-sm btn-light" 
+                            onclick="return confirm('¿Distribuir ponderaciones equitativamente entre todos los criterios?')">
+                        <i class="fas fa-balance-scale me-1"></i>Distribuir Equitativamente
+                    </button>
+                </form>
+                {% endif %}
+            </div>
+        </div>
+        <div class="card-body">
+            {% if criterios %}
+                {% for criterio in criterios %}
+                <div class="card mb-3 border-start border-primary border-4">
+                    <div class="card-header bg-light">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h5 class="mb-0">
+                                    <span class="badge bg-primary me-2">#{{ criterio.orden }}</span>
+                                    {{ criterio.nombre }}
+                                    <span class="badge bg-success ms-2" 
+                                          data-bs-toggle="modal" 
+                                          data-bs-target="#modalPonderacion{{ criterio.id }}"
+                                          style="cursor: pointer;" 
+                                          title="Click para editar ponderación">
+                                        {{ criterio.ponderacion }}% <i class="fas fa-edit" style="font-size: 0.8em;"></i>
+                                    </span>
+                                </h5>
+                                {% if criterio.descripcion %}
+                                <p class="text-muted small mb-0 mt-2">{{ criterio.descripcion }}</p>
+                                {% endif %}
+                            </div>
+                            <div>
+                                <button class="btn btn-sm btn-warning" 
+                                        data-bs-toggle="collapse" 
+                                        data-bs-target="#niveles{{ criterio.id }}"
+                                        title="Ver/Editar niveles">
+                                    <i class="fas fa-edit"></i> Editar Niveles
+                                </button>
+                                <button class="btn btn-sm btn-danger" 
+                                        data-bs-toggle="modal" 
+                                        data-bs-target="#modalEliminar{{ criterio.id }}"
+                                        title="Eliminar criterio">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Niveles de Desempeño (Colapsable) -->
+                    <div class="collapse" id="niveles{{ criterio.id }}">
+                        <div class="card-body">
+                            <h6 class="mb-3"><i class="fas fa-star me-2"></i>Niveles de Desempeño</h6>
+                            <div class="table-responsive">
+                                <table class="table table-bordered table-sm">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th style="width: 15%;">Nivel</th>
+                                            <th style="width: 10%;">Puntaje</th>
+                                            <th style="width: 75%;">Descriptor</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for nivel in criterio.niveles.all %}
+                                        <tr>
+                                            <td>
+                                                {% if nivel.nivel == 'excelente' %}
+                                                    <span class="badge bg-primary">{{ nivel.get_nivel_display }}</span>
+                                                {% elif nivel.nivel == 'muy_bueno' %}
+                                                    <span class="badge bg-success">{{ nivel.get_nivel_display }}</span>
+                                                {% elif nivel.nivel == 'bueno' %}
+                                                    <span class="badge bg-info">{{ nivel.get_nivel_display }}</span>
+                                                {% elif nivel.nivel == 'regular' %}
+                                                    <span class="badge bg-warning text-dark">{{ nivel.get_nivel_display }}</span>
+                                                {% else %}
+                                                    <span class="badge bg-danger">{{ nivel.get_nivel_display }}</span>
+                                                {% endif %}
+                                            </td>
+                                            <td class="text-center"><strong>{{ nivel.puntaje }}</strong></td>
+                                            <td>
+                                                <button class="btn btn-sm btn-link" 
+                                                        data-bs-toggle="modal" 
+                                                        data-bs-target="#modalEditarNivel{{ nivel.id }}">
+                                                    {{ nivel.descriptor }}
+                                                    <i class="fas fa-edit ms-1"></i>
+                                                </button>
+                                                
+                                                <!-- Modal Editar Descriptor -->
+                                                <div class="modal fade" id="modalEditarNivel{{ nivel.id }}" tabindex="-1" aria-hidden="true">
+                                                    <div class="modal-dialog">
+                                                        <div class="modal-content">
+                                                            <form method="post">
+                                                                {% csrf_token %}
+                                                                <input type="hidden" name="action" value="actualizar_descriptor">
+                                                                <input type="hidden" name="nivel_id" value="{{ nivel.id }}">
+                                                                <div class="modal-header">
+                                                                    <h5 class="modal-title">Editar Descriptor - {{ nivel.get_nivel_display }}</h5>
+                                                                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                                                </div>
+                                                                <div class="modal-body">
+                                                                    <label class="form-label">Descriptor:</label>
+                                                                    <textarea class="form-control" name="descriptor" rows="4" required>{{ nivel.descriptor }}</textarea>
+                                                                </div>
+                                                                <div class="modal-footer">
+                                                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                                                                    <button type="submit" class="btn btn-primary">Guardar Cambios</button>
+                                                                </div>
+                                                            </form>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Modal Eliminar Criterio -->
+                    <div class="modal fade" id="modalEliminar{{ criterio.id }}" tabindex="-1" aria-hidden="true">
+                        <div class="modal-dialog">
+                            <div class="modal-content">
+                                <div class="modal-header bg-danger text-white">
+                                    <h5 class="modal-title">Confirmar Eliminación</h5>
+                                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                                </div>
+                                <div class="modal-body">
+                                    <p>¿Estás seguro de que deseas eliminar el criterio <strong>"{{ criterio.nombre }}"</strong>?</p>
+                                    <div class="alert alert-warning">
+                                        <i class="fas fa-exclamation-triangle me-2"></i>
+                                        Esta acción eliminará también todos los niveles de desempeño asociados y no se puede deshacer.
+                                    </div>
+                                </div>
+                                <div class="modal-footer">
+                                    <form method="post">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="action" value="eliminar_criterio">
+                                        <input type="hidden" name="criterio_id" value="{{ criterio.id }}">
+                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                                        <button type="submit" class="btn btn-danger">
+                                            <i class="fas fa-trash me-1"></i>Eliminar
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Modal Editar Ponderación -->
+                    <div class="modal fade" id="modalPonderacion{{ criterio.id }}" tabindex="-1" aria-hidden="true">
+                        <div class="modal-dialog">
+                            <div class="modal-content">
+                                <div class="modal-header bg-warning">
+                                    <h5 class="modal-title"><i class="fas fa-percentage me-2"></i>Editar Ponderación</h5>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                </div>
+                                <form method="post">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="action" value="actualizar_ponderacion">
+                                    <input type="hidden" name="criterio_id" value="{{ criterio.id }}">
+                                    <div class="modal-body">
+                                        <p><strong>Criterio:</strong> {{ criterio.nombre }}</p>
+                                        <div class="mb-3">
+                                            <label class="form-label">Nueva Ponderación (%):</label>
+                                            <input type="number" 
+                                                   class="form-control" 
+                                                   name="nueva_ponderacion" 
+                                                   value="{{ criterio.ponderacion }}" 
+                                                   step="0.01" 
+                                                   min="0" 
+                                                   max="100" 
+                                                   required>
+                                            <small class="text-muted">
+                                                <i class="fas fa-info-circle"></i> La suma de todas las ponderaciones debe ser 100%
+                                            </small>
+                                        </div>
+                                    </div>
+                                    <div class="modal-footer">
+                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                                        <button type="submit" class="btn btn-warning">
+                                            <i class="fas fa-check me-1"></i>Actualizar
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            {% else %}
+            <div class="alert alert-light text-center">
+                <i class="fas fa-info-circle fa-3x text-muted mb-3"></i>
+                <p class="mb-0">No hay criterios definidos aún.</p>
+                <small class="text-muted">Utiliza el formulario anterior para agregar tu primer criterio de evaluación.</small>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<style>
+    .card {
+        border: none;
+        border-radius: 12px;
+    }
+    
+    .card-header {
+        border-radius: 12px 12px 0 0 !important;
+    }
+    
+    .shadow-sm {
+        box-shadow: 0 0.125rem 0.5rem rgba(0, 0, 0, 0.075) !important;
+    }
+    
+    .border-start {
+        border-left-width: 4px !important;
+    }
+</style>
+{% endblock %}

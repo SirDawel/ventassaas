@@ -2,78 +2,313 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>Reporte de Notas - {{ curso.nombre }}</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+    <title>Reporte General - {{ curso.nombre }}</title>
     <style>
+        @page {
+            size: A4 portrait;
+            margin: 10mm;
+        }
+
         body {
             font-family: Arial, Helvetica, sans-serif;
-            font-size: 12px;
-            color: #222;
+            font-size: 9px;
+            color: #000;
+            line-height: 1.4;
+            margin: 0;
+            padding: 0;
         }
-        h2, h3 {
-            margin-bottom: 0.2em;
-        }
-        .student-section {
+
+        /* PÁGINA POR ESTUDIANTE */
+        .student-page {
             page-break-after: always;
-            margin-bottom: 30px;
+            page-break-inside: avoid;
         }
-        table {
-            border-collapse: collapse;
-            width: 100%;
+
+        .student-page:last-child {
+            page-break-after: auto;
+        }
+
+        /* ENCABEZADO INSTITUCIONAL */
+        .header {
+            text-align: center;
+            padding-bottom: 8px;
             margin-bottom: 10px;
         }
-        th, td {
-            border: 1px solid #444;
-            padding: 4px 6px;
+
+        .header img {
+            height: 50px;
+            margin-bottom: 5px;
+        }
+
+        .header h2 {
+            font-size: 14px;
+            margin: 3px 0;
+            font-weight: bold;
+        }
+
+        .header h4 {
+            font-size: 11px;
+            margin: 3px 0;
+            font-weight: bold;
+        }
+
+        .header p {
+            font-size: 8px;
+            margin: 2px 0;
+        }
+
+        /* INFORMACIÓN DEL ESTUDIANTE */
+        .info-table {
+            width: 100%;
+            margin-bottom: 8px;
+            border-collapse: collapse;
+        }
+
+        .info-table td {
+            width: 50%;
+            vertical-align: top;
+            padding: 0 3px;
+        }
+
+        .info-box {
+            background-color: #f5f5f5;
+            padding: 6px;
+            border: 1px solid #ccc;
+        }
+
+        .info-box h5 {
+            font-size: 9px;
+            font-weight: bold;
+            margin: 0 0 4px 0;
+            text-transform: uppercase;
+        }
+
+        .info-box p {
+            font-size: 8px;
+            margin: 2px 0;
+        }
+
+        /* TABLAS DE CALIFICACIONES */
+        .grades-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 8px 0;
+            font-size: 8px;
+        }
+
+        .grades-table th {
+            background-color: #e0e0e0;
+            border: 1px solid #000;
+            padding: 4px;
+            font-weight: bold;
             text-align: center;
         }
-        th {
-            background: #eee;
+
+        .grades-table td {
+            border: 1px solid #999;
+            padding: 4px;
+            text-align: center;
         }
-        .summary {
-            margin-top: 8px;
+
+        .grades-table td.left {
+            text-align: left;
+        }
+
+        /* BADGES */
+        .badge {
+            padding: 2px 5px;
+            font-size: 7px;
+            font-weight: bold;
+            border: 1px solid #000;
+        }
+
+        .badge-success {
+            background-color: #d4edda;
+        }
+
+        .badge-danger {
+            background-color: #f8d7da;
+        }
+
+        .badge-warning {
+            background-color: #fff3cd;
+        }
+
+        .badge-secondary {
+            background-color: #e2e3e5;
+        }
+
+        /* MÓDULOS */
+        .modulo {
+            border: 2px solid #000;
+            margin: 8px 0;
+            page-break-inside: avoid;
+        }
+
+        .modulo-header {
+            background-color: #d1ecf1;
+            padding: 5px;
+            font-weight: bold;
+            font-size: 9px;
+            border-bottom: 1px solid #000;
+        }
+
+        .modulo-body {
+            padding: 5px;
+        }
+
+        .modulo-body table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 7px;
+        }
+
+        .modulo-body th,
+        .modulo-body td {
+            border: 1px solid #999;
+            padding: 3px;
+            text-align: center;
+        }
+
+        .modulo-body th {
+            background-color: #e0e0e0;
+            font-weight: bold;
+        }
+
+        strong {
+            font-weight: bold;
         }
     </style>
 </head>
 <body>
-    <h2>Reporte de Notas - {{ curso.nombre }}</h2>
-    <hr>
+    {% load custom_filters %}
+    
     {% for estudiante, datos in reporte_estudiantes.items %}
-        <div class="student-section">
-            <h3>{{ estudiante.get_full_name }}</h3>
-            <p><strong>Cédula:</strong> {{ estudiante.cedula }}</p>
-            <p><strong>Correo:</strong> {{ estudiante.email }}</p>
-            <table>
-                <thead>
-                    <tr>
-                        <th>Materia</th>
-                        <th>Nota Final</th>
-                        <th>Completivo</th>
-                        <th>Extraordinario</th>
-                        <th>Especial</th>
-                        <th>Nota Oficial</th>
-                    </tr>
-                </thead>
-                <tbody>
-                {% for m in datos.matriculas %}
-                    <tr>
-                        <td>{{ m.materia.nombre }}</td>
-                        <td>{{ m.nota_final|default_if_none:'-' }}</td>
-                        <td>{{ m.nota_final_completivo|default_if_none:'-' }}</td>
-                        <td>{{ m.nota_final_extraordinario|default_if_none:'-' }}</td>
-                        <td>{{ m.nota_final_especial|default_if_none:'-' }}</td>
-                        <td>{{ m.nota_final_oficial|default_if_none:'-' }}</td>
-                    </tr>
-                {% endfor %}
-                </tbody>
-            </table>
-            <div class="summary">
-                <p><strong>Total materias:</strong> {{ datos.total_materias }}</p>
-                <p><strong>Aprobadas:</strong> {{ datos.materias_aprobadas }}</p>
-                <p><strong>Reprobadas:</strong> {{ datos.materias_reprobadas }}</p>
-                <p><strong>En progreso:</strong> {{ datos.materias_en_progreso }}</p>
-                <p><strong>Promedio general:</strong> {{ datos.promedio_general|floatformat:2|default_if_none:'-' }}</p>
-            </div>
+    <div class="student-page">
+        <!-- ENCABEZADO -->
+        <div class="header">
+            <img src="img/logo_poli.jpeg" alt="Logo"/>
+            <h2>Politécnico Prof. José Ramón Rodríguez Herrera</h2>
+            <p>Calle Atile Gomez, Sector La Mina, Hato del Padre, San Juan</p>
+            <p>Tel: (809) 000-5252 — Email: politecnicojoseramonrodriguezh@gmail.com</p>
+            <p>Año Escolar {{ curso.anho_escolar }}</p>
+            <h4>REPORTE GENERAL DE CALIFICACIONES</h4>
+            <h4>Curso: {{ curso.nombre }}</h4>
         </div>
+
+        <!-- INFORMACIÓN DEL ESTUDIANTE -->
+        <table class="info-table">
+            <tr>
+                <td>
+                    <div class="info-box">
+                        <h5>Información del Estudiante</h5>
+                        <p><strong>Nombre:</strong> {{ estudiante.get_full_name }}</p>
+                        <p><strong>Grado:</strong> {{ estudiante.grado|default:"-" }}</p>
+                        <p><strong>Sección:</strong> {{ estudiante.seccion|default:"-" }}</p>
+                    </div>
+                </td>
+                <td>
+                    <div class="info-box">
+                        <h5>Resumen Académico</h5>
+                        <p><strong>Total Materias:</strong> {{ datos.total_materias }}</p>
+                        <p><strong>Aprobadas:</strong> <span class="badge badge-success">{{ datos.materias_aprobadas }}</span></p>
+                        <p><strong>Reprobadas:</strong> <span class="badge badge-danger">{{ datos.materias_reprobadas }}</span></p>
+                        <p><strong>En Progreso:</strong> <span class="badge badge-warning">{{ datos.materias_en_progreso }}</span></p>
+                        {% if datos.promedio_general %}
+                        <p><strong>Promedio:</strong> 
+                            <span class="badge {% if datos.promedio_general >= 70 %}badge-success{% else %}badge-danger{% endif %}">
+                                {{ datos.promedio_general|floatformat:2 }}
+                            </span>
+                        </p>
+                        {% else %}
+                        <p><strong>Promedio:</strong> <span class="badge badge-secondary">N/D</span></p>
+                        {% endif %}
+                    </div>
+                </td>
+            </tr>
+        </table>
+
+        <!-- TABLA DE CALIFICACIONES -->
+        <table class="grades-table">
+            <thead>
+                <tr>
+                    <th>Materia</th>
+                    <th>Profesor</th>
+                    <th>P1</th>
+                    <th>P2</th>
+                    <th>P3</th>
+                    <th>P4</th>
+                    <th>Final</th>
+                    <th>Estado</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for m in datos.matriculas %}
+                    {% if m.materia.categoria != 'modular' %}
+                    <tr>
+                        <td class="left"><strong>{{ m.materia.nombre }}</strong></td>
+                        <td class="left">{{ m.materia.profesor.get_full_name|default:"-" }}</td>
+                        <td>{% if m.prom_comunicativa %}{{ m.prom_comunicativa }}{% else %}-{% endif %}</td>
+                        <td>{% if m.prom_logico %}{{ m.prom_logico }}{% else %}-{% endif %}</td>
+                        <td>{% if m.prom_cientifica %}{{ m.prom_cientifica }}{% else %}-{% endif %}</td>
+                        <td>{% if m.prom_etica %}{{ m.prom_etica }}{% else %}-{% endif %}</td>
+                        <td>{% if m.nota_final_oficial %}{{ m.nota_final_oficial }}{% else %}-{% endif %}</td>
+                        <td>
+                            {% if m.nota_final_oficial is None %}
+                                <span class="badge badge-warning">En Progreso</span>
+                            {% elif m.nota_final_oficial >= 70 %}
+                                <span class="badge badge-success">Aprobado</span>
+                            {% else %}
+                                <span class="badge badge-danger">Reprobado</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endif %}
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <!-- MÓDULOS FORMATIVOS -->
+        {% for m in datos.matriculas %}
+            {% if m.materia.categoria == 'modular' and m.materia.ra_configuracion %}
+                <div class="modulo">
+                    <div class="modulo-header">
+                        {{ m.materia.nombre }} - Módulo Formativo
+                    </div>
+                    <div class="modulo-body">
+                        <table>
+                            <thead>
+                                <tr>
+                                    {% for i in m.materia.ra_configuracion.valores %}
+                                        <th>RA {{ forloop.counter }} ({{ i }}%)</th>
+                                    {% endfor %}
+                                    <th>Total</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    {% for i in m.materia.ra_configuracion.valores %}
+                                        <td>
+                                            {% with valor_ra=m|get_ra:forloop.counter0 %}
+                                                {% if valor_ra %}
+                                                    {% widthratio valor_ra i 100 as sobre100 %}
+                                                    {{ sobre100|floatformat:0 }}/100
+                                                {% else %}
+                                                    -
+                                                {% endif %}
+                                            {% endwith %}
+                                        </td>
+                                    {% endfor %}
+                                    <td><strong>{% if m.total_ra %}{{ m.total_ra }}{% else %}-{% endif %}</strong></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            {% endif %}
+        {% endfor %}
+    </div>
     {% endfor %}
 </body>
 </html>

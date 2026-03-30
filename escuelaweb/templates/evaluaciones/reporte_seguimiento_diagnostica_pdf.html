@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Reporte de Seguimiento - Evaluaciones Diagnósticas</title>
+    <style>
+        @page {
+            size: letter;
+            margin: 1.5cm;
+        }
+        body {
+            font-family: Arial, sans-serif;
+            font-size: 10pt;
+            line-height: 1.4;
+            color: #000;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 12pt;
+            text-transform: uppercase;
+            font-weight: bold;
+            letter-spacing: 0.5px;
+            color: #000;
+        }
+        .header h2 {
+            margin: 2px 0;
+            font-size: 11pt;
+            font-weight: bold;
+            text-transform: uppercase;
+            color: #000;
+        }
+        .header .distrito {
+            margin: 4px 0;
+            font-size: 8.5pt;
+            line-height: 1.4;
+            color: #000;
+        }
+        hr {
+            border: none;
+            border-top: 2px solid #000;
+            margin: 8px 0;
+        }
+        .section {
+            margin-bottom: 18px;
+        }
+        .titulo-documento {
+            text-align: center;
+            font-size: 11pt;
+            font-weight: bold;
+            text-decoration: underline;
+            margin: 12px 0 15px 0;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .section-title {
+            background-color: #0056b3;
+            color: white;
+            padding: 8px 12px;
+            margin: 12px 0 10px 0;
+            font-size: 10pt;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+        }
+        .info-grid {
+            display: table;
+            width: 100%;
+            margin-bottom: 12px;
+            border: 1px solid #ccc;
+        }
+        .info-row {
+            display: table-row;
+        }
+        .info-label {
+            display: table-cell;
+            width: 28%;
+            font-weight: bold;
+            padding: 6px 10px;
+            background-color: #f5f5f5;
+            border-bottom: 1px solid #ddd;
+            border-right: 1px solid #ddd;
+            font-size: 9pt;
+        }
+        .info-value {
+            display: table-cell;
+            padding: 6px 10px;
+            border-bottom: 1px solid #ddd;
+            font-size: 9pt;
+        }
+        .timeline {
+            margin: 15px 0;
+        }
+        .timeline-item {
+            border-left: 3px solid #3498db;
+            padding-left: 15px;
+            margin-bottom: 20px;
+            position: relative;
+        }
+        .timeline-item:before {
+            content: "";
+            width: 12px;
+            height: 12px;
+            background-color: #3498db;
+            border-radius: 50%;
+            position: absolute;
+            left: -8px;
+            top: 5px;
+        }
+        .timeline-date {
+            color: #7f8c8d;
+            font-size: 11px;
+            margin-bottom: 5px;
+        }
+        .timeline-content {
+            background-color: #f8f9fa;
+            padding: 12px;
+            border: 1px solid #000;
+        }
+        .nivel-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 3px;
+            font-weight: bold;
+            color: white;
+            font-size: 11px;
+            margin-right: 8px;
+        }
+        .nivel-no-alcanzado { background-color: #e74c3c; }
+        .nivel-en-proceso { background-color: #f39c12; }
+        .nivel-alcanzado { background-color: #27ae60; }
+        .nivel-supera { background-color: #3498db; }
+        
+        .evolucion-box {
+            padding: 15px;
+            margin: 15px 0;
+            border: 2px solid #000;
+            text-align: center;
+        }
+        .evolucion-positiva {
+            background-color: #d5f4e6;
+            border-color: #27ae60;
+        }
+        .evolucion-negativa {
+            background-color: #fadbd8;
+            border-color: #e74c3c;
+        }
+        .evolucion-estable {
+            background-color: #fffacd;
+            border-color: #f39c12;
+        }
+        .evolucion-icon {
+            font-size: 24pt;
+            margin-bottom: 8px;
+            font-weight: bold;
+        }
+        .stats-compact {
+            background-color: #f5f5f5;
+            padding: 10px;
+            margin: 10px 0;
+            border: 1px solid #000;
+            font-size: 9pt;
+        }
+        .footer {
+            margin-top: 25px;
+            padding-top: 10px;
+            border-top: 2px solid #000;
+            text-align: center;
+            font-size: 8pt;
+            color: #333;
+        }
+        .no-evaluaciones {
+            background-color: #fff3cd;
+            padding: 15px;
+            text-align: center;
+            border-radius: 5px;
+            border: 1px solid #ffc107;
+            color: #856404;
+        }
+    </style>
+</head>
+<body>
+    <!-- Encabezado Oficial -->
+    <div class="header">
+        <h1>REPÚBLICA DOMINICANA</h1>
+        <h2>EDUCACIÓN</h2>
+        <div class="distrito">
+            Distrito Educativo No 02-05, San Juan de la Maguana, Prov. San Juan.<br>
+            Centro Educativo: <strong>CENTRO CRISTIANO DE EDUCACIÓN PARA EL DESARROLLO</strong> / Código: ###### Bayard [####]
+        </div>
+    </div>
+    
+    <hr>
+    
+    <div class="titulo-documento">
+        REPORTE DE SEGUIMIENTO - EVALUACIONES DIAGNÓSTICAS
+    </div>
+
+    <!-- Información del Estudiante -->
+    <div class="section">
+        <div class="section-title">DATOS DEL ESTUDIANTE</div>
+        <div class="info-grid">
+            <div class="info-row">
+                <div class="info-label">Nombre Completo:</div>
+                <div class="info-value">{{ estudiante.get_full_name }}</div>
+            </div>
+            <div class="info-row">
+                <div class="info-label">Cédula:</div>
+                <div class="info-value">{{ estudiante.cedula|default:"No registrada" }}</div>
+            </div>
+            <div class="info-row">
+                <div class="info-label">Materia:</div>
+                <div class="info-value">{{ materia.nombre }}</div>
+            </div>
+            <div class="info-row">
+                <div class="info-label">Profesor:</div>
+                <div class="info-value">{{ materia.profesor.get_full_name }}</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Resumen de Seguimiento -->
+    <div class="stats-compact">
+        <strong>Total de Evaluaciones Diagnósticas:</strong> {{ total_evaluaciones }} | 
+        <strong>Evaluaciones Completadas:</strong> {{ evaluaciones_completadas }}
+        {% if total_evaluaciones > 0 %}
+            ({{ evaluaciones_completadas|floatformat:0 }}/{{ total_evaluaciones }})
+        {% endif %}
+    </div>
+
+    <!-- Análisis de Evolución -->
+    {% if evolucion %}
+    <div class="evolucion-box evolucion-{{ evolucion }}">
+        <div class="evolucion-icon">
+            {% if evolucion == 'positiva' %}
+                ▲ EVOLUCIÓN POSITIVA
+            {% elif evolucion == 'negativa' %}
+                ▼ REQUIERE ATENCIÓN
+            {% else %}
+                ● EVOLUCIÓN ESTABLE
+            {% endif %}
+        </div>
+        <p style="margin: 5px 0; font-weight: bold; font-size: 14px;">
+            {% if evolucion == 'positiva' %}
+                El estudiante ha mostrado mejora en su nivel de logro
+            {% elif evolucion == 'negativa' %}
+                El estudiante requiere intervención pedagógica adicional
+            {% else %}
+                El estudiante mantiene un nivel estable en su desempeño
+            {% endif %}
+        </p>
+    </div>
+    {% endif %}
+
+    <!-- Línea de Tiempo de Evaluaciones -->
+    <div class="section">
+        <div class="section-title">HISTORIAL DE EVALUACIONES DIAGNÓSTICAS</div>
+        
+        {% if resultados_timeline %}
+            <div class="timeline">
+                {% for item in resultados_timeline %}
+                <div class="timeline-item">
+                    <div class="timeline-date">
+                        {{ item.evaluacion.get_periodo_display }} - 
+                        {% if item.evaluacion.fecha_aplicacion %}
+                            {{ item.evaluacion.fecha_aplicacion|date:"d/m/Y" }}
+                        {% else %}
+                            Creada: {{ item.evaluacion.fecha_creacion|date:"d/m/Y" }}
+                        {% endif %}
+                    </div>
+                    <div class="timeline-content">
+                        {% if item.resultado %}
+                            <div style="margin-bottom: 8px;">
+                                <strong>Nivel de Logro:</strong>
+                                {% if item.resultado.nivel_logro == 'no_alcanzado' %}
+                                    <span class="nivel-badge nivel-no-alcanzado">No Alcanzado</span>
+                                {% elif item.resultado.nivel_logro == 'en_proceso' %}
+                                    <span class="nivel-badge nivel-en-proceso">En Proceso</span>
+                                {% elif item.resultado.nivel_logro == 'alcanzado' %}
+                                    <span class="nivel-badge nivel-alcanzado">Alcanzado</span>
+                                {% elif item.resultado.nivel_logro == 'supera' %}
+                                    <span class="nivel-badge nivel-supera">Supera lo Esperado</span>
+                                {% endif %}
+                                
+                                {% if item.resultado.puntaje_obtenido %}
+                                    <strong>Puntaje:</strong> {{ item.resultado.puntaje_obtenido }}/{{ item.resultado.puntaje_total|default:"100" }}
+                                    {% if item.resultado.porcentaje %}
+                                        ({{ item.resultado.porcentaje }}%)
+                                    {% endif %}
+                                {% endif %}
+                            </div>
+                            
+                            {% if item.evaluacion.competencia %}
+                            <p style="margin: 5px 0; font-size: 11px;">
+                                <strong>Competencia:</strong> {{ item.evaluacion.competencia }}
+                            </p>
+                            {% endif %}
+                            
+                            {% if item.resultado.fortalezas %}
+                            <p style="margin: 5px 0; font-size: 10px;">
+                                <strong>✓ Fortalezas:</strong> {{ item.resultado.fortalezas|truncatewords:20 }}
+                            </p>
+                            {% endif %}
+                            
+                            {% if item.resultado.debilidades %}
+                            <p style="margin: 5px 0; font-size: 10px;">
+                                <strong>⚠ Áreas de Mejora:</strong> {{ item.resultado.debilidades|truncatewords:20 }}
+                            </p>
+                            {% endif %}
+                            
+                            <p style="margin: 5px 0; font-size: 10px; color: #7f8c8d;">
+                                <strong>Evaluado por:</strong> {{ item.resultado.evaluado_por.get_full_name }} 
+                                el {{ item.resultado.fecha_evaluacion|date:"d/m/Y" }}
+                            </p>
+                        {% else %}
+                            <div style="color: #e74c3c; font-style: italic;">
+                                Evaluación pendiente - El estudiante aún no ha sido evaluado en este período
+                            </div>
+                            {% if item.evaluacion.competencia %}
+                            <p style="margin: 5px 0; font-size: 11px; color: #7f8c8d;">
+                                <strong>Competencia a evaluar:</strong> {{ item.evaluacion.competencia }}
+                            </p>
+                            {% endif %}
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="no-evaluaciones">
+                <strong>⚠ No hay evaluaciones diagnósticas registradas para esta materia</strong>
+                <p style="margin: 5px 0; font-size: 11px;">
+                    No se han creado evaluaciones diagnósticas para esta materia aún.
+                </p>
+            </div>
+        {% endif %}
+    </div>
+
+    <!-- Recomendaciones de Seguimiento -->
+    {% if evolucion %}
+    <div class="section">
+        <div class="section-title">RECOMENDACIONES DE SEGUIMIENTO</div>
+        <div style="background-color: #f8f9fa; padding: 12px; border: 1px solid #bdc3c7; border-radius: 4px;">
+            <ul style="margin: 5px 0; padding-left: 20px;">
+                {% if evolucion == 'positiva' %}
+                    <li>Continuar con las estrategias pedagógicas actuales que han mostrado resultados positivos</li>
+                    <li>Considerar actividades de enriquecimiento para mantener la motivación del estudiante</li>
+                    <li>Utilizar al estudiante como tutor par para apoyar a compañeros con dificultades</li>
+                {% elif evolucion == 'negativa' %}
+                    <li>Implementar plan de reforzamiento inmediato en las áreas identificadas como debilidades</li>
+                    <li>Considerar tutoría individualizada o apoyo académico adicional</li>
+                    <li>Comunicación con la familia para establecer estrategias de apoyo en casa</li>
+                    <li>Realizar seguimiento quincenal del progreso del estudiante</li>
+                {% else %}
+                    <li>Mantener seguimiento regular del progreso del estudiante</li>
+                    <li>Implementar actividades desafiantes para promover el avance al siguiente nivel</li>
+                    <li>Identificar áreas específicas donde puede mejorar aún más</li>
+                {% endif %}
+                <li>Programar próxima evaluación diagnóstica para verificar progreso</li>
+            </ul>
+        </div>
+    </div>
+    {% endif %}
+
+    <div class="footer">
+        Reporte generado el {{ fecha_actual|date:"d/m/Y" }}<br>
+        Sistema de Gestión Educativa - República Dominicana
+    </div>
+</body>
+</html>

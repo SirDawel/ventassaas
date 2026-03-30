@@ -1,0 +1,198 @@
+{% extends 'website/base.html' %}
+{% load static %}
+
+{% block title %}Contabilizar Asiento - {{ block.super }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    :root {
+        --asiento-primary: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    }
+    
+    .page-header {
+        background: var(--asiento-primary);
+        color: white;
+        padding: 2rem;
+        border-radius: 15px;
+        margin-bottom: 2rem;
+        box-shadow: 0 10px 30px rgba(102, 126, 234, 0.3);
+    }
+    
+    .confirm-card {
+        background: white;
+        border-radius: 15px;
+        padding: 3rem;
+        box-shadow: 0 5px 20px rgba(0,0,0,0.08);
+        text-align: center;
+        max-width: 600px;
+        margin: 0 auto;
+    }
+    
+    .confirm-icon {
+        font-size: 5rem;
+        color: #28a745;
+        margin-bottom: 2rem;
+    }
+    
+    .confirm-title {
+        color: #212529;
+        font-size: 2rem;
+        font-weight: 700;
+        margin-bottom: 1rem;
+    }
+    
+    .confirm-message {
+        color: #6c757d;
+        font-size: 1.1rem;
+        margin-bottom: 2rem;
+    }
+    
+    .asiento-info {
+        background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+        padding: 1.5rem;
+        border-radius: 10px;
+        margin-bottom: 2rem;
+        text-align: left;
+    }
+    
+    .info-row {
+        display: flex;
+        justify-content: space-between;
+        padding: 0.5rem 0;
+        border-bottom: 1px solid rgba(255,255,255,0.5);
+    }
+    
+    .info-row:last-child {
+        border-bottom: none;
+    }
+    
+    .info-label {
+        font-weight: 600;
+        color: #495057;
+    }
+    
+    .info-value {
+        color: #212529;
+    }
+    
+    .alert-info-custom {
+        background: linear-gradient(135deg, #d1ecf1 0%, #bee5eb 100%);
+        border: none;
+        color: #0c5460;
+        padding: 1.5rem;
+        border-radius: 10px;
+        margin-bottom: 2rem;
+    }
+    
+    .btn-group-custom {
+        display: flex;
+        gap: 1rem;
+        justify-content: center;
+    }
+    
+    .btn-custom {
+        padding: 0.75rem 2rem;
+        border-radius: 10px;
+        font-weight: 600;
+        transition: all 0.3s ease;
+    }
+    
+    .btn-custom:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="page-header">
+        <h2>
+            <i class="fas fa-check-circle"></i>
+            Contabilizar Asiento
+        </h2>
+    </div>
+    
+    <div class="confirm-card">
+        <div class="confirm-icon">
+            <i class="fas fa-check-circle"></i>
+        </div>
+        
+        <h3 class="confirm-title">¿Contabilizar este asiento?</h3>
+        
+        <p class="confirm-message">
+            Una vez contabilizado, el asiento no podrá ser modificado y los saldos de las cuentas se actualizarán automáticamente.
+        </p>
+        
+        <div class="asiento-info">
+            <div class="info-row">
+                <span class="info-label">Número:</span>
+                <span class="info-value">{{ asiento.numero_asiento }}</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Fecha:</span>
+                <span class="info-value">{{ asiento.fecha_asiento|date:"d/m/Y" }}</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Concepto:</span>
+                <span class="info-value">{{ asiento.concepto }}</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Total Débito:</span>
+                <span class="info-value">Gs. {{ asiento.total_debito|floatformat:0 }}</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Total Crédito:</span>
+                <span class="info-value">Gs. {{ asiento.total_credito|floatformat:0 }}</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Estado:</span>
+                <span class="info-value">
+                    {% if asiento.esta_cuadrado %}
+                    <i class="fas fa-check-circle text-success"></i> Cuadrado
+                    {% else %}
+                    <i class="fas fa-times-circle text-danger"></i> Descuadrado
+                    {% endif %}
+                </span>
+            </div>
+        </div>
+        
+        {% if asiento.esta_cuadrado and asiento.puede_contabilizarse %}
+        <div class="alert-info-custom">
+            <i class="fas fa-info-circle me-2"></i>
+            <strong>Importante:</strong> Al contabilizar, se actualizarán los saldos de {{ asiento.detalles.count }} cuenta(s).
+        </div>
+        
+        <form method="post">
+            {% csrf_token %}
+            <div class="btn-group-custom">
+                <a href="{% url 'asiento_detalle' asiento.pk %}" class="btn btn-secondary btn-custom">
+                    <i class="fas fa-arrow-left me-2"></i>
+                    Cancelar
+                </a>
+                <button type="submit" class="btn btn-success btn-custom">
+                    <i class="fas fa-check me-2"></i>
+                    Sí, Contabilizar
+                </button>
+            </div>
+        </form>
+        {% else %}
+        <div class="alert alert-danger">
+            <i class="fas fa-exclamation-triangle me-2"></i>
+            <strong>Error:</strong> El asiento no puede ser contabilizado.
+            {% if not asiento.esta_cuadrado %}
+            El asiento no está cuadrado (Débito ≠ Crédito).
+            {% endif %}
+            {% if not asiento.detalles.exists %}
+            El asiento no tiene líneas.
+            {% endif %}
+        </div>
+        
+        <a href="{% url 'asiento_detalle' asiento.pk %}" class="btn btn-secondary btn-custom">
+            <i class="fas fa-arrow-left me-2"></i>
+            Volver
+        </a>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

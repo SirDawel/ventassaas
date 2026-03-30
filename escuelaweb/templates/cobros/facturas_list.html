@@ -1,4 +1,5 @@
 {% extends 'website/base.html' %}
+{% load l10n %}
 
 {% block title %}{{ titulo }}{% endblock %}
 
@@ -29,10 +30,15 @@
     <div class="card mb-4">
         <div class="card-body">
             <form method="get" class="row g-3">
-                <div class="col-md-4">
+                <div class="col-md-3">
                     <label for="search" class="form-label">Buscar</label>
                     <input type="text" class="form-control" id="search" name="search" 
                            value="{{ search }}" placeholder="No. factura, nombre, cédula...">
+                </div>
+                <div class="col-md-3">
+                    <label for="familia" class="form-label">Familia</label>
+                    <input type="text" class="form-control" id="familia" name="familia" 
+                           value="{{ familia }}" placeholder="Código o apellido familiar...">
                 </div>
                 <div class="col-md-3">
                     <label for="estado" class="form-label">Estado</label>
@@ -101,10 +107,10 @@
                                         <span class="text-muted">-</span>
                                     {% endif %}
                                 </td>
-                                <td>RD${{ factura.total|floatformat:2 }}</td>
-                                <td>RD${{ factura.monto_pagado|floatformat:2 }}</td>
+                                <td>RD$ {{ factura.total|unlocalize|floatformat:2 }}</td>
+                                <td>RD$ {{ factura.monto_pagado|unlocalize|floatformat:2 }}</td>
                                 <td>
-                                    <strong>RD${{ factura.saldo_pendiente|floatformat:2 }}</strong>
+                                    <strong>RD$ {{ factura.saldo_pendiente|unlocalize|floatformat:2 }}</strong>
                                 </td>
                                 <td>
                                     {% if factura.metodo_pago %}
@@ -233,7 +239,7 @@
                     
                     <p><strong>Factura:</strong> {{ factura.numero_factura }}</p>
                     <p><strong>Cliente:</strong> {{ factura.cliente.get_full_name }}</p>
-                    <p><strong>Total:</strong> RD${{ factura.total|floatformat:2 }}</p>
+                    <p><strong>Total:</strong> RD$ {{ factura.total|unlocalize|floatformat:2 }}</p>
                     
                     <div class="mb-3">
                         <label for="codigo{{ factura.id }}" class="form-label">

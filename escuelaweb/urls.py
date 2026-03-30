@@ -1,6 +1,8 @@
 from django.urls import path
 from . import views
 from . import views_familias
+from . import views_evaluaciones
+from . import views_listas_cotejo
 
 urlpatterns = [
     # ... existing urls ...
@@ -182,4 +184,45 @@ urlpatterns = [
     path('contabilidad/reportes/estado-resultados/', views.estado_resultados, name='estado_resultados'),
     path('contabilidad/reportes/balance-general/', views.balance_general, name='balance_general'),
     path('contabilidad/cuentas/<int:pk>/consulta/', views.consulta_cuenta, name='consulta_cuenta'),
+    
+    # ============================================
+    # URLs para Sistema de Evaluaciones Educativas
+    # ============================================
+    path('evaluaciones/diagnosticas/', views_evaluaciones.evaluaciones_diagnosticas, name='evaluaciones_diagnosticas'),
+    path('evaluaciones/diagnosticas/<int:evaluacion_id>/evaluar/', views_evaluaciones.evaluar_diagnostica, name='evaluar_diagnostica'),
+    path('evaluaciones/diagnosticas/reporte/individual/<int:resultado_id>/', views_evaluaciones.reporte_individual_diagnostica, name='reporte_individual_diagnostica'),
+    path('evaluaciones/diagnosticas/reporte/grupal/<int:evaluacion_id>/', views_evaluaciones.reporte_grupal_diagnostica, name='reporte_grupal_diagnostica'),
+    path('evaluaciones/diagnosticas/reporte/seguimiento/<int:estudiante_id>/<int:materia_id>/', views_evaluaciones.reporte_seguimiento_diagnostica, name='reporte_seguimiento_diagnostica'),
+    path('evaluaciones/rubricas/', views_evaluaciones.rubricas, name='rubricas'),
+    path('evaluaciones/rubricas/<int:rubrica_id>/criterios/', views_evaluaciones.gestionar_criterios_rubrica, name='gestionar_criterios_rubrica'),
+    path('evaluaciones/aplicar-rubricas/', views_evaluaciones.evaluaciones_rubricas, name='evaluaciones_rubricas'),
+    path('evaluaciones/aplicar-rubricas/<int:evaluacion_id>/evaluar/', views_evaluaciones.evaluar_con_rubrica, name='evaluar_con_rubrica'),
+    path('evaluaciones/portafolios/', views_evaluaciones.portafolios, name='portafolios'),
+    path('evaluaciones/registros-anecdoticos/', views_evaluaciones.registros_anecdoticos, name='registros_anecdoticos'),
+    path('evaluaciones/cuadernos-clase/', views_evaluaciones.cuadernos_clase, name='cuadernos_clase'),
+    
+    # ============================================
+    # URLs para Sistema de Listas de Cotejo
+    # ============================================
+    # Gestión de Listas de Cotejo (Plantillas)
+    path('listas-cotejo/', views_listas_cotejo.listas_cotejo_lista, name='listas_cotejo_lista'),
+    path('listas-cotejo/crear/', views_listas_cotejo.lista_cotejo_crear, name='lista_cotejo_crear'),
+    path('listas-cotejo/<int:pk>/', views_listas_cotejo.lista_cotejo_detalle, name='lista_cotejo_detalle'),
+    path('listas-cotejo/<int:pk>/editar/', views_listas_cotejo.lista_cotejo_editar, name='lista_cotejo_editar'),
+    path('listas-cotejo/<int:pk>/eliminar/', views_listas_cotejo.lista_cotejo_eliminar, name='lista_cotejo_eliminar'),
+    
+    # Gestión de Evaluaciones con Lista de Cotejo
+    path('evaluaciones-cotejo/', views_listas_cotejo.evaluacion_cotejo_lista, name='evaluacion_cotejo_lista'),
+    path('evaluaciones-cotejo/crear/', views_listas_cotejo.evaluacion_cotejo_crear, name='evaluacion_cotejo_crear'),
+    path('evaluaciones-cotejo/<int:pk>/', views_listas_cotejo.evaluacion_cotejo_detalle, name='evaluacion_cotejo_detalle'),
+    path('evaluaciones-cotejo/<int:pk>/eliminar/', views_listas_cotejo.evaluacion_cotejo_eliminar, name='evaluacion_cotejo_eliminar'),
+    
+    # Calificación Masiva
+    path('evaluaciones-cotejo/<int:pk>/calificar/', views_listas_cotejo.evaluacion_cotejo_calificar, name='evaluacion_cotejo_calificar'),
+    path('evaluaciones-cotejo/<int:pk>/guardar-calificacion/', views_listas_cotejo.evaluacion_cotejo_guardar_calificacion, name='evaluacion_cotejo_guardar_calificacion'),
+    path('evaluaciones-cotejo/<int:pk>/cambiar-estado/', views_listas_cotejo.evaluacion_cotejo_cambiar_estado, name='evaluacion_cotejo_cambiar_estado'),
+    
+    # Reportes y Visualización
+    path('evaluaciones-cotejo/<int:pk>/reporte/', views_listas_cotejo.evaluacion_cotejo_reporte, name='evaluacion_cotejo_reporte'),
+    path('evaluaciones-cotejo/<int:pk>/mi-evaluacion/', views_listas_cotejo.estudiante_ver_evaluacion, name='estudiante_ver_evaluacion'),
 ] 

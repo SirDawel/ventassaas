@@ -1,0 +1,54 @@
+{% extends 'website/base.html' %}
+
+{% block title %}{{ titulo }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="card shadow-sm mb-4">
+        <div class="card-body">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h3 class="mb-2">
+                        <i class="fas fa-comment-dots text-danger"></i> {{ titulo }}
+                    </h3>
+                    <p class="text-muted mb-0">{{ descripcion }}</p>
+                </div>
+                <a href="{% url 'plataform' %}" class="btn btn-secondary">
+                    <i class="fas fa-arrow-left"></i> Volver
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="card shadow-sm mb-4">
+        <div class="card-header bg-danger text-white">
+            <h5 class="mb-0"><i class="fas fa-info-circle me-2"></i>¿Qué son los Registros Anecdóticos?</h5>
+        </div>
+        <div class="card-body">
+            <p>Los registros anecdóticos son observaciones narrativas sobre comportamientos y eventos significativos del estudiante:</p>
+            <ul>
+                <li><strong>Descripción objetiva:</strong> Relato de lo que realmente sucedió sin juicios de valor.</li>
+                <li><strong>Situación contextualizada:</strong> Fecha, lugar, actividad y personas involucradas.</li>
+                <li><strong>Comportamientos significativos:</strong> Conductas destacables, positivas o que necesitan atención.</li>
+                <li><strong>Base para intervención:</strong> Información valiosa para tutoría y orientación.</li>
+            </ul>
+            <div class="alert alert-info">
+                <i class="fas fa-lightbulb me-2"></i><strong>Aspectos a registrar:</strong> Dificultades de aprendizaje, logros excepcionales, comportamientos sociales, actitudes, intereses especiales.
+            </div>
+        </div>
+    </div>
+
+    <div class="card shadow-sm">
+        <div class="card-body text-center py-5">
+            <i class="fas fa-tools fa-3x text-muted mb-3"></i>
+            <h4>Próximamente</h4>
+            <p class="text-muted">Esta funcionalidad estará disponible en la próxima actualización del sistema.</p>
+        </div>
+    </div>
+</div>
+
+<style>
+    .card { border: none; border-radius: 12px; }
+    .card-header { border-radius: 12px 12px 0 0 !important; }
+</style>
+{% endblock %}

@@ -1,0 +1,51 @@
+{% extends 'website/base.html' %}
+
+{% block title %}{{ titulo }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="card shadow-sm mb-4">
+        <div class="card-body">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h3 class="mb-2">
+                        <i class="fas fa-check-square text-info"></i> {{ titulo }}
+                    </h3>
+                    <p class="text-muted mb-0">{{ descripcion }}</p>
+                </div>
+                <a href="{% url 'plataform' %}" class="btn btn-secondary">
+                    <i class="fas fa-arrow-left"></i> Volver
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="card shadow-sm mb-4">
+        <div class="card-header bg-info text-white">
+            <h5 class="mb-0"><i class="fas fa-info-circle me-2"></i>¿Qué son las Listas de Cotejo?</h5>
+        </div>
+        <div class="card-body">
+            <p>Las listas de cotejo son instrumentos de verificación que permiten registrar la presencia o ausencia de indicadores de aprendizaje específicos:</p>
+            <ul>
+                <li><strong>Simple y directa:</strong> Respuesta Sí/No, Presente/Ausente, Logrado/No logrado.</li>
+                <li><strong>Indicadores claros:</strong> Lista de comportamientos o características observables.</li>
+                <li><strong>Fácil aplicación:</strong> Registro rápido durante la observación.</li>
+                <li><strong>Objetiva:</strong> Reduce la subjetividad en la evaluación.</li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="card shadow-sm">
+        <div class="card-body text-center py-5">
+            <i class="fas fa-tools fa-3x text-muted mb-3"></i>
+            <h4>Próximamente</h4>
+            <p class="text-muted">Esta funcionalidad estará disponible en la próxima actualización del sistema.</p>
+        </div>
+    </div>
+</div>
+
+<style>
+    .card { border: none; border-radius: 12px; }
+    .card-header { border-radius: 12px 12px 0 0 !important; }
+</style>
+{% endblock %}

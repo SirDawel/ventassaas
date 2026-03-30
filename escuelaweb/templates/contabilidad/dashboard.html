@@ -1,0 +1,293 @@
+{% extends 'website/base.html' %}
+{% load humanize %}
+
+{% block title %}Dashboard de Contabilidad - IEPM{% endblock %}
+
+{% block extra_css %}
+<style>
+    .stat-card {
+        border-radius: 10px;
+        padding: 20px;
+        margin-bottom: 20px;
+        color: white;
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+    .stat-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+    }
+    .stat-card .stat-number {
+        font-size: 2.5rem;
+        font-weight: bold;
+        margin-bottom: 5px;
+    }
+    .stat-card .stat-label {
+        font-size: 0.9rem;
+        opacity: 0.9;
+    }
+    .card-activo {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    }
+    .card-pasivo {
+        background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    }
+    .card-patrimonio {
+        background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+    }
+    .card-ingresos {
+        background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+    }
+    .card-gastos {
+        background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+    }
+    .card-asientos {
+        background: linear-gradient(135deg, #30cfd0 0%, #330867 100%);
+    }
+    .recent-table {
+        font-size: 0.9rem;
+    }
+    .badge-contabilizado {
+        background-color: #28a745;
+    }
+    .badge-borrador {
+        background-color: #6c757d;
+    }
+    .badge-anulado {
+        background-color: #dc3545;
+    }
+    @media print {
+        .no-print {
+            display: none;
+        }
+        .stat-card {
+            break-inside: avoid;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4 no-print">
+        <div class="col-12">
+            <h2><i class="fas fa-chart-line"></i> Dashboard de Contabilidad</h2>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{% url 'index' %}">Inicio</a></li>
+                    <li class="breadcrumb-item active">Dashboard</li>
+                </ol>
+            </nav>
+        </div>
+    </div>
+
+    <!-- Totales por Tipo de Cuenta -->
+    <div class="row mb-4">
+        <div class="col-md-4">
+            <div class="stat-card card-activo">
+                <div class="stat-number">₲ {{ totales_por_tipo.ACTIVO|default:0|intcomma }}</div>
+                <div class="stat-label">
+                    <i class="fas fa-wallet me-2"></i>Total Activos
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="stat-card card-pasivo">
+                <div class="stat-number">₲ {{ totales_por_tipo.PASIVO|default:0|intcomma }}</div>
+                <div class="stat-label">
+                    <i class="fas fa-credit-card me-2"></i>Total Pasivos
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="stat-card card-patrimonio">
+                <div class="stat-number">₲ {{ totales_por_tipo.PATRIMONIO|default:0|intcomma }}</div>
+                <div class="stat-label">
+                    <i class="fas fa-landmark me-2"></i>Total Patrimonio
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col-md-4">
+            <div class="stat-card card-ingresos">
+                <div class="stat-number">₲ {{ totales_por_tipo.INGRESO|default:0|intcomma }}</div>
+                <div class="stat-label">
+                    <i class="fas fa-arrow-up me-2"></i>Total Ingresos
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="stat-card card-gastos">
+                <div class="stat-number">₲ {{ totales_por_tipo.GASTO|default:0|intcomma }}</div>
+                <div class="stat-label">
+                    <i class="fas fa-arrow-down me-2"></i>Total Gastos
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="stat-card card-asientos">
+                <div class="stat-number">{{ stats.total_asientos|default:0 }}</div>
+                <div class="stat-label">
+                    <i class="fas fa-file-invoice me-2"></i>Asientos Contables
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Estadísticas Generales -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-body text-center">
+                    <h3 class="text-primary">{{ stats.total_cuentas|default:0 }}</h3>
+                    <p class="text-muted mb-0">Cuentas Totales</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-body text-center">
+                    <h3 class="text-success">{{ stats.asientos_contabilizados|default:0 }}</h3>
+                    <p class="text-muted mb-0">Asientos Contabilizados</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-body text-center">
+                    <h3 class="text-warning">{{ stats.asientos_borrador|default:0 }}</h3>
+                    <p class="text-muted mb-0">Asientos en Borrador</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-body text-center">
+                    <h3 class="text-info">{{ stats.cuentas_activas|default:0 }}</h3>
+                    <p class="text-muted mb-0">Cuentas Activas</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Asientos Recientes -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><i class="fas fa-clock me-2"></i>Asientos Recientes</h5>
+                    <a href="{% url 'asientos_list' %}" class="btn btn-sm btn-light no-print">Ver todos</a>
+                </div>
+                <div class="card-body">
+                    {% if asientos_recientes %}
+                    <div class="table-responsive">
+                        <table class="table table-hover recent-table">
+                            <thead>
+                                <tr>
+                                    <th>Número</th>
+                                    <th>Fecha</th>
+                                    <th>Tipo</th>
+                                    <th>Concepto</th>
+                                    <th class="text-end">Débito</th>
+                                    <th class="text-end">Crédito</th>
+                                    <th>Estado</th>
+                                    <th class="no-print">Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for asiento in asientos_recientes %}
+                                <tr>
+                                    <td>
+                                        <a href="{% url 'asiento_detalle' asiento.id %}">
+                                            {{ asiento.numero_asiento }}
+                                        </a>
+                                    </td>
+                                    <td>{{ asiento.fecha_asiento|date:"d/m/Y" }}</td>
+                                    <td>
+                                        {% if asiento.tipo_asiento == 'APERTURA' %}
+                                            <span class="badge bg-info">Apertura</span>
+                                        {% elif asiento.tipo_asiento == 'DIARIO' %}
+                                            <span class="badge bg-primary">Diario</span>
+                                        {% elif asiento.tipo_asiento == 'AJUSTE' %}
+                                            <span class="badge bg-warning">Ajuste</span>
+                                        {% elif asiento.tipo_asiento == 'CIERRE' %}
+                                            <span class="badge bg-danger">Cierre</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ asiento.concepto|truncatewords:10 }}</td>
+                                    <td class="text-end">₲ {{ asiento.total_debito|intcomma }}</td>
+                                    <td class="text-end">₲ {{ asiento.total_credito|intcomma }}</td>
+                                    <td>
+                                        {% if asiento.estado == 'CONTABILIZADO' %}
+                                            <span class="badge badge-contabilizado">Contabilizado</span>
+                                        {% elif asiento.estado == 'BORRADOR' %}
+                                            <span class="badge badge-borrador">Borrador</span>
+                                        {% elif asiento.estado == 'ANULADO' %}
+                                            <span class="badge badge-anulado">Anulado</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="no-print">
+                                        <a href="{% url 'asiento_detalle' asiento.id %}" 
+                                           class="btn btn-sm btn-info" title="Ver detalle">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <p class="text-center text-muted mb-0">No hay asientos registrados aún.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Botones de Acceso Rápido -->
+    <div class="row mt-4 no-print">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-secondary text-white">
+                    <h5 class="mb-0"><i class="fas fa-bolt me-2"></i>Acceso Rápido</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3 mb-3">
+                            <a href="{% url 'asiento_crear' %}" class="btn btn-primary w-100">
+                                <i class="fas fa-plus-circle me-2"></i>Nuevo Asiento
+                            </a>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <a href="{% url 'libro_diario' %}" class="btn btn-info w-100">
+                                <i class="fas fa-book-open me-2"></i>Libro Diario
+                            </a>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <a href="{% url 'libro_mayor' %}" class="btn btn-success w-100">
+                                <i class="fas fa-book me-2"></i>Libro Mayor
+                            </a>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <a href="{% url 'balance_comprobacion' %}" class="btn btn-warning w-100">
+                                <i class="fas fa-balance-scale me-2"></i>Balance de Comprobación
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Auto-refresh cada 5 minutos
+    setTimeout(function() {
+        location.reload();
+    }, 300000);
+</script>
+{% endblock %}

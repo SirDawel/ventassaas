@@ -8,3 +8,10 @@ def dict_key(d, key):
         return d.get(key)
     except Exception:
         return ''
+
+@register.filter
+def get_item(dictionary, key):
+    """Obtiene un item de un diccionario usando una clave."""
+    if isinstance(dictionary, dict):
+        return dictionary.get(key)
+    return None

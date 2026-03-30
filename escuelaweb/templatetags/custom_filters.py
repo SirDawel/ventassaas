@@ -81,3 +81,19 @@ def divide(value, arg):
         return float(value) / float(arg)
     except (ValueError, TypeError):
         return 0
+
+@register.filter
+def calcular_edad(fecha_nacimiento):
+    """Calcula la edad a partir de la fecha de nacimiento"""
+    if not fecha_nacimiento:
+        return None
+    try:
+        from datetime import date
+        today = date.today()
+        edad = today.year - fecha_nacimiento.year
+        # Ajustar si aún no ha cumplido años este año
+        if (today.month, today.day) < (fecha_nacimiento.month, fecha_nacimiento.day):
+            edad -= 1
+        return edad
+    except:
+        return None

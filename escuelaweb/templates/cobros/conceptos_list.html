@@ -1,4 +1,5 @@
 {% extends 'website/base.html' %}
+{% load l10n %}
 
 {% block title %}{{ titulo }}{% endblock %}
 
@@ -84,7 +85,7 @@
                                     <td>
                                         <span class="text-success">
                                             <i class="fas fa-dollar-sign me-1"></i>
-                                            RD${{ concepto.monto|floatformat:2 }}
+                                            RD$ {{ concepto.monto|unlocalize|floatformat:2 }}
                                         </span>
                                     </td>
                                     <td>

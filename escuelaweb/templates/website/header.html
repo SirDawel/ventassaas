@@ -327,7 +327,8 @@
   <nav class="navbar navbar-expand-lg navbar-light bg-light">
       <div class="container-fluid">
         <a class="navbar-brand" href="#">
-          <i class="fas fa-school me-2"></i>Centro Cristiano de Educación para el Desarrollo
+          <img src="{% static 'img/logoescuelaonline.jpg' %}" alt="Logo" style="height: 100px; width: 200px; margin-right: 10px; border-radius: 5px;">
+          Centro Cristiano
         </a>
         <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent"
           aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
@@ -358,6 +359,39 @@
                 <i class="fas fa-calendar-alt me-1"></i>Año Escolar
               </a>
             </li>
+            {% if user.rol == 'Profesor' or user.rol == 'Director' or user.rol == 'Administrador' or user.rol == 'Coordinador' %}
+            <li class="nav-item dropdown">
+              <a class="nav-link dropdown-toggle" href="#" id="evaluacionesDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                <i class="fas fa-clipboard-list me-1"></i>Evaluaciones
+              </a>
+              <ul class="dropdown-menu" aria-labelledby="evaluacionesDropdown">
+                <li><h6 class="dropdown-header"><i class="fas fa-graduation-cap me-2"></i>Evaluaciones Educativas</h6></li>
+                <li><a class="dropdown-item" href="{% url 'evaluaciones_diagnosticas' %}">
+                  <i class="fas fa-stethoscope me-2 text-primary"></i>Evaluaciones Diagnósticas
+                </a></li>
+                <li><a class="dropdown-item" href="{% url 'rubricas' %}">
+                  <i class="fas fa-table me-2 text-success"></i>Rúbricas
+                </a></li>
+                <li><a class="dropdown-item" href="{% url 'evaluaciones_rubricas' %}">
+                  <i class="fas fa-clipboard-check me-2 text-primary"></i>Aplicar Rúbricas a Estudiantes
+                </a></li>
+                <li><a class="dropdown-item" href="{% url 'listas_cotejo_lista' %}">
+                  <i class="fas fa-check-square me-2 text-info"></i>Listas de Cotejo
+                </a></li>
+                <li><hr class="dropdown-divider"></li>
+                <li><h6 class="dropdown-header"><i class="fas fa-folder-open me-2"></i>Registros Académicos</h6></li>
+                <li><a class="dropdown-item" href="{% url 'portafolios' %}">
+                  <i class="fas fa-briefcase me-2 text-warning"></i>Portafolios
+                </a></li>
+                <li><a class="dropdown-item" href="{% url 'registros_anecdoticos' %}">
+                  <i class="fas fa-comment-dots me-2 text-danger"></i>Registros Anecdóticos
+                </a></li>
+                <li><a class="dropdown-item" href="{% url 'cuadernos_clase' %}">
+                  <i class="fas fa-book me-2 text-secondary"></i>Cuadernos de Clase
+                </a></li>
+              </ul>
+            </li>
+            {% endif %}
             {% if user.rol == 'Profesor' or user.rol == 'Administrador' %}
             <li class="nav-item">
               <a class="nav-link" href="{% url 'seleccionar_materia_asistencia' %}">
@@ -385,7 +419,50 @@
               <a class="nav-link" href="{% url 'inventario_dashboard' %}">
                 <i class="fas fa-boxes me-1"></i>Inventario
               </a>
+              
             </li>
+            <!--
+            <li class="nav-item dropdown">
+              <a class="nav-link dropdown-toggle" href="#" id="contabilidadDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                <i class="fas fa-calculator me-1"></i>Contabilidad
+              </a>
+              <ul class="dropdown-menu" aria-labelledby="contabilidadDropdown">
+                <li><a class="dropdown-item" href="{% url 'contabilidad_dashboard' %}">
+                  <i class="fas fa-chart-line me-2"></i>Dashboard
+                </a></li>
+                <li><hr class="dropdown-divider"></li>
+                <li><a class="dropdown-item" href="{% url 'plan_cuentas_list' %}">
+                  <i class="fas fa-list-alt me-2"></i>Plan de Cuentas
+                </a></li>
+                <li><a class="dropdown-item" href="{% url 'asientos_list' %}">
+                  <i class="fas fa-book me-2"></i>Asientos Contables
+                </a></li>
+                <li><hr class="dropdown-divider"></li>
+                <li class="dropdown-submenu">
+                  <a class="dropdown-item" href="#">
+                    <i class="fas fa-file-alt me-2"></i>Reportes
+                  </a>
+                  <ul class="dropdown-menu">
+                    <li><a class="dropdown-item" href="{% url 'libro_diario' %}">
+                      <i class="fas fa-book-open me-2"></i>Libro Diario
+                    </a></li>
+                    <li><a class="dropdown-item" href="{% url 'libro_mayor' %}">
+                      <i class="fas fa-book me-2"></i>Libro Mayor
+                    </a></li>
+                    <li><a class="dropdown-item" href="{% url 'balance_comprobacion' %}">
+                      <i class="fas fa-balance-scale me-2"></i>Balance de Comprobación
+                    </a></li>
+                    <li><a class="dropdown-item" href="{% url 'estado_resultados' %}">
+                      <i class="fas fa-chart-bar me-2"></i>Estado de Resultados
+                    </a></li>
+                    <li><a class="dropdown-item" href="{% url 'balance_general' %}">
+                      <i class="fas fa-file-invoice-dollar me-2"></i>Balance General
+                    </a></li>
+                  </ul>
+                </li>
+              </ul>
+            </li>
+          -->
             {% endif %}
           </ul>
 

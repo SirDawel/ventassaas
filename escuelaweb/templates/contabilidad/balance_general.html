@@ -1,0 +1,421 @@
+{% extends 'website/base.html' %}
+{% load humanize %}
+
+{% block title %}Balance General - IEPM{% endblock %}
+
+{% block extra_css %}
+<style>
+    .filter-card {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border-radius: 10px;
+        padding: 20px;
+        margin-bottom: 20px;
+    }
+    .filter-card .form-label {
+        color: white;
+        font-weight: 500;
+    }
+    .filter-card .form-control {
+        border: 2px solid rgba(255,255,255,0.3);
+        background: rgba(255,255,255,0.9);
+    }
+    .balance-header {
+        background: linear-gradient(135deg, #30cfd0 0%, #330867 100%);
+        color: white;
+        padding: 20px;
+        border-radius: 8px;
+        margin-bottom: 20px;
+        text-align: center;
+    }
+    .balance-header h3 {
+        color: white;
+        margin: 0;
+    }
+    .seccion-activo {
+        background-color: #d1ecf1;
+    }
+    .seccion-pasivo {
+        background-color: #f8d7da;
+    }
+    .seccion-patrimonio {
+        background-color: #d4edda;
+    }
+    .subtotal-row {
+        background-color: #e9ecef;
+        font-weight: bold;
+        font-size: 1.05rem;
+    }
+    .total-general {
+        background-color: #495057;
+        color: white;
+        font-weight: bold;
+        font-size: 1.15rem;
+    }
+    .ecuacion-contable {
+        background-color: #17a2b8;
+        color: white;
+        font-weight: bold;
+        font-size: 1.1rem;
+    }
+    .cuenta-nivel-1 {
+        font-weight: bold;
+    }
+    .cuenta-nivel-2 {
+        padding-left: 20px;
+    }
+    .cuenta-nivel-3 {
+        padding-left: 40px;
+    }
+    .kpi-card {
+        border-radius: 10px;
+        padding: 15px;
+        color: white;
+        margin-bottom: 15px;
+        text-align: center;
+    }
+    .kpi-activo {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    }
+    .kpi-pasivo {
+        background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    }
+    .kpi-patrimonio {
+        background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+    }
+    @media print {
+        .no-print {
+            display: none;
+        }
+        .filter-card {
+            display: none;
+        }
+        .balance-header {
+            background: #333 !important;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+        }
+        body {
+            font-size: 10pt;
+        }
+        .table {
+            font-size: 9pt;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4 no-print">
+        <div class="col-12">
+            <h2><i class="fas fa-file-invoice-dollar"></i> Balance General</h2>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{% url 'index' %}">Inicio</a></li>
+                    <li class="breadcrumb-item"><a href="{% url 'contabilidad_dashboard' %}">Contabilidad</a></li>
+                    <li class="breadcrumb-item active">Balance General</li>
+                </ol>
+            </nav>
+        </div>
+    </div>
+
+    <!-- Filtros -->
+    <div class="filter-card no-print">
+        <form method="get" id="filterForm">
+            <div class="row">
+                <div class="col-md-10">
+                    <label for="fecha_corte" class="form-label">Fecha de Corte</label>
+                    <input type="date" class="form-control" id="fecha_corte" name="fecha_corte" 
+                           value="{{ request.GET.fecha_corte }}" required>
+                    <small class="text-white">El balance mostrará la situación financiera al finalizar esta fecha.</small>
+                </div>
+                <div class="col-md-2 d-flex align-items-end">
+                    <button type="submit" class="btn btn-light w-100">
+                        <i class="fas fa-filter me-2"></i>Generar
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <!-- KPIs Resumen -->
+    <div class="row mb-4 no-print">
+        <div class="col-md-4">
+            <div class="kpi-card kpi-activo">
+                <h6>Total Activos</h6>
+                <h3>₲ {{ total_activo|intcomma }}</h3>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="kpi-card kpi-pasivo">
+                <h6>Total Pasivos</h6>
+                <h3>₲ {{ total_pasivo|intcomma }}</h3>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="kpi-card kpi-patrimonio">
+                <h6>Total Patrimonio</h6>
+                <h3>₲ {{ total_patrimonio|intcomma }}</h3>
+            </div>
+        </div>
+    </div>
+
+    <!-- Botones de Acción -->
+    <div class="row mb-3 no-print">
+        <div class="col-12">
+            <button onclick="window.print()" class="btn btn-secondary">
+                <i class="fas fa-print me-2"></i>Imprimir
+            </button>
+        </div>
+    </div>
+
+    <!-- Encabezado del Balance -->
+    <div class="balance-header">
+        <h3>Instituto de Educación PABLO MCAL</h3>
+        <h4>Balance General</h4>
+        <p class="mb-0">Al {{ request.GET.fecha_corte|default:fecha_actual|date:"d/m/Y" }}</p>
+    </div>
+
+    <!-- Balance General -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-bordered">
+                            <tbody>
+                                <!-- ACTIVOS -->
+                                <tr class="seccion-activo">
+                                    <td colspan="2">
+                                        <strong><i class="fas fa-wallet me-2"></i>ACTIVOS</strong>
+                                    </td>
+                                    <td></td>
+                                </tr>
+                                {% if cuentas_activo %}
+                                    {% for cuenta in cuentas_activo %}
+                                    <tr>
+                                        <td style="width: 15%;">{{ cuenta.codigo }}</td>
+                                        <td style="width: 55%;" class="cuenta-nivel-{{ cuenta.nivel|default:'1' }}">
+                                            {{ cuenta.nombre }}
+                                        </td>
+                                        <td style="width: 30%;" class="text-end">
+                                            ₲ {{ cuenta.saldo|intcomma }}
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                {% else %}
+                                    <tr>
+                                        <td colspan="3" class="text-center text-muted">No hay activos registrados</td>
+                                    </tr>
+                                {% endif %}
+                                <tr class="subtotal-row">
+                                    <td colspan="2" class="text-end">Total Activos:</td>
+                                    <td class="text-end">₲ {{ total_activo|intcomma }}</td>
+                                </tr>
+                                
+                                <!-- Espacio -->
+                                <tr>
+                                    <td colspan="3" style="height: 20px; background-color: white;"></td>
+                                </tr>
+                                
+                                <!-- PASIVOS -->
+                                <tr class="seccion-pasivo">
+                                    <td colspan="2">
+                                        <strong><i class="fas fa-credit-card me-2"></i>PASIVOS</strong>
+                                    </td>
+                                    <td></td>
+                                </tr>
+                                {% if cuentas_pasivo %}
+                                    {% for cuenta in cuentas_pasivo %}
+                                    <tr>
+                                        <td>{{ cuenta.codigo }}</td>
+                                        <td class="cuenta-nivel-{{ cuenta.nivel|default:'1' }}">
+                                            {{ cuenta.nombre }}
+                                        </td>
+                                        <td class="text-end">
+                                            ₲ {{ cuenta.saldo|intcomma }}
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                {% else %}
+                                    <tr>
+                                        <td colspan="3" class="text-center text-muted">No hay pasivos registrados</td>
+                                    </tr>
+                                {% endif %}
+                                <tr class="subtotal-row">
+                                    <td colspan="2" class="text-end">Total Pasivos:</td>
+                                    <td class="text-end">₲ {{ total_pasivo|intcomma }}</td>
+                                </tr>
+                                
+                                <!-- Espacio -->
+                                <tr>
+                                    <td colspan="3" style="height: 20px; background-color: white;"></td>
+                                </tr>
+                                
+                                <!-- PATRIMONIO -->
+                                <tr class="seccion-patrimonio">
+                                    <td colspan="2">
+                                        <strong><i class="fas fa-landmark me-2"></i>PATRIMONIO</strong>
+                                    </td>
+                                    <td></td>
+                                </tr>
+                                {% if cuentas_patrimonio %}
+                                    {% for cuenta in cuentas_patrimonio %}
+                                    <tr>
+                                        <td>{{ cuenta.codigo }}</td>
+                                        <td class="cuenta-nivel-{{ cuenta.nivel|default:'1' }}">
+                                            {{ cuenta.nombre }}
+                                        </td>
+                                        <td class="text-end">
+                                            ₲ {{ cuenta.saldo|intcomma }}
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                {% else %}
+                                    <tr>
+                                        <td colspan="3" class="text-center text-muted">No hay cuentas de patrimonio registradas</td>
+                                    </tr>
+                                {% endif %}
+                                <tr class="subtotal-row">
+                                    <td colspan="2" class="text-end">Total Patrimonio:</td>
+                                    <td class="text-end">₲ {{ total_patrimonio|intcomma }}</td>
+                                </tr>
+                                
+                                <!-- Espacio -->
+                                <tr>
+                                    <td colspan="3" style="height: 20px; background-color: white;"></td>
+                                </tr>
+                                
+                                <!-- TOTAL PASIVO + PATRIMONIO -->
+                                <tr class="total-general">
+                                    <td colspan="2" class="text-end">
+                                        <i class="fas fa-calculator me-2"></i>
+                                        TOTAL PASIVO + PATRIMONIO:
+                                    </td>
+                                    <td class="text-end">
+                                        ₲ {{ total_pasivo|add:total_patrimonio|intcomma }}
+                                    </td>
+                                </tr>
+                                
+                                <!-- Espacio -->
+                                <tr>
+                                    <td colspan="3" style="height: 15px; background-color: white;"></td>
+                                </tr>
+                                
+                                <!-- ECUACIÓN CONTABLE -->
+                                <tr class="ecuacion-contable">
+                                    <td colspan="2" class="text-end">
+                                        <i class="fas fa-{% if ecuacion_balanceada %}check-circle{% else %}exclamation-triangle{% endif %} me-2"></i>
+                                        VERIFICACIÓN ECUACIÓN CONTABLE:
+                                    </td>
+                                    <td class="text-end">
+                                        {% if ecuacion_balanceada %}
+                                            <i class="fas fa-check me-2"></i>BALANCEADA
+                                        {% else %}
+                                            <i class="fas fa-times me-2"></i>DESBALANCEADA
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Análisis Financiero -->
+                    <div class="alert alert-{% if ecuacion_balanceada %}success{% else %}danger{% endif %} mt-4">
+                        <h5>
+                            <i class="fas fa-{% if ecuacion_balanceada %}check-circle{% else %}exclamation-triangle{% endif %} me-2"></i>
+                            Ecuación Contable Fundamental
+                        </h5>
+                        <div class="row">
+                            <div class="col-12">
+                                <p class="mb-2">
+                                    <strong>Activos = Pasivos + Patrimonio</strong>
+                                </p>
+                                <p class="mb-0">
+                                    ₲ {{ total_activo|intcomma }} = 
+                                    ₲ {{ total_pasivo|intcomma }} + 
+                                    ₲ {{ total_patrimonio|intcomma }}
+                                </p>
+                                {% if ecuacion_balanceada %}
+                                <p class="mb-0 mt-2">
+                                    <i class="fas fa-check me-2"></i>
+                                    La ecuación contable está balanceada correctamente.
+                                </p>
+                                {% else %}
+                                <p class="mb-0 mt-2">
+                                    <i class="fas fa-exclamation-triangle me-2"></i>
+                                    ADVERTENCIA: La ecuación contable no está balanceada. 
+                                    Diferencia: ₲ {{ total_activo|add:total_pasivo|add:total_patrimonio|intcomma }}
+                                </p>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Ratios Financieros -->
+                    {% if total_pasivo > 0 or total_activo > 0 %}
+                    <div class="alert alert-info mt-3">
+                        <h5><i class="fas fa-chart-line me-2"></i>Ratios Financieros</h5>
+                        <div class="row">
+                            <div class="col-md-4">
+                                <p class="mb-1">
+                                    <strong>Razón de Endeudamiento:</strong><br>
+                                    {% if total_activo > 0 %}
+                                        {% widthratio total_pasivo total_activo 100 %}%
+                                        {% widthratio total_pasivo total_activo 100 as endeudamiento %}
+                                        {% if endeudamiento < 50 %}
+                                            <span class="badge bg-success">Bajo</span>
+                                        {% elif endeudamiento < 70 %}
+                                            <span class="badge bg-warning">Moderado</span>
+                                        {% else %}
+                                            <span class="badge bg-danger">Alto</span>
+                                        {% endif %}
+                                    {% else %}
+                                        N/A
+                                    {% endif %}
+                                </p>
+                            </div>
+                            <div class="col-md-4">
+                                <p class="mb-1">
+                                    <strong>Razón de Autonomía:</strong><br>
+                                    {% if total_activo > 0 %}
+                                        {% widthratio total_patrimonio total_activo 100 %}%
+                                    {% else %}
+                                        N/A
+                                    {% endif %}
+                                </p>
+                            </div>
+                            <div class="col-md-4">
+                                <p class="mb-1">
+                                    <strong>Apalancamiento:</strong><br>
+                                    {% if total_patrimonio > 0 %}
+                                        {% widthratio total_pasivo total_patrimonio 1 %}:1
+                                    {% else %}
+                                        N/A
+                                    {% endif %}
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const fechaCorte = document.getElementById('fecha_corte');
+        
+        // Si no hay fecha de corte, poner fecha actual
+        if (!fechaCorte.value) {
+            const today = new Date();
+            fechaCorte.value = today.toISOString().split('T')[0];
+        }
+    });
+</script>
+{% endblock %}

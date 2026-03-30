@@ -1,0 +1,387 @@
+{% extends 'website/base.html' %}
+{% load static %}
+
+{% block title %}{{ titulo }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-10">
+            <!-- Header -->
+            <div class="mb-4">
+                <h2><i class="fas fa-clipboard-list me-2"></i>{{ titulo }}</h2>
+                <p class="text-muted">Define la lista de cotejo y sus criterios de evaluación</p>
+            </div>
+
+            <!-- Mensajes -->
+            {% if messages %}
+            {% for message in messages %}
+            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+            {% endfor %}
+            {% endif %}
+
+            <!-- Errores Generales del Formulario -->
+            {% if form.non_field_errors %}
+            <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                <h6 class="alert-heading"><i class="fas fa-exclamation-triangle me-2"></i>Errores en el formulario:</h6>
+                <ul class="mb-0">
+                    {% for error in form.non_field_errors %}
+                    <li>{{ error }}</li>
+                    {% endfor %}
+                </ul>
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+            {% endif %}
+
+            <!-- Errores del Formset -->
+            {% if formset.non_form_errors %}
+            <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                <h6 class="alert-heading"><i class="fas fa-exclamation-triangle me-2"></i>Errores en los criterios:</h6>
+                <ul class="mb-0">
+                    {% for error in formset.non_form_errors %}
+                    <li>{{ error }}</li>
+                    {% endfor %}
+                </ul>
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+            {% endif %}
+
+            <!-- Errores individuales de criterios -->
+            {% if formset.errors %}
+                {% for form_errors in formset.errors %}
+                    {% if form_errors %}
+                    <div class="alert alert-warning alert-dismissible fade show" role="alert">
+                        <h6 class="alert-heading"><i class="fas fa-exclamation-circle me-2"></i>Error en Criterio #{{ forloop.counter }}:</h6>
+                        <ul class="mb-0">
+                            {% for field, errors in form_errors.items %}
+                                {% if field != '__all__' %}
+                                    {% for error in errors %}
+                                    <li><strong>{{ field }}:</strong> {{ error }}</li>
+                                    {% endfor %}
+                                {% else %}
+                                    {% for error in errors %}
+                                    <li>{{ error }}</li>
+                                    {% endfor %}
+                                {% endif %}
+                            {% endfor %}
+                        </ul>
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                    {% endif %}
+                {% endfor %}
+            {% endif %}
+
+            <!-- Formulario -->
+            <form method="post" class="needs-validation" novalidate>
+                {% csrf_token %}
+                
+                <!-- Información General -->
+                <div class="card shadow mb-4">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="mb-0"><i class="fas fa-info-circle me-2"></i>Información General</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-12 mb-3">
+                                <label for="{{ form.nombre.id_for_label }}" class="form-label">{{ form.nombre.label }}</label>
+                                {{ form.nombre }}
+                                {% if form.nombre.errors %}
+                                <div class="invalid-feedback d-block">{{ form.nombre.errors.0 }}</div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-12 mb-3">
+                                <label for="{{ form.descripcion.id_for_label }}" class="form-label">{{ form.descripcion.label }}</label>
+                                {{ form.descripcion }}
+                                {% if form.descripcion.errors %}
+                                <div class="invalid-feedback d-block">{{ form.descripcion.errors.0 }}</div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label for="{{ form.tipo_evaluacion.id_for_label }}" class="form-label">{{ form.tipo_evaluacion.label }}</label>
+                                {{ form.tipo_evaluacion }}
+                                {% if form.tipo_evaluacion.errors %}
+                                <div class="invalid-feedback d-block">{{ form.tipo_evaluacion.errors.0 }}</div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label for="{{ form.materia.id_for_label }}" class="form-label">{{ form.materia.label }}</label>
+                                {{ form.materia }}
+                                <small class="form-text text-muted">{{ form.materia.help_text }}</small>
+                                {% if form.materia.errors %}
+                                <div class="invalid-feedback d-block">{{ form.materia.errors.0 }}</div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label for="{{ form.puntaje_total.id_for_label }}" class="form-label">{{ form.puntaje_total.label }}</label>
+                                {{ form.puntaje_total }}
+                                {% if form.puntaje_total.errors %}
+                                <div class="invalid-feedback d-block">{{ form.puntaje_total.errors.0 }}</div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label for="{{ form.orden_criterios.id_for_label }}" class="form-label">{{ form.orden_criterios.label }}</label>
+                                {{ form.orden_criterios }}
+                                {% if form.orden_criterios.errors %}
+                                <div class="invalid-feedback d-block">{{ form.orden_criterios.errors.0 }}</div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <div class="form-check mt-4">
+                                    {{ form.es_plantilla }}
+                                    <label class="form-check-label" for="{{ form.es_plantilla.id_for_label }}">
+                                        {{ form.es_plantilla.label }}
+                                    </label>
+                                    <small class="form-text text-muted d-block">{{ form.es_plantilla.help_text }}</small>
+                                </div>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <div class="form-check mt-4">
+                                    {{ form.activa }}
+                                    <label class="form-check-label" for="{{ form.activa.id_for_label }}">
+                                        {{ form.activa.label }}
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Criterios -->
+                <div class="card shadow mb-4">
+                    <div class="card-header bg-success text-white d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0"><i class="fas fa-tasks me-2"></i>Criterios de Evaluación</h5>
+                        <button type="button" class="btn btn-light btn-sm" id="add-criterio">
+                            <i class="fas fa-plus me-1"></i>Agregar Criterio
+                        </button>
+                    </div>
+                    <div class="card-body">
+                        {{ formset.management_form }}
+                        
+                        <div id="criterios-container">
+                            {% for form_criterio in formset %}
+                            <div class="criterio-form border p-3 mb-3 rounded {% if form_criterio.errors %}border-danger bg-warning bg-opacity-10{% else %}bg-light{% endif %}">
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <h6 class="mb-0">
+                                        <i class="fas fa-check-square me-2"></i>Criterio #<span class="criterio-num"></span>
+                                        {% if form_criterio.errors %}
+                                        <span class="badge bg-danger ms-2"><i class="fas fa-exclamation-triangle"></i> Con errores</span>
+                                        {% endif %}
+                                    </h6>
+                                    {% if not forloop.first %}
+                                    <button type="button" class="btn btn-danger btn-sm remove-criterio">
+                                        <i class="fas fa-trash"></i> Eliminar
+                                    </button>
+                                    {% endif %}
+                                </div>
+                                
+                                {{ form_criterio.id }}
+                                {% if form_criterio.DELETE %}
+                                    {{ form_criterio.DELETE }}
+                                {% endif %}
+                                
+                                <div class="row">
+                                    <div class="col-md-6 mb-2">
+                                        <label class="form-label">{{ form_criterio.descripcion.label }}</label>
+                                        {{ form_criterio.descripcion }}
+                                        {% if form_criterio.descripcion.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {% for error in form_criterio.descripcion.errors %}
+                                            {{ error }}
+                                            {% endfor %}
+                                        </div>
+                                        {% endif %}
+                                    </div>
+                                    <div class="col-md-2 mb-2">
+                                        <label class="form-label">{{ form_criterio.tipo_criterio.label }}</label>
+                                        {{ form_criterio.tipo_criterio }}
+                                        {% if form_criterio.tipo_criterio.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {% for error in form_criterio.tipo_criterio.errors %}
+                                            {{ error }}
+                                            {% endfor %}
+                                        </div>
+                                        {% endif %}
+                                    </div>
+                                    <div class="col-md-2 mb-2">
+                                        <label class="form-label">{{ form_criterio.puntaje_maximo.label }}</label>
+                                        {{ form_criterio.puntaje_maximo }}
+                                        {% if form_criterio.puntaje_maximo.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {% for error in form_criterio.puntaje_maximo.errors %}
+                                            {{ error }}
+                                            {% endfor %}
+                                        </div>
+                                        {% endif %}
+                                    </div>
+                                    <div class="col-md-2 mb-2">
+                                        <label class="form-label">{{ form_criterio.orden.label }}</label>
+                                        {{ form_criterio.orden }}
+                                        {% if form_criterio.orden.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {% for error in form_criterio.orden.errors %}
+                                            {{ error }}
+                                            {% endfor %}
+                                        </div>
+                                        {% endif %}
+                                    </div>
+                                    <div class="col-md-6 mb-2">
+                                        <div class="form-check">
+                                            {{ form_criterio.es_obligatorio }}
+                                            <label class="form-check-label" for="{{ form_criterio.es_obligatorio.id_for_label }}">
+                                                {{ form_criterio.es_obligatorio.label }}
+                                            </label>
+                                        </div>
+                                        <div class="form-check">
+                                            {{ form_criterio.activo }}
+                                            <label class="form-check-label" for="{{ form_criterio.activo.id_for_label }}">
+                                                {{ form_criterio.activo.label }}
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle me-2"></i>
+                            <strong>Nota:</strong> La suma de puntajes de todos los criterios debe ser igual al <strong>Puntaje Total</strong> de la lista.
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Botones -->
+                <div class="d-grid gap-2 d-md-flex justify-content-md-end mb-4">
+                    <a href="{% url 'listas_cotejo_lista' %}" class="btn btn-secondary">
+                        <i class="fas fa-times me-2"></i>Cancelar
+                    </a>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save me-2"></i>{{ accion }}
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Template vacío para nuevos criterios -->
+<template id="criterio-template">
+    <div class="criterio-form border p-3 mb-3 rounded bg-light">
+        <div class="d-flex justify-content-between align-items-center mb-2">
+            <h6 class="mb-0"><i class="fas fa-check-square me-2"></i>Criterio #<span class="criterio-num"></span></h6>
+            <button type="button" class="btn btn-danger btn-sm remove-criterio">
+                <i class="fas fa-trash"></i> Eliminar
+            </button>
+        </div>
+        <div class="row">
+            <div class="col-md-6 mb-2">
+                <label class="form-label">Descripción</label>
+                <input type="text" name="__prefix__-descripcion" class="form-control" placeholder="Ej: Completo las actividades en clase">
+            </div>
+            <div class="col-md-2 mb-2">
+                <label class="form-label">Tipo</label>
+                <select name="__prefix__-tipo_criterio" class="form-select">
+                    <option value="binario">Binario (✓/✗)</option>
+                    <option value="numerico">Numérico (0-10)</option>
+                    <option value="escala_5">Escala 1-5</option>
+                    <option value="escala_3">Escala 1-3</option>
+                </select>
+            </div>
+            <div class="col-md-2 mb-2">
+                <label class="form-label">Puntaje Máx.</label>
+                <input type="number" name="__prefix__-puntaje_maximo" step="0.01" class="form-control" value="1.00">
+            </div>
+            <div class="col-md-2 mb-2">
+                <label class="form-label">Orden</label>
+                <input type="number" name="__prefix__-orden" class="form-control" value="0">
+            </div>
+            <div class="col-md-6 mb-2">
+                <div class="form-check">
+                    <input type="checkbox" name="__prefix__-es_obligatorio" class="form-check-input" checked>
+                    <label class="form-check-label">Es Obligatorio</label>
+                </div>
+                <div class="form-check">
+                    <input type="checkbox" name="__prefix__-activo" class="form-check-input" checked>
+                    <label class="form-check-label">Activo</label>
+                </div>
+            </div>
+        </div>
+    </div>
+</template>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const container = document.getElementById('criterios-container');
+    const addButton = document.getElementById('add-criterio');
+    const template = document.getElementById('criterio-template');
+    const totalForms = document.querySelector('[name$="TOTAL_FORMS"]');
+    
+    // Actualizar numeración
+    function updateNumbers() {
+        const forms = container.querySelectorAll('.criterio-form');
+        forms.forEach((form, index) => {
+            form.querySelector('.criterio-num').textContent = index + 1;
+        });
+    }
+    
+    // Inicializar numeración
+    updateNumbers();
+    
+    // Agregar nuevo criterio
+    addButton.addEventListener('click', function() {
+        const formCount = parseInt(totalForms.value);
+        const newForm = template.content.cloneNode(true);
+        
+        // Reemplazar __prefix__ con el número de formulario
+        const formHtml = newForm.querySelector('.criterio-form').outerHTML;
+        const newHtml = formHtml.replace(/__prefix__/g, formCount);
+        
+        container.insertAdjacentHTML('beforeend', newHtml);
+        totalForms.value = formCount + 1;
+        
+        updateNumbers();
+        attachRemoveHandlers();
+    });
+    
+    // Eliminar criterio
+    function attachRemoveHandlers() {
+        const removeButtons = container.querySelectorAll('.remove-criterio');
+        removeButtons.forEach(button => {
+            button.removeEventListener('click', handleRemove);
+            button.addEventListener('click', handleRemove);
+        });
+    }
+    
+    function handleRemove(e) {
+        const form = e.target.closest('.criterio-form');
+        const deleteInput = form.querySelector('[name$="-DELETE"]');
+        
+        if (deleteInput) {
+            // Si existe, marcarlo para eliminar
+            deleteInput.value = 'on';
+            form.style.display = 'none';
+        } else {
+            // Si es nuevo, eliminarlo del DOM
+            form.remove();
+        }
+        
+        updateNumbers();
+    }
+    
+    attachRemoveHandlers();
+});
+</script>
+
+<style>
+.criterio-form {
+    transition: all 0.3s ease;
+}
+.criterio-form:hover {
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important;
+}
+</style>
+
+{% endblock %}

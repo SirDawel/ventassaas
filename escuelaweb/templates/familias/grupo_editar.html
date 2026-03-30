@@ -1,0 +1,106 @@
+{% extends 'website/base.html' %}
+{% load l10n %}
+
+{% block title %}Editar - {{ grupo.apellido_familia }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-8 mx-auto">
+            <div class="card">
+                <div class="card-header bg-warning text-dark">
+                    <h4 class="mb-0"><i class="fas fa-edit me-2"></i>Editar Grupo Familiar</h4>
+                </div>
+                <div class="card-body">
+                    <form method="post">
+                        {% csrf_token %}
+                        
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="codigo_familia" class="form-label">Código de Familia <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="codigo_familia" name="codigo_familia" 
+                                       required value="{{ grupo.codigo_familia }}" style="text-transform: uppercase;">
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <label for="apellido_familia" class="form-label">Apellido de la Familia <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="apellido_familia" name="apellido_familia" 
+                                       required value="{{ grupo.apellido_familia }}">
+                            </div>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="telefono_contacto" class="form-label">Teléfono de Contacto</label>
+                                <input type="tel" class="form-control" id="telefono_contacto" name="telefono_contacto" 
+                                       value="{{ grupo.telefono_contacto|default:'' }}">
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <label for="email_contacto" class="form-label">Email de Contacto</label>
+                                <input type="email" class="form-control" id="email_contacto" name="email_contacto" 
+                                       value="{{ grupo.email_contacto|default:'' }}">
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="direccion" class="form-label">Dirección</label>
+                            <textarea class="form-control" id="direccion" name="direccion" rows="2">{{ grupo.direccion|default:'' }}</textarea>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="descuento_general" class="form-label">Descuento General (%)</label>
+                                <input type="number" class="form-control" id="descuento_general" name="descuento_general" 
+                                       min="0" max="100" step="0.01" value="{{ grupo.descuento_general|unlocalize }}">
+                                <small class="form-text text-muted">Descuento aplicado a todas las mensualidades</small>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <label for="porcentaje_mora" class="form-label">Porcentaje de Mora (%)</label>
+                                <input type="number" class="form-control" id="porcentaje_mora" name="porcentaje_mora" 
+                                       min="0" max="100" step="0.01" value="{{ grupo.porcentaje_mora|unlocalize }}">
+                                <small class="form-text text-muted">Recargo por pagos vencidos</small>
+                            </div>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="dia_vencimiento" class="form-label">Día de Vencimiento</label>
+                                <input type="number" class="form-control" id="dia_vencimiento" name="dia_vencimiento" 
+                                       min="1" max="31" value="{{ grupo.dia_vencimiento }}">
+                                <small class="form-text text-muted">Día del mes en que vencen las mensualidades</small>
+                            </div>
+
+                            <div class="col-md-6">
+                                <label class="form-label">Estado</label>
+                                <div class="form-check mt-2">
+                                    <input class="form-check-input" type="checkbox" id="activo" name="activo" 
+                                           {% if grupo.activo %}checked{% endif %}>
+                                    <label class="form-check-label" for="activo">
+                                        Grupo Activo
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="notas" class="form-label">Notas</label>
+                            <textarea class="form-control" id="notas" name="notas" rows="3">{{ grupo.notas|default:'' }}</textarea>
+                        </div>
+
+                        <div class="d-flex justify-content-between">
+                            <a href="{% url 'grupo_familiar_detalle' grupo.id %}" class="btn btn-secondary">
+                                <i class="fas fa-times me-1"></i>Cancelar
+                            </a>
+                            <button type="submit" class="btn btn-warning">
+                                <i class="fas fa-save me-1"></i>Guardar Cambios
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

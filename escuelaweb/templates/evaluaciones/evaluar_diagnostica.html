@@ -1,0 +1,372 @@
+{% extends 'website/base.html' %}
+{% load l10n %}
+
+{% block title %}{{ titulo }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <!-- Header Card -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-body">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h3 class="mb-2">
+                        <i class="fas fa-clipboard-check text-success"></i> {{ titulo }}
+                    </h3>
+                    <p class="mb-1"><strong>Materia:</strong> {{ evaluacion.materia.nombre }}</p>
+                    <p class="mb-1"><strong>Curso:</strong> {{ evaluacion.materia.curso.nombre }}</p>
+                    <p class="mb-1"><strong>Período:</strong> {{ evaluacion.get_periodo_display }}</p>
+                    {% if evaluacion.competencia %}
+                    <p class="mb-1"><strong>Competencia:</strong> {{ evaluacion.competencia }}</p>
+                    {% endif %}
+                </div>
+                <div>
+                    <a href="{% url 'reporte_grupal_diagnostica' evaluacion.id %}" class="btn btn-success me-2" target="_blank">
+                        <i class="fas fa-file-pdf"></i> Reporte Grupal
+                    </a>
+                    <a href="{% url 'evaluaciones_diagnosticas' %}" class="btn btn-secondary">
+                        <i class="fas fa-arrow-left"></i> Volver
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Progress Card -->
+    <div class="row mb-4">
+        <div class="col-md-4">
+            <div class="card shadow-sm text-center">
+                <div class="card-body">
+                    <h5 class="text-muted">Total Estudiantes</h5>
+                    <h2 class="text-primary">{{ total_estudiantes }}</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card shadow-sm text-center">
+                <div class="card-body">
+                    <h5 class="text-muted">Evaluados</h5>
+                    <h2 class="text-success">{{ evaluados }}</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card shadow-sm text-center">
+                <div class="card-body">
+                    <h5 class="text-muted">Progreso</h5>
+                    <h2 class="text-info">{{ porcentaje_completado }}%</h2>
+                    <div class="progress mt-2" style="height: 10px;">
+                        <div class="progress-bar bg-info" role="progressbar" style="width: {{ porcentaje_completado }}%"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {% if evaluacion.indicadores %}
+    <!-- Indicadores Card -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-header bg-info text-white">
+            <h5 class="mb-0"><i class="fas fa-list-check me-2"></i>Indicadores de Logro</h5>
+        </div>
+        <div class="card-body">
+            <pre class="mb-0 bg-light p-3 rounded">{{ evaluacion.indicadores }}</pre>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Tabla de Estudiantes -->
+    <div class="card shadow-sm">
+        <div class="card-header bg-primary text-white">
+            <h5 class="mb-0"><i class="fas fa-users me-2"></i>Estudiantes</h5>
+        </div>
+        <div class="card-body">
+            {% if estudiantes_con_resultados %}
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Estudiante</th>
+                                <th>Cédula</th>
+                                <th class="text-center">Estado</th>
+                                <th class="text-center">Nivel de Logro</th>
+                                <th class="text-center">Puntaje</th>
+                                <th class="text-center">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in estudiantes_con_resultados %}
+                            <tr>
+                                <td>
+                                    <strong>{{ item.estudiante.get_full_name }}</strong><br>
+                                    <small class="text-muted">{{ item.estudiante.email }}</small>
+                                </td>
+                                <td>{{ item.estudiante.cedula|default:"N/A" }}</td>
+                                <td class="text-center">
+                                    {% if item.resultado %}
+                                        <span class="badge bg-success">
+                                            <i class="fas fa-check-circle"></i> Evaluado
+                                        </span>
+                                    {% else %}
+                                        <span class="badge bg-warning">
+                                            <i class="fas fa-clock"></i> Pendiente
+                                        </span>
+                                    {% endif %}
+                                </td>
+                                <td class="text-center">
+                                    {% if item.resultado %}
+                                        {% if item.resultado.nivel_logro == 'no_alcanzado' %}
+                                            <span class="badge bg-danger">No Alcanzado</span>
+                                        {% elif item.resultado.nivel_logro == 'en_proceso' %}
+                                            <span class="badge bg-warning">En Proceso</span>
+                                        {% elif item.resultado.nivel_logro == 'alcanzado' %}
+                                            <span class="badge bg-success">Alcanzado</span>
+                                        {% elif item.resultado.nivel_logro == 'supera' %}
+                                            <span class="badge bg-primary">Supera lo Esperado</span>
+                                        {% endif %}
+                                    {% else %}
+                                        <span class="text-muted">-</span>
+                                    {% endif %}
+                                </td>
+                                <td class="text-center">
+                                    {% if item.resultado and item.resultado.puntaje_obtenido %}
+                                        {{ item.resultado.puntaje_obtenido }}/{{ item.resultado.puntaje_total }}
+                                        {% if item.resultado.porcentaje %}
+                                            <br><small class="text-muted">({{ item.resultado.porcentaje }}%)</small>
+                                        {% endif %}
+                                    {% else %}
+                                        <span class="text-muted">-</span>
+                                    {% endif %}
+                                </td>
+                                <td class="text-center">
+                                    <button class="btn btn-sm btn-primary" data-bs-toggle="modal" 
+                                            data-bs-target="#modalEvaluar{{ item.estudiante.id }}"
+                                            title="{% if item.resultado %}Editar evaluación{% else %}Evaluar{% endif %}">
+                                        <i class="fas {% if item.resultado %}fa-edit{% else %}fa-plus{% endif %}"></i>
+                                        {% if item.resultado %}Editar{% else %}Evaluar{% endif %}
+                                    </button>
+                                    {% if item.resultado %}
+                                    <button class="btn btn-sm btn-info" data-bs-toggle="modal" 
+                                            data-bs-target="#modalVer{{ item.estudiante.id }}"
+                                            title="Ver detalles">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                                    <a href="{% url 'reporte_individual_diagnostica' item.resultado.id %}" 
+                                       class="btn btn-sm btn-success" 
+                                       target="_blank"
+                                       title="Descargar reporte PDF">
+                                        <i class="fas fa-file-pdf"></i> PDF
+                                    </a>
+                                    {% endif %}
+                                    <a href="{% url 'reporte_seguimiento_diagnostica' item.estudiante.id evaluacion.materia.id %}" 
+                                       class="btn btn-sm btn-warning" 
+                                       target="_blank"
+                                       title="Ver seguimiento del estudiante">
+                                        <i class="fas fa-chart-line"></i> Seguimiento
+                                    </a>
+                                </td>
+                            </tr>
+                            
+                            <!-- Modal para Evaluar/Editar -->
+                            <div class="modal fade" id="modalEvaluar{{ item.estudiante.id }}" tabindex="-1" aria-hidden="true">
+                                <div class="modal-dialog modal-lg">
+                                    <div class="modal-content">
+                                        <div class="modal-header bg-primary text-white">
+                                            <h5 class="modal-title">
+                                                <i class="fas fa-clipboard-check me-2"></i>
+                                                Evaluar a {{ item.estudiante.get_full_name }}
+                                            </h5>
+                                            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                                        </div>
+                                        <form method="post">
+                                            {% csrf_token %}
+                                            <input type="hidden" name="estudiante_id" value="{{ item.estudiante.id }}">
+                                            <div class="modal-body">
+                                                <div class="row mb-3">
+                                                    <div class="col-md-12">
+                                                        <label class="form-label"><strong>Nivel de Logro <span class="text-danger">*</span></strong></label>
+                                                        <select class="form-select" name="nivel_logro" required>
+                                                            <option value="">Seleccionar...</option>
+                                                            <option value="no_alcanzado" {% if item.resultado and item.resultado.nivel_logro == 'no_alcanzado' %}selected{% endif %}>
+                                                                No Alcanzado - El estudiante no demuestra los conocimientos básicos
+                                                            </option>
+                                                            <option value="en_proceso" {% if item.resultado and item.resultado.nivel_logro == 'en_proceso' %}selected{% endif %}>
+                                                                En Proceso - El estudiante está desarrollando los conocimientos
+                                                            </option>
+                                                            <option value="alcanzado" {% if item.resultado and item.resultado.nivel_logro == 'alcanzado' %}selected{% endif %}>
+                                                                Alcanzado - El estudiante demuestra los conocimientos esperados
+                                                            </option>
+                                                            <option value="supera" {% if item.resultado and item.resultado.nivel_logro == 'supera' %}selected{% endif %}>
+                                                                Supera lo Esperado - El estudiante excede lo esperado
+                                                            </option>
+                                                        </select>
+                                                    </div>
+                                                </div>
+                                                
+                                                <div class="row mb-3">
+                                                    <div class="col-md-6">
+                                                        <label class="form-label">Puntaje Obtenido (opcional)</label>
+                                                        <input type="number" class="form-control" name="puntaje_obtenido" 
+                                                               step="0.01" min="0" 
+                                                               {% if item.resultado %}value="{{ item.resultado.puntaje_obtenido|unlocalize|default_if_none:'' }}"{% endif %}
+                                                               placeholder="Ej: 85">
+                                                    </div>
+                                                    <div class="col-md-6">
+                                                        <label class="form-label">Puntaje Total (si vacío, asume 100)</label>
+                                                        <input type="number" class="form-control" name="puntaje_total" 
+                                                               step="0.01" min="0" 
+                                                               {% if item.resultado %}value="{{ item.resultado.puntaje_total|unlocalize|default_if_none:'' }}"{% endif %}
+                                                               placeholder="Ej: 100">
+                                                        <small class="form-text text-muted">Déjalo vacío para asumir 100 puntos</small>
+                                                    </div>
+                                                </div>
+                                                
+                                                <div class="mb-3">
+                                                    <label class="form-label">
+                                                        <i class="fas fa-thumbs-up text-success me-1"></i>Fortalezas Identificadas
+                                                    </label>
+                                                    <textarea class="form-control" name="fortalezas" rows="3" 
+                                                              placeholder="Aspectos en los que el estudiante demuestra dominio...">{% if item.resultado %}{{ item.resultado.fortalezas|default:'' }}{% endif %}</textarea>
+                                                </div>
+                                                
+                                                <div class="mb-3">
+                                                    <label class="form-label">
+                                                        <i class="fas fa-exclamation-triangle text-warning me-1"></i>Áreas de Mejora
+                                                    </label>
+                                                    <textarea class="form-control" name="debilidades" rows="3" 
+                                                              placeholder="Aspectos que requieren refuerzo o intervención...">{% if item.resultado %}{{ item.resultado.debilidades|default:'' }}{% endif %}</textarea>
+                                                </div>
+                                                
+                                                <div class="mb-3">
+                                                    <label class="form-label">
+                                                        <i class="fas fa-lightbulb text-info me-1"></i>Recomendaciones Pedagógicas
+                                                    </label>
+                                                    <textarea class="form-control" name="recomendaciones" rows="3" 
+                                                              placeholder="Estrategias sugeridas para este estudiante...">{% if item.resultado %}{{ item.resultado.recomendaciones|default:'' }}{% endif %}</textarea>
+                                                </div>
+                                                
+                                                <div class="mb-3">
+                                                    <label class="form-label">Observaciones Generales</label>
+                                                    <textarea class="form-control" name="observaciones" rows="2" 
+                                                              placeholder="Comentarios adicionales...">{% if item.resultado %}{{ item.resultado.observaciones|default:'' }}{% endif %}</textarea>
+                                                </div>
+                                            </div>
+                                            <div class="modal-footer">
+                                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                                                <button type="submit" class="btn btn-primary">
+                                                    <i class="fas fa-save me-1"></i>Guardar Evaluación
+                                                </button>
+                                            </div>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Modal para Ver Detalles -->
+                            {% if item.resultado %}
+                            <div class="modal fade" id="modalVer{{ item.estudiante.id }}" tabindex="-1" aria-hidden="true">
+                                <div class="modal-dialog modal-lg">
+                                    <div class="modal-content">
+                                        <div class="modal-header bg-info text-white">
+                                            <h5 class="modal-title">
+                                                <i class="fas fa-eye me-2"></i>Detalles de Evaluación
+                                            </h5>
+                                            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                                        </div>
+                                        <div class="modal-body">
+                                            <h5 class="mb-3">{{ item.estudiante.get_full_name }}</h5>
+                                            
+                                            <div class="row mb-3">
+                                                <div class="col-md-6">
+                                                    <strong>Nivel de Logro:</strong>
+                                                    {% if item.resultado.nivel_logro == 'no_alcanzado' %}
+                                                        <span class="badge bg-danger">No Alcanzado</span>
+                                                    {% elif item.resultado.nivel_logro == 'en_proceso' %}
+                                                        <span class="badge bg-warning">En Proceso</span>
+                                                    {% elif item.resultado.nivel_logro == 'alcanzado' %}
+                                                        <span class="badge bg-success">Alcanzado</span>
+                                                    {% elif item.resultado.nivel_logro == 'supera' %}
+                                                        <span class="badge bg-primary">Supera lo Esperado</span>
+                                                    {% endif %}
+                                                </div>
+                                                {% if item.resultado.puntaje_obtenido %}
+                                                <div class="col-md-6">
+                                                    <strong>Puntaje:</strong> 
+                                                    {{ item.resultado.puntaje_obtenido }}/{{ item.resultado.puntaje_total }}
+                                                    {% if item.resultado.porcentaje %}
+                                                        ({{ item.resultado.porcentaje }}%)
+                                                    {% endif %}
+                                                </div>
+                                                {% endif %}
+                                            </div>
+                                            
+                                            {% if item.resultado.fortalezas %}
+                                            <div class="mb-3">
+                                                <strong><i class="fas fa-thumbs-up text-success me-1"></i>Fortalezas:</strong>
+                                                <p class="mt-1 ps-3">{{ item.resultado.fortalezas }}</p>
+                                            </div>
+                                            {% endif %}
+                                            
+                                            {% if item.resultado.debilidades %}
+                                            <div class="mb-3">
+                                                <strong><i class="fas fa-exclamation-triangle text-warning me-1"></i>Áreas de Mejora:</strong>
+                                                <p class="mt-1 ps-3">{{ item.resultado.debilidades }}</p>
+                                            </div>
+                                            {% endif %}
+                                            
+                                            {% if item.resultado.recomendaciones %}
+                                            <div class="mb-3">
+                                                <strong><i class="fas fa-lightbulb text-info me-1"></i>Recomendaciones:</strong>
+                                                <p class="mt-1 ps-3">{{ item.resultado.recomendaciones }}</p>
+                                            </div>
+                                            {% endif %}
+                                            
+                                            {% if item.resultado.observaciones %}
+                                            <div class="mb-3">
+                                                <strong>Observaciones:</strong>
+                                                <p class="mt-1 ps-3">{{ item.resultado.observaciones }}</p>
+                                            </div>
+                                            {% endif %}
+                                            
+                                            <hr>
+                                            <small class="text-muted">
+                                                <strong>Evaluado por:</strong> {{ item.resultado.evaluado_por.get_full_name }}<br>
+                                                <strong>Fecha:</strong> {{ item.resultado.fecha_evaluacion|date:"d/m/Y H:i" }}
+                                            </small>
+                                        </div>
+                                        <div class="modal-footer">
+                                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endif %}
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <div class="alert alert-light text-center">
+                    <i class="fas fa-users-slash fa-3x text-muted mb-3"></i>
+                    <p class="mb-0">No hay estudiantes matriculados en esta materia.</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<style>
+    .card {
+        border: none;
+        border-radius: 12px;
+    }
+    
+    .card-header {
+        border-radius: 12px 12px 0 0 !important;
+    }
+    
+    .shadow-sm {
+        box-shadow: 0 0.125rem 0.5rem rgba(0, 0, 0, 0.075) !important;
+    }
+</style>
+{% endblock %}

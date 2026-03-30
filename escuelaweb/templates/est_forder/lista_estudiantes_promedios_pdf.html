@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+    <title>Promedios de Estudiantes - {{ curso.nombre }}</title>
+    <style>
+        @page {
+            size: A4 landscape;
+            margin: 10mm;
+        }
+
+        body {
+            font-family: Arial, Helvetica, sans-serif;
+            font-size: 8px;
+            color: #000;
+            line-height: 1.2;
+            margin: 0;
+            padding: 0;
+        }
+
+        /* ENCABEZADO */
+        .header {
+            text-align: center;
+            padding-bottom: 8px;
+            margin-bottom: 10px;
+            border-bottom: 2px solid #000;
+        }
+
+        .header img {
+            height: 50px;
+            margin-bottom: 4px;
+        }
+
+        .header h2 {
+            font-size: 14px;
+            margin: 2px 0;
+            font-weight: bold;
+        }
+
+        .header h4 {
+            font-size: 11px;
+            margin: 2px 0;
+            font-weight: bold;
+        }
+
+        .header p {
+            font-size: 7px;
+            margin: 1px 0;
+        }
+
+        /* TABLA */
+        .promedios-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 7px;
+        }
+
+        .promedios-table th {
+            background-color: #e0e0e0;
+            border: 1px solid #000;
+            padding: 4px 2px;
+            font-weight: bold;
+            text-align: center;
+            vertical-align: middle;
+        }
+
+        .promedios-table td {
+            border: 1px solid #999;
+            padding: 3px 2px;
+            text-align: center;
+            vertical-align: middle;
+        }
+
+        .promedios-table .student-name {
+            text-align: left;
+            font-weight: bold;
+            padding-left: 5px;
+        }
+
+        .promedios-table tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+
+        .materia-header {
+            background-color: #d1ecf1 !important;
+            font-size: 6px;
+            max-width: 80px;
+            word-wrap: break-word;
+        }
+
+        .nota-aprobada {
+            background-color: #d4edda;
+            color: #155724;
+            font-weight: bold;
+        }
+
+        .nota-reprobada {
+            background-color: #f8d7da;
+            color: #721c24;
+            font-weight: bold;
+        }
+
+        .nota-pendiente {
+            color: #999;
+        }
+
+        /* LEYENDA */
+        .legend {
+            margin-top: 10px;
+            font-size: 7px;
+            border-top: 1px solid #ccc;
+            padding-top: 8px;
+        }
+
+        .legend span {
+            margin-right: 15px;
+        }
+
+        .legend .box {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border: 1px solid #000;
+            margin-right: 3px;
+            vertical-align: middle;
+        }
+
+        .legend .box-aprobado {
+            background-color: #d4edda;
+        }
+
+        .legend .box-reprobado {
+            background-color: #f8d7da;
+        }
+    </style>
+</head>
+<body>
+    {% load custom_filters %}
+    
+    <!-- ENCABEZADO -->
+    <div class="header">
+        <img src="img/logo_poli.jpeg" alt="Logo"/>
+        <h2>Politécnico Prof. José Ramón Rodríguez Herrera</h2>
+        <p>Calle Atile Gomez, Sector La Mina, Hato del Padre, San Juan</p>
+        <p>Tel: (809) 000-5252 — Email: politecnicojoseramonrodriguezh@gmail.com</p>
+        <p>Año Escolar {{ curso.anho_escolar }}</p>
+        <h4>PROMEDIOS POR MATERIA - {{ curso.nombre }}</h4>
+    </div>
+
+    <!-- TABLA DE PROMEDIOS -->
+    <table class="promedios-table">
+        <thead>
+            <tr>
+                <th rowspan="2" style="width: 3%;">#</th>
+                <th rowspan="2" style="width: 15%;">Estudiante</th>
+                <th colspan="{{ materias|length }}">Materias - Promedio Final</th>
+            </tr>
+            <tr>
+                {% for materia in materias %}
+                <th class="materia-header" style="width: {% widthratio 82 materias|length 1 %}%;">
+                    {{ materia.nombre }}
+                </th>
+                {% endfor %}
+            </tr>
+        </thead>
+        <tbody>
+            {% for data in estudiantes_data %}
+            <tr>
+                <td>{{ forloop.counter }}</td>
+                <td class="student-name">{{ data.estudiante.get_full_name }}</td>
+                {% for materia in materias %}
+                <td>
+                    {% with matricula_info=data.matriculas|get_item:materia.id %}
+                    {% if matricula_info %}
+                        {% if matricula_info.promedio %}
+                            <span class="{% if matricula_info.promedio >= 70 %}nota-aprobada{% else %}nota-reprobada{% endif %}">
+                                {{ matricula_info.promedio|floatformat:1 }}
+                            </span>
+                        {% else %}
+                            <span class="nota-pendiente">-</span>
+                        {% endif %}
+                    {% else %}
+                        <span class="nota-pendiente">N/M</span>
+                    {% endif %}
+                    {% endwith %}
+                </td>
+                {% endfor %}
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <!-- LEYENDA -->
+    <div class="legend">
+        <strong>Leyenda:</strong>
+        <span><span class="box box-aprobado"></span>Aprobado (≥70)</span>
+        <span><span class="box box-reprobado"></span>Reprobado (<70)</span>
+        <span><strong>-</strong> = Sin calificación</span>
+        <span><strong>N/M</strong> = No matriculado</span>
+        <span style="float: right;">Total: {{ estudiantes_data|length }} estudiantes • {{ materias|length }} materias</span>
+    </div>
+</body>
+</html>

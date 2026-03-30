@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Reporte de Evaluación Diagnóstica Individual</title>
+    <style>
+        @page {
+            size: letter;
+            margin: 2cm;
+        }
+        body {
+            font-family: Arial, sans-serif;
+            font-size: 12px;
+            line-height: 1.4;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            border-bottom: 3px solid #2c3e50;
+            padding-bottom: 15px;
+        }
+        .header h1 {
+            color: #2c3e50;
+            margin: 5px 0;
+            font-size: 18px;
+        }
+        .header h2 {
+            color: #7f8c8d;
+            margin: 5px 0;
+            font-size: 14px;
+            font-weight: normal;
+        }
+        .section {
+            margin-bottom: 20px;
+        }
+        .section-title {
+            background-color: #0056b3;
+            color: white;
+            padding: 8px 12px;
+            margin-bottom: 10px;
+            margin-top: 12px;
+            font-size: 10pt;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+        }
+        .info-grid {
+            display: table;
+            width: 100%;
+            margin-bottom: 15px;
+            border: 1px solid #ccc;
+        }
+        .info-row {
+            display: table-row;
+        }
+        .info-label {
+            display: table-cell;
+            width: 30%;
+            font-weight: bold;
+            padding: 6px 10px;
+            background-color: #f5f5f5;
+            border-bottom: 1px solid #ddd;
+            border-right: 1px solid #ddd;
+            font-size: 9pt;
+        }
+        .info-value {
+            display: table-cell;
+            padding: 6px 10px;
+            border-bottom: 1px solid #ddd;
+            font-size: 9pt;
+        }
+        .nivel-badge {
+            display: inline-block;
+            padding: 5px 15px;
+            border-radius: 4px;
+            font-weight: bold;
+            color: white;
+            font-size: 14px;
+        }
+        .nivel-no-alcanzado {
+            background-color: #e74c3c;
+        }
+        .nivel-en-proceso {
+            background-color: #f39c12;
+        }
+        .nivel-alcanzado {
+            background-color: #27ae60;
+        }
+        .nivel-supera {
+            background-color: #3498db;
+        }
+        .content-box {
+            border: 1px solid #bdc3c7;
+            padding: 12px;
+            margin-bottom: 10px;
+            background-color: #f8f9fa;
+            border-radius: 4px;
+        }
+        .icon {
+            font-size: 16px;
+            margin-right: 5px;
+        }
+        .titulo-documento {
+            text-align: center;
+            font-size: 11pt;
+            font-weight: bold;
+            text-decoration: underline;
+            margin: 12px 0 15px 0;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .footer {
+            margin-top: 25px;
+            padding-top: 10px;
+            border-top: 2px solid #000;
+            text-align: center;
+            font-size: 8pt;
+            color: #333;
+        }
+        .signature-section {
+            margin-top: 50px;
+            text-align: center;
+        }
+        .signature-line {
+            width: 300px;
+            border-top: 2px solid #2c3e50;
+            margin: 0 auto;
+            padding-top: 5px;
+        }
+    </style>
+</head>
+<body>
+    <!-- Encabezado Oficial -->
+    <div class="header">
+        <h1>REPÚBLICA DOMINICANA</h1>
+        <h2>EDUCACIÓN</h2>
+        <div class="distrito">
+            Distrito Educativo No 02-05, San Juan de la Maguana, Prov. San Juan.<br>
+            Centro Educativo: <strong>CENTRO CRISTIANO DE EDUCACIÓN PARA EL DESARROLLO</strong> / Código: ###### Bayard [####]
+        </div>
+    </div>
+    
+    <hr>
+    
+    <div class="titulo-documento">
+        REPORTE INDIVIDUAL - EVALUACIÓN DIAGNÓSTICA
+    </div>
+
+    <!-- Información del Estudiante -->
+    <div class="section">
+        <div class="section-title">DATOS DEL ESTUDIANTE</div>
+        <div class="info-grid">
+            <div class="info-row">
+                <div class="info-label">Nombre Completo:</div>
+                <div class="info-value">{{ resultado.estudiante.get_full_name }}</div>
+            </div>
+            <div class="info-row">
+                <div class="info-label">Cédula:</div>
+                <div class="info-value">{{ resultado.estudiante.cedula|default:"No registrada" }}</div>
+            </div>
+            <div class="info-row">
+                <div class="info-label">Curso:</div>
+                <div class="info-value">{{ resultado.evaluacion.materia.curso.nombre }}</div>
+            </div>
+            <div class="info-row">
+                <div class="info-label">Materia:</div>
+                <div class="info-value">{{ resultado.evaluacion.materia.nombre }}</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Información de la Evaluación -->
+    <div class="section">
+        <div class="section-title">DATOS DE LA EVALUACIÓN</div>
+        <div class="info-grid">
+            <div class="info-row">
+                <div class="info-label">Período:</div>
+                <div class="info-value">{{ resultado.evaluacion.get_periodo_display }}</div>
+            </div>
+            {% if resultado.evaluacion.competencia %}
+            <div class="info-row">
+                <div class="info-label">Competencia Evaluada:</div>
+                <div class="info-value">{{ resultado.evaluacion.competencia }}</div>
+            </div>
+            {% endif %}
+            <div class="info-row">
+                <div class="info-label">Tipo de Instrumento:</div>
+                <div class="info-value">{{ resultado.evaluacion.get_instrumento_display }}</div>
+            </div>
+            {% if resultado.evaluacion.fecha_aplicacion %}
+            <div class="info-row">
+                <div class="info-label">Fecha de Aplicación:</div>
+                <div class="info-value">{{ resultado.evaluacion.fecha_aplicacion|date:"d/m/Y" }}</div>
+            </div>
+            {% endif %}
+            <div class="info-row">
+                <div class="info-label">Fecha de Evaluación:</div>
+                <div class="info-value">{{ resultado.fecha_evaluacion|date:"d/m/Y" }}</div>
+            </div>
+            <div class="info-row">
+                <div class="info-label">Evaluado por:</div>
+                <div class="info-value">{{ resultado.evaluado_por.get_full_name }}</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Resultados -->
+    <div class="section">
+        <div class="section-title">RESULTADOS OBTENIDOS</div>
+        <div class="info-grid">
+            <div class="info-row">
+                <div class="info-label">Nivel de Logro:</div>
+                <div class="info-value">
+                    {% if resultado.nivel_logro == 'no_alcanzado' %}
+                        <span class="nivel-badge nivel-no-alcanzado">NO ALCANZADO</span>
+                    {% elif resultado.nivel_logro == 'en_proceso' %}
+                        <span class="nivel-badge nivel-en-proceso">EN PROCESO</span>
+                    {% elif resultado.nivel_logro == 'alcanzado' %}
+                        <span class="nivel-badge nivel-alcanzado">ALCANZADO</span>
+                    {% elif resultado.nivel_logro == 'supera' %}
+                        <span class="nivel-badge nivel-supera">SUPERA LO ESPERADO</span>
+                    {% endif %}
+                </div>
+            </div>
+            {% if resultado.puntaje_obtenido %}
+            <div class="info-row">
+                <div class="info-label">Puntaje Obtenido:</div>
+                <div class="info-value">
+                    {{ resultado.puntaje_obtenido }} / {{ resultado.puntaje_total|default:"100" }}
+                    {% if resultado.porcentaje %}
+                        ({{ resultado.porcentaje }}%)
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Fortalezas -->
+    {% if resultado.fortalezas %}
+    <div class="section">
+        <div class="section-title">✓ FORTALEZAS IDENTIFICADAS</div>
+        <div class="content-box">
+            {{ resultado.fortalezas|linebreaks }}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Áreas de Mejora -->
+    {% if resultado.debilidades %}
+    <div class="section">
+        <div class="section-title">⚠ ÁREAS DE MEJORA</div>
+        <div class="content-box">
+            {{ resultado.debilidades|linebreaks }}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Recomendaciones -->
+    {% if resultado.recomendaciones %}
+    <div class="section">
+        <div class="section-title">💡 RECOMENDACIONES PEDAGÓGICAS</div>
+        <div class="content-box">
+            {{ resultado.recomendaciones|linebreaks }}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Observaciones -->
+    {% if resultado.observaciones %}
+    <div class="section">
+        <div class="section-title">OBSERVACIONES GENERALES</div>
+        <div class="content-box">
+            {{ resultado.observaciones|linebreaks }}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Firma -->
+    <div class="signature-section">
+        <div class="signature-line">
+            {{ resultado.evaluado_por.get_full_name }}<br>
+            <small>{{ resultado.evaluado_por.rol }}</small>
+        </div>
+    </div>
+
+    <div class="footer">
+        Reporte generado el {{ fecha_actual|date:"d/m/Y" }}<br>
+        Sistema de Gestión Educativa - República Dominicana
+    </div>
+</body>
+</html>

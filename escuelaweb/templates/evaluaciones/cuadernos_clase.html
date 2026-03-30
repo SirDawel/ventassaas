@@ -1,0 +1,71 @@
+{% extends 'website/base.html' %}
+
+{% block title %}{{ titulo }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="card shadow-sm mb-4">
+        <div class="card-body">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h3 class="mb-2">
+                        <i class="fas fa-book text-secondary"></i> {{ titulo }}
+                    </h3>
+                    <p class="text-muted mb-0">{{ descripcion }}</p>
+                </div>
+                <a href="{% url 'plataform' %}" class="btn btn-secondary">
+                    <i class="fas fa-arrow-left"></i> Volver
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="card shadow-sm mb-4">
+        <div class="card-header bg-secondary text-white">
+            <h5 class="mb-0"><i class="fas fa-info-circle me-2"></i>Cuadernos de Clase - MINERD</h5>
+        </div>
+        <div class="card-body">
+            <p>El cuaderno de clase es un registro estandarizado conforme a las normativas del Ministerio de Educación de la República Dominicana (MINERD):</p>
+            <h6 class="mt-3"><i class="fas fa-clipboard-list me-2"></i>Componentes del Cuaderno de Clase:</h6>
+            <ul>
+                <li><strong>Datos generales:</strong> Centro educativo, año escolar, grado, sección, docente, asignatura.</li>
+                <li><strong>Registro de asistencia diaria:</strong> Control de presencia/ausencia de estudiantes.</li>
+                <li><strong>Planificación diaria:</strong> Competencias, contenidos, estrategias, recursos.</li>
+                <li><strong>Actividades desarrolladas:</strong> Descripción de lo ejecutado en clase.</li>
+                <li><strong>Evaluación:</strong> Instrumentos utilizados y resultados.</li>
+                <li><strong>Observaciones:</strong> Notas sobre el desarrollo de la clase y estudiantes.</li>
+                <li><strong>Seguimiento:</strong> Registros de tutorías y comunicación con familias.</li>
+            </ul>
+            <div class="alert alert-info">
+                <i class="fas fa-gavel me-2"></i><strong>Marco Legal:</strong> Según la Orden Departamental 01-2014, todo docente debe mantener actualizado su cuaderno de clase.
+            </div>
+        </div>
+    </div>
+
+    <div class="card shadow-sm mb-4">
+        <div class="card-header bg-success text-white">
+            <h5 class="mb-0"><i class="fas fa-calendar-alt me-2"></i>Registro Diario</h5>
+        </div>
+        <div class="card-body">
+            <div class="alert alert-warning">
+                <i class="fas fa-exclamation-triangle me-2"></i><strong>Próximamente:</strong> Podrás registrar la planificación diaria, asistencia, contenidos desarrollados y observaciones directamente en el sistema.
+            </div>
+            <p class="text-muted text-center mb-0">El sistema digital facilitará el cumplimiento de los estándares del MINERD.</p>
+        </div>
+    </div>
+
+    <div class="card shadow-sm">
+        <div class="card-body text-center py-5">
+            <i class="fas fa-tools fa-3x text-muted mb-3"></i>
+            <h4>En Desarrollo</h4>
+            <p class="text-muted">Esta funcionalidad estará disponible en la próxima actualización del sistema.</p>
+            <p class="text-muted"><small>Incluirá plantillas estandarizadas según normativas del MINERD</small></p>
+        </div>
+    </div>
+</div>
+
+<style>
+    .card { border: none; border-radius: 12px; }
+    .card-header { border-radius: 12px 12px 0 0 !important; }
+</style>
+{% endblock %}

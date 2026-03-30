@@ -323,9 +323,12 @@
                                 <div class="search-input-wrapper">
                                     <i class="fas fa-barcode search-icon"></i>
                                     <input type="text" class="form-control form-control-lg search-input" id="buscarInput" name="buscar"
-                                           placeholder="🔍 Escanea código de barras o busca cliente..." 
-                                           value="{{ buscar }}" autocomplete="off">
+                                           placeholder="🔍 Escanea código de barras de estudiante o familia..." 
+                                           value="{{ buscar }}" autocomplete="off" autofocus>
                                 </div>
+                                <small class="text-muted d-block mt-1">
+                                    <i class="fas fa-magic text-success"></i> Código exacto = redirección automática
+                                </small>
                             </div>
                             <div class="col-md-4">
                                 <button type="submit" class="btn btn-modern btn-primary btn-lg w-100" id="buscarBtn">
@@ -336,10 +339,43 @@
                     </form>
                     
                     <!-- Resultados de búsqueda -->
-                    <div id="resultadosBusqueda" class="mt-3" style="max-height: 250px; overflow-y: auto;">
+                    <div id="resultadosBusqueda" class="mt-3" style="max-height: 300px; overflow-y: auto;">
+                        {% if buscar and familias_encontradas %}
+                            <div class="results-header mb-2">
+                                <small class="text-success"><i class="fas fa-users me-1"></i>{{ familias_encontradas|length }} Familia(s) encontrada(s)</small>
+                            </div>
+                            {% for fam in familias_encontradas %}
+                            <div class="resultado-item-modern" onclick="window.location.href='{% url 'grupo_familiar_facturar' fam.id %}';" style="cursor: pointer; border-left: 4px solid #28a745;">
+                                <div class="resultado-icon" style="background: linear-gradient(135deg, #28a745, #20c997);">
+                                    <i class="fas fa-users"></i>
+                                </div>
+                                <div class="resultado-info">
+                                    <strong>👨‍👩‍👧 {{ fam.apellido_familia }}</strong>
+                                    <div class="resultado-details">
+                                        <span class="badge badge-modern badge-success-modern">
+                                            <i class="fas fa-barcode me-1"></i>{{ fam.codigo_familia }}
+                                        </span>
+                                        <span class="badge badge-modern badge-info-modern">
+                                            <i class="fas fa-user-graduate me-1"></i>{{ fam.num_estudiantes }} estudiante{{ fam.num_estudiantes|pluralize }}
+                                        </span>
+                                        {% if fam.descuento_general > 0 %}
+                                        <span class="badge badge-modern badge-warning-modern">
+                                            <i class="fas fa-percentage me-1"></i>{{ fam.descuento_general }}% desc.
+                                        </span>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                <div class="resultado-action">
+                                    <i class="fas fa-file-invoice-dollar"></i>
+                                </div>
+                            </div>
+                            {% endfor %}
+                            <hr class="my-2">
+                        {% endif %}
+                    
                         {% if buscar and estudiantes_encontrados %}
                             <div class="results-header mb-2">
-                                <small class="text-muted"><i class="fas fa-users me-1"></i>{{ estudiantes_encontrados|length }} resultado(s) encontrado(s)</small>
+                                <small class="text-muted"><i class="fas fa-user-graduate me-1"></i>{{ estudiantes_encontrados|length }} Estudiante(s) encontrado(s)</small>
                             </div>
                             {% for est in estudiantes_encontrados %}
                             <div class="resultado-item-modern" onclick="seleccionarEstudiante({{ est.id }})">
@@ -362,7 +398,7 @@
                                 </div>
                             </div>
                             {% endfor %}
-                        {% elif buscar %}
+                        {% elif buscar and not familias_encontradas %}
                             <div class="alert alert-modern alert-warning mb-0">
                                 <i class="fas fa-exclamation-triangle me-2"></i>
                                 No se encontraron resultados para "{{ buscar }}"
@@ -390,6 +426,28 @@
                                     <i class="fas fa-graduation-cap me-1"></i>
                                     <strong>Grado:</strong> <span id="clienteGrado">{% if estudiante %}{{ estudiante.grado|default:"-" }}/{{ estudiante.seccion|default:"-" }}{% endif %}</span>
                                 </span>
+                                {% if estudiante %}
+                                <span class="client-detail-item">
+                                    <i class="fas fa-calendar-alt me-1"></i>
+                                    <strong>Día Vencimiento:</strong> <span class="badge bg-info">{{ estudiante.get_dia_vencimiento }}</span>
+                                    {% if estudiante.grupo_familiar %}
+                                    <small class="text-muted">(Grupo)</small>
+                                    {% else %}
+                                    <small class="text-muted">(Individual)</small>
+                                    {% endif %}
+                                </span>
+                                {% if estudiante.get_porcentaje_mora > 0 %}
+                                <span class="client-detail-item">
+                                    <i class="fas fa-exclamation-triangle me-1 text-warning"></i>
+                                    <strong>Mora:</strong> <span class="badge bg-warning text-dark">{{ estudiante.get_porcentaje_mora }}%</span>
+                                    {% if estudiante.grupo_familiar %}
+                                    <small class="text-muted">(Grupo)</small>
+                                    {% else %}
+                                    <small class="text-muted">(Individual)</small>
+                                    {% endif %}
+                                </span>
+                                {% endif %}
+                                {% endif %}
                                 <span id="estadoMensualidades" class="client-detail-item"></span>
                             </div>
                         </div>
@@ -504,7 +562,7 @@
                                         {% if concepto.tipo == 'mensualidad' or concepto.tipo == 'inscripcion' %}
                                             {{ concepto.nombre }}
                                         {% else %}
-                                            {{ concepto.nombre }} (RD${{ concepto.monto }})
+                                            {{ concepto.nombre }} (RD$ {{ concepto.monto|unlocalize }})
                                         {% endif %}
                                     </option>
                                     {% endfor %}
@@ -645,6 +703,12 @@
                             <span>Descuento:</span>
                             <strong id="descuentoDisplay">RD$0.00</strong>
                         </div>
+                        <div class="d-flex justify-content-between mb-2" id="moraRow" style="display: none;">
+                            <span class="text-warning">
+                                <i class="fas fa-exclamation-triangle me-1"></i>Mora:
+                            </span>
+                            <strong class="text-warning" id="moraDisplay">RD$0.00</strong>
+                        </div>
                         <div class="d-flex justify-content-between mb-2">
                             <span>ITBIS (18%):</span>
                             <strong id="itbisDisplay" class="text-info">RD$0.00</strong>
@@ -761,6 +825,16 @@ const mesesPagados = {{ meses_pagados|safe|default:"[]" }};
 const tarifaServer = {{ tarifa_json|default:'null'|safe }};
 const anioActual = {{ anio_actual }};
 const esClienteGenerico = {{ es_cliente_generico|default:'false'|lower }};
+
+{% if estudiante and estudiante.grupo_familiar %}
+const descuentoGrupoFamiliar = {{ estudiante.grupo_familiar.descuento_general|unlocalize }};
+console.log('Descuento del grupo familiar:', descuentoGrupoFamiliar, '%');
+{% elif estudiante %}
+const descuentoGrupoFamiliar = {{ estudiante.descuento_individual|unlocalize }};
+console.log('Descuento individual del estudiante:', descuentoGrupoFamiliar, '%');
+{% else %}
+const descuentoGrupoFamiliar = 0;
+{% endif %}
 
 console.log('Conceptos cargados:', conceptos);
 console.log('Total conceptos:', conceptos.length);
@@ -1013,6 +1087,14 @@ function agregarTarifaEstudiante() {
         const mesActual = new Date().getMonth() + 1;
         const claveMes = `${mesActual}-${anio}`;
         
+        // Calcular descuento si el estudiante está en un grupo familiar
+        const montoMensualidad = parseFloat(mens.monto || 0);
+        const descuentoMensualidad = descuentoGrupoFamiliar > 0 
+            ? (montoMensualidad * descuentoGrupoFamiliar / 100) 
+            : 0;
+        
+        console.log(`DEBUG DESCUENTO - Mensualidad monto: RD$${montoMensualidad}, Descuento %: ${descuentoGrupoFamiliar}%, Descuento RD$: ${descuentoMensualidad.toFixed(2)}`);
+        
         // Verificar si ya está pagado o agregado
         if (mesesPagados.includes(claveMes)) {
             alert(`El mes actual (${mesActual}/${anio}) ya está pagado.`);
@@ -1023,8 +1105,8 @@ function agregarTarifaEstudiante() {
                 mens.concepto_id || '', 
                 mens.concepto_nombre || 'Mensualidad', 
                 1, 
-                parseFloat(mens.monto || 0), 
-                0, 
+                montoMensualidad, 
+                descuentoMensualidad, 
                 mesActual.toString(), 
                 anio
             );
@@ -1036,12 +1118,21 @@ function agregarTarifaEstudiante() {
     // Agregar inscripción si existe
     if (tarifaServer.inscripcion && !inscripcionAgregada) {
         const insc = tarifaServer.inscripcion;
+        
+        // Calcular descuento si el estudiante está en un grupo familiar
+        const montoInscripcion = parseFloat(insc.monto || 0);
+        const descuentoInscripcion = descuentoGrupoFamiliar > 0 
+            ? (montoInscripcion * descuentoGrupoFamiliar / 100) 
+            : 0;
+        
+        console.log(`DEBUG DESCUENTO - Inscripción monto: RD$${montoInscripcion}, Descuento %: ${descuentoGrupoFamiliar}%, Descuento RD$: ${descuentoInscripcion.toFixed(2)}`);
+        
         agregarConceptoALista(
             insc.concepto_id || '', 
             insc.concepto_nombre || 'Inscripción', 
             1, 
-            parseFloat(insc.monto || 0), 
-            0, 
+            montoInscripcion, 
+            descuentoInscripcion, 
             '', 
             ''
         );
@@ -1052,6 +1143,15 @@ function agregarTarifaEstudiante() {
     // Agregar transporte si existe
     if (tarifaServer.transporte) {
         const trans = tarifaServer.transporte;
+        
+        // Calcular descuento si el estudiante está en un grupo familiar
+        const montoTransporte = parseFloat(trans.monto || 0);
+        const descuentoTransporte = descuentoGrupoFamiliar > 0 
+            ? (montoTransporte * descuentoGrupoFamiliar / 100) 
+            : 0;
+        
+        console.log(`DEBUG DESCUENTO - Transporte monto: RD$${montoTransporte}, Descuento %: ${descuentoGrupoFamiliar}%, Descuento RD$: ${descuentoTransporte.toFixed(2)}`);
+        
         const nombreCompleto = trans.observaciones 
             ? `${trans.concepto_nombre} (${trans.observaciones})` 
             : trans.concepto_nombre || 'Transporte';
@@ -1060,8 +1160,8 @@ function agregarTarifaEstudiante() {
             trans.concepto_id || '', 
             nombreCompleto, 
             1, 
-            parseFloat(trans.monto || 0), 
-            0, 
+            montoTransporte, 
+            descuentoTransporte, 
             '', 
             ''
         );
@@ -1184,7 +1284,11 @@ function agregarConceptoRapido() {
                     continue;
                 }
                 
-                agregarConceptoALista(conceptoId, conceptoNombre, cantidad, precio, 0, mes.toString(), anio);
+                // Calcular descuento del grupo familiar
+                const descuento = descuentoGrupoFamiliar > 0 ? (precio * descuentoGrupoFamiliar / 100) : 0;
+                console.log(`DEBUG DESCUENTO - Mensualidad ${mes}/${anio}: Monto RD$${precio}, Descuento ${descuentoGrupoFamiliar}%, RD$${descuento.toFixed(2)}`);
+                
+                agregarConceptoALista(conceptoId, conceptoNombre, cantidad, precio, descuento, mes.toString(), anio);
                 mensualidadesAgregadas.add(claveMes); // Registrar como agregado
             }
             
@@ -1206,18 +1310,32 @@ function agregarConceptoRapido() {
                 return;
             }
             
-            agregarConceptoALista(conceptoId, conceptoNombre, cantidad, precio, 0, mesDesde, anio);
+            // Calcular descuento del grupo familiar
+            const descuento = descuentoGrupoFamiliar > 0 ? (precio * descuentoGrupoFamiliar / 100) : 0;
+            console.log(`DEBUG DESCUENTO - Mensualidad ${mesDesde}/${anio}: Monto RD$${precio}, Descuento ${descuentoGrupoFamiliar}%, RD$${descuento.toFixed(2)}`);
+            
+            agregarConceptoALista(conceptoId, conceptoNombre, cantidad, precio, descuento, mesDesde, anio);
             mensualidadesAgregadas.add(claveMes); // Registrar como agregado
         } else {
             alert('Debe seleccionar el mes para mensualidad');
             return;
         }
     } else if (tipo === 'inscripcion') {
+        // Calcular descuento del grupo familiar para inscripción
+        const descuento = descuentoGrupoFamiliar > 0 ? (precio * descuentoGrupoFamiliar / 100) : 0;
+        console.log(`DEBUG DESCUENTO - Inscripción: Monto RD$${precio}, Descuento ${descuentoGrupoFamiliar}%, RD$${descuento.toFixed(2)}`);
+        
         // Inscripción no usa meses (es una vez al año)
-        agregarConceptoALista(conceptoId, conceptoNombre, cantidad, precio, 0, '', '');
+        agregarConceptoALista(conceptoId, conceptoNombre, cantidad, precio, descuento, '', '');
         inscripcionAgregada = true; // Marcar que ya se agregó inscripción
+    } else if (tipo === 'transporte') {
+        // Calcular descuento del grupo familiar para transporte
+        const descuento = descuentoGrupoFamiliar > 0 ? (precio * descuentoGrupoFamiliar / 100) : 0;
+        console.log(`DEBUG DESCUENTO - Transporte: Monto RD$${precio}, Descuento ${descuentoGrupoFamiliar}%, RD$${descuento.toFixed(2)}`);
+        
+        agregarConceptoALista(conceptoId, conceptoNombre, cantidad, precio, descuento, '', '');
     } else {
-        // Para otros conceptos (artículos, servicios), agregar sin mes/año
+        // Para otros conceptos (artículos, servicios), NO agregar descuento del grupo
         agregarConceptoALista(conceptoId, conceptoNombre, cantidad, precio, 0, '', '');
     }
     
@@ -1630,10 +1748,36 @@ function eliminarConcepto(rowId) {
 function calcularTotales() {
     let subtotal = 0;
     let subtotalConItbis = 0; // Subtotal de items que aplican ITBIS
+    let subtotalMensualidadesVencidas = 0; // Para calcular mora
     
-    document.querySelectorAll('.total-row').forEach(element => {
+    const hoy = new Date();
+    const diaHoy = hoy.getDate();
+    const mesHoy = hoy.getMonth() + 1; // JavaScript months are 0-indexed
+    const anioHoy = hoy.getFullYear();
+    
+    {% if estudiante %}
+    const diaVencimiento = {{ estudiante.get_dia_vencimiento }};
+    const porcentajeMora = {{ estudiante.get_porcentaje_mora|unlocalize }};
+    {% if estudiante.grupo_familiar %}
+    console.log(`DEBUG MORA JS - Configuración desde GRUPO FAMILIAR: Día vencimiento=${diaVencimiento}, Porcentaje mora=${porcentajeMora}%, Hoy=${diaHoy}/${mesHoy}/${anioHoy}`);
+    {% else %}
+    console.log(`DEBUG MORA JS - Configuración INDIVIDUAL: Día vencimiento=${diaVencimiento}, Porcentaje mora=${porcentajeMora}%, Hoy=${diaHoy}/${mesHoy}/${anioHoy}`);
+    {% endif %}
+    {% else %}
+    const diaVencimiento = 10;
+    const porcentajeMora = 0;
+    console.log('DEBUG MORA JS - Sin estudiante seleccionado');
+    {% endif %}
+    
+    console.log(`DEBUG MORA JS - Buscando filas con class .total-row...`);
+    const filasConTotal = document.querySelectorAll('.total-row');
+    console.log(`DEBUG MORA JS - Encontradas ${filasConTotal.length} filas`);
+    
+    document.querySelectorAll('.total-row').forEach((element, index) => {
         const value = parseFloat(element.textContent.replace('RD$', '').replace(',', '')) || 0;
         subtotal += value;
+        
+        console.log(`DEBUG MORA JS - Fila ${index + 1}: Valor RD$${value}`);
         
         // Verificar si este elemento aplica ITBIS
         const row = element.closest('tr');
@@ -1642,16 +1786,72 @@ function calcularTotales() {
             if (aplicaItbis && aplicaItbis.value === 'true') {
                 subtotalConItbis += value;
             }
+            
+            // Verificar si es mensualidad y está vencida - USAR CAMPOS HIDDEN
+            const mesInput = row.querySelector('input[name="mes[]"]');
+            const anioInput = row.querySelector('input[name="anio[]"]');
+            
+            console.log(`DEBUG MORA JS - Fila ${index + 1}: mesInput=${mesInput ? mesInput.value : 'null'}, anioInput=${anioInput ? anioInput.value : 'null'}`);
+            
+            if (mesInput && anioInput && mesInput.value && anioInput.value) {
+                const mesMensualidad = parseInt(mesInput.value);
+                const anioMensualidad = parseInt(anioInput.value);
+                
+                console.log(`DEBUG MORA JS - Fila ${index + 1}: Analizando mensualidad ${mesMensualidad}/${anioMensualidad}`);
+                console.log(`DEBUG MORA JS - Fila ${index + 1}: porcentajeMora=${porcentajeMora}`);
+                
+                if (porcentajeMora > 0) {
+                    // Determinar si está vencida
+                    let estaVencida = false;
+                    let razon = '';
+                    
+                    if (anioMensualidad < anioHoy) {
+                        estaVencida = true;
+                        razon = `año ${anioMensualidad} < ${anioHoy}`;
+                    } else if (anioMensualidad === anioHoy && mesMensualidad < mesHoy) {
+                        estaVencida = true;
+                        razon = `mismo año, mes ${mesMensualidad} < ${mesHoy}`;
+                    } else if (anioMensualidad === anioHoy && mesMensualidad === mesHoy && diaHoy > diaVencimiento) {
+                        estaVencida = true;
+                        razon = `mismo mes, día ${diaHoy} > ${diaVencimiento}`;
+                    } else {
+                        razon = 'no vencida';
+                    }
+                    
+                    console.log(`DEBUG MORA JS - Fila ${index + 1}: ${mesMensualidad}/${anioMensualidad} - ${estaVencida ? '✓ VENCIDA' : '✗ NO VENCIDA'} (${razon})`);
+                    
+                    if (estaVencida) {
+                        console.log(`DEBUG MORA JS - Fila ${index + 1}: ✓✓✓ AGREGANDO RD$${value} a subtotal vencido`);
+                        subtotalMensualidadesVencidas += value;
+                    }
+                } else {
+                    console.log(`DEBUG MORA JS - Fila ${index + 1}: Porcentaje mora es 0%, no se calcula mora`);
+                }
+            } else {
+                console.log(`DEBUG MORA JS - Fila ${index + 1}: No tiene mes/anio o están vacíos`);
+            }
         }
     });
     
     const descuentoFactura = parseFloat(document.getElementById('descuento_factura').value) || 0;
     
+    // Calcular mora sobre mensualidades vencidas
+    let mora = 0;
+    if (subtotalMensualidadesVencidas > 0 && porcentajeMora > 0) {
+        mora = (subtotalMensualidadesVencidas * porcentajeMora) / 100;
+        console.log(`DEBUG MORA JS - Subtotal vencido: RD$${subtotalMensualidadesVencidas.toFixed(2)}, Porcentaje: ${porcentajeMora}%, Mora calculada: RD$${mora.toFixed(2)}`);
+        document.getElementById('moraRow').style.display = 'flex';
+        document.getElementById('moraDisplay').textContent = `RD$${mora.toFixed(2)}`;
+    } else {
+        console.log(`DEBUG MORA JS - Sin mora. Subtotal vencido: ${subtotalMensualidadesVencidas}, Porcentaje: ${porcentajeMora}%`);
+        document.getElementById('moraRow').style.display = 'none';
+    }
+    
     // Calcular ITBIS del 18% sobre items que aplican
     const itbis = subtotalConItbis * 0.18;
     
-    // Total = Subtotal - Descuento + ITBIS
-    const total = Math.max(0, subtotal - descuentoFactura + itbis);
+    // Total = Subtotal - Descuento + Mora + ITBIS
+    const total = Math.max(0, subtotal - descuentoFactura + mora + itbis);
     
     document.getElementById('subtotalDisplay').textContent = `RD$${subtotal.toFixed(2)}`;
     document.getElementById('descuentoDisplay').textContent = `RD$${descuentoFactura.toFixed(2)}`;

@@ -1,0 +1,270 @@
+{% extends 'website/base.html' %}
+{% load l10n %}
+{% load custom_filters %}
+
+{% block title %}Evaluar con Rúbrica: {{ evaluacion.titulo }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <!-- Header Card -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-body">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h3 class="mb-2">
+                        <i class="fas fa-clipboard-check text-primary"></i> {{ evaluacion.titulo }}
+                    </h3>
+                    <p class="text-muted mb-1">
+                        <strong>Rúbrica:</strong> {{ evaluacion.rubrica.nombre }} | 
+                        <strong>Materia:</strong> {{ evaluacion.materia.nombre }} | 
+                        <strong>Curso:</strong> {{ evaluacion.curso.nombre }} |
+                        <strong>Período:</strong> {{ evaluacion.periodo }}
+                    </p>
+                    <p class="mb-0">
+                        <span class="badge bg-primary">
+                            <i class="fas fa-calendar-alt me-1"></i>{{ evaluacion.curso.anho_escolar.nombre }}
+                        </span>
+                    </p>
+                </div>
+                <a href="{% url 'evaluaciones_rubricas' %}" class="btn btn-secondary">
+                    <i class="fas fa-arrow-left"></i> Volver
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Información de la Rúbrica -->
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <div class="card shadow-sm">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-table me-2"></i>Criterios de Evaluación
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-bordered">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Criterio</th>
+                                    <th>Ponderación</th>
+                                    <th>Niveles de Desempeño</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for criterio in criterios %}
+                                <tr>
+                                    <td>
+                                        <strong>{{ criterio.nombre }}</strong>
+                                        {% if criterio.descripcion %}
+                                        <br><small class="text-muted">{{ criterio.descripcion }}</small>
+                                        {% endif %}
+                                    </td>
+                                    <td class="text-center">
+                                        <span class="badge bg-primary">{{ criterio.ponderacion }}%</span>
+                                    </td>
+                                    <td>
+                                        <small>
+                                            {% for nivel in criterio.niveles.all %}
+                                            <span class="badge 
+                                                {% if nivel.nivel == 'excelente' %}bg-primary
+                                                {% elif nivel.nivel == 'muy_bueno' %}bg-success
+                                                {% elif nivel.nivel == 'bueno' %}bg-info
+                                                {% elif nivel.nivel == 'regular' %}bg-warning
+                                                {% else %}bg-danger{% endif %}">
+                                                {{ nivel.get_nivel_display }}: {{ nivel.puntaje }}
+                                            </span>
+                                            {% endfor %}
+                                        </small>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                            <tfoot>
+                                <tr class="table-light">
+                                    <td colspan="2" class="text-end"><strong>Puntaje Máximo:</strong></td>
+                                    <td><strong>10.0 puntos</strong></td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Lista de Estudiantes -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-header bg-success text-white">
+            <h5 class="mb-0">
+                <i class="fas fa-users me-2"></i>Estudiantes ({{ estudiantes.count }})
+            </h5>
+        </div>
+        <div class="card-body">
+            {% if estudiantes %}
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Estudiante</th>
+                            <th class="text-center">Grado</th>
+                            <th class="text-center">Puntaje</th>
+                            <th class="text-center">Estado</th>
+                            <th class="text-center">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for estudiante in estudiantes %}
+                        <tr>
+                            <td>
+                                <i class="fas fa-user me-2"></i>
+                                <strong>{{ estudiante.get_full_name }}</strong>
+                            </td>
+                            <td class="text-center">{{ estudiante.grado }}</td>
+                            <td class="text-center">
+                                {% if estudiante.id in calificaciones_por_estudiante %}
+                                <span class="badge bg-success" style="font-size: 1.0em;">
+                                    {{ calificaciones_por_estudiante|get_item:estudiante.id|get_item:'total'|floatformat:2 }}/10
+                                </span>
+                                {% else %}
+                                <span class="badge bg-secondary">-</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-center">
+                                {% if estudiante.id in calificaciones_por_estudiante and calificaciones_por_estudiante|get_item:estudiante.id|get_item:'completado' %}
+                                <span class="badge bg-success">
+                                    <i class="fas fa-check-circle"></i> Completado
+                                </span>
+                                {% elif estudiante.id in calificaciones_por_estudiante %}
+                                <span class="badge bg-warning">
+                                    <i class="fas fa-exclamation-circle"></i> Parcial
+                                </span>
+                                {% else %}
+                                <span class="badge bg-secondary">
+                                    <i class="fas fa-minus-circle"></i> No evaluado
+                                </span>
+                                {% endif %}
+                            </td>
+                            <td class="text-center">
+                                <button type="button" 
+                                        class="btn btn-sm btn-primary" 
+                                        data-bs-toggle="modal" 
+                                        data-bs-target="#evaluarModal{{ estudiante.id }}">
+                                    <i class="fas fa-edit"></i> Evaluar
+                                </button>
+                            </td>
+                        </tr>
+
+                        <!-- Modal para Evaluar Estudiante -->
+                        <div class="modal fade" id="evaluarModal{{ estudiante.id }}" tabindex="-1">
+                            <div class="modal-dialog modal-xl">
+                                <div class="modal-content">
+                                    <div class="modal-header bg-primary text-white">
+                                        <h5 class="modal-title">
+                                            <i class="fas fa-user-graduate me-2"></i>
+                                            Evaluar: {{ estudiante.get_full_name }}
+                                        </h5>
+                                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                                    </div>
+                                    <form method="post">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="estudiante_id" value="{{ estudiante.id }}">
+                                        <div class="modal-body">
+                                            <div class="alert alert-info">
+                                                <i class="fas fa-info-circle me-2"></i>
+                                                Selecciona el nivel de desempeño alcanzado para cada criterio.
+                                            </div>
+                                            
+                                            {% for criterio in criterios %}
+                                            <div class="card mb-3">
+                                                <div class="card-header">
+                                                    <h6 class="mb-0">
+                                                        <span class="badge bg-secondary me-2">{{ forloop.counter }}</span>
+                                                        {{ criterio.nombre }}
+                                                        <span class="badge bg-primary float-end">{{ criterio.ponderacion }}%</span>
+                                                    </h6>
+                                                    {% if criterio.descripcion %}
+                                                    <small class="text-muted">{{ criterio.descripcion }}</small>
+                                                    {% endif %}
+                                                </div>
+                                                <div class="card-body">
+                                                    <!-- Niveles de desempeño -->
+                                                    <div class="mb-3">
+                                                        <label class="form-label">Nivel de Desempeño:</label>
+                                                        <div class="row">
+                                                            {% for nivel in criterio.niveles.all %}
+                                                            <div class="col-md-12 mb-2">
+                                                                <div class="form-check">
+                                                                    <input class="form-check-input" 
+                                                                           type="radio" 
+                                                                           name="nivel_criterio_{{ criterio.id }}" 
+                                                                           id="nivel_{{ nivel.id }}_est_{{ estudiante.id }}"
+                                                                           value="{{ nivel.id }}"
+                                                                           {% if estudiante.id in calificaciones_por_estudiante and criterio.id in calificaciones_por_estudiante|get_item:estudiante.id|get_item:'criterios' and calificaciones_por_estudiante|get_item:estudiante.id|get_item:'criterios'|get_item:criterio.id|get_item:'nivel_otorgado'|get_item:'id' == nivel.id %}checked{% endif %}>
+                                                                    <label class="form-check-label w-100" for="nivel_{{ nivel.id }}_est_{{ estudiante.id }}">
+                                                                        <div class="d-flex justify-content-between align-items-center">
+                                                                            <div>
+                                                                                <span class="badge 
+                                                                                    {% if nivel.nivel == 'excelente' %}bg-primary
+                                                                                    {% elif nivel.nivel == 'muy_bueno' %}bg-success
+                                                                                    {% elif nivel.nivel == 'bueno' %}bg-info
+                                                                                    {% elif nivel.nivel == 'regular' %}bg-warning
+                                                                                    {% else %}bg-danger{% endif %} me-2">
+                                                                                    {{ nivel.get_nivel_display }}
+                                                                                </span>
+                                                                                <strong>{{ nivel.puntaje }} puntos</strong>
+                                                                            </div>
+                                                                        </div>
+                                                                        <small class="text-muted d-block mt-1">{{ nivel.descriptor }}</small>
+                                                                    </label>
+                                                                </div>
+                                                            </div>
+                                                            {% endfor %}
+                                                        </div>
+                                                    </div>
+                                                    
+                                                    <!-- Observaciones -->
+                                                    <div class="mb-0">
+                                                        <label class="form-label">Observaciones (Opcional):</label>
+                                                        <textarea class="form-control" 
+                                                                  name="observaciones_criterio_{{ criterio.id }}" 
+                                                                  rows="2" 
+                                                                  placeholder="Comentarios sobre el desempeño en este criterio...">{% if estudiante.id in calificaciones_por_estudiante and criterio.id in calificaciones_por_estudiante|get_item:estudiante.id|get_item:'criterios' %}{{ calificaciones_por_estudiante|get_item:estudiante.id|get_item:'criterios'|get_item:criterio.id|get_item:'observaciones' }}{% endif %}</textarea>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            {% endfor %}
+                                        </div>
+                                        <div class="modal-footer">
+                                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                                                <i class="fas fa-times"></i> Cancelar
+                                            </button>
+                                            <button type="submit" class="btn btn-success">
+                                                <i class="fas fa-save"></i> Guardar Evaluación
+                                            </button>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="alert alert-warning mb-0">
+                <i class="fas fa-exclamation-triangle me-2"></i>
+                No hay estudiantes matriculados en este curso para la materia seleccionada.
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Filtros personalizados para el template -->
+{% load static %}
+<script>
+// Agregar filtro get_item para acceder a diccionarios en templates
+</script>
+{% endblock %}

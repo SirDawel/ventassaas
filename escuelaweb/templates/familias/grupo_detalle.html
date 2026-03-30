@@ -1,0 +1,199 @@
+{% extends 'website/base.html' %}
+{% load l10n %}
+
+{% block title %}{{ grupo.apellido_familia }} - Detalles{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <!-- Encabezado -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h2><i class="fas fa-users me-2"></i>{{ grupo.apellido_familia }}</h2>
+                    <p class="text-muted mb-0">Código: <strong>{{ grupo.codigo_familia }}</strong></p>
+                </div>
+                <div>
+                    <a href="{% url 'grupos_familiares_lista' %}" class="btn btn-secondary">
+                        <i class="fas fa-arrow-left me-2"></i>Volver
+                    </a>
+                    <a href="{% url 'grupo_familiar_editar' grupo.id %}" class="btn btn-warning">
+                        <i class="fas fa-edit me-2"></i>Editar
+                    </a>
+                    {% if estudiantes %}
+                        <a href="{% url 'grupo_familiar_facturar' grupo.id %}" class="btn btn-success">
+                            <i class="fas fa-file-invoice-dollar me-2"></i>Facturar Mensualidad
+                        </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Información del Grupo -->
+        <div class="col-md-4">
+            <div class="card mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="fas fa-info-circle me-2"></i>Información del Grupo</h5>
+                </div>
+                <div class="card-body">
+                    <p><strong>Código:</strong> {{ grupo.codigo_familia }}</p>
+                    <p><strong>Apellido:</strong> {{ grupo.apellido_familia }}</p>
+                    
+                    {% if grupo.telefono_contacto %}
+                        <p><strong>Teléfono:</strong> {{ grupo.telefono_contacto }}</p>
+                    {% endif %}
+                    
+                    {% if grupo.email_contacto %}
+                        <p><strong>Email:</strong> {{ grupo.email_contacto }}</p>
+                    {% endif %}
+                    
+                    {% if grupo.direccion %}
+                        <p><strong>Dirección:</strong><br>{{ grupo.direccion }}</p>
+                    {% endif %}
+                    
+                    <p><strong>Descuento:</strong> 
+                        {% if grupo.descuento_general > 0 %}
+                            <span class="badge bg-success">{{ grupo.descuento_general|default:'0' }}%</span>
+                        {% else %}
+                            <span class="text-muted">Sin descuento</span>
+                        {% endif %}
+                    </p>
+                    
+                    <p><strong>Mora por Pago Atrasado:</strong> 
+                        {% if grupo.porcentaje_mora > 0 %}
+                            <span class="badge bg-warning text-dark">{{ grupo.porcentaje_mora|default:'0' }}%</span>
+                        {% else %}
+                            <span class="text-muted">Sin mora</span>
+                        {% endif %}
+                    </p>
+                    
+                    <p><strong>Día de Vencimiento:</strong> 
+                        <span class="badge bg-info text-dark">Día {{ grupo.dia_vencimiento|default:'10' }}</span>
+                        <small class="text-muted d-block">Las mensualidades vencen el día {{ grupo.dia_vencimiento|default:'10' }} de cada mes</small>
+                    </p>
+                    
+                    <p><strong>Estado:</strong> 
+                        {% if grupo.activo %}
+                            <span class="badge bg-success">Activo</span>
+                        {% else %}
+                            <span class="badge bg-secondary">Inactivo</span>
+                        {% endif %}
+                    </p>
+                    
+                    {% if grupo.notas %}
+                        <hr>
+                        <p><strong>Notas:</strong><br>{{ grupo.notas|linebreaks }}</p>
+                    {% endif %}
+                    
+                    <hr>
+                    <small class="text-muted">
+                        Creado: {{ grupo.fecha_creacion|date:"d/m/Y H:i" }}<br>
+                        Actualizado: {{ grupo.actualizado|date:"d/m/Y H:i" }}
+                    </small>
+                </div>
+            </div>
+
+            <!-- Resumen de Mensualidades -->
+            <div class="card">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0"><i class="fas fa-dollar-sign me-2"></i>Resumen de Mensualidades</h5>
+                </div>
+                <div class="card-body">
+                    <p><strong>Estudiantes:</strong> {{ estudiantes|length }}</p>
+                    <p><strong>Total Base:</strong> RD$ {{ total_mensualidades|unlocalize|floatformat:2 }}</p>
+                    
+                    {% if grupo.descuento_general > 0 %}
+                        <p><strong>Descuento ({{ grupo.descuento_general }}%):</strong> -RD$ {{ descuento_aplicado|unlocalize|floatformat:2 }}</p>
+                        <hr>
+                        <h5><strong>Total con Descuento:</strong> <span class="text-success">RD$ {{ total_con_descuento|unlocalize|floatformat:2 }}</span></h5>
+                    {% else %}
+                        <hr>
+                        <h5><strong>Total:</strong> <span class="text-success">RD$ {{ total_mensualidades|unlocalize|floatformat:2 }}</span></h5>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Lista de Estudiantes -->
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header bg-info text-white d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><i class="fas fa-graduation-cap me-2"></i>Estudiantes del Grupo</h5>
+                    <a href="{% url 'grupo_familiar_asignar_estudiante' grupo.id %}" class="btn btn-light btn-sm">
+                        <i class="fas fa-plus me-1"></i>Agregar Estudiante
+                    </a>
+                </div>
+                <div class="card-body">
+                    {% if estudiantes %}
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Estudiante</th>
+                                        <th>Cédula</th>
+                                        <th>Grado</th>
+                                        <th>Sección</th>
+                                        <th>Mensualidad</th>
+                                        <th>Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for estudiante in estudiantes %}
+                                    <tr>
+                                        <td>
+                                            <strong>{{ estudiante.get_full_name }}</strong><br>
+                                            <small class="text-muted">{{ estudiante.email }}</small>
+                                        </td>
+                                        <td>{{ estudiante.cedula|default:"-" }}</td>
+                                        <td>{{ estudiante.grado|default:"-" }}</td>
+                                        <td>{{ estudiante.seccion|default:"-" }}</td>
+                                        <td>
+                                            {% if estudiante.tiene_tarifa %}
+                                                <span class="badge bg-success">RD$ {{ estudiante.tarifa_actual.monto|unlocalize|floatformat:2 }}</span>
+                                            {% else %}
+                                                <span class="badge bg-warning text-dark">Sin tarifa</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <div class="btn-group btn-group-sm" role="group">
+                                                {% if estudiante.tiene_tarifa %}
+                                                    <a href="{% url 'tarifa_edit' estudiante.tarifa_actual.id %}" 
+                                                       class="btn btn-info" title="Editar tarifa">
+                                                        <i class="fas fa-edit"></i> Editar Tarifa
+                                                    </a>
+                                                {% else %}
+                                                    <a href="{% url 'tarifa_create' %}?estudiante={{ estudiante.id }}" 
+                                                       class="btn btn-primary" title="Agregar tarifa">
+                                                        <i class="fas fa-plus"></i> Agregar Tarifa
+                                                    </a>
+                                                {% endif %}
+                                                <a href="{% url 'grupo_familiar_remover_estudiante' grupo.id estudiante.id %}" 
+                                                   class="btn btn-danger"
+                                                   onclick="return confirm('¿Está seguro de remover a {{ estudiante.get_full_name }} del grupo familiar?');">
+                                                    <i class="fas fa-times"></i> Remover
+                                                </a>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="alert alert-warning text-center">
+                            <i class="fas fa-exclamation-triangle me-2"></i>
+                            No hay estudiantes asignados a este grupo familiar.
+                            <br><br>
+                            <a href="{% url 'grupo_familiar_asignar_estudiante' grupo.id %}" class="btn btn-primary">
+                                <i class="fas fa-plus me-1"></i>Agregar Primer Estudiante
+                            </a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

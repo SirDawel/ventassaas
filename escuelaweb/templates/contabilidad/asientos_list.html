@@ -1,0 +1,360 @@
+{% extends 'website/base.html' %}
+{% load static %}
+
+{% block title %}Asientos Contables - {{ block.super }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    :root {
+        --asiento-primary: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        --asiento-secondary: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        --borrador-color: #ffc107;
+        --contabilizado-color: #28a745;
+        --anulado-color: #dc3545;
+    }
+    
+    .page-header {
+        background: var(--asiento-primary);
+        color: white;
+        padding: 2rem;
+        border-radius: 15px;
+        margin-bottom: 2rem;
+        box-shadow: 0 10px 30px rgba(102, 126, 234, 0.3);
+    }
+    
+    .page-header h2 {
+        margin: 0;
+        font-weight: 700;
+        font-size: 2rem;
+    }
+    
+    .stats-card {
+        background: white;
+        border-radius: 15px;
+        padding: 1.5rem;
+        box-shadow: 0 5px 20px rgba(0,0,0,0.08);
+        transition: all 0.3s ease;
+        border: none;
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .stats-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 4px;
+        background: var(--asiento-primary);
+    }
+    
+    .stats-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+    }
+    
+    .stats-card .stat-value {
+        font-size: 2rem;
+        font-weight: 700;
+        color: #667eea;
+        margin: 0;
+    }
+    
+    .stats-card .stat-label {
+        color: #6c757d;
+        font-size: 0.9rem;
+        margin-top: 0.5rem;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+    }
+    
+    .search-filters {
+        background: white;
+        border-radius: 15px;
+        padding: 1.5rem;
+        box-shadow: 0 5px 20px rgba(0,0,0,0.08);
+        margin-bottom: 2rem;
+    }
+    
+    .btn-crear {
+        background: var(--asiento-primary);
+        border: none;
+        color: white;
+        padding: 0.75rem 2rem;
+        border-radius: 10px;
+        font-weight: 600;
+        transition: all 0.3s ease;
+    }
+    
+    .btn-crear:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        color: white;
+    }
+    
+    .table-container {
+        background: white;
+        border-radius: 15px;
+        overflow: hidden;
+        box-shadow: 0 5px 20px rgba(0,0,0,0.08);
+    }
+    
+    .table thead {
+        background: var(--asiento-primary);
+        color: white;
+    }
+    
+    .table thead th {
+        border: none;
+        padding: 1rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        font-size: 0.85rem;
+        letter-spacing: 1px;
+    }
+    
+    .table tbody td {
+        padding: 1rem;
+        vertical-align: middle;
+    }
+    
+    .table tbody tr {
+        transition: all 0.3s ease;
+    }
+    
+    .table tbody tr:hover {
+        background-color: #f8f9fa;
+    }
+    
+    .badge-estado {
+        padding: 0.5rem 1rem;
+        border-radius: 20px;
+        font-weight: 600;
+        font-size: 0.85rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    
+    .badge-BORRADOR {
+        background-color: #fff3cd;
+        color: #856404;
+    }
+    
+    .badge-CONTABILIZADO {
+        background-color: #d4edda;
+        color: #155724;
+    }
+    
+    .badge-ANULADO {
+        background-color: #f8d7da;
+        color: #721c24;
+    }
+    
+    .badge-tipo {
+        padding: 0.4rem 0.8rem;
+        border-radius: 15px;
+        font-size: 0.8rem;
+    }
+    
+    .empty-state {
+        text-align: center;
+        padding: 4rem 2rem;
+        color: #6c757d;
+    }
+    
+    .empty-state i {
+        font-size: 4rem;
+        color: #dee2e6;
+        margin-bottom: 1rem;
+    }
+    
+    .btn-actions {
+        padding: 0.4rem 0.8rem;
+        font-size: 0.9rem;
+        border-radius: 8px;
+        transition: all 0.2s ease;
+    }
+    
+    .monto {
+        font-weight: 600;
+        color: #667eea;
+    }
+    
+    .cuadrado-check {
+        color: #28a745;
+        font-size: 1.2rem;
+    }
+    
+    .cuadrado-error {
+        color: #dc3545;
+        font-size: 1.2rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <!-- Encabezado -->
+    <div class="page-header">
+        <div class="row align-items-center">
+            <div class="col-md-6">
+                <h2>
+                    <i class="fas fa-book"></i>
+                    Asientos Contables
+                </h2>
+                <p class="mb-0 mt-2" style="opacity: 0.9;">Gestión de asientos contables y movimientos</p>
+            </div>
+            <div class="col-md-6 text-end">
+                {% if request.user.rol == 'Administrador' or request.user.rol == 'Director' %}
+                <a href="{% url 'asiento_crear' %}" class="btn btn-crear">
+                    <i class="fas fa-plus me-2"></i>
+                    Crear Nuevo Asiento
+                </a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <!-- Estadísticas -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="stats-card">
+                <p class="stat-value">{{ stats.total }}</p>
+                <p class="stat-label">Total Asientos</p>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stats-card">
+                <p class="stat-value">{{ stats.borradores }}</p>
+                <p class="stat-label">Borradores</p>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stats-card">
+                <p class="stat-value">{{ stats.contabilizados }}</p>
+                <p class="stat-label">Contabilizados</p>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stats-card">
+                <p class="stat-value">{{ stats.anulados }}</p>
+                <p class="stat-label">Anulados</p>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Filtros de búsqueda -->
+    <div class="search-filters">
+        <form method="get" class="row g-3">
+            <div class="col-md-3">
+                {{ form.busqueda }}
+            </div>
+            <div class="col-md-2">
+                {{ form.tipo_asiento }}
+            </div>
+            <div class="col-md-2">
+                {{ form.estado }}
+            </div>
+            <div class="col-md-2">
+                {{ form.fecha_desde }}
+            </div>
+            <div class="col-md-2">
+                {{ form.fecha_hasta }}
+            </div>
+            <div class="col-md-1">
+                <button type="submit" class="btn btn-primary w-100">
+                    <i class="fas fa-search"></i>
+                </button>
+            </div>
+        </form>
+    </div>
+    
+    <!-- Tabla de asientos -->
+    <div class="table-container">
+        {% if asientos %}
+        <table class="table table-hover mb-0">
+            <thead>
+                <tr>
+                    <th>Número</th>
+                    <th>Fecha</th>
+                    <th>Tipo</th>
+                    <th>Concepto</th>
+                    <th>Total Débito</th>
+                    <th>Total Crédito</th>
+                    <th>Estado</th>
+                    <th>Cuadrado</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for asiento in asientos %}
+                <tr>
+                    <td>
+                        <strong>{{ asiento.numero_asiento }}</strong>
+                    </td>
+                    <td>{{ asiento.fecha_asiento|date:"d/m/Y" }}</td>
+                    <td>
+                        <span class="badge badge-tipo badge-secondary">
+                            {{ asiento.get_tipo_asiento_display }}
+                        </span>
+                    </td>
+                    <td>{{ asiento.concepto|truncatewords:8 }}</td>
+                    <td class="monto">Gs. {{ asiento.total_debito|floatformat:0 }}</td>
+                    <td class="monto">Gs. {{ asiento.total_credito|floatformat:0 }}</td>
+                    <td>
+                        <span class="badge-estado badge-{{ asiento.estado }}">
+                            {{ asiento.get_estado_display }}
+                        </span>
+                    </td>
+                    <td class="text-center">
+                        {% if asiento.esta_cuadrado %}
+                        <i class="fas fa-check-circle cuadrado-check" title="Asiento cuadrado"></i>
+                        {% else %}
+                        <i class="fas fa-times-circle cuadrado-error" title="Asiento descuadrado"></i>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <div class="btn-group">
+                            <a href="{% url 'asiento_detalle' asiento.pk %}" 
+                               class="btn btn-sm btn-info btn-actions" 
+                               title="Ver detalle">
+                                <i class="fas fa-eye"></i>
+                            </a>
+                            
+                            {% if asiento.estado == 'BORRADOR' and request.user.rol == 'Administrador' or request.user.rol == 'Director' %}
+                            <a href="{% url 'asiento_contabilizar' asiento.pk %}" 
+                               class="btn btn-sm btn-success btn-actions" 
+                               title="Contabilizar">
+                                <i class="fas fa-check"></i>
+                            </a>
+                            {% endif %}
+                            
+                            <a href="{% url 'asiento_imprimir' asiento.pk %}" 
+                               class="btn btn-sm btn-secondary btn-actions" 
+                               title="Imprimir" 
+                               target="_blank">
+                                <i class="fas fa-print"></i>
+                            </a>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <div class="empty-state">
+            <i class="fas fa-book-open"></i>
+            <h4>No hay asientos contables</h4>
+            <p>{% if request.GET %}No se encontraron asientos que coincidan con los filtros.{% else %}Comienza creando tu primer asiento contable.{% endif %}</p>
+            {% if request.user.rol == 'Administrador' or request.user.rol == 'Director' %}
+            <a href="{% url 'asiento_crear' %}" class="btn btn-crear mt-3">
+                <i class="fas fa-plus me-2"></i>
+                Crear Primer Asiento
+            </a>
+            {% endif %}
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

@@ -121,6 +121,75 @@
                     <div class="col-md-4">{{ form.contacto_emergencia_parentesco.label_tag }} {{ form.contacto_emergencia_parentesco }}</div>
                 </div>
 
+                <!-- Configuración de Mora Individual (solo estudiantes) -->
+                <div id="bloque-mora-individual" class="mt-4" style="display:none;">
+                    <h5 class="text-warning mb-3 border-bottom pb-2">
+                        <i class="fas fa-exclamation-triangle me-2"></i>Configuración de Mora Individual
+                    </h5>
+                    <div class="alert alert-info mb-3">
+                        <i class="fas fa-info-circle me-2"></i>
+                        <strong>Nota:</strong> Esta configuración solo aplica si el estudiante <strong>NO está en un grupo familiar</strong>. 
+                        Si está en un grupo, se usará la configuración del grupo.
+                    </div>
+                    <div class="card border-warning mb-3">
+                        <div class="card-body">
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label for="{{ form.dia_vencimiento_individual.id_for_label }}" class="form-label fw-bold">
+                                        <i class="fas fa-calendar-alt me-1 text-primary"></i>{{ form.dia_vencimiento_individual.label }}
+                                    </label>
+                                    {{ form.dia_vencimiento_individual }}
+                                    <small class="form-text text-muted d-block mt-1">
+                                        Día del mes (1-31) en que vencen las mensualidades
+                                    </small>
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="{{ form.porcentaje_mora_individual.id_for_label }}" class="form-label fw-bold">
+                                        <i class="fas fa-percent me-1 text-danger"></i>{{ form.porcentaje_mora_individual.label }}
+                                    </label>
+                                    <div class="input-group">
+                                        {{ form.porcentaje_mora_individual }}
+                                        <span class="input-group-text bg-warning text-dark fw-bold">%</span>
+                                    </div>
+                                    <small class="form-text text-muted d-block mt-1">
+                                        Porcentaje de recargo por pagos vencidos (0-100%)
+                                    </small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Configuración de Descuento Individual (solo estudiantes) -->
+                <div id="bloque-descuento-individual" class="mt-4" style="display:none;">
+                    <h5 class="text-success mb-3 border-bottom pb-2">
+                        <i class="fas fa-percentage me-2"></i>Configuración de Descuento Individual
+                    </h5>
+                    <div class="alert alert-info mb-3">
+                        <i class="fas fa-info-circle me-2"></i>
+                        <strong>Nota:</strong> Este descuento solo aplica si el estudiante <strong>NO está en un grupo familiar</strong>. 
+                        Si está en un grupo, se usará el descuento del grupo.
+                    </div>
+                    <div class="card border-success mb-3">
+                        <div class="card-body">
+                            <div class="row g-3">
+                                <div class="col-md-12">
+                                    <label for="{{ form.descuento_individual.id_for_label }}" class="form-label fw-bold">
+                                        <i class="fas fa-tags me-1 text-success"></i>{{ form.descuento_individual.label }}
+                                    </label>
+                                    <div class="input-group">
+                                        {{ form.descuento_individual }}
+                                        <span class="input-group-text bg-success text-white fw-bold">%</span>
+                                    </div>
+                                    <small class="form-text text-muted d-block mt-1">
+                                        Porcentaje de descuento en mensualidades, inscripción y transporte (0-100%)
+                                    </small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Botones -->
                 <div class="text-center mt-4">
                     <button type="submit" class="btn btn-success px-4 me-2">
@@ -128,9 +197,9 @@
                         {% if editing %}Guardar Cambios{% else %}Crear Usuario{% endif %}
                     </button>
 
-                    <a href="{% url 'user_list' %}" class="btn btn-secondary px-4">
+                    <button type="button" class="btn btn-secondary px-4" onclick="history.back()">
                         <i class="fas fa-arrow-left"></i> Volver
-                    </a>
+                    </button>
                 </div>
             </form>
         </div>
@@ -149,6 +218,8 @@ function mostrarCamposRol() {
     const rol = document.getElementById("id_rol").value;
     document.getElementById("bloque-estudiante").style.display = rol === "Estudiante" ? "block" : "none";
     document.getElementById("bloque-profesor").style.display = rol === "Profesor" ? "block" : "none";
+    document.getElementById("bloque-mora-individual").style.display = rol === "Estudiante" ? "block" : "none";
+    document.getElementById("bloque-descuento-individual").style.display = rol === "Estudiante" ? "block" : "none";
 }
 
 document.addEventListener("DOMContentLoaded", function() {

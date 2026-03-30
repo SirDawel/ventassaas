@@ -1,0 +1,246 @@
+{% extends 'website/base.html' %}
+
+{% block title %}{{ titulo }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <!-- Header Card -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-body">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h3 class="mb-2">
+                        <i class="fas fa-clipboard-check text-success"></i> {{ titulo }}
+                    </h3>
+                    <p class="text-muted mb-1">{{ descripcion }}</p>
+                    {% if anho_activo %}
+                    <p class="mb-0">
+                        <span class="badge bg-primary" style="font-size: 0.9em;">
+                            <i class="fas fa-calendar-alt me-1"></i>Año Escolar: {{ anho_activo.nombre }}
+                        </span>
+                    </p>
+                    {% endif %}
+                </div>
+                <a href="{% url 'plataform' %}" class="btn btn-secondary">
+                    <i class="fas fa-arrow-left"></i> Volver
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Crear Nueva Evaluación con Rúbrica -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-header bg-success text-white">
+            <h5 class="mb-0"><i class="fas fa-plus-circle me-2"></i>Aplicar Rúbrica a Estudiantes</h5>
+        </div>
+        <div class="card-body">
+            <form method="post">
+                {% csrf_token %}
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label for="rubrica" class="form-label">Rúbrica <span class="text-danger">*</span></label>
+                        <select class="form-select" id="rubrica" name="rubrica" required>
+                            <option value="">Seleccionar rúbrica...</option>
+                            {% for rub in rubricas %}
+                            <option value="{{ rub.id }}" data-materia="{{ rub.materia.id }}">
+                                {{ rub.nombre }} - {{ rub.materia.nombre }} ({{ rub.total_criterios }} criterios)
+                            </option>
+                            {% endfor %}
+                        </select>
+                        <small class="text-muted">Solo se muestran rúbricas activas con criterios definidos</small>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label for="materia" class="form-label">Materia <span class="text-danger">*</span></label>
+                        <select class="form-select" id="materia" name="materia" required>
+                            <option value="">Seleccionar materia...</option>
+                            {% for materia in materias %}
+                            <option value="{{ materia.id }}">{{ materia.nombre }} - {{ materia.curso.nombre }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label for="curso" class="form-label">Curso <span class="text-danger">*</span></label>
+                        <select class="form-select" id="curso" name="curso" required>
+                            <option value="">Seleccionar curso...</option>
+                            {% for curso in cursos %}
+                            <option value="{{ curso.id }}">{{ curso }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label for="titulo" class="form-label">Título de la Evaluación <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="titulo" name="titulo" required 
+                               placeholder="Ej: Proyecto Final de Ciencias Naturales">
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label for="fecha_evaluacion" class="form-label">Fecha de Evaluación <span class="text-danger">*</span></label>
+                        <input type="date" class="form-control" id="fecha_evaluacion" name="fecha_evaluacion" required>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label for="periodo" class="form-label">Período <span class="text-danger">*</span></label>
+                        <select class="form-select" id="periodo" name="periodo" required>
+                            <option value="">Seleccionar período...</option>
+                            <option value="Primer Período">Primer Período</option>
+                            <option value="Segundo Período">Segundo Período</option>
+                            <option value="Tercer Período">Tercer Período</option>
+                            <option value="Cuarto Período">Cuarto Período</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-12 mb-3">
+                        <label for="descripcion" class="form-label">Descripción de la Actividad (Opcional)</label>
+                        <textarea class="form-control" id="descripcion" name="descripcion" rows="3" 
+                                  placeholder="Descripción de la actividad o proyecto a evaluar..."></textarea>
+                    </div>
+                </div>
+                <div class="text-end">
+                    <button type="submit" class="btn btn-success">
+                        <i class="fas fa-check-circle me-1"></i>Crear Evaluación y Evaluar Estudiantes
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Lista de Evaluaciones -->
+    <div class="card shadow-sm">
+        <div class="card-header bg-info text-white">
+            <h5 class="mb-0"><i class="fas fa-list me-2"></i>Evaluaciones Registradas ({{ evaluaciones.count }})</h5>
+        </div>
+        <div class="card-body">
+            {% if evaluaciones %}
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Título</th>
+                            <th>Rúbrica</th>
+                            <th>Materia</th>
+                            <th>Curso</th>
+                            <th>Fecha</th>
+                            <th>Período</th>
+                            <th>Estudiantes Evaluados</th>
+                            <th>Estado</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for eval in evaluaciones %}
+                        <tr>
+                            <td><strong>{{ eval.titulo }}</strong></td>
+                            <td>
+                                <span class="badge bg-secondary">{{ eval.rubrica.nombre }}</span>
+                                <br><small class="text-muted">{{ eval.rubrica.total_criterios }} criterios</small>
+                            </td>
+                            <td>{{ eval.materia.nombre }}</td>
+                            <td>{{ eval.curso.nombre }}</td>
+                            <td>{{ eval.fecha_evaluacion|date:"d/m/Y" }}</td>
+                            <td>{{ eval.periodo }}</td>
+                            <td class="text-center">
+                                {% if eval.total_estudiantes > 0 %}
+                                <span class="badge bg-success">{{ eval.total_estudiantes }}</span>
+                                {% else %}
+                                <span class="badge bg-warning">0</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if eval.activa %}
+                                <span class="badge bg-success">Activa</span>
+                                {% else %}
+                                <span class="badge bg-secondary">Inactiva</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div class="btn-group btn-group-sm" role="group">
+                                    <a href="{% url 'evaluar_con_rubrica' eval.id %}" 
+                                       class="btn btn-primary" title="Evaluar estudiantes">
+                                        <i class="fas fa-edit"></i> Evaluar
+                                    </a>
+                                    <button type="button" class="btn btn-info" 
+                                            data-bs-toggle="modal" 
+                                            data-bs-target="#verModal{{ eval.id }}" 
+                                            title="Ver detalles">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        
+                        <!-- Modal Ver Detalles -->
+                        <div class="modal fade" id="verModal{{ eval.id }}" tabindex="-1">
+                            <div class="modal-dialog modal-lg">
+                                <div class="modal-content">
+                                    <div class="modal-header bg-info text-white">
+                                        <h5 class="modal-title">
+                                            <i class="fas fa-info-circle me-2"></i>{{ eval.titulo }}
+                                        </h5>
+                                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                                    </div>
+                                    <div class="modal-body">
+                                        <div class="row mb-3">
+                                            <div class="col-md-6">
+                                                <strong>Rúbrica:</strong> {{ eval.rubrica.nombre }}<br>
+                                                <strong>Tipo:</strong> {{ eval.rubrica.get_tipo_actividad_display }}<br>
+                                                <strong>Criterios:</strong> {{ eval.rubrica.total_criterios }}<br>
+                                                <strong>Puntaje Total:</strong> {{ eval.rubrica.puntaje_total }}
+                                            </div>
+                                            <div class="col-md-6">
+                                                <strong>Materia:</strong> {{ eval.materia.nombre }}<br>
+                                                <strong>Curso:</strong> {{ eval.curso.nombre }}<br>
+                                                <strong>Período:</strong> {{ eval.periodo }}<br>
+                                                <strong>Fecha:</strong> {{ eval.fecha_evaluacion|date:"d/m/Y" }}
+                                            </div>
+                                        </div>
+                                        {% if eval.descripcion %}
+                                        <div class="mb-3">
+                                            <strong>Descripción:</strong>
+                                            <p class="mt-2">{{ eval.descripcion }}</p>
+                                        </div>
+                                        {% endif %}
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <div class="card bg-light">
+                                                    <div class="card-body text-center">
+                                                        <h5>{{ eval.total_estudiantes }}</h5>
+                                                        <small class="text-muted">Estudiantes Evaluados</small>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <div class="card bg-light">
+                                                    <div class="card-body text-center">
+                                                        <h5>{{ eval.puntaje_promedio|floatformat:2 }}</h5>
+                                                        <small class="text-muted">Puntaje Promedio</small>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="modal-footer">
+                                        <a href="{% url 'evaluar_con_rubrica' eval.id %}" class="btn btn-primary">
+                                            <i class="fas fa-edit"></i> Evaluar Estudiantes
+                                        </a>
+                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="alert alert-info mb-0">
+                <i class="fas fa-info-circle me-2"></i>
+                No hay evaluaciones registradas. Crea una nueva evaluación para empezar a evaluar a los estudiantes.
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,558 @@
+{% extends 'website/base.html' %}
+{% load l10n %}
+{% block content %}
+
+<style>
+  /* ===== VARIABLES MODERNAS ===== */
+  :root {
+    --form-primary: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    --form-success: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+    --form-shadow: 0 8px 30px rgba(0,0,0,0.12);
+  }
+
+  /* ===== HEADER DEL FORMULARIO ===== */
+  .form-header {
+    background: var(--form-primary);
+    border-radius: 20px 20px 0 0;
+    padding: 2rem;
+    color: white;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .form-header::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    right: -50%;
+    width: 200%;
+    height: 200%;
+    background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+    animation: float 20s ease-in-out infinite;
+  }
+
+  @keyframes float {
+    0%, 100% { transform: translate(0, 0) rotate(0deg); }
+    50% { transform: translate(-30px, -30px) rotate(180deg); }
+  }
+
+  .form-header h2 {
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+    position: relative;
+    z-index: 1;
+  }
+
+  .form-header p {
+    opacity: 0.95;
+    margin-bottom: 0;
+    position: relative;
+    z-index: 1;
+  }
+
+  /* ===== CONTENEDOR DEL FORMULARIO ===== */
+  .form-container {
+    background: white;
+    border-radius: 0 0 20px 20px;
+    box-shadow: var(--form-shadow);
+    margin-bottom: 2rem;
+  }
+
+  .form-body {
+    padding: 2rem;
+  }
+
+  /* ===== ESTILOS DE CAMPOS ===== */
+  .form-label {
+    font-weight: 600;
+    color: #2d3748;
+    margin-bottom: 0.5rem;
+    font-size: 0.95rem;
+  }
+
+  .form-label i {
+    color: #667eea;
+    margin-right: 0.5rem;
+  }
+
+  .form-control,
+  .form-select {
+    border-radius: 10px;
+    border: 2px solid #e2e8f0;
+    padding: 0.75rem 1rem;
+    transition: all 0.3s ease;
+    font-size: 0.95rem;
+  }
+
+  .form-control:focus,
+  .form-select:focus {
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+  }
+
+  .form-control::placeholder {
+    color: #a0aec0;
+  }
+
+  textarea.form-control {
+    resize: vertical;
+    min-height: 100px;
+  }
+
+  /* ===== CHECKBOX MODERNO ===== */
+  .form-check {
+    padding: 1rem;
+    background: #f7fafc;
+    border-radius: 10px;
+    margin-bottom: 1rem;
+    transition: all 0.3s ease;
+  }
+
+  .form-check:hover {
+    background: #edf2f7;
+  }
+
+  .form-check-input {
+    width: 1.5rem;
+    height: 1.5rem;
+    margin-top: 0;
+    cursor: pointer;
+  }
+
+  .form-check-input:checked {
+    background-color: #667eea;
+    border-color: #667eea;
+  }
+
+  .form-check-label {
+    font-weight: 500;
+    color: #2d3748;
+    margin-left: 0.75rem;
+    cursor: pointer;
+  }
+
+  /* ===== HELP TEXT ===== */
+  .form-text {
+    color: #718096;
+    font-size: 0.85rem;
+    margin-top: 0.5rem;
+  }
+
+  /* ===== BOTONES ===== */
+  .btn-guardar {
+    background: var(--form-success);
+    color: white;
+    border: none;
+    border-radius: 10px;
+    padding: 0.875rem 2.5rem;
+    font-weight: 600;
+    font-size: 1rem;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(17, 153, 142, 0.3);
+  }
+
+  .btn-guardar:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(17, 153, 142, 0.4);
+    color: white;
+  }
+
+  .btn-cancelar {
+    background: #e2e8f0;
+    color: #4a5568;
+    border: none;
+    border-radius: 10px;
+    padding: 0.875rem 2.5rem;
+    font-weight: 600;
+    font-size: 1rem;
+    transition: all 0.3s ease;
+  }
+
+  .btn-cancelar:hover {
+    background: #cbd5e0;
+    transform: translateY(-2px);
+  }
+
+  /* ===== CAMPO CON ERROR ===== */
+  .is-invalid {
+    border-color: #fc8181 !important;
+  }
+
+  .invalid-feedback {
+    color: #fc8181;
+    font-size: 0.85rem;
+    margin-top: 0.5rem;
+  }
+
+  /* ===== SECCIÓN DE INFORMACIÓN ===== */
+  .info-box {
+    background: linear-gradient(135deg, #667eea15 0%, #764ba215 100%);
+    border-left: 4px solid #667eea;
+    border-radius: 10px;
+    padding: 1.25rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .info-box i {
+    color: #667eea;
+    font-size: 1.5rem;
+    margin-right: 1rem;
+  }
+
+  .info-box-content {
+    flex: 1;
+  }
+
+  .info-box-title {
+    font-weight: 600;
+    color: #2d3748;
+    margin-bottom: 0.5rem;
+  }
+
+  .info-box-text {
+    color: #4a5568;
+    font-size: 0.9rem;
+    margin-bottom: 0;
+  }
+
+  /* ===== CARD DE AYUDA ===== */
+  .help-card {
+    background: #f7fafc;
+    border-radius: 15px;
+    padding: 1.5rem;
+    margin-top: 2rem;
+  }
+
+  .help-card h5 {
+    color: #2d3748;
+    font-weight: 700;
+    margin-bottom: 1rem;
+  }
+
+  .help-card ul {
+    padding-left: 1.5rem;
+    margin-bottom: 0;
+  }
+
+  .help-card li {
+    color: #4a5568;
+    margin-bottom: 0.5rem;
+  }
+
+  /* ===== RESPONSIVE ===== */
+  @media (max-width: 768px) {
+    .form-header,
+    .form-body {
+      padding: 1.5rem;
+    }
+
+    .btn-guardar,
+    .btn-cancelar {
+      width: 100%;
+      margin-bottom: 0.5rem;
+    }
+  }
+</style>
+
+<div class="container py-4">
+  <div class="row justify-content-center">
+    <div class="col-lg-10">
+      <!-- Form Header -->
+      <div class="form-header">
+        <div class="d-flex align-items-center">
+          <i class="fas fa-book fa-2x me-3"></i>
+          <div>
+            <h2 class="mb-0">{{ titulo }}</h2>
+            <p class="mb-0">Complete la información de la cuenta contable</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Form Body -->
+      <div class="form-container">
+        <div class="form-body">
+          <!-- Información importante -->
+          <div class="info-box d-flex align-items-start">
+            <i class="fas fa-info-circle"></i>
+            <div class="info-box-content">
+              <div class="info-box-title">Información Importante</div>
+              <p class="info-box-text">
+                El código de cuenta debe seguir una estructura jerárquica (ej: 1.1.01.001). 
+                Las cuentas de detalle aceptan movimientos contables, mientras que las agrupadores solo organizan la estructura.
+              </p>
+            </div>
+          </div>
+
+          <!-- Formulario -->
+          <form method="post" novalidate>
+            {% csrf_token %}
+            
+            <!-- Información Básica -->
+            <div class="row mb-4">
+              <div class="col-12">
+                <h5 class="text-primary mb-3">
+                  <i class="fas fa-file-alt"></i> Información Básica
+                </h5>
+              </div>
+              
+              <div class="col-md-4 mb-3">
+                <label for="{{ form.codigo.id_for_label }}" class="form-label">
+                  <i class="fas fa-hashtag"></i> {{ form.codigo.label }}
+                </label>
+                {{ form.codigo }}
+                {% if form.codigo.errors %}
+                  <div class="invalid-feedback d-block">
+                    {{ form.codigo.errors.0 }}
+                  </div>
+                {% endif %}
+                <small class="form-text">Formato: números separados por puntos (ej: 1.1.01.001)</small>
+              </div>
+
+              <div class="col-md-8 mb-3">
+                <label for="{{ form.nombre.id_for_label }}" class="form-label">
+                  <i class="fas fa-tag"></i> {{ form.nombre.label }}
+                </label>
+                {{ form.nombre }}
+                {% if form.nombre.errors %}
+                  <div class="invalid-feedback d-block">
+                    {{ form.nombre.errors.0 }}
+                  </div>
+                {% endif %}
+              </div>
+
+              <div class="col-12 mb-3">
+                <label for="{{ form.descripcion.id_for_label }}" class="form-label">
+                  <i class="fas fa-align-left"></i> {{ form.descripcion.label }}
+                </label>
+                {{ form.descripcion }}
+                {% if form.descripcion.errors %}
+                  <div class="invalid-feedback d-block">
+                    {{ form.descripcion.errors.0 }}
+                  </div>
+                {% endif %}
+                <small class="form-text">Descripción detallada (opcional)</small>
+              </div>
+            </div>
+
+            <!-- Clasificación Contable -->
+            <div class="row mb-4">
+              <div class="col-12">
+                <h5 class="text-primary mb-3">
+                  <i class="fas fa-list-ul"></i> Clasificación Contable
+                </h5>
+              </div>
+
+              <div class="col-md-4 mb-3">
+                <label for="{{ form.tipo_cuenta.id_for_label }}" class="form-label">
+                  <i class="fas fa-layer-group"></i> {{ form.tipo_cuenta.label }}
+                </label>
+                {{ form.tipo_cuenta }}
+                {% if form.tipo_cuenta.errors %}
+                  <div class="invalid-feedback d-block">
+                    {{ form.tipo_cuenta.errors.0 }}
+                  </div>
+                {% endif %}
+              </div>
+
+              <div class="col-md-4 mb-3">
+                <label for="{{ form.naturaleza.id_for_label }}" class="form-label">
+                  <i class="fas fa-balance-scale"></i> {{ form.naturaleza.label }}
+                </label>
+                {{ form.naturaleza }}
+                {% if form.naturaleza.errors %}
+                  <div class="invalid-feedback d-block">
+                    {{ form.naturaleza.errors.0 }}
+                  </div>
+                {% endif %}
+                <small class="form-text">Se asigna automáticamente según el tipo</small>
+              </div>
+
+              <div class="col-md-4 mb-3">
+                <label for="{{ form.cuenta_padre.id_for_label }}" class="form-label">
+                  <i class="fas fa-sitemap"></i> {{ form.cuenta_padre.label }}
+                </label>
+                {{ form.cuenta_padre }}
+                {% if form.cuenta_padre.errors %}
+                  <div class="invalid-feedback d-block">
+                    {{ form.cuenta_padre.errors.0 }}
+                  </div>
+                {% endif %}
+                <small class="form-text">Opcional - Para crear subcuentas</small>
+              </div>
+            </div>
+
+            <!-- Configuración -->
+            <div class="row mb-4">
+              <div class="col-12">
+                <h5 class="text-primary mb-3">
+                  <i class="fas fa-cog"></i> Configuración
+                </h5>
+              </div>
+
+              <div class="col-md-6 mb-3">
+                <div class="form-check">
+                  {{ form.es_detalle }}
+                  <label class="form-check-label" for="{{ form.es_detalle.id_for_label }}">
+                    {{ form.es_detalle.label }}
+                  </label>
+                  {% if form.es_detalle.errors %}
+                    <div class="invalid-feedback d-block">
+                      {{ form.es_detalle.errors.0 }}
+                    </div>
+                  {% endif %}
+                  <small class="form-text d-block mt-2">
+                    Si está marcado, la cuenta acepta movimientos contables directos
+                  </small>
+                </div>
+              </div>
+
+              <div class="col-md-6 mb-3">
+                <div class="form-check">
+                  {{ form.activo }}
+                  <label class="form-check-label" for="{{ form.activo.id_for_label }}">
+                    {{ form.activo.label }}
+                  </label>
+                  {% if form.activo.errors %}
+                    <div class="invalid-feedback d-block">
+                      {{ form.activo.errors.0 }}
+                    </div>
+                  {% endif %}
+                  <small class="form-text d-block mt-2">
+                    Solo las cuentas activas están disponibles para uso
+                  </small>
+                </div>
+              </div>
+
+              <div class="col-md-6 mb-3">
+                <label for="{{ form.saldo_inicial.id_for_label }}" class="form-label">
+                  <i class="fas fa-dollar-sign"></i> {{ form.saldo_inicial.label }}
+                </label>
+                <div class="input-group">
+                  <span class="input-group-text">$</span>
+                  {{ form.saldo_inicial }}
+                </div>
+                {% if form.saldo_inicial.errors %}
+                  <div class="invalid-feedback d-block">
+                    {{ form.saldo_inicial.errors.0 }}
+                  </div>
+                {% endif %}
+                <small class="form-text">Solo para cuentas de detalle</small>
+              </div>
+            </div>
+
+            <!-- Configuraciones Especiales -->
+            <div class="row mb-4">
+              <div class="col-12">
+                <h5 class="text-primary mb-3">
+                  <i class="fas fa-sliders-h"></i> Configuraciones Especiales
+                </h5>
+              </div>
+
+              <div class="col-md-6 mb-3">
+                <div class="form-check">
+                  {{ form.requiere_centro_costo }}
+                  <label class="form-check-label" for="{{ form.requiere_centro_costo.id_for_label }}">
+                    {{ form.requiere_centro_costo.label }}
+                  </label>
+                  <small class="form-text d-block mt-2">
+                    Los movimientos requerirán especificar un centro de costo
+                  </small>
+                </div>
+              </div>
+
+              <div class="col-md-6 mb-3">
+                <div class="form-check">
+                  {{ form.requiere_tercero }}
+                  <label class="form-check-label" for="{{ form.requiere_tercero.id_for_label }}">
+                    {{ form.requiere_tercero.label }}
+                  </label>
+                  <small class="form-text d-block mt-2">
+                    Los movimientos requerirán especificar un tercero (cliente/proveedor)
+                  </small>
+                </div>
+              </div>
+            </div>
+
+            <!-- Errores No de Campo -->
+            {% if form.non_field_errors %}
+            <div class="alert alert-danger" role="alert">
+              <i class="fas fa-exclamation-triangle me-2"></i>
+              {{ form.non_field_errors.0 }}
+            </div>
+            {% endif %}
+
+            <!-- Botones -->
+            <div class="row mt-4">
+              <div class="col-12">
+                <div class="d-flex justify-content-end gap-2">
+                  <a href="{% url 'plan_cuentas_list' %}" class="btn btn-cancelar">
+                    <i class="fas fa-times"></i> Cancelar
+                  </a>
+                  <button type="submit" class="btn btn-guardar">
+                    <i class="fas fa-save"></i> {{ accion }}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </form>
+
+          <!-- Tarjeta de Ayuda -->
+          <div class="help-card">
+            <h5><i class="fas fa-question-circle"></i> Guía Rápida</h5>
+            <ul>
+              <li><strong>Activos:</strong> Bienes y derechos (Caja, Bancos, Cuentas por Cobrar, etc.)</li>
+              <li><strong>Pasivos:</strong> Obligaciones (Cuentas por Pagar, Préstamos, etc.)</li>
+              <li><strong>Capital:</strong> Patrimonio de la institución</li>
+              <li><strong>Ingresos:</strong> Entrada de recursos (Matrículas, Mensualidades, etc.)</li>
+              <li><strong>Gastos:</strong> Egresos operativos (Salarios, Servicios, etc.)</li>
+              <li><strong>Costos:</strong> Gastos directos de producción de servicios</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    // Auto-establecer naturaleza según tipo de cuenta
+    const tipoCuentaSelect = document.getElementById('{{ form.tipo_cuenta.id_for_label }}');
+    const naturalezaSelect = document.getElementById('{{ form.naturaleza.id_for_label }}');
+    
+    if (tipoCuentaSelect && naturalezaSelect) {
+      tipoCuentaSelect.addEventListener('change', function() {
+        const tipo = this.value;
+        // ACTIVO, GASTO, COSTO = Deudora
+        // PASIVO, CAPITAL, INGRESO = Acreedora
+        if (['ACTIVO', 'GASTO', 'COSTO'].includes(tipo)) {
+          naturalezaSelect.value = 'DEUDORA';
+        } else if (['PASIVO', 'CAPITAL', 'INGRESO'].includes(tipo)) {
+          naturalezaSelect.value = 'ACREEDORA';
+        }
+      });
+    }
+
+    // Validar que cuenta agrupadora no tenga saldo inicial
+    const esDetalleCheck = document.getElementById('{{ form.es_detalle.id_for_label }}');
+    const saldoInicialInput = document.getElementById('{{ form.saldo_inicial.id_for_label }}');
+    
+    if (esDetalleCheck && saldoInicialInput) {
+      esDetalleCheck.addEventListener('change', function() {
+        if (!this.checked) {
+          saldoInicialInput.value = '0.00';
+          saldoInicialInput.disabled = true;
+        } else {
+          saldoInicialInput.disabled = false;
+        }
+      });
+      
+      // Verificar estado inicial
+      if (!esDetalleCheck.checked) {
+        saldoInicialInput.disabled = true;
+      }
+    }
+  });
+</script>
+
+{% endblock %}

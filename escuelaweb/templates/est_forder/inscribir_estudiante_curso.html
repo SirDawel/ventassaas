@@ -4,28 +4,224 @@
 
 {% block content %}
 <div class="container mt-4">
-    <div class="card">
-        <div class="card-header">
-            <h4>{{ titulo }}</h4>
+    <div class="card shadow">
+        <div class="card-header bg-primary text-white">
+            <h4 class="mb-0">
+                <i class="fas fa-user-plus me-2"></i>{{ titulo }}
+            </h4>
+            <small>Total de estudiantes activos: {{ total_estudiantes }}</small>
         </div>
         <div class="card-body">
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+
+            <!-- Search Form -->
+            <form method="get" class="mb-4" id="searchForm">
+                <div class="input-group input-group-lg">
+                    <span class="input-group-text">
+                        <i class="fas fa-search"></i>
+                    </span>
+                    <input type="text" 
+                           name="q" 
+                           id="searchInput"
+                           class="form-control" 
+                           placeholder="Buscar por nombre, email, cédula o código de barras (mínimo 2 caracteres)..." 
+                           value="{{ query }}"
+                           minlength="2"
+                           autofocus>
+                    <button class="btn btn-primary" type="submit">
+                        <i class="fas fa-search me-2"></i>Buscar
+                    </button>
+                    {% if query %}
+                    <a href="?" class="btn btn-secondary">
+                        <i class="fas fa-times me-2"></i>Limpiar
+                    </a>
+                    {% endif %}
+                </div>
+                <small class="text-muted mt-1 d-block">
+                    <i class="fas fa-info-circle me-1"></i>Ingrese al menos 2 caracteres para buscar. 
+                    <i class="fas fa-barcode ms-2 me-1"></i>Puede escanear el código de barras del estudiante directamente
+                </small>
+            </form>
+
+            <!-- Results Messages -->
+            {% if query %}
+                {% if query|length < 2 %}
+                    <div class="alert alert-warning">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        Por favor ingrese al menos 2 caracteres para realizar la búsqueda.
+                    </div>
+                {% elif estudiantes %}
+                    <div class="alert alert-success">
+                        <i class="fas fa-check-circle me-2"></i>
+                        Mostrando {{ estudiantes|length }} de {{ total_resultados }} estudiante(s) que coinciden con "{{ query }}"
+                        {% if resultados_limitados %}
+                            <br>
+                            <strong><i class="fas fa-info-circle me-1"></i>Se encontraron más de {{ limite_resultados }} resultados. 
+                            Por favor refine su búsqueda para ver otros estudiantes.</strong>
+                        {% endif %}
+                    </div>
+                {% else %}
+                    <div class="alert alert-warning">
+                        <i class="fas fa-search me-2"></i>
+                        No se encontraron estudiantes que coincidan con "{{ query }}"
+                    </div>
+                {% endif %}
+            {% endif %}
+
+            <!-- Students List -->
+            {% if estudiantes %}
             <form method="post">
                 {% csrf_token %}
-                <div class="mb-3">
-                    <label class="form-label">Seleccionar Estudiante</label>
-                    <select name="estudiante" class="form-select" required>
-                        <option value="">-- Seleccione --</option>
-                        {% for e in estudiantes %}
-                        <option value="{{ e.id }}">{{ e.get_full_name }} ({{ e.email }})</option>
-                        {% endfor %}
-                    </select>
+                <div class="table-responsive">
+                    <table class="table table-hover table-striped">
+                        <thead class="table-light">
+                            <tr>
+                                <th width="50">Seleccionar</th>
+                                <th>Nombre Completo</th>
+                                <th>Email</th>
+                                <th>Cédula</th>
+                                <th>Código de Barras</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for estudiante in estudiantes %}
+                            <tr class="estudiante-row" style="cursor: pointer;" data-student-id="{{ estudiante.id }}">
+                                <td>
+                                    <div class="form-check">
+                                        <input class="form-check-input estudiante-radio" 
+                                               type="radio" 
+                                               name="estudiante" 
+                                               value="{{ estudiante.id }}" 
+                                               id="est{{ estudiante.id }}">
+                                    </div>
+                                </td>
+                                <td>
+                                    <label for="est{{ estudiante.id }}" style="cursor: pointer; margin: 0;">
+                                        <strong>{{ estudiante.get_full_name }}</strong>
+                                    </label>
+                                </td>
+                                <td>
+                                    <label for="est{{ estudiante.id }}" style="cursor: pointer; margin: 0;">
+                                        {{ estudiante.email }}
+                                    </label>
+                                </td>
+                                <td>
+                                    <label for="est{{ estudiante.id }}" style="cursor: pointer; margin: 0;">
+                                        {{ estudiante.cedula|default:"-" }}
+                                    </label>
+                                </td>
+                                <td>
+                                    <label for="est{{ estudiante.id }}" style="cursor: pointer; margin: 0;">
+                                        {% if estudiante.codigo_barras %}
+                                            <i class="fas fa-barcode text-success"></i> {{ estudiante.codigo_barras }}
+                                        {% else %}
+                                            <span class="text-muted">-</span>
+                                        {% endif %}
+                                    </label>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
                 </div>
-                <div class="d-flex gap-2">
-                    <a href="{% url 'lista_cursos' %}?anho={{ curso.anho_escolar.id }}" class="btn btn-secondary">Cancelar</a>
-                    <button type="submit" class="btn btn-primary">Inscribir en todas las materias</button>
+                
+                <div class="d-flex gap-2 mt-3">
+                    <a href="{% url 'lista_cursos' %}?anho={{ curso.anho_escolar.id }}" class="btn btn-secondary">
+                        <i class="fas fa-arrow-left me-2"></i>Cancelar
+                    </a>
+                    <button type="submit" class="btn btn-primary" id="submitBtn">
+                        <i class="fas fa-check me-2"></i>Inscribir en todas las materias del curso
+                    </button>
                 </div>
             </form>
+            {% elif not query %}
+            <div class="alert alert-info border-primary">
+                <h5 class="alert-heading">
+                    <i class="fas fa-info-circle me-2"></i>¿Cómo buscar estudiantes?
+                </h5>
+                <hr>
+                <p class="mb-2">Para evitar cargar {{ total_estudiantes }} estudiantes a la vez, use el campo de búsqueda arriba:</p>
+                <ul class="mb-0">
+                    <li><strong>Busque por:</strong> nombre, apellido, email, cédula o código de barras</li>
+                    <li><strong>Búsqueda rápida:</strong> escanee el código de barras del estudiante</li>
+                    <li><strong>Mínimo:</strong> 2 caracteres para realizar la búsqueda</li>
+                    <li><strong>Límite:</strong> se muestran máximo 50 resultados a la vez</li>
+                </ul>
+            </div>
+            {% endif %}
         </div>
     </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const searchInput = document.getElementById('searchInput');
+    const searchForm = document.getElementById('searchForm');
+    const rows = document.querySelectorAll('.estudiante-row');
+    
+    // Hacer que toda la fila sea clickeable
+    rows.forEach(row => {
+        row.addEventListener('click', function(e) {
+            if (e.target.type !== 'radio') {
+                const radio = this.querySelector('.estudiante-radio');
+                radio.checked = true;
+            }
+        });
+    });
+    
+    // Detectar código de barras escaneado
+    let barcodeBuffer = '';
+    let barcodeTimeout = null;
+    
+    searchInput.addEventListener('input', function(e) {
+        // Si se escribe muy rápido, probablemente es un escáner
+        clearTimeout(barcodeTimeout);
+        
+        barcodeTimeout = setTimeout(() => {
+            const value = searchInput.value.trim();
+            
+            // Si el valor tiene cierto patrón (solo números/letras sin espacios)
+            // y fue ingresado rápidamente, buscar automáticamente
+            // Requerir mínimo 2 caracteres
+            if (value.length >= 2 && /^[A-Za-z0-9-_]+$/.test(value)) {
+                // Auto-submit después de escanear código de barras
+                searchForm.submit();
+            }
+        }, 100); // 100ms después del último carácter
+    });
+    
+    // Submit al presionar Enter - validar mínimo 2 caracteres
+    searchInput.addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            if (this.value.trim().length >= 2) {
+                searchForm.submit();
+            } else {
+                alert('Por favor ingrese al menos 2 caracteres para buscar.');
+            }
+        }
+    });
+    
+    // Validar antes de submit
+    searchForm.addEventListener('submit', function(e) {
+        const query = searchInput.value.trim();
+        if (query.length > 0 && query.length < 2) {
+            e.preventDefault();
+            alert('Por favor ingrese al menos 2 caracteres para buscar.');
+            searchInput.focus();
+        }
+    });
+    
+    // Auto-focus en el campo de búsqueda
+    searchInput.focus();
+});
+</script>
+
 {% endblock %}
