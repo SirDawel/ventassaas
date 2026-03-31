@@ -49,3 +49,10 @@ htmlcov/
 # Backups
 *.bak
 *.backup
+.venv/
+.venvschool/
+.env
+__pycache__/
+*.pyc
+staticfiles/
+db.sqlite3
