@@ -271,39 +271,75 @@
 
         <!-- MÓDULOS FORMATIVOS -->
         {% for m in datos.matriculas %}
-            {% if m.materia.categoria == 'modular' and m.materia.ra_configuracion %}
+            {% if m.materia.categoria == 'modular' %}
                 <div class="modulo">
                     <div class="modulo-header">
                         {{ m.materia.nombre }} - Módulo Formativo
                     </div>
                     <div class="modulo-body">
-                        <table>
-                            <thead>
-                                <tr>
-                                    {% for i in m.materia.ra_configuracion.valores %}
-                                        <th>RA {{ forloop.counter }} ({{ i }}%)</th>
-                                    {% endfor %}
-                                    <th>Total</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr>
-                                    {% for i in m.materia.ra_configuracion.valores %}
-                                        <td>
-                                            {% with valor_ra=m|get_ra:forloop.counter0 %}
-                                                {% if valor_ra %}
-                                                    {% widthratio valor_ra i 100 as sobre100 %}
-                                                    {{ sobre100|floatformat:0 }}/100
-                                                {% else %}
-                                                    -
-                                                {% endif %}
-                                            {% endwith %}
-                                        </td>
-                                    {% endfor %}
-                                    <td><strong>{% if m.total_ra %}{{ m.total_ra }}{% else %}-{% endif %}</strong></td>
-                                </tr>
-                            </tbody>
-                        </table>
+                        {% if m.materia.ra_configuracion and m.materia.ra_configuracion.valores %}
+                            <table>
+                                <thead>
+                                    <tr>
+                                        {% for i in m.materia.ra_configuracion.valores %}
+                                            <th>RA {{ forloop.counter }} ({{ i }}%)</th>
+                                        {% endfor %}
+                                        <th>Total</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        {% for i in m.materia.ra_configuracion.valores %}
+                                            <td>
+                                                {% with valor_ra=m|get_ra:forloop.counter0 %}
+                                                    {% if valor_ra %}
+                                                        {% widthratio valor_ra i 100 as sobre100 %}
+                                                        {{ sobre100|floatformat:0 }}/100
+                                                    {% else %}
+                                                        -
+                                                    {% endif %}
+                                                {% endwith %}
+                                            </td>
+                                        {% endfor %}
+                                        <td><strong>{% if m.total_ra %}{{ m.total_ra }}%{% else %}-{% endif %}</strong></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        {% else %}
+                            <!-- Sistema antiguo de 10 RAs (cada uno vale 10%) -->
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>RA 1 (10%)</th>
+                                        <th>RA 2 (10%)</th>
+                                        <th>RA 3 (10%)</th>
+                                        <th>RA 4 (10%)</th>
+                                        <th>RA 5 (10%)</th>
+                                        <th>RA 6 (10%)</th>
+                                        <th>RA 7 (10%)</th>
+                                        <th>RA 8 (10%)</th>
+                                        <th>RA 9 (10%)</th>
+                                        <th>RA 10 (10%)</th>
+                                        <th>Total</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td>{% if m.ra_1 %}{% widthratio m.ra_1 10 100 as s1 %}{{ s1|floatformat:0 }}/100{% else %}-{% endif %}</td>
+                                        <td>{% if m.ra_2 %}{% widthratio m.ra_2 10 100 as s2 %}{{ s2|floatformat:0 }}/100{% else %}-{% endif %}</td>
+                                        <td>{% if m.ra_3 %}{% widthratio m.ra_3 10 100 as s3 %}{{ s3|floatformat:0 }}/100{% else %}-{% endif %}</td>
+                                        <td>{% if m.ra_4 %}{% widthratio m.ra_4 10 100 as s4 %}{{ s4|floatformat:0 }}/100{% else %}-{% endif %}</td>
+                                        <td>{% if m.ra_5 %}{% widthratio m.ra_5 10 100 as s5 %}{{ s5|floatformat:0 }}/100{% else %}-{% endif %}</td>
+                                        <td>{% if m.ra_6 %}{% widthratio m.ra_6 10 100 as s6 %}{{ s6|floatformat:0 }}/100{% else %}-{% endif %}</td>
+                                        <td>{% if m.ra_7 %}{% widthratio m.ra_7 10 100 as s7 %}{{ s7|floatformat:0 }}/100{% else %}-{% endif %}</td>
+                                        <td>{% if m.ra_8 %}{% widthratio m.ra_8 10 100 as s8 %}{{ s8|floatformat:0 }}/100{% else %}-{% endif %}</td>
+                                        <td>{% if m.ra_9 %}{% widthratio m.ra_9 10 100 as s9 %}{{ s9|floatformat:0 }}/100{% else %}-{% endif %}</td>
+                                        <td>{% if m.ra_10 %}{% widthratio m.ra_10 10 100 as s10 %}{{ s10|floatformat:0 }}/100{% else %}-{% endif %}</td>
+                                        <td><strong>{% if m.total_ra %}{{ m.total_ra }}%{% else %}-{% endif %}</strong></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        {% endif %}
                     </div>
                 </div>
             {% endif %}

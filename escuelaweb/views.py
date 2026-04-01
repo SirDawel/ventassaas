@@ -2807,17 +2807,37 @@ def reporte_general(request, curso_id):
                                 else:
                                     m.nota_final_oficial = int(m.nota_final_especial + 0.5)
             # -------------------------
-            #   🔥 SUMA PONDERADA MODULAR (RA)
+            #   🔥 PROMEDIO PORCENTUAL MODULAR (RA)
             # -------------------------
-            if hasattr(m.materia, 'categoria') and m.materia.categoria == 'modular' and m.materia.ra_configuracion:
-                valores = m.materia.ra_configuracion.get('valores', [])
-                total_ra = 0
-                for idx, peso in enumerate(valores):
-                    ra_val = getattr(m, f'ra_{idx+1}', None)
-                    if ra_val is not None:
-                        total_ra += ra_val
-                # El total nunca debe exceder 100
-                m.total_ra = round(min(total_ra, 100), 2)
+            if hasattr(m.materia, 'categoria') and m.materia.categoria == 'modular':
+                if m.materia.ra_configuracion:
+                    valores = m.materia.ra_configuracion.get('valores', [])
+                    porcentajes = []
+                    for idx, peso in enumerate(valores):
+                        ra_val = getattr(m, f'ra_{idx+1}', None)
+                        if ra_val is not None:
+                            # Calcular el porcentaje de completitud: (valor_obtenido / peso_máximo) * 100
+                            porcentaje_completitud = (ra_val / peso) * 100
+                            porcentajes.append(porcentaje_completitud)
+                    # Promedio de los porcentajes de RAs completados
+                    if porcentajes:
+                        m.total_ra = round(sum(porcentajes) / len(porcentajes), 2)
+                    else:
+                        m.total_ra = None
+                else:
+                    # Sistema antiguo: cada RA vale 10% máximo
+                    porcentajes = []
+                    for i in range(1, 11):
+                        ra_val = getattr(m, f'ra_{i}', None)
+                        if ra_val is not None:
+                            # Calcular porcentaje: (valor / 10) * 100
+                            porcentaje_completitud = (ra_val / 10.0) * 100
+                            porcentajes.append(porcentaje_completitud)
+                    # Promedio de los RAs completados
+                    if porcentajes:
+                        m.total_ra = round(sum(porcentajes) / len(porcentajes), 2)
+                    else:
+                        m.total_ra = None
             else:
                 m.total_ra = None
 
@@ -2948,14 +2968,35 @@ def reporte_general_pdf(request, curso_id):
                                     m.nota_final_oficial = None
                                 else:
                                     m.nota_final_oficial = int(m.nota_final_especial + 0.5)
-            if hasattr(m.materia, 'categoria') and m.materia.categoria == 'modular' and m.materia.ra_configuracion:
-                valores = m.materia.ra_configuracion.get('valores', [])
-                total_ra = 0
-                for idx, peso in enumerate(valores):
-                    ra_val = getattr(m, f'ra_{idx+1}', None)
-                    if ra_val is not None:
-                        total_ra += ra_val
-                m.total_ra = round(min(total_ra, 100), 2)
+            if hasattr(m.materia, 'categoria') and m.materia.categoria == 'modular':
+                if m.materia.ra_configuracion:
+                    valores = m.materia.ra_configuracion.get('valores', [])
+                    porcentajes = []
+                    for idx, peso in enumerate(valores):
+                        ra_val = getattr(m, f'ra_{idx+1}', None)
+                        if ra_val is not None:
+                            # Calcular el porcentaje de completitud: (valor_obtenido / peso_máximo) * 100
+                            porcentaje_completitud = (ra_val / peso) * 100
+                            porcentajes.append(porcentaje_completitud)
+                    # Promedio de los porcentajes de RAs completados
+                    if porcentajes:
+                        m.total_ra = round(sum(porcentajes) / len(porcentajes), 2)
+                    else:
+                        m.total_ra = None
+                else:
+                    # Sistema antiguo: cada RA vale 10% máximo
+                    porcentajes = []
+                    for i in range(1, 11):
+                        ra_val = getattr(m, f'ra_{i}', None)
+                        if ra_val is not None:
+                            # Calcular porcentaje: (valor / 10) * 100
+                            porcentaje_completitud = (ra_val / 10.0) * 100
+                            porcentajes.append(porcentaje_completitud)
+                    # Promedio de los RAs completados
+                    if porcentajes:
+                        m.total_ra = round(sum(porcentajes) / len(porcentajes), 2)
+                    else:
+                        m.total_ra = None
             else:
                 m.total_ra = None
         except Exception as e:
@@ -4234,9 +4275,15 @@ def agregar_notas_modular(request, materia_id):
     # Calcular totales actuales para mostrar en template
     for m in matriculas:
         ra_vals = [getattr(m, campo, None) for campo in campos_ra]
-        ra_nums = [float(v) if v is not None else 0 for v in ra_vals]
-        # Los valores ya están en escala del peso, solo sumarlos
-        m.total_ra = round(sum(ra_nums), 2) if all(v is not None for v in ra_vals) else None
+        # Calcular promedio porcentual solo de los RAs completados
+        porcentajes = []
+        for idx, ra_val in enumerate(ra_vals):
+            if ra_val is not None:
+                peso = valores_ra[idx] if idx < len(valores_ra) else 10
+                porcentaje_completitud = (float(ra_val) / peso) * 100
+                porcentajes.append(porcentaje_completitud)
+        # Promedio de los RAs completados
+        m.total_ra = round(sum(porcentajes) / len(porcentajes), 2) if porcentajes else None
 
     return render(request, 'est_forder/agregar_notas_modular.html', {
         'materia': materia,
@@ -4424,17 +4471,37 @@ def agregar_notasXXX(request, materia_id):
                     setattr(matricula, f'rp_p{i}', request.POST.get(f'rp_p{i}_{matricula.id}') or None)
 
                 # -------------------------
-                #   🔥 SUMA PONDERADA MODULAR (RA)
+                #   🔥 PROMEDIO PORCENTUAL MODULAR (RA)
                 # -------------------------
-                if hasattr(matricula.materia, 'categoria') and matricula.materia.categoria == 'modular' and matricula.materia.ra_configuracion:
-                    valores = matricula.materia.ra_configuracion.get('valores', [])
-                    total_ra = 0
-                    for idx, peso in enumerate(valores):
-                        ra_val = getattr(matricula, f'ra_{idx+1}', None)
-                        if ra_val is not None:
-                            total_ra += ra_val
-                    # El total nunca debe exceder 100
-                    matricula.total_ra = round(min(total_ra, 100), 2)
+                if hasattr(matricula.materia, 'categoria') and matricula.materia.categoria == 'modular':
+                    if matricula.materia.ra_configuracion:
+                        valores = matricula.materia.ra_configuracion.get('valores', [])
+                        porcentajes = []
+                        for idx, peso in enumerate(valores):
+                            ra_val = getattr(matricula, f'ra_{idx+1}', None)
+                            if ra_val is not None:
+                                # Calcular el porcentaje de completitud: (valor_obtenido / peso_máximo) * 100
+                                porcentaje_completitud = (ra_val / peso) * 100
+                                porcentajes.append(porcentaje_completitud)
+                        # Promedio de los porcentajes de RAs completados
+                        if porcentajes:
+                            matricula.total_ra = round(sum(porcentajes) / len(porcentajes), 2)
+                        else:
+                            matricula.total_ra = None
+                    else:
+                        # Sistema antiguo: cada RA vale 10% máximo
+                        porcentajes = []
+                        for i in range(1, 11):
+                            ra_val = getattr(matricula, f'ra_{i}', None)
+                            if ra_val is not None:
+                                # Calcular porcentaje: (valor / 10) * 100
+                                porcentaje_completitud = (ra_val / 10.0) * 100
+                                porcentajes.append(porcentaje_completitud)
+                        # Promedio de los RAs completados
+                        if porcentajes:
+                            matricula.total_ra = round(sum(porcentajes) / len(porcentajes), 2)
+                        else:
+                            matricula.total_ra = None
                 else:
                     matricula.total_ra = None
 
