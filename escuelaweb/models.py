@@ -3646,4 +3646,206 @@ class CalificacionCriterio(models.Model):
         ponderacion_decimal = float(self.criterio.ponderacion) / 100
         # nivel.puntaje (1-5) × ponderación × 2 = escala 0-10
         return round(float(self.nivel_otorgado.puntaje) * ponderacion_decimal * 2, 2)
-        return float(self.nivel_otorgado.puntaje) * ponderacion_decimal
+
+
+# ===========================
+# CONFIGURACIÓN DE LA ESCUELA
+# ===========================
+
+class ConfiguracionEscuela(models.Model):
+    """
+    Configuración general de la escuela/colegio
+    Solo debe existir un registro en esta tabla
+    """
+    nombre_escuela = models.CharField(
+        max_length=200,
+        verbose_name="Nombre de la Escuela",
+        help_text="Nombre oficial de la institución educativa"
+    )
+    
+    rnc = models.CharField(
+        max_length=20,
+        blank=True,
+        null=True,
+        verbose_name="RNC",
+        help_text="Registro Nacional del Contribuyente"
+    )
+    
+    direccion = models.TextField(
+        blank=True,
+        null=True,
+        verbose_name="Dirección",
+        help_text="Dirección física de la escuela"
+    )
+    
+    telefono = models.CharField(
+        max_length=50,
+        blank=True,
+        null=True,
+        verbose_name="Teléfono",
+        help_text="Teléfono principal de contacto"
+    )
+    
+    email = models.EmailField(
+        blank=True,
+        null=True,
+        verbose_name="Correo Electrónico",
+        help_text="Email institucional"
+    )
+    
+    sitio_web = models.URLField(
+        blank=True,
+        null=True,
+        verbose_name="Sitio Web",
+        help_text="URL del sitio web de la institución"
+    )
+    
+    logo = models.ImageField(
+        upload_to='escuela/logos/',
+        blank=True,
+        null=True,
+        verbose_name="Logo",
+        help_text="Logo oficial de la institución (tamaño recomendado: 200x200px)"
+    )
+    
+    director_nombre = models.CharField(
+        max_length=200,
+        blank=True,
+        null=True,
+        verbose_name="Nombre del Director",
+        help_text="Nombre completo del director(a)"
+    )
+    
+    director_firma = models.ImageField(
+        upload_to='escuela/firmas/',
+        blank=True,
+        null=True,
+        verbose_name="Firma del Director",
+        help_text="Imagen de la firma del director (fondo transparente)"
+    )
+    
+    lema = models.CharField(
+        max_length=300,
+        blank=True,
+        null=True,
+        verbose_name="Lema Institucional",
+        help_text="Lema o eslogan de la institución"
+    )
+    
+    mision = models.TextField(
+        blank=True,
+        null=True,
+        verbose_name="Misión",
+        help_text="Declaración de la misión institucional"
+    )
+    
+    vision = models.TextField(
+        blank=True,
+        null=True,
+        verbose_name="Visión",
+        help_text="Declaración de la visión institucional"
+    )
+    
+    codigo_centro = models.CharField(
+        max_length=50,
+        blank=True,
+        null=True,
+        verbose_name="Código del Centro",
+        help_text="Código oficial asignado por el MINERD u otra autoridad"
+    )
+    
+    distrito_educativo = models.CharField(
+        max_length=100,
+        blank=True,
+        null=True,
+        verbose_name="Distrito Educativo",
+        help_text="Distrito educativo al que pertenece"
+    )
+    
+    regional_educativa = models.CharField(
+        max_length=100,
+        blank=True,
+        null=True,
+        verbose_name="Regional Educativa",
+        help_text="Regional educativa a la que pertenece"
+    )
+    
+    nivel_educativo = models.CharField(
+        max_length=100,
+        blank=True,
+        null=True,
+        verbose_name="Nivel Educativo",
+        help_text="Ej: Inicial, Básica, Media, Técnico-Profesional"
+    )
+    
+    modalidad = models.CharField(
+        max_length=100,
+        blank=True,
+        null=True,
+        verbose_name="Modalidad",
+        help_text="Ej: General, Técnico-Profesional, Artes"
+    )
+    
+    horario_atencion = models.CharField(
+        max_length=200,
+        blank=True,
+        null=True,
+        verbose_name="Horario de Atención",
+        help_text="Ej: Lunes a Viernes 7:00 AM - 4:00 PM"
+    )
+    
+    anho_fundacion = models.IntegerField(
+        blank=True,
+        null=True,
+        verbose_name="Año de Fundación",
+        help_text="Año en que fue fundada la institución"
+    )
+    
+    # Información para reportes
+    pie_pagina_reportes = models.TextField(
+        blank=True,
+        null=True,
+        verbose_name="Pie de Página para Reportes",
+        help_text="Texto que aparecerá al pie de los reportes oficiales"
+    )
+    
+    mostrar_logo_reportes = models.BooleanField(
+        default=True,
+        verbose_name="Mostrar Logo en Reportes",
+        help_text="Activar/desactivar el logo en los reportes"
+    )
+    
+    # Control de registro único
+    fecha_creacion = models.DateTimeField(
+        auto_now_add=True,
+        verbose_name="Fecha de Creación"
+    )
+    
+    fecha_actualizacion = models.DateTimeField(
+        auto_now=True,
+        verbose_name="Última Actualización"
+    )
+    
+    class Meta:
+        verbose_name = "Configuración de la Escuela"
+        verbose_name_plural = "Configuración de la Escuela"
+    
+    def __str__(self):
+        return self.nombre_escuela or "Configuración de la Escuela"
+    
+    def save(self, *args, **kwargs):
+        """Asegurar que solo exista un registro de configuración"""
+        if not self.pk and ConfiguracionEscuela.objects.exists():
+            # Si no tiene pk (es nuevo) y ya existe un registro, usar el existente
+            existing = ConfiguracionEscuela.objects.first()
+            self.pk = existing.pk
+        super().save(*args, **kwargs)
+    
+    @classmethod
+    def get_configuracion(cls):
+        """Obtener o crear la configuración de la escuela"""
+        config, created = cls.objects.get_or_create(
+            pk=1,
+            defaults={'nombre_escuela': 'Mi Escuela'}
+        )
+        return config

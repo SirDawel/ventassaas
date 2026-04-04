@@ -359,6 +359,13 @@
                 <i class="fas fa-calendar-alt me-1"></i>Año Escolar
               </a>
             </li>
+              {% if user.rol == 'Administrador' or user.rol == 'Director' %}
+              <li class="nav-item">
+                <a class="nav-link" href="{% url 'configuracion_escuela' %}">
+                  <i class="fas fa-cogs me-1"></i>Configuración
+                </a>
+              </li>
+              {% endif %}
             {% if user.rol == 'Profesor' or user.rol == 'Director' or user.rol == 'Administrador' or user.rol == 'Coordinador' %}
             <li class="nav-item dropdown">
               <a class="nav-link dropdown-toggle" href="#" id="evaluacionesDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">

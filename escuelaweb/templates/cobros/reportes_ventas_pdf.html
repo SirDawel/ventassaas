@@ -9,6 +9,10 @@
             size: letter portrait;
             margin: 1cm 1.5cm;
         }
+        img {
+            height: 50px;
+            margin-bottom: 5px;
+        }
         
         * {
             margin: 0;
@@ -550,8 +554,13 @@
 <body>
     <!-- Encabezado -->
     <div class="company-header">
+        {% if logo_base64 %}
+        <div style="text-align:center; margin-bottom:8px;">
+            <img src="{{ logo_base64 }}" alt="Logo Institucional" style="max-height:45px; max-width:60px;" />
+        </div>
+        {% endif %}
         <div class="company-name">{{ escuela_nombre }}</div>
-        <div class="company-tagline">Excelencia Educativa y Formación Integral</div>
+        <div class="company-tagline">{{ escuela_lema|default:"Excelencia Educativa y Formación Integral" }}</div>
         
         <div class="company-details-grid">
             <div class="detail-card">

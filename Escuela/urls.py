@@ -58,6 +58,10 @@ urlpatterns = [
 #____________dashboard__________________________
     path("admin/dashboard/", admin_dashboard, name="admin_dashboard"),
     path("admin/dashboard/users-data/", get_users_data, name="get_users_data"),
+    
+#____________configuración__________________________
+    path("configuracion/escuela/", views.configuracion_escuela, name="configuracion_escuela"),
+    
 #_______________persona___________________________________________________
     path("personas/", views.persona_list, name="persona_list"),
     path("persona_list", views.persona_list, name="persona_list"),

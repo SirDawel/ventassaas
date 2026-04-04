@@ -41,6 +41,7 @@ class CustomUserAdmin(BaseUserAdmin):
 from .models import Asistencia, AsistenciaPersonal, GrupoFamiliar
 from .models import TarifaEstudiante
 from .models import AsientoContable, DetalleAsiento
+from .models import ConfiguracionEscuela
 
 # Registro de Grupo Familiar
 @admin.register(GrupoFamiliar)
@@ -705,3 +706,43 @@ class CalificacionCriterioAdmin(admin.ModelAdmin):
             'classes': ('collapse',)
         }),
     )
+
+
+@admin.register(ConfiguracionEscuela)
+class ConfiguracionEscuelaAdmin(admin.ModelAdmin):
+    list_display = ('nombre_escuela', 'rnc', 'telefono', 'email', 'fecha_actualizacion')
+    readonly_fields = ('fecha_creacion', 'fecha_actualizacion')
+    
+    fieldsets = (
+        ('Información Básica', {
+            'fields': ('nombre_escuela', 'rnc', 'direccion', 'telefono', 'email', 'sitio_web')
+        }),
+        ('Identidad Visual', {
+            'fields': ('logo', 'lema')
+        }),
+        ('Misión y Visión', {
+            'fields': ('mision', 'vision')
+        }),
+        ('Información Administrativa', {
+            'fields': (
+                'director_nombre', 'director_firma', 'codigo_centro',
+                'distrito_educativo', 'regional_educativa', 'nivel_educativo',
+                'modalidad', 'horario_atencion', 'anho_fundacion'
+            )
+        }),
+        ('Configuración de Reportes', {
+            'fields': ('mostrar_logo_reportes', 'pie_pagina_reportes')
+        }),
+        ('Auditoría', {
+            'fields': ('fecha_creacion', 'fecha_actualizacion'),
+            'classes': ('collapse',)
+        }),
+    )
+    
+    def has_add_permission(self, request):
+        """Solo permitir crear si no existe ningún registro"""
+        return not ConfiguracionEscuela.objects.exists()
+    
+    def has_delete_permission(self, request, obj=None):
+        """No permitir eliminar la configuración"""
+        return False

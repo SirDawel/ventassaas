@@ -188,11 +188,18 @@
     <div class="student-page">
         <!-- ENCABEZADO -->
         <div class="header">
-            <img src="img/logo_poli.jpeg" alt="Logo"/>
-            <h2>Politécnico Prof. José Ramón Rodríguez Herrera</h2>
-            <p>Calle Atile Gomez, Sector La Mina, Hato del Padre, San Juan</p>
-            <p>Tel: (809) 000-5252 — Email: politecnicojoseramonrodriguezh@gmail.com</p>
+            {% if logo_base64 %}
+                <img src="{{ logo_base64 }}" alt="Logo" style="height:50px; margin-bottom:5px;"/>
+            {% endif %}
+            <h2>{{ config.nombre_escuela|default:"Nombre de la Escuela" }}</h2>
+            {% if config.direccion %}<p>{{ config.direccion }}</p>{% endif %}
+            <p>
+                {% if config.telefono %}Tel: {{ config.telefono }}{% endif %}
+                {% if config.telefono and config.email %} — {% endif %}
+                {% if config.email %}Email: {{ config.email }}{% endif %}
+            </p>
             <p>Año Escolar {{ curso.anho_escolar }}</p>
+            {% if config.lema %}<p><em>{{ config.lema }}</em></p>{% endif %}
             <h4>REPORTE GENERAL DE CALIFICACIONES</h4>
             <h4>Curso: {{ curso.nombre }}</h4>
         </div>

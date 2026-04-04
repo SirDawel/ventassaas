@@ -1008,6 +1008,91 @@ def admin_dashboard(request):
 
     return render(request, "admin/dashboard.html", context)
 
+
+# ===========================
+# CONFIGURACIÓN DE LA ESCUELA
+# ===========================
+
+@login_required
+@admin_required
+def configuracion_escuela(request):
+    """Vista para mostrar y editar la configuración de la escuela"""
+    from .models import ConfiguracionEscuela
+    
+    # Verificar que sea Administrador o Director
+    if request.user.rol not in ['Administrador', 'Director']:
+        messages.error(request, 'No tienes permisos para acceder a esta página.')
+        return redirect('index')
+    
+    config = ConfiguracionEscuela.get_configuracion()
+    
+    if request.method == 'POST':
+        # Actualizar campos básicos
+        config.nombre_escuela = request.POST.get('nombre_escuela', '')
+        config.rnc = request.POST.get('rnc', '')
+        config.direccion = request.POST.get('direccion', '')
+        config.telefono = request.POST.get('telefono', '')
+        config.email = request.POST.get('email', '')
+        config.sitio_web = request.POST.get('sitio_web', '')
+        config.lema = request.POST.get('lema', '')
+        config.mision = request.POST.get('mision', '')
+        config.vision = request.POST.get('vision', '')
+        
+        # Información administrativa
+        config.director_nombre = request.POST.get('director_nombre', '')
+        config.codigo_centro = request.POST.get('codigo_centro', '')
+        config.distrito_educativo = request.POST.get('distrito_educativo', '')
+        config.regional_educativa = request.POST.get('regional_educativa', '')
+        config.nivel_educativo = request.POST.get('nivel_educativo', '')
+        config.modalidad = request.POST.get('modalidad', '')
+        config.horario_atencion = request.POST.get('horario_atencion', '')
+        
+        # Año de fundación
+        anho_fundacion = request.POST.get('anho_fundacion', '')
+        if anho_fundacion:
+            try:
+                config.anho_fundacion = int(anho_fundacion)
+            except ValueError:
+                config.anho_fundacion = None
+        else:
+            config.anho_fundacion = None
+        
+        # Configuración de reportes
+        config.pie_pagina_reportes = request.POST.get('pie_pagina_reportes', '')
+        config.mostrar_logo_reportes = request.POST.get('mostrar_logo_reportes') == 'on'
+        
+        # Manejo de archivos
+        if 'logo' in request.FILES:
+            config.logo = request.FILES['logo']
+        
+        if 'director_firma' in request.FILES:
+            config.director_firma = request.FILES['director_firma']
+        
+        # Eliminar logo si se solicita
+        if request.POST.get('eliminar_logo') == 'on' and config.logo:
+            config.logo.delete()
+            config.logo = None
+        
+        # Eliminar firma si se solicita
+        if request.POST.get('eliminar_firma') == 'on' and config.director_firma:
+            config.director_firma.delete()
+            config.director_firma = None
+        
+        try:
+            config.save()
+            messages.success(request, 'Configuración de la escuela actualizada con éxito.')
+        except Exception as e:
+            messages.error(request, f'Error al guardar la configuración: {str(e)}')
+        
+        return redirect('configuracion_escuela')
+    
+    context = {
+        'config': config,
+        'titulo': 'Configuración de la Escuela',
+    }
+    
+    return render(request, 'est_forder/configuracion_escuela.html', context)
+
 #________________buscar user
 from django.shortcuts import render
 from django.db.models import Q  # Importa Q para la búsqueda
@@ -2889,9 +2974,12 @@ def reporte_general(request, curso_id):
         if finales:
             datos["promedio_general"] = sum(finales) / len(finales)
 
+    from .models import ConfiguracionEscuela
+    config = ConfiguracionEscuela.get_configuracion()
     return render(request, "est_forder/reporte_general.html", {
         "curso": curso,
         "reporte_estudiantes": reporte_estudiantes,
+        "config": config,
     })
 
 
@@ -2900,6 +2988,7 @@ from django.http import HttpResponse
 from django.template.loader import get_template
 import io
 from xhtml2pdf import pisa
+import base64
 
 @login_required
 def reporte_general_pdf(request, curso_id):
@@ -3034,45 +3123,40 @@ def reporte_general_pdf(request, curso_id):
 
     # Renderizar el template PDF
     template = get_template("est_forder/reporte_general_pdf.html")
+    from .models import ConfiguracionEscuela
+    config = ConfiguracionEscuela.get_configuracion()
+    
+    # Convertir logo a base64 si existe
+    logo_base64 = None
+    if config.mostrar_logo_reportes and config.logo:
+        try:
+            with open(config.logo.path, 'rb') as img_file:
+                logo_base64 = base64.b64encode(img_file.read()).decode('utf-8')
+                # Detectar tipo de imagen
+                ext = config.logo.name.split('.')[-1].lower()
+                if ext in ['jpg', 'jpeg']:
+                    logo_base64 = f"data:image/jpeg;base64,{logo_base64}"
+                elif ext == 'png':
+                    logo_base64 = f"data:image/png;base64,{logo_base64}"
+                else:
+                    logo_base64 = f"data:image/{ext};base64,{logo_base64}"
+        except Exception as e:
+            print(f"Error leyendo logo: {e}")
+            logo_base64 = None
+    
     html = template.render({
         "curso": curso,
         "reporte_estudiantes": reporte_estudiantes,
         "request": request,
-        "STATIC_ROOT": settings.STATIC_ROOT,
+        "config": config,
+        "logo_base64": logo_base64,
     })
+    
+    # Generar PDF con xhtml2pdf
     response = HttpResponse(content_type='application/pdf')
     response['Content-Disposition'] = f'inline; filename="reporte_general_{curso.id}.pdf"'
     
-    # Función para resolver rutas de archivos estáticos para xhtml2pdf
-    def link_callback(uri, rel):
-        import os
-        
-        # Si la URI ya es una ruta absoluta del sistema, devolverla
-        if os.path.isfile(uri):
-            return uri
-        
-        # Limpiar la URI
-        if uri.startswith(settings.STATIC_ROOT):
-            return uri
-        
-        # Remover prefijos de URL
-        clean_uri = uri.replace('/static/', '').replace('static/', '').lstrip('/')
-        
-        # Buscar primero en STATICFILES_DIRS (desarrollo)
-        for static_dir in getattr(settings, 'STATICFILES_DIRS', []):
-            path = os.path.join(static_dir, clean_uri)
-            if os.path.isfile(path):
-                return path
-        
-        # Luego buscar en STATIC_ROOT (producción)
-        path = os.path.join(settings.STATIC_ROOT, clean_uri)
-        if os.path.isfile(path):
-            return path
-        
-        # Si no se encuentra, devolver la ruta original
-        return uri
-    
-    pisa_status = pisa.CreatePDF(html, dest=response, link_callback=link_callback)
+    pisa_status = pisa.CreatePDF(html, dest=response)
     if pisa_status.err:
         return HttpResponse('Error al generar PDF', status=500)
     return response
@@ -8674,10 +8758,12 @@ def reportes_ventas(request):
         messages.error(request, 'No tienes permiso para acceder a esta página.')
         return redirect('plataform')
     
-    from .models import Factura, DetalleFactura
+    from .models import Factura, DetalleFactura, ConfiguracionEscuela
     from django.db.models import Sum, Count, Avg, Q, F, DecimalField, ExpressionWrapper
     from datetime import datetime, timedelta
     from django.utils import timezone
+
+    config_escuela = ConfiguracionEscuela.get_configuracion()
     
     # Obtener parámetros de filtro
     periodo = request.GET.get('periodo', 'dia')  # dia, semana, mes, anio, personalizado (por defecto: hoy)
@@ -9084,12 +9170,13 @@ def reportes_ventas(request):
         'usuario_filtrado': usuario_filtrado,
         'usuarios_vendedores': usuarios_vendedores,
         
-        # Información de la escuela
-        'escuela_nombre': getattr(settings, 'ESCUELA_NOMBRE', 'Escuela'),
-        'escuela_rnc': getattr(settings, 'ESCUELA_RNC', ''),
-        'escuela_telefono': getattr(settings, 'ESCUELA_TELEFONO', ''),
-        'escuela_direccion': getattr(settings, 'ESCUELA_DIRECCION', ''),
-        'escuela_email': getattr(settings, 'ESCUELA_EMAIL', ''),
+        # Información de la escuela desde configuración
+        'escuela_nombre': config_escuela.nombre_escuela or getattr(settings, 'ESCUELA_NOMBRE', 'Escuela'),
+        'escuela_rnc': config_escuela.rnc or getattr(settings, 'ESCUELA_RNC', ''),
+        'escuela_telefono': config_escuela.telefono or getattr(settings, 'ESCUELA_TELEFONO', ''),
+        'escuela_direccion': config_escuela.direccion or getattr(settings, 'ESCUELA_DIRECCION', ''),
+        'escuela_email': config_escuela.email or getattr(settings, 'ESCUELA_EMAIL', ''),
+        'escuela_lema': config_escuela.lema or 'Excelencia Educativa y Formación Integral',
         
         # Estadísticas básicas
         'total_ventas': total_ventas,
@@ -9140,9 +9227,23 @@ def reportes_ventas(request):
         from xhtml2pdf import pisa
         from django.http import HttpResponse
         import io
-        
+        import base64
+
+        pdf_context = context.copy()
+        pdf_context['logo_base64'] = None
+
+        if config_escuela.mostrar_logo_reportes and config_escuela.logo:
+            try:
+                with open(config_escuela.logo.path, 'rb') as img_file:
+                    img_b64 = base64.b64encode(img_file.read()).decode('utf-8')
+                    ext = config_escuela.logo.name.split('.')[-1].lower()
+                    mime = 'jpeg' if ext in ['jpg', 'jpeg'] else ext
+                    pdf_context['logo_base64'] = f"data:image/{mime};base64,{img_b64}"
+            except Exception as e:
+                print(f"Error cargando logo para PDF de ventas: {e}")
+
         # Renderizar template para PDF
-        html_string = render_to_string('cobros/reportes_ventas_pdf.html', context)
+        html_string = render_to_string('cobros/reportes_ventas_pdf.html', pdf_context)
         
         # Crear el PDF
         result = io.BytesIO()
