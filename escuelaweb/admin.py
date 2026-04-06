@@ -746,3 +746,119 @@ class ConfiguracionEscuelaAdmin(admin.ModelAdmin):
     def has_delete_permission(self, request, obj=None):
         """No permitir eliminar la configuración"""
         return False
+
+
+# ============================================
+# MODELOS DE SEGURIDAD ADICIONALES
+# ============================================
+
+from .models import IPBlocklist, SecurityAlert
+
+@admin.register(IPBlocklist)
+class IPBlocklistAdmin(admin.ModelAdmin):
+    list_display = ('ip_address', 'tipo_bloqueo', 'es_temporal', 'fecha_expiracion', 
+                    'activo', 'intentos_durante_bloqueo', 'fecha_bloqueo')
+    list_filter = ('activo', 'tipo_bloqueo', 'es_temporal', 'fecha_bloqueo')
+    search_fields = ('ip_address', 'razon', 'pais')
+    readonly_fields = ('fecha_bloqueo', 'ultima_actividad', 'intentos_durante_bloqueo')
+    date_hierarchy = 'fecha_bloqueo'
+    ordering = ('-fecha_bloqueo',)
+    
+    fieldsets = (
+        ('Información de Bloqueo', {
+            'fields': ('ip_address', 'tipo_bloqueo', 'razon', 'bloqueado_por')
+        }),
+        ('Estado del Bloqueo', {
+            'fields': ('activo', 'es_temporal', 'fecha_expiracion')
+        }),
+        ('Estadísticas', {
+            'fields': ('intentos_durante_bloqueo', 'fecha_bloqueo', 'ultima_actividad')
+        }),
+        ('Información Adicional', {
+            'fields': ('pais', 'user_agent', 'metadata'),
+            'classes': ('collapse',)
+        }),
+    )
+    
+    actions = ['activar_bloqueo', 'desactivar_bloqueo', 'limpiar_expirados']
+    
+    def activar_bloqueo(self, request, queryset):
+        """Activar bloqueos seleccionados"""
+        count = queryset.update(activo=True)
+        self.message_user(request, f"{count} bloqueo(s) activado(s).")
+    activar_bloqueo.short_description = "Activar bloqueos seleccionados"
+    
+    def desactivar_bloqueo(self, request, queryset):
+        """Desactivar bloqueos seleccionados"""
+        count = queryset.update(activo=False)
+        self.message_user(request, f"{count} bloqueo(s) desactivado(s).")
+    desactivar_bloqueo.short_description = "Desactivar bloqueos seleccionados"
+    
+    def limpiar_expirados(self, request, queryset):
+        """Limpiar bloqueos temporales expirados"""
+        IPBlocklist.cleanup_expired_blocks()
+        self.message_user(request, "Bloqueos expirados limpiados correctamente.")
+    limpiar_expirados.short_description = "Limpiar bloqueos expirados"
+
+
+@admin.register(SecurityAlert)
+class SecurityAlertAdmin(admin.ModelAdmin):
+    list_display = ('titulo', 'tipo_alerta', 'nivel_prioridad', 'estado', 
+                    'usuario_afectado', 'ip_address', 'fecha_alerta', 'email_enviado')
+    list_filter = ('tipo_alerta', 'nivel_prioridad', 'estado', 'email_enviado', 'fecha_alerta')
+    search_fields = ('titulo', 'descripcion', 'ip_address', 'usuario_afectado__email')
+    readonly_fields = ('fecha_alerta', 'fecha_revision', 'fecha_resolucion', 'fecha_email')
+    date_hierarchy = 'fecha_alerta'
+    ordering = ('-fecha_alerta',)
+    
+    fieldsets = (
+        ('Información de la Alerta', {
+            'fields': ('tipo_alerta', 'nivel_prioridad', 'estado', 'titulo', 'descripcion')
+        }),
+        ('Datos del Incidente', {
+            'fields': ('usuario_afectado', 'ip_address')
+        }),
+        ('Gestión de la Alerta', {
+            'fields': ('asignado_a', 'resuelto_por', 'notas', 'acciones_tomadas')
+        }),
+        ('Fechas', {
+            'fields': ('fecha_alerta', 'fecha_revision', 'fecha_resolucion')
+        }),
+        ('Notificaciones', {
+            'fields': ('email_enviado', 'fecha_email')
+        }),
+        ('Información Adicional', {
+            'fields': ('metadata',),
+            'classes': ('collapse',)
+        }),
+    )
+    
+    actions = ['marcar_en_revision', 'marcar_resuelta', 'marcar_falsa_alarma', 
+               'enviar_notificacion_email']
+    
+    def marcar_en_revision(self, request, queryset):
+        """Marcar alertas como en revisión"""
+        for alerta in queryset:
+            alerta.marcar_como_revisando(request.user)
+        self.message_user(request, f"{queryset.count()} alerta(s) marcada(s) en revisión.")
+    marcar_en_revision.short_description = "Marcar como En Revisión"
+    
+    def marcar_resuelta(self, request, queryset):
+        """Marcar alertas como resueltas"""
+        for alerta in queryset:
+            alerta.resolver(request.user, acciones_tomadas="Resuelta desde admin")
+        self.message_user(request, f"{queryset.count()} alerta(s) marcada(s) como resuelta(s).")
+    marcar_resuelta.short_description = "Marcar como Resuelta"
+    
+    def marcar_falsa_alarma(self, request, queryset):
+        """Marcar alertas como falsa alarma"""
+        count = queryset.update(estado='FALSA_ALARMA')
+        self.message_user(request, f"{count} alerta(s) marcada(s) como falsa alarma.")
+    marcar_falsa_alarma.short_description = "Marcar como Falsa Alarma"
+    
+    def enviar_notificacion_email(self, request, queryset):
+        """Enviar notificación por email"""
+        for alerta in queryset:
+            alerta.enviar_notificacion_email()
+        self.message_user(request, f"Notificación enviada para {queryset.count()} alerta(s).")
+    enviar_notificacion_email.short_description = "Enviar Notificación Email"

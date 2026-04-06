@@ -1,31 +1,78 @@
 {% extends "website/base.html" %}
 {% block content %}
 <div class="container mt-4">
-    <div class="card shadow-lg">
-        <div class="card-body text-center">
-            <h1 class="card-title text-danger mb-4">
-                <i class="fas fa-exclamation-triangle"></i> Confirmar EliminaciÃ³n
-            </h1>
-            
-            <p class="lead">
-                Â¿EstÃ¡s seguro que deseas eliminar al usuario <strong>{{ user.get_full_name }}</strong>?
-            </p>
-            
-            <p class="text-muted">
-                Esta acciÃ³n no se puede deshacer.
-            </p>
-
-            <form method="POST">
-                {% csrf_token %}
-                <div class="mt-4">
-                    <a href="{% url 'user_list' %}" class="btn btn-secondary">
-                        <i class="fas fa-times"></i> Cancelar
-                    </a>
-                    <button type="submit" class="btn btn-danger">
-                        <i class="fas fa-trash"></i> Eliminar
-                    </button>
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card shadow-lg">
+                <div class="card-header bg-danger text-white">
+                    <h3 class="card-title mb-0">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        Confirmar Eliminación de Usuario
+                    </h3>
                 </div>
-            </form>
+                <div class="card-body">
+                    <div class="alert alert-warning">
+                        <h4 class="alert-heading">¡Advertencia!</h4>
+                        <p>Está a punto de eliminar al usuario:</p>
+                        <ul class="mb-0">
+                            <li><strong>Nombre:</strong> {{ user.get_full_name }}</li>
+                            <li><strong>Email:</strong> {{ user.email }}</li>
+                            <li><strong>Rol:</strong> {{ user.rol }}</li>
+                        </ul>
+                        <hr>
+                        <p class="mb-0 text-danger"><strong>Esta acción no se puede deshacer.</strong> Por favor, confirme su contraseña y el código de anulación para proceder.</p>
+                        <p class="mb-0 mt-2"><small class="text-muted"><i class="fas fa-info-circle"></i> Esta eliminación quedará registrada en el log de seguridad.</small></p>
+                    </div>
+
+                    <form method="POST" class="needs-validation" novalidate>
+                        {% csrf_token %}
+                        
+                        {% if messages %}
+                        <div class="messages mb-3">
+                            {% for message in messages %}
+                            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                                {{ message }}
+                                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+
+                        <div class="mb-3">
+                            <label for="password" class="form-label">
+                                <i class="fas fa-lock me-1"></i> Contraseña de confirmación
+                            </label>
+                            <div class="input-group">
+                                <input type="password" class="form-control" id="password" name="password" 
+                                       placeholder="Ingrese su contraseña" required>
+                                <button class="btn btn-outline-secondary" type="button" id="togglePassword">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                            </div>
+                            <div class="form-text">Ingrese su contraseña actual para confirmar la eliminación</div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="codigo_anulacion" class="form-label">
+                                <i class="fas fa-key me-1"></i> Código de anulación
+                            </label>
+                            <input type="text" class="form-control text-uppercase" id="codigo_anulacion" 
+                                   name="codigo_anulacion" maxlength="10" 
+                                   placeholder="XXXXXXXX" required>
+                            <div class="form-text">Solicite el código de anulación vigente al administrador del sistema.</div>
+                        </div>
+
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end mt-4">
+                            <a href="{% url 'user_list' %}" class="btn btn-secondary me-md-2">
+                                <i class="fas fa-times me-1"></i> Cancelar
+                            </a>
+                            <button type="submit" class="btn btn-danger">
+                                <i class="fas fa-trash me-1"></i> Eliminar Usuario
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
         </div>
     </div>
 </div>
@@ -33,4 +80,44 @@
 <!-- Agregar FontAwesome para iconos -->
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Form validation
+    (function () {
+        'use strict'
+        var forms = document.querySelectorAll('.needs-validation')
+        Array.prototype.slice.call(forms).forEach(function (form) {
+            form.addEventListener('submit', function (event) {
+                if (!form.checkValidity()) {
+                    event.preventDefault()
+                    event.stopPropagation()
+                }
+                form.classList.add('was-validated')
+            }, false)
+        })
+    })()
+
+    // Toggle password visibility
+    document.getElementById('togglePassword').addEventListener('click', function() {
+        const passwordInput = document.getElementById('password');
+        const icon = this.querySelector('i');
+        
+        if (passwordInput.type === 'password') {
+            passwordInput.type = 'text';
+            icon.classList.remove('fa-eye');
+            icon.classList.add('fa-eye-slash');
+        } else {
+            passwordInput.type = 'password';
+            icon.classList.remove('fa-eye-slash');
+            icon.classList.add('fa-eye');
+        }
+    })
+
+    // Auto-uppercase for codigo_anulacion
+    document.getElementById('codigo_anulacion').addEventListener('input', function(e) {
+        this.value = this.value.toUpperCase();
+    })
+</script>
 {% endblock %}

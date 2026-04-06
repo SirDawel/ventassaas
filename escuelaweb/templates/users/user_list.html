@@ -8,9 +8,16 @@
                     <h3 class="mb-0">
                         <i class="fas fa-users me-2"></i>Lista de Usuarios
                     </h3>
-                    <a href="{% url 'user_create' %}" class="btn btn-light">
-                        <i class="fas fa-user-plus me-2"></i>Nuevo Usuario
-                    </a>
+                    <div>
+                        {% if user.rol == 'Administrador' or user.rol == 'Secretaria' %}
+                        <a href="{% url 'log_usuarios_eliminados' %}" class="btn btn-warning me-2">
+                            <i class="fas fa-history me-2"></i>Log Eliminados
+                        </a>
+                        {% endif %}
+                        <a href="{% url 'user_create' %}" class="btn btn-light">
+                            <i class="fas fa-user-plus me-2"></i>Nuevo Usuario
+                        </a>
+                    </div>
                 </div>
 
                 <div class="card-body p-4">
@@ -264,34 +271,17 @@
                                                 <i class="fas fa-file-alt"></i>
                                             </a>
                                             {% endif %}
-                                            <button type="button" class="btn btn-sm btn-danger" 
-                                                data-bs-toggle="modal" 
-                                                data-bs-target="#deleteModal{{ user.id }}"
-                                                title="Eliminar">
-                                                <i class="fas fa-trash"></i>
-                                            </button>
-                                        </div>
-
-                                        <!-- Modal de confirmación de eliminación -->
-                                        <div class="modal fade" id="deleteModal{{ user.id }}" tabindex="-1" aria-hidden="true">
-                                            <div class="modal-dialog">
-                                                <div class="modal-content">
-                                                    <div class="modal-header">
-                                                        <h5 class="modal-title">Confirmar Eliminación</h5>
-                                                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                                                    </div>
-                                                    <div class="modal-body">
-                                                        ¿Está seguro que desea eliminar al usuario {{ user.get_full_name }}?
-                                                    </div>
-                                                    <div class="modal-footer">
-                                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                                                        <form action="{% url 'user_delete' user.id %}" method="POST" class="d-inline">
-                                                            {% csrf_token %}
-                                                            <button type="submit" class="btn btn-danger">Eliminar</button>
-                                                        </form>
-                                                    </div>
-                                                </div>
-                                            </div>
+                                            {% if user.is_active %}
+                                                <button type="button" class="btn btn-sm btn-danger" title="Eliminar / Inactivar"
+                                                    onclick="openDeleteModal({{ user.id }}, '{{ user.get_full_name }}', '{{ user.email }}', '{{ user.rol }}')">
+                                                    <i class="fas fa-trash"></i>
+                                                </button>
+                                            {% else %}
+                                                <button type="button" class="btn btn-sm btn-success" title="Reactivar usuario"
+                                                    onclick="openReactivateModal({{ user.id }}, '{{ user.get_full_name }}', '{{ user.email }}', '{{ user.rol }}')">
+                                                    <i class="fas fa-undo"></i>
+                                                </button>
+                                            {% endif %}
                                         </div>
 
                                     </td>
@@ -348,6 +338,121 @@
 
                 </div>
             </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de Confirmación de Eliminación -->
+<div class="modal fade" id="deleteUserModal" tabindex="-1" aria-labelledby="deleteUserModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title" id="deleteUserModalLabel">
+                    <i class="fas fa-exclamation-triangle me-2"></i>Confirmar Eliminación de Usuario
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="POST" action="" id="deleteUserForm">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <div class="alert alert-warning">
+                        <h6 class="alert-heading">¡Advertencia!</h6>
+                        <p>Está a punto de eliminar al usuario:</p>
+                        <ul class="mb-0">
+                            <li><strong>Nombre:</strong> <span id="delete-user-name"></span></li>
+                            <li><strong>Email:</strong> <span id="delete-user-email"></span></li>
+                            <li><strong>Rol:</strong> <span id="delete-user-rol"></span></li>
+                        </ul>
+                        <hr>
+                        <p class="mb-0 text-info"><i class="fas fa-info-circle"></i> <strong>Nota:</strong> Si el usuario tiene registros relacionados (facturas, matrículas, etc.), será marcado como <strong>inactivo</strong> en lugar de eliminarse completamente.</p>
+                        <p class="mb-0 mt-2"><small class="text-muted"><i class="fas fa-shield-alt"></i> Esta acción quedará registrada en el log de seguridad.</small></p>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="delete_password" class="form-label">
+                            <i class="fas fa-lock me-1"></i> Contraseña de confirmación
+                        </label>
+                        <div class="input-group">
+                            <input type="password" class="form-control" id="delete_password" name="password" 
+                                   placeholder="Ingrese su contraseña" required>
+                            <button class="btn btn-outline-secondary" type="button" onclick="togglePasswordVisibility('delete_password')">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                        </div>
+                        <small class="text-muted">Ingrese su contraseña actual para confirmar la eliminación</small>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="delete_codigo" class="form-label">
+                            <i class="fas fa-key me-1"></i> Código de anulación
+                        </label>
+                        <input type="text" class="form-control text-uppercase" id="delete_codigo" name="codigo_anulacion" 
+                               placeholder="Ingrese el código" required maxlength="10" 
+                               style="text-transform: uppercase;">
+                        <small class="text-muted">Código mensual de seguridad para operaciones críticas</small>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="fas fa-times me-2"></i>Cancelar
+                    </button>
+                    <button type="submit" class="btn btn-danger">
+                        <i class="fas fa-trash me-2"></i>Eliminar Usuario
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de Reactivación de Usuario -->
+<div class="modal fade" id="reactivateUserModal" tabindex="-1" aria-labelledby="reactivateUserModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title" id="reactivateUserModalLabel">
+                    <i class="fas fa-undo me-2"></i>Reactivar Usuario
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="POST" action="" id="reactivateUserForm">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <div class="alert alert-info">
+                        <h6 class="alert-heading">Información</h6>
+                        <p>Está a punto de reactivar al usuario:</p>
+                        <ul class="mb-0">
+                            <li><strong>Nombre:</strong> <span id="reactivate-user-name"></span></li>
+                            <li><strong>Email:</strong> <span id="reactivate-user-email"></span></li>
+                            <li><strong>Rol:</strong> <span id="reactivate-user-rol"></span></li>
+                        </ul>
+                        <hr>
+                        <p class="mb-0"><i class="fas fa-info-circle"></i> El usuario podrá acceder nuevamente al sistema después de la reactivación.</p>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="reactivate_password" class="form-label">
+                            <i class="fas fa-lock me-1"></i> Contraseña de confirmación
+                        </label>
+                        <div class="input-group">
+                            <input type="password" class="form-control" id="reactivate_password" name="password" 
+                                   placeholder="Ingrese su contraseña" required>
+                            <button class="btn btn-outline-secondary" type="button" onclick="togglePasswordVisibility('reactivate_password')">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                        </div>
+                        <small class="text-muted">Ingrese su contraseña actual para confirmar la reactivación</small>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="fas fa-times me-2"></i>Cancelar
+                    </button>
+                    <button type="submit" class="btn btn-success">
+                        <i class="fas fa-check me-2"></i>Reactivar Usuario
+                    </button>
+                </div>
+            </form>
         </div>
     </div>
 </div>
@@ -409,4 +514,72 @@
     border-color: #dee2e6;
 }
 </style>
+
+<script>
+// Función para abrir el modal de eliminación con los datos del usuario
+function openDeleteModal(userId, userName, userEmail, userRol) {
+    // Configurar la acción del formulario con el ID del usuario
+    const form = document.getElementById('deleteUserForm');
+    form.action = `/users/${userId}/delete/`;
+    
+    // Rellenar los datos del usuario en el modal
+    document.getElementById('delete-user-name').textContent = userName;
+    document.getElementById('delete-user-email').textContent = userEmail;
+    document.getElementById('delete-user-rol').textContent = userRol;
+    
+    // Limpiar los campos del formulario
+    document.getElementById('delete_password').value = '';
+    document.getElementById('delete_codigo').value = '';
+    
+    // Abrir el modal
+    const modal = new bootstrap.Modal(document.getElementById('deleteUserModal'));
+    modal.show();
+}
+
+// Función para abrir el modal de reactivación con los datos del usuario
+function openReactivateModal(userId, userName, userEmail, userRol) {
+    // Configurar la acción del formulario con el ID del usuario
+    const form = document.getElementById('reactivateUserForm');
+    form.action = `/users/${userId}/reactivate/`;
+    
+    // Rellenar los datos del usuario en el modal
+    document.getElementById('reactivate-user-name').textContent = userName;
+    document.getElementById('reactivate-user-email').textContent = userEmail;
+    document.getElementById('reactivate-user-rol').textContent = userRol;
+    
+    // Limpiar los campos del formulario
+    document.getElementById('reactivate_password').value = '';
+    
+    // Abrir el modal
+    const modal = new bootstrap.Modal(document.getElementById('reactivateUserModal'));
+    modal.show();
+}
+
+// Función para mostrar/ocultar contraseña
+function togglePasswordVisibility(inputId) {
+    const input = document.getElementById(inputId);
+    const icon = input.nextElementSibling.querySelector('i');
+    
+    if (input.type === 'password') {
+        input.type = 'text';
+        icon.classList.remove('fa-eye');
+        icon.classList.add('fa-eye-slash');
+    } else {
+        input.type = 'password';
+        icon.classList.remove('fa-eye-slash');
+        icon.classList.add('fa-eye');
+    }
+}
+
+// Auto-convertir código de anulación a mayúsculas
+document.addEventListener('DOMContentLoaded', function() {
+    const codigoInput = document.getElementById('delete_codigo');
+    if (codigoInput) {
+        codigoInput.addEventListener('input', function() {
+            this.value = this.value.toUpperCase();
+        });
+    }
+});
+</script>
+
 {% endblock %}

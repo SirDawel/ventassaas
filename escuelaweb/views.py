@@ -203,23 +203,74 @@ def activate(request, uidb64, token):
 
 
 def login_view(request):
+    # Obtener IP y User Agent
+    ip_address = get_client_ip(request)
+    user_agent = request.META.get('HTTP_USER_AGENT', '')
+    
+    # Verificar si la IP está bloqueada
+    try:
+        from escuelaweb.models import IPBlocklist
+        if IPBlocklist.is_blocked(ip_address):
+            messages.error(request, 'Acceso denegado. Tu IP ha sido bloqueada.')
+            return render(request, 'website/login.html', {'form': None})
+    except Exception:
+        pass
+    
+    # Verificar si debe mostrar CAPTCHA (después de 2 intentos fallidos)
+    show_captcha = False
+    if request.method == "POST":
+        email = request.POST.get("email", "").strip()
+        if email:
+            from escuelaweb.models import LoginAttempt
+            intentos_recientes = LoginAttempt.get_recent_failed_attempts(email, minutes=15)
+            show_captcha = intentos_recientes >= 2
+    
     if request.method != "POST":
-        return render(request, 'website/login.html')
+        form = None  # Solo para GET, renderizar sin formulario (modo actual)
+        return render(request, 'website/login.html', {'form': form})
 
     try:
         from django.conf import settings
-        from escuelaweb.models import LoginAttempt, SecurityLog
+        from escuelaweb.models import LoginAttempt, SecurityLog, SecurityAlert
+        from escuelaweb.forms import LoginForm
         
-        email = request.POST.get("email", "").strip()
-        password = request.POST.get("password", "").strip()
+        # Crear formulario con CAPTCHA si es necesario
+        form = LoginForm(request.POST, show_captcha=show_captcha)
         
-        # Obtener IP y User Agent
-        ip_address = get_client_ip(request)
-        user_agent = request.META.get('HTTP_USER_AGENT', '')
-
-        if not email or not password:
-            messages.error(request, "Por favor, completa todos los campos")
-            return render(request, 'website/login.html')
+        # Validar formulario (incluye honeypot y CAPTCHA)
+        if not form.is_valid():
+            # Si falla el honeypot, es un bot
+            if 'website' in form.errors:
+                # Registrar intento de bot
+                SecurityLog.log_event(
+                    tipo_evento='SUSPICIOUS_ACTIVITY',
+                    descripcion=f'Bot detectado por honeypot desde IP {ip_address}',
+                    ip_address=ip_address,
+                    user_agent=user_agent,
+                    nivel_severidad='WARNING'
+                )
+                # Bloquear IP automáticamente
+                from escuelaweb.models import IPBlocklist
+                IPBlocklist.block_ip(
+                    ip_address=ip_address,
+                    tipo_bloqueo='AUTO_SUSPICIOUS',
+                    razon='Bot detectado por honeypot field',
+                    es_temporal=True,
+                    minutos_bloqueo=60
+                )
+                # No dar pistas al bot
+                messages.error(request, "Credenciales incorrectas.")
+                return render(request, 'website/login.html', {'form': form})
+            
+            # Error en CAPTCHA u otros campos
+            for field, errors in form.errors.items():
+                for error in errors:
+                    messages.error(request, error)
+            return render(request, 'website/login.html', {'form': form})
+        
+        # Obtener datos validados
+        email = form.cleaned_data['email']
+        password = form.cleaned_data['password']
         
         # Verificar si la cuenta está bloqueada por múltiples intentos fallidos
         if LoginAttempt.is_blocked(email, max_attempts=5, block_minutes=15):
@@ -231,12 +282,29 @@ def login_view(request):
                 user_agent=user_agent,
                 nivel_severidad='WARNING'
             )
+            
+            # Crear alerta de seguridad si hay muchos intentos
+            intentos_totales = LoginAttempt.objects.filter(
+                email=email,
+                exitoso=False
+            ).count()
+            
+            if intentos_totales >= 10:
+                SecurityAlert.create_alert(
+                    tipo_alerta='BRUTE_FORCE',
+                    titulo=f'Múltiples intentos fallidos en cuenta: {email}',
+                    descripcion=f'Se han detectado {intentos_totales} intentos fallidos de login para {email}. IP: {ip_address}',
+                    nivel_prioridad='HIGH',
+                    ip_address=ip_address,
+                    metadata={'email': email, 'intentos': intentos_totales}
+                )
+            
             messages.error(
                 request, 
                 'Cuenta temporalmente bloqueada por múltiples intentos fallidos. '
                 'Intenta nuevamente en 15 minutos.'
             )
-            return render(request, 'website/login.html')
+            return render(request, 'website/login.html', {'form': form})
 
         # Verificar si el usuario existe
         from escuelaweb.models import CustomUser
@@ -297,7 +365,7 @@ def login_view(request):
                 )
                 
                 messages.error(request, "Tu cuenta no está activa. Por favor, verifica tu correo electrónico para activarla.")
-                return render(request, 'website/login.html')
+                return render(request, 'website/login.html', {'form': form})
         else:
             # Login fallido
             razon = 'Usuario no existe' if not user_exists else 'Contraseña incorrecta'
@@ -337,12 +405,12 @@ def login_view(request):
                     "Intenta nuevamente en 15 minutos."
                 )
             
-            return render(request, 'website/login.html')
+            return render(request, 'website/login.html', {'form': form})
 
     except Exception as e:
         logger.error(f"Error en login_view: {str(e)}")
         messages.error(request, f"Error al iniciar sesión: {str(e)}")
-        return render(request, 'website/login.html')
+        return render(request, 'website/login.html', {'form': None})
 
 
 # Función auxiliar para obtener IP del cliente
@@ -949,23 +1017,175 @@ def user_updateantes(request, user_id):
     return render(request, "users/user_form.html", {"form": form, "editing_user": user})
 
 @login_required
-@user_passes_test(is_superuser)
-@login_required
 def user_delete(request, user_id):
-    # Administradores, Directores y Secretaria pueden eliminar usuarios
-    if request.user.rol not in ['Administrador', 'Director', 'Secretaria']:
-        messages.error(request, 'No tienes permiso para acceder a esta página.')
+    # Solo Administradores y Secretaria pueden eliminar usuarios
+    if request.user.rol not in ['Administrador', 'Secretaria']:
+        messages.error(request, 'No tienes permiso para eliminar usuarios. Solo Administradores y Secretaria pueden realizar esta acción.')
         return redirect('plataform')
     
     user = get_object_or_404(CustomUser, id=user_id)
+    
+    # Validación adicional: no permitir eliminar superusuarios o el propio usuario
+    if user.is_superuser:
+        messages.error(request, 'No se puede eliminar un superusuario.')
+        return redirect('user_list')
+    
+    if user.id == request.user.id:
+        messages.error(request, 'No puedes eliminarte a ti mismo.')
+        return redirect('user_list')
+    
+    from .models import CodigoAnulacion
+    
     if request.method == "POST":
+        password = request.POST.get('password', '').strip()
+        codigo_anulacion = request.POST.get('codigo_anulacion', '').strip()
+        
+        if not password or not codigo_anulacion:
+            messages.error(request, 'Debe ingresar la contraseña y el código de anulación.')
+            return redirect('user_list')
+        
+        if not check_password(password, request.user.password):
+            messages.error(request, 'Contraseña incorrecta.')
+            return redirect('user_list')
+        
+        if not CodigoAnulacion.validar_codigo(codigo_anulacion):
+            messages.error(request, 'Código de anulación incorrecto.')
+            return redirect('user_list')
+        
         try:
-            user.delete()
-            messages.success(request, "Usuario eliminado exitosamente.")
+            # Registrar en log de seguridad antes de eliminar
+            from .models import SecurityLog
+            from django.db import IntegrityError
+            
+            # Preparar información detallada del usuario eliminado
+            usuario_eliminado_info = {
+                'id': user.id,
+                'nombre_completo': user.get_full_name(),
+                'email': user.email,
+                'rol': user.rol,
+                'cedula': user.cedula if hasattr(user, 'cedula') else None,
+            }
+            
+            # Preparar información del usuario que eliminó
+            usuario_elimino_info = {
+                'id': request.user.id,
+                'nombre_completo': request.user.get_full_name(),
+                'email': request.user.email,
+                'rol': request.user.rol,
+            }
+            
+            # Intentar eliminar el usuario
+            accion_realizada = 'eliminacion_fisica'
+            mensaje_accion = ''
+            
+            try:
+                user.delete()
+                mensaje_accion = f"Usuario {user.get_full_name()} eliminado exitosamente."
+                accion_realizada = 'eliminacion_fisica'
+                
+            except IntegrityError:
+                # Si tiene relaciones (facturas, matrículas, etc.), marcar como inactivo
+                user.is_active = False
+                user.save()
+                mensaje_accion = f"Usuario {user.get_full_name()} marcado como inactivo (tiene registros relacionados: facturas, matrículas, etc.)."
+                accion_realizada = 'inactivacion'
+            
+            # Registrar en log de seguridad
+            SecurityLog.log_event(
+                tipo_evento='ADMIN_ACTION',
+                descripcion=f"ELIMINACIÓN DE USUARIO - Usuario: {usuario_eliminado_info['nombre_completo']} ({usuario_eliminado_info['email']}, Rol: {usuario_eliminado_info['rol']}) | Acción: {accion_realizada.upper()} | Eliminado por: {usuario_elimino_info['nombre_completo']} ({usuario_elimino_info['email']}, Rol: {usuario_elimino_info['rol']})",
+                usuario=request.user,
+                ip_address=request.META.get('REMOTE_ADDR'),
+                user_agent=request.META.get('HTTP_USER_AGENT', ''),
+                nivel_severidad='WARNING',
+                metadata={
+                    'usuario_eliminado': usuario_eliminado_info,
+                    'usuario_que_elimino': usuario_elimino_info,
+                    'accion': accion_realizada,
+                    'requirio_codigo_anulacion': True
+                }
+            )
+            
+            messages.success(request, mensaje_accion)
         except Exception as e:
-            messages.error(request, f"Error al eliminar usuario: {str(e)}")
+            messages.error(request, f"Error al procesar la eliminación: {str(e)}")
         return redirect("user_list")
-    return render(request, "users/user_confirm_delete.html", {"user": user})
+    
+    # Si es GET, redirigir a user_list (la eliminación ahora se hace desde el modal)
+    messages.info(request, 'Use el botón de eliminar desde la lista de usuarios.')
+    return redirect("user_list")
+
+@login_required
+def user_reactivate(request, user_id):
+    """Reactivar un usuario inactivo - Solo Administradores y Secretaria"""
+    # Solo Administradores y Secretaria pueden reactivar usuarios
+    if request.user.rol not in ['Administrador', 'Secretaria']:
+        messages.error(request, 'No tienes permiso para reactivar usuarios.')
+        return redirect('plataform')
+    
+    user = get_object_or_404(CustomUser, id=user_id)
+    
+    # Validación: el usuario debe estar inactivo
+    if user.is_active:
+        messages.warning(request, 'Este usuario ya está activo.')
+        return redirect('user_list')
+    
+    if request.method == "POST":
+        password = request.POST.get('password', '').strip()
+        
+        if not password:
+            messages.error(request, 'Debe ingresar su contraseña.')
+            return redirect('user_list')
+        
+        if not check_password(password, request.user.password):
+            messages.error(request, 'Contraseña incorrecta.')
+            return redirect('user_list')
+        
+        try:
+            # Reactivar el usuario
+            user.is_active = True
+            user.save()
+            
+            # Registrar en log de seguridad
+            from .models import SecurityLog
+            
+            usuario_reactivado_info = {
+                'id': user.id,
+                'nombre_completo': user.get_full_name(),
+                'email': user.email,
+                'rol': user.rol,
+                'cedula': user.cedula if hasattr(user, 'cedula') else None,
+            }
+            
+            usuario_reactivo_info = {
+                'id': request.user.id,
+                'nombre_completo': request.user.get_full_name(),
+                'email': request.user.email,
+                'rol': request.user.rol,
+            }
+            
+            SecurityLog.log_event(
+                tipo_evento='ADMIN_ACTION',
+                descripcion=f"REACTIVACIÓN DE USUARIO - Usuario reactivado: {user.get_full_name()} ({user.email}, Rol: {user.rol}) | Reactivado por: {request.user.get_full_name()} ({request.user.email}, Rol: {request.user.rol})",
+                usuario=request.user,
+                ip_address=request.META.get('REMOTE_ADDR'),
+                user_agent=request.META.get('HTTP_USER_AGENT', ''),
+                nivel_severidad='INFO',
+                metadata={
+                    'usuario_reactivado': usuario_reactivado_info,
+                    'usuario_que_reactivo': usuario_reactivo_info,
+                    'accion': 'reactivacion_usuario'
+                }
+            )
+            
+            messages.success(request, f"Usuario {user.get_full_name()} reactivado exitosamente.")
+        except Exception as e:
+            messages.error(request, f"Error al reactivar usuario: {str(e)}")
+        return redirect("user_list")
+    
+    # Si es GET, redirigir a user_list
+    messages.info(request, 'Use el botón de reactivar desde la lista de usuarios.')
+    return redirect("user_list")
 
 #_______________________ Panel de Administración _________________________
 
@@ -7986,6 +8206,29 @@ def codigo_anulacion_ver(request):
         'historial': historial,
     }
     return render(request, 'cobros/codigo_anulacion_ver.html', context)
+
+
+@login_required
+def log_usuarios_eliminados(request):
+    """Vista para ver el log de usuarios eliminados - Solo Administrador y Secretaria"""
+    from .models import SecurityLog
+    
+    # Solo Administradores y Secretaria pueden ver este log
+    if request.user.rol not in ['Administrador', 'Secretaria']:
+        messages.error(request, 'No tienes permiso para acceder a esta página.')
+        return redirect('plataform')
+    
+    # Filtrar logs de tipo ADMIN_ACTION relacionados con eliminación de usuarios
+    logs_eliminacion = SecurityLog.objects.filter(
+        tipo_evento='ADMIN_ACTION',
+        descripcion__icontains='ELIMINACIÓN DE USUARIO'
+    ).select_related('usuario').order_by('-fecha')[:100]
+    
+    context = {
+        'titulo': 'Log de Usuarios Eliminados',
+        'logs': logs_eliminacion,
+    }
+    return render(request, 'users/log_usuarios_eliminados.html', context)
 
 
 # ===========================

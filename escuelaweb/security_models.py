@@ -296,3 +296,342 @@ class TwoFactorAuth(models.Model):
             name=self.usuario.email,
             issuer_name='Escuela Online'
         )
+
+
+class IPBlocklist(models.Model):
+    """
+    Lista de IPs bloqueadas por actividad sospechosa
+    """
+    TIPO_BLOQUEO_CHOICES = [
+        ('MANUAL', 'Bloqueo Manual'),
+        ('AUTO_RATE_LIMIT', 'Automático - Rate Limit'),
+        ('AUTO_FAILED_LOGIN', 'Automático - Login Fallido'),
+        ('AUTO_SUSPICIOUS', 'Automático - Actividad Sospechosa'),
+    ]
+    
+    ip_address = models.GenericIPAddressField(unique=True, db_index=True,
+                                              verbose_name="Dirección IP")
+    tipo_bloqueo = models.CharField(max_length=30, choices=TIPO_BLOQUEO_CHOICES,
+                                    default='MANUAL', verbose_name="Tipo de Bloqueo")
+    razon = models.TextField(verbose_name="Razón del Bloqueo")
+    fecha_bloqueo = models.DateTimeField(auto_now_add=True, 
+                                         verbose_name="Fecha de Bloqueo")
+    bloqueado_por = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='ips_bloqueadas',
+        verbose_name="Bloqueado Por"
+    )
+    
+    # Control de bloqueo temporal
+    es_temporal = models.BooleanField(default=False, verbose_name="Bloqueo Temporal")
+    fecha_expiracion = models.DateTimeField(null=True, blank=True,
+                                            verbose_name="Fecha de Expiración")
+    activo = models.BooleanField(default=True, verbose_name="Bloqueo Activo")
+    
+    # Estadísticas
+    intentos_durante_bloqueo = models.IntegerField(default=0,
+                                                    verbose_name="Intentos Durante Bloqueo")
+    ultima_actividad = models.DateTimeField(auto_now=True,
+                                            verbose_name="Última Actividad")
+    
+    # Información adicional
+    pais = models.CharField(max_length=100, blank=True,
+                           verbose_name="País de Origen")
+    user_agent = models.TextField(blank=True, verbose_name="User Agent")
+    metadata = models.JSONField(default=dict, blank=True,
+                               verbose_name="Metadata Adicional")
+    
+    class Meta:
+        verbose_name = "IP Bloqueada"
+        verbose_name_plural = "IPs Bloqueadas"
+        ordering = ['-fecha_bloqueo']
+        indexes = [
+            models.Index(fields=['ip_address']),
+            models.Index(fields=['activo', '-fecha_bloqueo']),
+            models.Index(fields=['es_temporal', 'fecha_expiracion']),
+        ]
+    
+    def __str__(self):
+        estado = "Activo" if self.activo else "Inactivo"
+        return f"{self.ip_address} - {self.get_tipo_bloqueo_display()} ({estado})"
+    
+    @classmethod
+    def is_blocked(cls, ip_address):
+        """Verifica si una IP está bloqueada y activa"""
+        now = timezone.now()
+        
+        # Buscar bloqueo activo
+        try:
+            bloqueo = cls.objects.get(ip_address=ip_address, activo=True)
+            
+            # Si es temporal, verificar expiración
+            if bloqueo.es_temporal and bloqueo.fecha_expiracion:
+                if now > bloqueo.fecha_expiracion:
+                    # Bloqueo expirado, desactivar
+                    bloqueo.activo = False
+                    bloqueo.save()
+                    return False
+            
+            # Incrementar contador de intentos
+            bloqueo.intentos_durante_bloqueo += 1
+            bloqueo.save(update_fields=['intentos_durante_bloqueo', 'ultima_actividad'])
+            
+            return True
+            
+        except cls.DoesNotExist:
+            return False
+    
+    @classmethod
+    def block_ip(cls, ip_address, tipo_bloqueo, razon, bloqueado_por=None,
+                es_temporal=False, minutos_bloqueo=None):
+        """
+        Bloquea una IP
+        """
+        fecha_expiracion = None
+        if es_temporal and minutos_bloqueo:
+            fecha_expiracion = timezone.now() + timedelta(minutes=minutos_bloqueo)
+        
+        bloqueo, created = cls.objects.update_or_create(
+            ip_address=ip_address,
+            defaults={
+                'tipo_bloqueo': tipo_bloqueo,
+                'razon': razon,
+                'bloqueado_por': bloqueado_por,
+                'es_temporal': es_temporal,
+                'fecha_expiracion': fecha_expiracion,
+                'activo': True,
+                'intentos_durante_bloqueo': 0
+            }
+        )
+        
+        return bloqueo
+    
+    @classmethod
+    def unblock_ip(cls, ip_address):
+        """Desbloquea una IP"""
+        cls.objects.filter(ip_address=ip_address).update(activo=False)
+    
+    @classmethod
+    def cleanup_expired_blocks(cls):
+        """Limpia bloqueos temporales expirados"""
+        now = timezone.now()
+        cls.objects.filter(
+            es_temporal=True,
+            fecha_expiracion__lt=now,
+            activo=True
+        ).update(activo=False)
+
+
+class SecurityAlert(models.Model):
+    """
+    Alertas de seguridad que requieren atención
+    """
+    TIPO_ALERTA_CHOICES = [
+        ('BRUTE_FORCE', 'Intento de Fuerza Bruta'),
+        ('MULTIPLE_FAILED_LOGIN', 'Múltiples Intentos Fallidos'),
+        ('SUSPICIOUS_IP', 'IP Sospechosa'),
+        ('UNUSUAL_LOCATION', 'Ubicación Inusual'),
+        ('UNUSUAL_TIME', 'Hora Inusual'),
+        ('ACCOUNT_COMPROMISE', 'Posible Cuenta Comprometida'),
+        ('DATA_BREACH', 'Posible Filtración de Datos'),
+        ('PRIVILEGE_ESCALATION', 'Escalada de Privilegios'),
+        ('UNAUTHORIZED_ACCESS', 'Acceso No Autorizado'),
+        ('OTHER', 'Otro'),
+    ]
+    
+    NIVEL_PRIORIDAD_CHOICES = [
+        ('LOW', 'Baja'),
+        ('MEDIUM', 'Media'),
+        ('HIGH', 'Alta'),
+        ('CRITICAL', 'Crítica'),
+    ]
+    
+    ESTADO_CHOICES = [
+        ('PENDIENTE', 'Pendiente'),
+        ('REVISANDO', 'En Revisión'),
+        ('RESUELTA', 'Resuelta'),
+        ('FALSA_ALARMA', 'Falsa Alarma'),
+        ('IGNORADA', 'Ignorada'),
+    ]
+    
+    tipo_alerta = models.CharField(max_length=30, choices=TIPO_ALERTA_CHOICES,
+                                   verbose_name="Tipo de Alerta")
+    nivel_prioridad = models.CharField(max_length=10, choices=NIVEL_PRIORIDAD_CHOICES,
+                                       default='MEDIUM', verbose_name="Prioridad")
+    estado = models.CharField(max_length=20, choices=ESTADO_CHOICES,
+                             default='PENDIENTE', verbose_name="Estado")
+    
+    titulo = models.CharField(max_length=200, verbose_name="Título")
+    descripcion = models.TextField(verbose_name="Descripción")
+    
+    # Usuario afectado (si aplica)
+    usuario_afectado = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='alertas_seguridad',
+        verbose_name="Usuario Afectado"
+    )
+    
+    # IP relacionada
+    ip_address = models.GenericIPAddressField(null=True, blank=True,
+                                              verbose_name="Dirección IP")
+    
+    # Fechas
+    fecha_alerta = models.DateTimeField(auto_now_add=True,
+                                        verbose_name="Fecha de Alerta")
+    fecha_revision = models.DateTimeField(null=True, blank=True,
+                                          verbose_name="Fecha de Revisión")
+    fecha_resolucion = models.DateTimeField(null=True, blank=True,
+                                            verbose_name="Fecha de Resolución")
+    
+    # Gestión
+    asignado_a = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='alertas_asignadas',
+        verbose_name="Asignado A"
+    )
+    resuelto_por = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='alertas_resueltas',
+        verbose_name="Resuelto Por"
+    )
+    
+    notas = models.TextField(blank=True, verbose_name="Notas")
+    acciones_tomadas = models.TextField(blank=True,
+                                        verbose_name="Acciones Tomadas")
+    
+    # Notificaciones
+    email_enviado = models.BooleanField(default=False,
+                                        verbose_name="Email Enviado")
+    fecha_email = models.DateTimeField(null=True, blank=True,
+                                       verbose_name="Fecha de Email")
+    
+    # Información adicional
+    metadata = models.JSONField(default=dict, blank=True,
+                               verbose_name="Metadata Adicional")
+    
+    class Meta:
+        verbose_name = "Alerta de Seguridad"
+        verbose_name_plural = "Alertas de Seguridad"
+        ordering = ['-fecha_alerta']
+        indexes = [
+            models.Index(fields=['estado', '-fecha_alerta']),
+            models.Index(fields=['nivel_prioridad', '-fecha_alerta']),
+            models.Index(fields=['usuario_afectado', '-fecha_alerta']),
+            models.Index(fields=['asignado_a', '-fecha_alerta']),
+        ]
+    
+    def __str__(self):
+        return f"{self.get_tipo_alerta_display()} - {self.titulo} ({self.get_nivel_prioridad_display()})"
+    
+    @classmethod
+    def create_alert(cls, tipo_alerta, titulo, descripcion, nivel_prioridad='MEDIUM',
+                    usuario_afectado=None, ip_address=None, metadata=None):
+        """
+        Crea una nueva alerta de seguridad
+        """
+        alerta = cls.objects.create(
+            tipo_alerta=tipo_alerta,
+            nivel_prioridad=nivel_prioridad,
+            titulo=titulo,
+            descripcion=descripcion,
+            usuario_afectado=usuario_afectado,
+            ip_address=ip_address,
+            metadata=metadata or {}
+        )
+        
+        # Si es crítica, enviar email inmediatamente
+        if nivel_prioridad == 'CRITICAL':
+            alerta.enviar_notificacion_email()
+        
+        return alerta
+    
+    def enviar_notificacion_email(self):
+        """Envía notificación por email a los administradores"""
+        from django.core.mail import send_mail
+        from django.conf import settings
+        
+        if self.email_enviado:
+            return
+        
+        try:
+            # Obtener emails de administradores
+            from escuelaweb.models import CustomUser
+            admins = CustomUser.objects.filter(
+                rol__in=['Administrador', 'Director'],
+                is_active=True
+            ).values_list('email', flat=True)
+            
+            if not admins:
+                return
+            
+            subject = f"🚨 Alerta de Seguridad: {self.titulo}"
+            message = f"""
+Alerta de Seguridad Detectada
+
+Tipo: {self.get_tipo_alerta_display()}
+Prioridad: {self.get_nivel_prioridad_display()}
+Fecha: {self.fecha_alerta.strftime('%Y-%m-%d %H:%M:%S')}
+
+Descripción:
+{self.descripcion}
+
+{'Usuario Afectado: ' + self.usuario_afectado.email if self.usuario_afectado else ''}
+{'IP: ' + self.ip_address if self.ip_address else ''}
+
+Por favor, revisa el panel de administración para más detalles.
+
+---
+Sistema de Seguridad - Escuela Online
+            """
+            
+            send_mail(
+                subject,
+                message,
+                settings.DEFAULT_FROM_EMAIL,
+                list(admins),
+                fail_silently=True
+            )
+            
+            self.email_enviado = True
+            self.fecha_email = timezone.now()
+            self.save(update_fields=['email_enviado', 'fecha_email'])
+            
+        except Exception as e:
+            # Log error pero no fallar
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.error(f"Error enviando alerta de seguridad: {str(e)}")
+    
+    def marcar_como_revisando(self, usuario):
+        """Marca la alerta como en revisión"""
+        self.estado = 'REVISANDO'
+        self.asignado_a = usuario
+        self.fecha_revision = timezone.now()
+        self.save()
+    
+    def resolver(self, usuario, acciones_tomadas=''):
+        """Marca la alerta como resuelta"""
+        self.estado = 'RESUELTA'
+        self.resuelto_por = usuario
+        self.fecha_resolucion = timezone.now()
+        self.acciones_tomadas = acciones_tomadas
+        self.save()
+    
+    @classmethod
+    def get_active_alerts(cls):
+        """Obtiene alertas activas (pendientes o en revisión)"""
+        return cls.objects.filter(
+            estado__in=['PENDIENTE', 'REVISANDO']
+        ).order_by('-nivel_prioridad', '-fecha_alerta')

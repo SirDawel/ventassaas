@@ -47,13 +47,14 @@ urlpatterns = [
     path('estudiantes/eliminar/<int:id>/', views.eliminar_estudiante, name='eliminar_estudiante'),
 
   #  ______________usuario____________________
-    path("users/", user_list, name="user_list"),
-    path("users/create/", user_create, name="user_create"),
-    path("users/update/<int:user_id>/", user_update, name="user_update"),
-    path("update/<int:user_id>/", user_update, name="user_update"),
-    path("users/delete/<int:user_id>/", user_delete, name="user_delete"),
-    path("users/profile/<int:user_id>/", views.user_profile, name="user_profile"),
-    path("users/profile/picture/", views.update_profile_picture, name="update_profile_picture"),
+    # NOTA: URLs de usuarios ahora están en escuelaweb/urls.py (incluido abajo)
+    # path("users/", user_list, name="user_list"),
+    # path("users/create/", user_create, name="user_create"),
+    # path("users/update/<int:user_id>/", user_update, name="user_update"),
+    # path("update/<int:user_id>/", user_update, name="user_update"),
+    # path("users/delete/<int:user_id>/", user_delete, name="user_delete"),
+    # path("users/profile/<int:user_id>/", views.user_profile, name="user_profile"),
+    # path("users/profile/picture/", views.update_profile_picture, name="update_profile_picture"),
 
 #____________dashboard__________________________
     path("admin/dashboard/", admin_dashboard, name="admin_dashboard"),

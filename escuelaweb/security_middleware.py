@@ -23,19 +23,30 @@ class RateLimitMiddleware:
         self.rate_limits = {
             'login': {
                 'requests': 5,  # Máximo 5 intentos
-                'window': 60,  # En 1 minutos
+                'window': 60,  # En 1 minuto
+                'block_minutes': 30,  # Bloquear IP por 30 minutos si excede
             },
             'api': {
                 'requests': 100,  # Máximo 100 requests
                 'window': 60,  # En 1 minuto
+                'block_minutes': 15,
             },
             'general': {
                 'requests': 500,  # Máximo 500 requests
-                'window': 60,  # En 1 minutos
+                'window': 60,  # En 1 minuto
+                'block_minutes': 10,
             }
         }
     
     def __call__(self, request):
+        # Obtener IP del cliente
+        ip_address = self.get_client_ip(request)
+        
+        # Verificar si la IP está en la blacklist (bloqueo persistente)
+        if self.is_ip_blocked_in_db(ip_address):
+            logger.warning(f"Blocked IP attempt: {ip_address} on {request.path}")
+            return self.blocked_response(request)
+        
         # Determinar el tipo de endpoint
         endpoint_type = 'general'
         if '/login/' in request.path or '/api/auth/' in request.path:
@@ -43,24 +54,17 @@ class RateLimitMiddleware:
         elif '/api/' in request.path:
             endpoint_type = 'api'
         
-        # Obtener IP del cliente
-        ip_address = self.get_client_ip(request)
-        
         # Verificar rate limit
         if not self.check_rate_limit(ip_address, endpoint_type, request.path):
             logger.warning(f"Rate limit exceeded for IP {ip_address} on {request.path}")
             
-            if request.path.startswith('/api/'):
-                return JsonResponse({
-                    'error': 'Demasiadas solicitudes. Por favor, intenta más tarde.',
-                    'detail': 'Rate limit exceeded'
-                }, status=429)
-            else:
-                return HttpResponseForbidden(
-                    '<h1>429 Too Many Requests</h1>'
-                    '<p>Has excedido el límite de solicitudes. '
-                    'Por favor, espera unos minutos antes de intentar nuevamente.</p>'
-                )
+            # Bloquear IP temporalmente si excede rate limit
+            self.auto_block_ip(ip_address, endpoint_type)
+            
+            # Crear alerta de seguridad
+            self.create_security_alert(ip_address, endpoint_type, request)
+            
+            return self.rate_limit_response(request, endpoint_type)
         
         response = self.get_response(request)
         return response
@@ -73,6 +77,69 @@ class RateLimitMiddleware:
         else:
             ip = request.META.get('REMOTE_ADDR')
         return ip
+    
+    def is_ip_blocked_in_db(self, ip_address):
+        """Verifica si la IP está bloqueada en la base de datos"""
+        try:
+            from .models import IPBlocklist
+            return IPBlocklist.is_blocked(ip_address)
+        except Exception as e:
+            logger.error(f"Error checking IP blocklist: {str(e)}")
+            return False
+    
+    def auto_block_ip(self, ip_address, endpoint_type):
+        """Bloquea automáticamente una IP por exceder rate limit"""
+        try:
+            from .models import IPBlocklist
+            
+            config = self.rate_limits.get(endpoint_type, self.rate_limits['general'])
+            minutos_bloqueo = config.get('block_minutes', 15)
+            
+            razon = f"Bloqueo automático por exceder rate limit en endpoint '{endpoint_type}'"
+            
+            IPBlocklist.block_ip(
+                ip_address=ip_address,
+                tipo_bloqueo='AUTO_RATE_LIMIT',
+                razon=razon,
+                es_temporal=True,
+                minutos_bloqueo=minutos_bloqueo
+            )
+            
+            logger.warning(f"Auto-blocked IP {ip_address} for {minutos_bloqueo} minutes")
+            
+        except Exception as e:
+            logger.error(f"Error auto-blocking IP: {str(e)}")
+    
+    def create_security_alert(self, ip_address, endpoint_type, request):
+        """Crea una alerta de seguridad por rate limit excedido"""
+        try:
+            from .models import SecurityAlert
+            
+            titulo = f"Rate Limit Excedido - {endpoint_type.upper()}"
+            descripcion = f"""
+Se ha detectado un exceso de solicitudes desde la IP {ip_address}.
+
+Tipo de endpoint: {endpoint_type}
+Path: {request.path}
+User Agent: {request.META.get('HTTP_USER_AGENT', 'Desconocido')[:200]}
+Método: {request.method}
+            """
+            
+            SecurityAlert.create_alert(
+                tipo_alerta='BRUTE_FORCE' if endpoint_type == 'login' else 'SUSPICIOUS_IP',
+                titulo=titulo,
+                descripcion=descripcion.strip(),
+                nivel_prioridad='HIGH' if endpoint_type == 'login' else 'MEDIUM',
+                ip_address=ip_address,
+                metadata={
+                    'endpoint_type': endpoint_type,
+                    'path': request.path,
+                    'method': request.method
+                }
+            )
+            
+        except Exception as e:
+            logger.error(f"Error creating security alert: {str(e)}")
     
     def check_rate_limit(self, ip_address, endpoint_type, path):
         """
@@ -91,6 +158,38 @@ class RateLimitMiddleware:
         # Incrementar contador
         cache.set(cache_key, request_count + 1, config['window'])
         return True
+    
+    def blocked_response(self, request):
+        """Respuesta para IPs bloqueadas"""
+        if request.path.startswith('/api/'):
+            return JsonResponse({
+                'error': 'Acceso denegado',
+                'detail': 'Tu IP ha sido bloqueada por actividad sospechosa.'
+            }, status=403)
+        else:
+            return HttpResponseForbidden(
+                '<h1>403 Forbidden</h1>'
+                '<p>Tu IP ha sido bloqueada por actividad sospechosa.</p>'
+                '<p>Si crees que esto es un error, contacta al administrador.</p>'
+            )
+    
+    def rate_limit_response(self, request, endpoint_type):
+        """Respuesta para rate limit excedido"""
+        config = self.rate_limits.get(endpoint_type, self.rate_limits['general'])
+        minutos = config.get('block_minutes', 15)
+        
+        if request.path.startswith('/api/'):
+            return JsonResponse({
+                'error': 'Demasiadas solicitudes',
+                'detail': f'Has excedido el límite de solicitudes. Tu IP ha sido bloqueada temporalmente por {minutos} minutos.'
+            }, status=429)
+        else:
+            return HttpResponseForbidden(
+                f'<h1>429 Too Many Requests</h1>'
+                f'<p>Has excedido el límite de solicitudes.</p>'
+                f'<p>Tu IP ha sido bloqueada temporalmente por {minutos} minutos.</p>'
+                f'<p>Por favor, espera antes de intentar nuevamente.</p>'
+            )
 
 
 class SessionSecurityMiddleware:

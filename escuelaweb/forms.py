@@ -1,5 +1,7 @@
 from django import forms
 from django.contrib.auth.forms import UserCreationForm
+from django_recaptcha.fields import ReCaptchaField
+from django_recaptcha.widgets import ReCaptchaV2Checkbox
 #from Escuela.escuelaweb.models import CustomUser, CustomUserManager, Persona, AnhoEscolar, Curso, Materia, Matricula
 from .models import (
     CustomUser, CustomUserManager, Persona, AnhoEscolar, Curso, Materia, Matricula,
@@ -7,6 +9,76 @@ from .models import (
 )
 
   # Importamos el modelo de usuario personalizado
+
+
+class LoginForm(forms.Form):
+    """
+    Formulario de login con seguridad mejorada:
+    - CAPTCHA después de 3 intentos fallidos
+    - Honeypot field para detectar bots
+    """
+    email = forms.EmailField(
+        label="Correo Electrónico",
+        widget=forms.EmailInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'correo@ejemplo.com',
+            'autocomplete': 'email'
+        })
+    )
+    password = forms.CharField(
+        label="Contraseña",
+        widget=forms.PasswordInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'Contraseña',
+            'autocomplete': 'current-password'
+        })
+    )
+    
+    # Honeypot field - Campo trampa para bots (invisible para humanos)
+    website = forms.CharField(
+        required=False,
+        widget=forms.TextInput(attrs={
+            'style': 'display:none !important;',
+            'tabindex': '-1',
+            'autocomplete': 'off'
+        })
+    )
+    
+    # CAPTCHA - Solo se muestra si show_captcha=True
+    captcha = ReCaptchaField(
+        widget=ReCaptchaV2Checkbox(),
+        required=False  # Lo hacemos requerido dinámicamente en el __init__
+    )
+    
+    def __init__(self, *args, **kwargs):
+        # Recibir parámetro para mostrar CAPTCHA
+        self.show_captcha = kwargs.pop('show_captcha', False)
+        super().__init__(*args, **kwargs)
+        
+        # Si no se debe mostrar CAPTCHA, remover el campo
+        if not self.show_captcha:
+            del self.fields['captcha']
+        else:
+            # Hacer CAPTCHA requerido
+            self.fields['captcha'].required = True
+    
+    def clean_website(self):
+        """Validar honeypot - Si tiene valor, es un bot"""
+        website = self.cleaned_data.get('website')
+        if website:
+            # Es un bot, lanzar error silencioso
+            raise forms.ValidationError("Error de validación del formulario.")
+        return website
+    
+    def clean(self):
+        cleaned_data = super().clean()
+        email = cleaned_data.get('email')
+        password = cleaned_data.get('password')
+        
+        if not email or not password:
+            raise forms.ValidationError("Por favor, completa todos los campos.")
+        
+        return cleaned_data
 
 
 

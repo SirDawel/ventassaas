@@ -1,0 +1,157 @@
+{% extends "website/base.html" %}
+{% load custom_filters %}
+
+{% block title %}{{ titulo }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow">
+                <div class="card-header bg-warning text-dark">
+                    <h3 class="card-title mb-0">
+                        <i class="fas fa-history me-2"></i>
+                        {{ titulo }}
+                    </h3>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-2"></i>
+                        <strong>Información:</strong> Este registro muestra todos los usuarios eliminados del sistema, incluyendo quién realizó la eliminación.
+                        Solo Administradores y Secretaria pueden acceder a esta información.
+                    </div>
+
+                    {% if logs %}
+                    <div class="table-responsive">
+                        <table class="table table-hover table-striped align-middle">
+                            <thead class="table-dark">
+                                <tr>
+                                    <th><i class="fas fa-calendar me-1"></i> Fecha y Hora</th>
+                                    <th><i class="fas fa-user-times me-1"></i> Usuario Eliminado</th>
+                                    <th><i class="fas fa-user-shield me-1"></i> Eliminado Por</th>
+                                    <th><i class="fas fa-network-wired me-1"></i> IP</th>
+                                    <th><i class="fas fa-info-circle me-1"></i> Detalles</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for log in logs %}
+                                <tr>
+                                    <td>
+                                        <small class="text-muted">
+                                            {{ log.fecha|date:"d/m/Y" }}<br>
+                                            {{ log.fecha|time:"H:i:s" }}
+                                        </small>
+                                    </td>
+                                    <td>
+                                        {% if log.metadata.usuario_eliminado %}
+                                            <strong>{{ log.metadata.usuario_eliminado.nombre_completo }}</strong><br>
+                                            <small class="text-muted">
+                                                <i class="fas fa-envelope me-1"></i> {{ log.metadata.usuario_eliminado.email }}<br>
+                                                <i class="fas fa-user-tag me-1"></i> {{ log.metadata.usuario_eliminado.rol }}
+                                                {% if log.metadata.usuario_eliminado.cedula %}
+                                                <br><i class="fas fa-id-card me-1"></i> {{ log.metadata.usuario_eliminado.cedula }}
+                                                {% endif %}
+                                            </small>
+                                        {% else %}
+                                            <span class="text-muted">Información no disponible</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if log.metadata.usuario_que_elimino %}
+                                            <strong>{{ log.metadata.usuario_que_elimino.nombre_completo }}</strong><br>
+                                            <small class="text-muted">
+                                                <i class="fas fa-envelope me-1"></i> {{ log.metadata.usuario_que_elimino.email }}<br>
+                                                <span class="badge bg-primary">{{ log.metadata.usuario_que_elimino.rol }}</span>
+                                            </small>
+                                        {% elif log.usuario %}
+                                            <strong>{{ log.usuario.get_full_name }}</strong><br>
+                                            <small class="text-muted">
+                                                <i class="fas fa-envelope me-1"></i> {{ log.usuario.email }}<br>
+                                                <span class="badge bg-primary">{{ log.usuario.rol }}</span>
+                                            </small>
+                                        {% else %}
+                                            <span class="text-muted">Desconocido</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if log.ip_address %}
+                                            <code>{{ log.ip_address }}</code>
+                                        {% else %}
+                                            <span class="text-muted">N/A</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <button class="btn btn-sm btn-outline-info" type="button" 
+                                                data-bs-toggle="collapse" 
+                                                data-bs-target="#detalles-{{ log.id }}" 
+                                                aria-expanded="false">
+                                            <i class="fas fa-eye me-1"></i> Ver más
+                                        </button>
+                                        <div class="collapse mt-2" id="detalles-{{ log.id }}">
+                                            <div class="card card-body bg-light">
+                                                <p class="mb-2"><strong>Descripción completa:</strong></p>
+                                                <p class="mb-2 small">{{ log.descripcion }}</p>
+                                                
+                                                {% if log.user_agent %}
+                                                <p class="mb-2"><strong>Navegador:</strong></p>
+                                                <p class="mb-0 small text-muted">{{ log.user_agent|truncatewords:15 }}</p>
+                                                {% endif %}
+                                                
+                                                {% if log.metadata.requirio_codigo_anulacion %}
+                                                <p class="mb-0 mt-2">
+                                                    <span class="badge bg-success">
+                                                        <i class="fas fa-check-circle me-1"></i>
+                                                        Código de anulación verificado
+                                                    </span>
+                                                </p>
+                                                {% endif %}
+                                                
+                                                <p class="mb-0 mt-2">
+                                                    {% if log.nivel_severidad == 'WARNING' %}
+                                                        <span class="badge bg-warning">
+                                                    {% else %}
+                                                        <span class="badge bg-info">
+                                                    {% endif %}
+                                                        Nivel: {{ log.nivel_severidad }}
+                                                    </span>
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="alert alert-secondary mt-3">
+                        <small>
+                            <i class="fas fa-chart-line me-1"></i>
+                            <strong>Total de registros:</strong> {{ logs|length }} usuario(s) eliminado(s) en el historial
+                        </small>
+                    </div>
+                    {% else %}
+                    <div class="alert alert-success">
+                        <i class="fas fa-check-circle me-2"></i>
+                        No hay registros de usuarios eliminados en el sistema.
+                    </div>
+                    {% endif %}
+
+                    <div class="mt-3">
+                        <a href="{% url 'user_list' %}" class="btn btn-secondary">
+                            <i class="fas fa-arrow-left me-1"></i> Volver a Lista de Usuarios
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Agregar FontAwesome para iconos -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+
+<!-- Bootstrap 5 JS (si no está incluido en base.html) -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+
+{% endblock %}
