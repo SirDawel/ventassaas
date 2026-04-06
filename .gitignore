@@ -8,7 +8,6 @@ __pycache__/
 dist/
 build/
 .Python
-settings.py
 
 # Django
 *.log
