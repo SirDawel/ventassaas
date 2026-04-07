@@ -181,7 +181,7 @@ h1, h2, h3, h4, h5, h6 {
   display: table;
   width: 100%;
   height: 100vh;
-  background: url(../img/hero-bg.jpg) top center fixed;
+  background: url(../img/hato_padre.jpeg) top center fixed;
   background-size: cover;
 }
 
@@ -524,7 +524,8 @@ body.mobile-nav-active #mobile-nav-toggle {
 
 #about .about-container .background {
   min-height: 300px;
-  background: url(../img/about-img.jpg) center top no-repeat;
+  background: url(../img/maestros.jpeg) center top no-repeat;
+  background-size: contain;
   margin-bottom: 10px;
 }
 
@@ -588,7 +589,6 @@ body.mobile-nav-active #mobile-nav-toggle {
   line-height: 24px;
   font-size: 14px;
 }
-
 /* Facts Section
 --------------------------------*/
 #facts {
