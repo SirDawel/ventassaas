@@ -15,7 +15,7 @@ Años Escolares
                         <i class="fas fa-users me-2"></i>Lista de Años Escolares
                     </h2>
                 </div>
-                {% if user.is_superuser or user.rol == 'Administrador' or user.rol == 'Director' %}
+                {% if user.is_superuser or user.rol == 'Administrador' or user.rol == 'Director' or user.rol == 'Secretaria' %}
                 <div>
                     <a href="{% url 'agregar_anho_escolar' %}" class="btn btn-light">
                         <i class="fas fa-plus-circle me-2"></i>Nuevo Año Escolar
@@ -77,7 +77,7 @@ Años Escolares
                     <a href="{% url 'lista_cursos' %}?anho={{ anho.id }}" class="btn-anho-action">
                         <i class="fas fa-book me-1"></i>Ver Cursos
                     </a>
-                    {% if user.is_superuser or user.rol == 'Administrador' or user.rol == 'Director' %}
+                    {% if user.is_superuser or user.rol == 'Administrador' or user.rol == 'Director' or user.rol == 'Secretaria' %}
                     <div class="anho-actions">
                         <a href="{% url 'editar_anho_escolar' anho.id %}" class="btn-icon" title="Editar">
                             <i class="fas fa-edit"></i>
@@ -96,7 +96,7 @@ Años Escolares
                 <i class="fas fa-calendar-times fa-4x mb-3"></i>
                 <h5>No hay años escolares registrados</h5>
                 <p>Comienza agregando un nuevo año escolar para gestionar tus períodos académicos.</p>
-                {% if user.is_superuser or user.rol == 'Administrador' or user.rol == 'Director' %}
+                {% if user.is_superuser or user.rol == 'Administrador' or user.rol == 'Director' or user.rol == 'Secretaria' %}
                 <a href="{% url 'agregar_anho_escolar' %}" class="btn btn-primary">
                     <i class="fas fa-plus-circle me-2"></i>Agregar Primer Año Escolar
                 </a>

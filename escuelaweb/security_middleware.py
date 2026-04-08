@@ -176,7 +176,7 @@ Método: {request.method}
     def rate_limit_response(self, request, endpoint_type):
         """Respuesta para rate limit excedido"""
         config = self.rate_limits.get(endpoint_type, self.rate_limits['general'])
-        minutos = config.get('block_minutes', 15)
+        minutos = config.get('block_minutes', 5)
         
         if request.path.startswith('/api/'):
             return JsonResponse({

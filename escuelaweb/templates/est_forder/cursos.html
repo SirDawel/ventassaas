@@ -339,7 +339,7 @@
                 <a href="{% url 'lista_anhos_escolares' %}" class="btn btn-light">
                     <i class="fas fa-arrow-left me-1"></i> Volver
                 </a>
-                {% if user.is_superuser or user.rol == 'Administrador' or user.rol == 'Director' %}
+                {% if user.is_superuser or user.rol == 'Administrador' or user.rol == 'Director' or user.rol == 'Secretaria' %}
                 {% if anho %}
                 <a href="{% url 'agregar_curso' %}?anho={{ anho.id }}" class="btn btn-light">
                     <i class="fas fa-plus me-1"></i> Agregar Curso
@@ -404,7 +404,7 @@
                         <th><i class="fas fa-calendar me-2"></i>Año Escolar</th>
                         <th><i class="fas fa-user-tie me-2"></i>Profesor</th>
                         <th><i class="fas fa-cogs me-2"></i>Acciones</th>
-                        {% if user.is_superuser or user.rol == 'Administrador' or user.rol == 'Director' %}
+                        {% if user.is_superuser or user.rol == 'Administrador' or user.rol == 'Director' or user.rol == 'Secretaria' %}
                         <th><i class="fas fa-tools me-2"></i>Administrar</th>
                         {% endif %}
                     </tr>
@@ -430,7 +430,7 @@
                                 <i class="fas fa-book me-1"></i>Ver Materias
                             </a>
                         </td>
-                        {% if user.is_superuser or user.rol == 'Administrador' or user.rol == 'Director' %}
+                        {% if user.is_superuser or user.rol == 'Administrador' or user.rol == 'Director' or user.rol == 'Secretaria' %}
                         <td>
                             <div class="btn-group" role="group">
                                 <a href="{% url 'editar_curso' curso.id %}?anho={{ anho.id }}" class="btn btn-sm btn-warning" title="Editar">

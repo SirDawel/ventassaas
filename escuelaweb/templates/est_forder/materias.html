@@ -196,7 +196,7 @@
                 <i class="fas fa-arrow-left me-1"></i> Volver a Cursos
             </a>
             {% endif %}
-            {% if user.is_superuser or user.rol == 'Administrador' or user.rol == 'Director' %}
+            {% if user.is_superuser or user.rol == 'Administrador' or user.rol == 'Director' or user.rol == 'Secretaria' %}
             <a href="{% url 'agregar_materia' curso_id %}" class="btn btn-light">
                 <i class="fas fa-plus me-1"></i> Agregar Materia
             </a>
@@ -292,7 +292,7 @@
                             <th>Notas</th>
                             {% endif %}
                             <th>Acciones</th>
-                            {% if user.is_superuser or user.rol == 'Administrador' or user.rol == 'Director' %}
+                            {% if user.is_superuser or user.rol == 'Administrador' or user.rol == 'Director' or user.rol == 'Secretaria' %}
                             <th>Administrar</th>
                             {% endif %}
                         </tr>
@@ -360,7 +360,7 @@
                                         <i class="fas fa-chart-line"></i> Gestionar Notas
                                     </a>
                                     {% endif %}
-                                    {% if user.is_superuser or user.rol == 'Administrador' or user.rol == 'Director' %}
+                                    {% if user.is_superuser or user.rol == 'Administrador' or user.rol == 'Director' or user.rol == 'Secretaria' %}
                                     <a href="{% url 'gestionar_matriculas' materia.id %}" class="btn btn-sm btn-success" title="Gestionar Matrículas">
                                         <i class="fas fa-user-plus"></i>
                                     </a>

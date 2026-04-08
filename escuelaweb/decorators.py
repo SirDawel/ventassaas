@@ -4,7 +4,7 @@ from functools import wraps
 
 def admin_required(view_func):
     """
-    Decorador que permite acceso solo a Administradores, Directores y Superusers.
+    Decorador que permite acceso solo a Administradores, Secretarias, Directores y Superusers.
     Úsalo para funciones administrativas completas del sistema.
     """
     @wraps(view_func)
@@ -13,8 +13,8 @@ def admin_required(view_func):
             messages.error(request, 'Debes iniciar sesión para acceder a esta página.')
             return redirect('login')
         
-        if not (request.user.is_superuser or request.user.rol in ['Administrador', 'Director']):
-            messages.error(request, 'No tienes permiso para acceder a esta página. Solo los administradores y directores pueden realizar esta acción.')
+        if not (request.user.is_superuser or request.user.rol in ['Administrador', 'Director', 'Secretaria']):
+            messages.error(request, 'No tienes permiso para acceder a esta página. Solo los administradores, directores y secretarias pueden realizar esta acción.')
             return redirect('plataform')
         
         return view_func(request, *args, **kwargs)

@@ -66,7 +66,6 @@ def resetpass(request):
 @login_required(login_url="login")  # Redirige a la página de login si no está autenticado
 
 def plataform(request):
-
     return render(request, "website/plataform.html")
 
 def noticias(request):
@@ -545,7 +544,7 @@ def password_reset_confirm(request, uidb64, token):
 
 #año Escolar
 
-
+admin_required
 def crear_ano_escolar(request):
     if request.method == "POST":
         form = AnhoEscolarForm(request.POST)

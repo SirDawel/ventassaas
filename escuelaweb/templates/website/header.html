@@ -13,11 +13,20 @@
   /* ===== NAVBAR MODERNA ===== */
   .navbar {
     background: var(--primary-gradient) !important;
-    padding: 0.5rem 0;
+    padding: 0.25rem 0;
     box-shadow: 0 4px 20px rgba(0,0,0,0.15);
     backdrop-filter: blur(10px);
     position: relative;
     z-index: 1000;
+    min-height: 60px;
+  }
+
+  .navbar .container-fluid {
+    align-items: center;
+  }
+
+  .navbar-nav {
+    align-items: center;
   }
 
   .navbar::before {
@@ -33,13 +42,25 @@
 
   .navbar-brand {
     color: white !important;
-    font-size: 1.25rem;
+    font-size: 1rem;
     font-weight: 700;
     letter-spacing: 0.3px;
     transition: all 0.3s ease;
     text-shadow: 1px 1px 3px rgba(0,0,0,0.2);
     position: relative;
     z-index: 1;
+    display: flex;
+    align-items: center;
+    padding: 0.25rem 0;
+  }
+
+  .navbar-brand img {
+    height: 50px !important;
+    width: auto !important;
+    max-width: 120px;
+    margin-right: 10px !important;
+    border-radius: 5px !important;
+    object-fit: contain;
   }
 
   .navbar-brand i {
@@ -60,13 +81,13 @@
   .nav-link {
     color: rgba(255,255,255,0.95) !important;
     font-weight: 600;
-    padding: 0.4rem 0.8rem !important;
+    padding: 0.35rem 0.7rem !important;
     transition: all 0.3s ease;
     border-radius: 8px;
     position: relative;
     overflow: hidden;
     margin: 0 0.1rem;
-    font-size: 0.9rem;
+    font-size: 0.85rem;
   }
 
   .nav-link::before {
@@ -115,12 +136,13 @@
     background-color: rgba(255,255,255,0.15);
     border: 1px solid rgba(255,255,255,0.2);
     color: white;
-    padding: 0.4rem 2.5rem 0.4rem 0.8rem;
+    padding: 0.35rem 2.5rem 0.35rem 0.8rem;
     border-radius: 20px;
     font-weight: 500;
     transition: all 0.3s ease;
     backdrop-filter: blur(10px);
-    font-size: 0.85rem;
+    font-size: 0.8rem;
+    min-width: 150px;
   }
 
   .search-form .form-control:focus {
@@ -157,9 +179,9 @@
   .user-profile {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 6px;
     cursor: pointer;
-    padding: 0.3rem 0.8rem;
+    padding: 0.25rem 0.7rem;
     border-radius: 25px;
     transition: all 0.3s ease;
     background: rgba(255,255,255,0.1);
@@ -176,8 +198,8 @@
     border: 2px solid white;
     transition: all 0.3s ease;
     box-shadow: 0 2px 8px rgba(0,0,0,0.2);
-    width: 35px;
-    height: 35px;
+    width: 32px;
+    height: 32px;
   }
 
   .profile-picture:hover {
@@ -189,7 +211,7 @@
   .user-profile span {
     font-weight: 600;
     text-shadow: 1px 1px 3px rgba(0,0,0,0.2);
-    font-size: 0.9rem;
+    font-size: 0.85rem;
   }
 
   /* ===== DROPDOWN MODERNO ===== */
@@ -202,6 +224,8 @@
     background: white;
     animation: dropdown-appear 0.3s ease-out;
     z-index: 1050;
+    max-height: 70vh;
+    overflow-y: auto;
   }
 
   @keyframes dropdown-appear {
@@ -216,17 +240,24 @@
   }
 
   .dropdown-item {
-    padding: 0.6rem 1.2rem;
+    padding: 0.5rem 1rem;
     transition: all 0.3s ease;
     border-radius: 8px;
-    margin: 0.15rem 0;
+    margin: 0.1rem 0;
     font-weight: 500;
-    font-size: 0.9rem;
+    font-size: 0.85rem;
+  }
+
+  .dropdown-header {
+    font-size: 0.75rem;
+    padding: 0.4rem 1rem;
+    color: #6c757d;
+    font-weight: 700;
   }
 
   .dropdown-item i {
     transition: transform 0.3s ease;
-    width: 20px;
+    width: 18px;
   }
 
   .dropdown-item:hover {
@@ -240,20 +271,21 @@
   }
 
   .dropdown-divider {
-    margin: 0.5rem 0;
-    border-top: 2px solid #e9ecef;
+    margin: 0.4rem 0;
+    border-top: 1px solid #e9ecef;
+    opacity: 0.6;
   }
 
   /* ===== BOTÓN DE LOGIN MODERNO ===== */
   .btn-login {
     background: rgba(255,255,255,0.2);
     border: 2px solid white;
-    padding: 0.4rem 1.2rem;
+    padding: 0.35rem 1rem;
     transition: all 0.3s ease;
     font-weight: 600;
     border-radius: 20px;
     backdrop-filter: blur(10px);
-    font-size: 0.9rem;
+    font-size: 0.85rem;
   }
 
   .btn-login:hover {
@@ -268,9 +300,10 @@
     background: var(--danger-gradient);
     border: none;
     border-radius: 10px;
-    padding: 0.6rem 1rem;
+    padding: 0.5rem 0.8rem;
     font-weight: 700;
     transition: all 0.3s ease;
+    font-size: 0.85rem;
   }
 
   .dropdown-item .btn-danger:hover {
@@ -280,14 +313,14 @@
 
   /* ===== NAVBAR TOGGLER MODERNO ===== */
   .navbar-toggler {
-    border: 2px solid white;
+    border: 1px solid rgba(255,255,255,0.5);
     border-radius: 8px;
-    padding: 0.5rem;
+    padding: 0.4rem 0.6rem;
     transition: all 0.3s ease;
   }
 
   .navbar-toggler:focus {
-    box-shadow: 0 0 0 0.25rem rgba(255,255,255,0.3);
+    box-shadow: 0 0 0 0.2rem rgba(255,255,255,0.25);
   }
 
   .navbar-toggler-icon {
@@ -296,29 +329,63 @@
 
   .navbar-toggler:hover {
     background-color: rgba(255,255,255,0.1);
-    transform: rotate(90deg);
+    transform: scale(1.05);
   }
 
   /* ===== RESPONSIVE ===== */
   @media (max-width: 991px) {
+    .navbar {
+      padding: 0.35rem 0;
+    }
+
+    .navbar-brand {
+      font-size: 0.9rem;
+    }
+
+    .navbar-brand img {
+      height: 40px !important;
+      max-width: 100px;
+    }
+
     .navbar-collapse {
       background: rgba(255,255,255,0.1);
       backdrop-filter: blur(10px);
-      padding: 1rem;
+      padding: 0.8rem;
       border-radius: 15px;
-      margin-top: 1rem;
+      margin-top: 0.8rem;
     }
 
     .nav-link {
-      margin: 0.2rem 0;
+      margin: 0.15rem 0;
+      font-size: 0.9rem;
     }
 
     .search-form {
-      margin: 1rem 0;
+      margin: 0.8rem 0;
     }
 
     .user-profile {
-      margin-top: 1rem;
+      margin-top: 0.8rem;
+      justify-content: center;
+    }
+
+    .dropdown-menu {
+      max-height: 60vh;
+    }
+  }
+
+  @media (max-width: 576px) {
+    .navbar-brand img {
+      height: 35px !important;
+      max-width: 80px;
+    }
+
+    .navbar-brand {
+      font-size: 0.8rem;
+    }
+
+    .user-profile span {
+      display: none;
     }
   }
 </style>
@@ -326,10 +393,9 @@
 <header>
   <nav class="navbar navbar-expand-lg navbar-light bg-light">
       <div class="container-fluid">
-        <a class="navbar-brand" href="#">
-          <img src="{% static 'img/logoescuelaonline.jpg' %}" alt="Logo" style="height: 100px; width: 200px; margin-right: 10px; border-radius: 5px;">
-	  <br>
-          Ptco. Prof. J R R H.
+        <a class="navbar-brand" href="{% url 'index' %}">
+          <img src="{% static 'img/logoescuelaonline.jpg' %}" alt="Logo">
+          Centro Cristiano
         </a>
         <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent"
           aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
@@ -339,41 +405,24 @@
         <div class="collapse navbar-collapse" id="navbarSupportedContent">
           <ul class="navbar-nav me-auto mb-2 mb-lg-0">
             <li class="nav-item">
-              <a class="nav-link active" aria-current="page" href="{% url 'index' %}">
+              <a class="nav-link" href="{% url 'index' %}">
                 <i class="fas fa-home me-1"></i>Principal
               </a>
             </li>
             <li class="nav-item">
-              <a class="nav-link" href="{% url 'plataform' %}">
-                <i class="fas fa-images me-1"></i>Inicio
+              <a class="nav-link active" aria-current="page" href="{% url 'plataform' %}">
+                <i class="fas fa-tachometer-alt me-1"></i>Inicio
               </a>
             </li>
-            {% if user.rol == 'Secretaria' or user.rol == 'Administrador' %}
-            <li class="nav-item">
-              <a class="nav-link" href="{% url 'user_list' %}">
-                <i class="fas fa-users me-1"></i>Usuarios
-              </a>
-            </li>
-            {% endif %}
-            <li class="nav-item">
-              <a class="nav-link" href="{% url 'lista_anhos_escolares' %}">
-                <i class="fas fa-calendar-alt me-1"></i>Año Escolar
-              </a>
-            </li>
-              {% if user.rol == 'Administrador' or user.rol == 'Director' %}
-              <li class="nav-item">
-                <a class="nav-link" href="{% url 'configuracion_escuela' %}">
-                  <i class="fas fa-cogs me-1"></i>Configuración
-                </a>
-              </li>
-              {% endif %}
+
+            <!-- DROPDOWN ACADÉMICO -->
             {% if user.rol == 'Profesor' or user.rol == 'Director' or user.rol == 'Administrador' or user.rol == 'Coordinador' %}
             <li class="nav-item dropdown">
-              <a class="nav-link dropdown-toggle" href="#" id="evaluacionesDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                <i class="fas fa-clipboard-list me-1"></i>Evaluaciones
+              <a class="nav-link dropdown-toggle" href="#" id="academicoDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                <i class="fas fa-graduation-cap me-1"></i>Académico
               </a>
-              <ul class="dropdown-menu" aria-labelledby="evaluacionesDropdown">
-                <li><h6 class="dropdown-header"><i class="fas fa-graduation-cap me-2"></i>Evaluaciones Educativas</h6></li>
+              <ul class="dropdown-menu" aria-labelledby="academicoDropdown">
+                <li><h6 class="dropdown-header"><i class="fas fa-clipboard-list me-2"></i>Evaluaciones</h6></li>
                 <li><a class="dropdown-item" href="{% url 'evaluaciones_diagnosticas' %}">
                   <i class="fas fa-stethoscope me-2 text-primary"></i>Evaluaciones Diagnósticas
                 </a></li>
@@ -381,13 +430,13 @@
                   <i class="fas fa-table me-2 text-success"></i>Rúbricas
                 </a></li>
                 <li><a class="dropdown-item" href="{% url 'evaluaciones_rubricas' %}">
-                  <i class="fas fa-clipboard-check me-2 text-primary"></i>Aplicar Rúbricas a Estudiantes
+                  <i class="fas fa-clipboard-check me-2 text-primary"></i>Aplicar Rúbricas
                 </a></li>
                 <li><a class="dropdown-item" href="{% url 'listas_cotejo_lista' %}">
                   <i class="fas fa-check-square me-2 text-info"></i>Listas de Cotejo
                 </a></li>
                 <li><hr class="dropdown-divider"></li>
-                <li><h6 class="dropdown-header"><i class="fas fa-folder-open me-2"></i>Registros Académicos</h6></li>
+                <li><h6 class="dropdown-header"><i class="fas fa-folder-open me-2"></i>Registros</h6></li>
                 <li><a class="dropdown-item" href="{% url 'portafolios' %}">
                   <i class="fas fa-briefcase me-2 text-warning"></i>Portafolios
                 </a></li>
@@ -397,80 +446,70 @@
                 <li><a class="dropdown-item" href="{% url 'cuadernos_clase' %}">
                   <i class="fas fa-book me-2 text-secondary"></i>Cuadernos de Clase
                 </a></li>
+                {% if user.rol == 'Profesor' or user.rol == 'Administrador' %}
+                <li><hr class="dropdown-divider"></li>
+                <li><a class="dropdown-item" href="{% url 'seleccionar_materia_asistencia' %}">
+                  <i class="fas fa-clipboard-check me-2 text-success"></i>Pasar Lista Estudiantes
+                </a></li>
+                {% endif %}
               </ul>
             </li>
             {% endif %}
-            {% if user.rol == 'Profesor' or user.rol == 'Administrador' %}
-            <li class="nav-item">
-              <a class="nav-link" href="{% url 'seleccionar_materia_asistencia' %}">
-                <i class="fas fa-clipboard-check me-1"></i>Pasar Lista
-              </a>
-            </li>
-            {% endif %}
+
+            <!-- DROPDOWN FINANZAS -->
             {% if user.rol == 'Secretaria' or user.rol == 'Administrador' %}
-            <li class="nav-item">
-              <a class="nav-link" href="{% url 'pasar_lista_personal' %}">
-                <i class="fas fa-user-check me-1"></i>Asistencia Personal
-              </a>
-            </li>
-            <li class="nav-item">
-              <a class="nav-link" href="{% url 'cobros_dashboard' %}">
-                <i class="fas fa-cash-register me-1"></i>Cobros
-              </a>
-            </li>
-            <li class="nav-item">
-              <a class="nav-link" href="{% url 'tarifas_list' %}">
-                <i class="fas fa-tags me-1"></i>Tarifas
-              </a>
-            </li>
-            <li class="nav-item">
-              <a class="nav-link" href="{% url 'inventario_dashboard' %}">
-                <i class="fas fa-boxes me-1"></i>Inventario
-              </a>
-              
-            </li>
-            <!--
             <li class="nav-item dropdown">
-              <a class="nav-link dropdown-toggle" href="#" id="contabilidadDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                <i class="fas fa-calculator me-1"></i>Contabilidad
+              <a class="nav-link dropdown-toggle" href="#" id="finanzasDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                <i class="fas fa-dollar-sign me-1"></i>Finanzas
               </a>
-              <ul class="dropdown-menu" aria-labelledby="contabilidadDropdown">
-                <li><a class="dropdown-item" href="{% url 'contabilidad_dashboard' %}">
-                  <i class="fas fa-chart-line me-2"></i>Dashboard
+              <ul class="dropdown-menu" aria-labelledby="finanzasDropdown">
+                <li><a class="dropdown-item" href="{% url 'cobros_dashboard' %}">
+                  <i class="fas fa-cash-register me-2 text-success"></i>Cobros
                 </a></li>
-                <li><hr class="dropdown-divider"></li>
-                <li><a class="dropdown-item" href="{% url 'plan_cuentas_list' %}">
-                  <i class="fas fa-list-alt me-2"></i>Plan de Cuentas
+                <li><a class="dropdown-item" href="{% url 'tarifas_list' %}">
+                  <i class="fas fa-tags me-2 text-info"></i>Tarifas
                 </a></li>
-                <li><a class="dropdown-item" href="{% url 'asientos_list' %}">
-                  <i class="fas fa-book me-2"></i>Asientos Contables
+                <li><a class="dropdown-item" href="{% url 'inventario_dashboard' %}">
+                  <i class="fas fa-boxes me-2 text-warning"></i>Inventario
                 </a></li>
-                <li><hr class="dropdown-divider"></li>
-                <li class="dropdown-submenu">
-                  <a class="dropdown-item" href="#">
-                    <i class="fas fa-file-alt me-2"></i>Reportes
-                  </a>
-                  <ul class="dropdown-menu">
-                    <li><a class="dropdown-item" href="{% url 'libro_diario' %}">
-                      <i class="fas fa-book-open me-2"></i>Libro Diario
-                    </a></li>
-                    <li><a class="dropdown-item" href="{% url 'libro_mayor' %}">
-                      <i class="fas fa-book me-2"></i>Libro Mayor
-                    </a></li>
-                    <li><a class="dropdown-item" href="{% url 'balance_comprobacion' %}">
-                      <i class="fas fa-balance-scale me-2"></i>Balance de Comprobación
-                    </a></li>
-                    <li><a class="dropdown-item" href="{% url 'estado_resultados' %}">
-                      <i class="fas fa-chart-bar me-2"></i>Estado de Resultados
-                    </a></li>
-                    <li><a class="dropdown-item" href="{% url 'balance_general' %}">
-                      <i class="fas fa-file-invoice-dollar me-2"></i>Balance General
-                    </a></li>
-                  </ul>
-                </li>
+                <li><a class="dropdown-item" href="{% url 'pasar_lista_personal' %}">
+                  <i class="fas fa-user-check me-2 text-primary"></i>Asistencia Personal
+                </a></li>
               </ul>
             </li>
-          -->
+            {% endif %}
+
+            <!-- AÑO ESCOLAR -->
+            <li class="nav-item">
+              <a class="nav-link" href="{% url 'lista_anhos_escolares' %}">
+                <i class="fas fa-calendar-alt me-1"></i>Año Escolar
+              </a>
+            </li>
+
+            <!-- DROPDOWN ADMINISTRACIÓN -->
+            {% if user.rol == 'Administrador' or user.rol == 'Director' or user.rol == 'Secretaria' %}
+            <li class="nav-item dropdown">
+              <a class="nav-link dropdown-toggle" href="#" id="adminDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                <i class="fas fa-cog me-1"></i>Administración
+              </a>
+              <ul class="dropdown-menu" aria-labelledby="adminDropdown">
+                {% if user.rol == 'Secretaria' or user.rol == 'Administrador' %}
+                <li><a class="dropdown-item" href="{% url 'user_list' %}">
+                  <i class="fas fa-users me-2 text-primary"></i>Usuarios
+                </a></li>
+                {% endif %}
+                {% if user.rol == 'Administrador' or user.rol == 'Director' %}
+                <li><a class="dropdown-item" href="{% url 'configuracion_escuela' %}">
+                  <i class="fas fa-cogs me-2 text-info"></i>Configuración Escuela
+                </a></li>
+                {% endif %}
+                {% if user.rol == 'Administrador' %}
+                <li><a class="dropdown-item" href="{% url 'codigo_anulacion_ver' %}">
+                  <i class="fas fa-key me-2 text-warning"></i>Código de Anulación
+                </a></li>
+                {% endif %}
+              </ul>
+            </li>
             {% endif %}
           </ul>
 
@@ -486,22 +525,15 @@
             <a class="nav-link dropdown-toggle user-profile" href="#" id="userDropdown" role="button"
               data-bs-toggle="dropdown" aria-expanded="false">
               {% if user.foto_perfil %}
-              <img src="{{ user.foto_perfil.url }}" alt="Foto de perfil" class="rounded-circle profile-picture" width="40" height="40">
+              <img src="{{ user.foto_perfil.url }}" alt="Foto de perfil" class="rounded-circle profile-picture" width="35" height="35">
               {% else %}
-              <img src="https://ui-avatars.com/api/?name={{ user.first_name }}+{{ user.last_name }}&size=40&background=0D8ABC&color=fff" alt="Foto de perfil" class="rounded-circle profile-picture">
+              <img src="https://ui-avatars.com/api/?name={{ user.first_name }}+{{ user.last_name }}&size=35&background=0D8ABC&color=fff" alt="Foto de perfil" class="rounded-circle profile-picture">
               {% endif %}
-              <span class="text-white">{{ user.first_name }} {{ user.last_name }}</span>
+              <span class="text-white">{{ user.first_name }}</span>
             </a>
             <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
               <li><a class="dropdown-item" href="#"><i class="fas fa-envelope me-2"></i>{{ user.email }}</a></li>
               <li><a class="dropdown-item" href="{% url 'user_profile' user.id %}"><i class="fas fa-user me-2"></i>Ver Perfil</a></li>
-              {% if user.rol == 'Administrador' %}
-              <li><a class="dropdown-item" href="{% url 'user_list' %}"><i class="fas fa-users me-2"></i>Gestionar Usuarios</a></li>
-              <li><a class="dropdown-item" href="{% url 'codigo_anulacion_ver' %}"><i class="fas fa-key me-2"></i>Código de Anulación</a></li>
-              {% endif %}
-              {% if user.rol == 'Secretaria' or user.rol == 'Administrador' %}
-              <li><a class="dropdown-item" href="{% url 'tarifas_list' %}"><i class="fas fa-tags me-2"></i>Gestionar Tarifas</a></li>
-              {% endif %}
               <li><hr class="dropdown-divider"></li>
               <li>
                 <form action="{% url 'logout' %}" method="POST" class="dropdown-item">
