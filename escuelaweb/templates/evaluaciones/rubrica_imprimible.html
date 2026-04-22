@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+{% load custom_filters %}
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rúbrica: {{ rubrica.nombre }}</title>
+    <style>
+        @page {
+            size: A4 landscape;
+            margin: 1.5cm;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: Arial, Helvetica, sans-serif;
+            font-size: 10pt;
+            color: #000;
+            background: white;
+            padding: 10px;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 15px;
+            border-bottom: 2px solid #333;
+            padding-bottom: 10px;
+        }
+        
+        .header h1 {
+            font-size: 16pt;
+            margin-bottom: 5px;
+            color: #2c3e50;
+        }
+        
+        .header .subtitle {
+            font-size: 11pt;
+            color: #555;
+            margin: 3px 0;
+        }
+        
+        .info-section {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 15px;
+            font-size: 9pt;
+        }
+        
+        .info-item {
+            padding: 5px;
+            background: #f8f9fa;
+            border-left: 3px solid #2c3e50;
+        }
+        
+        .info-item strong {
+            color: #2c3e50;
+        }
+        
+        .rubrica-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+            page-break-inside: avoid;
+        }
+        
+        .rubrica-table th {
+            background-color: #2c3e50;
+            color: white;
+            padding: 8px 6px;
+            text-align: center;
+            font-size: 9pt;
+            font-weight: bold;
+            border: 1px solid #000;
+        }
+        
+        .rubrica-table td {
+            border: 1px solid #333;
+            padding: 6px;
+            vertical-align: top;
+            font-size: 8pt;
+        }
+        
+        .criterio-nombre {
+            font-weight: bold;
+            background-color: #e9ecef;
+            width: 18%;
+        }
+        
+        .nivel-cell {
+            width: 16.4%;
+        }
+        
+        .nivel-titulo {
+            font-weight: bold;
+            color: #2c3e50;
+            margin-bottom: 3px;
+            font-size: 9pt;
+        }
+        
+        .nivel-puntaje {
+            display: inline-block;
+            background: #ffc107;
+            color: #000;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-weight: bold;
+            font-size: 8pt;
+            margin-left: 5px;
+        }
+        
+        .nivel-descripcion {
+            font-size: 8pt;
+            line-height: 1.3;
+            color: #333;
+        }
+        
+        .ponderacion {
+            font-weight: bold;
+            color: #e74c3c;
+            text-align: center;
+            font-size: 9pt;
+        }
+        
+        .footer {
+            margin-top: 20px;
+            padding-top: 10px;
+            border-top: 1px solid #ccc;
+            font-size: 8pt;
+            color: #666;
+            text-align: center;
+        }
+        
+        .firma-section {
+            margin-top: 30px;
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 20px;
+            page-break-inside: avoid;
+        }
+        
+        .firma-box {
+            text-align: center;
+            padding-top: 50px;
+            border-top: 1px solid #000;
+        }
+        
+        .firma-label {
+            font-size: 9pt;
+            color: #333;
+        }
+        
+        @media print {
+            body {
+                padding: 0;
+            }
+            
+            .no-print {
+                display: none !important;
+            }
+            
+            .rubrica-table {
+                page-break-inside: auto;
+            }
+            
+            .rubrica-table tr {
+                page-break-inside: avoid;
+                page-break-after: auto;
+            }
+        }
+        
+        .print-button {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            padding: 10px 20px;
+            background: #28a745;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 12pt;
+            z-index: 1000;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+        
+        .print-button:hover {
+            background: #218838;
+        }
+        
+        .niveles-header {
+            font-size: 8pt;
+            text-align: center;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <!-- Botón de Impresión -->
+    <button class="print-button no-print" onclick="window.print()">
+        🖨️ Imprimir Rúbrica
+    </button>
+    
+    <!-- Encabezado -->
+    <div class="header">
+        <h1>RÚBRICA DE EVALUACIÓN</h1>
+        <div class="subtitle">{{ rubrica.nombre }}</div>
+        <div class="subtitle">{{ rubrica.materia.nombre }} - {{ rubrica.materia.curso.nombre }}</div>
+    </div>
+    
+    <!-- Información General -->
+    <div class="info-section">
+        <div class="info-item">
+            <strong>Materia:</strong> {{ rubrica.materia.nombre }}
+        </div>
+        <div class="info-item">
+            <strong>Curso:</strong> {{ rubrica.materia.curso.nombre }}
+        </div>
+        <div class="info-item">
+            <strong>Tipo de Actividad:</strong> {{ rubrica.get_tipo_actividad_display }}
+        </div>
+        <div class="info-item">
+            <strong>Profesor:</strong> {{ rubrica.materia.profesor.get_full_name }}
+        </div>
+        <div class="info-item">
+            <strong>Año Escolar:</strong> {{ rubrica.materia.curso.anho_escolar.nombre }}
+        </div>
+        <div class="info-item">
+            <strong>Fecha de Impresión:</strong> {{ fecha_actual|date:"d/m/Y" }}
+        </div>
+    </div>
+    
+    {% if rubrica.descripcion %}
+    <div class="info-item" style="margin-bottom: 15px; grid-column: 1 / -1;">
+        <strong>Descripción:</strong> {{ rubrica.descripcion }}
+    </div>
+    {% endif %}
+    
+    <!-- Tabla de Rúbrica -->
+    <table class="rubrica-table">
+        <thead>
+            <tr>
+                <th rowspan="2" style="width: 18%;">CRITERIO<br>(Ponderación)</th>
+                <th colspan="5">NIVELES DE DESEMPEÑO</th>
+            </tr>
+            <tr>
+                <th class="niveles-header">EXCELENTE<br>(5 puntos)</th>
+                <th class="niveles-header">MUY BUENO<br>(4 puntos)</th>
+                <th class="niveles-header">BUENO<br>(3 puntos)</th>
+                <th class="niveles-header">REGULAR<br>(2 puntos)</th>
+                <th class="niveles-header">NECESITA MEJORAR<br>(1 punto)</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for criterio in criterios %}
+            <tr>
+                <td class="criterio-nombre">
+                    {{ criterio.nombre }}
+                    <div class="ponderacion">({{ criterio.ponderacion|floatformat:0 }}%)</div>
+                    {% if criterio.descripcion %}
+                    <div style="font-weight: normal; font-size: 7pt; margin-top: 5px; color: #666;">
+                        {{ criterio.descripcion }}
+                    </div>
+                    {% endif %}
+                </td>
+                
+                <!-- Excelente -->
+                <td class="nivel-cell">
+                    {% with nivel_encontrado=False %}
+                    {% for nivel in criterio.niveles.all %}
+                        {% if nivel.nivel == 'excelente' %}
+                        <div class="nivel-descripcion">
+                            {{ nivel.descripcion|default:"Sin descripción" }}
+                        </div>
+                        {% endif %}
+                    {% endfor %}
+                    {% endwith %}
+                </td>
+                
+                <!-- Muy Bueno -->
+                <td class="nivel-cell">
+                    {% for nivel in criterio.niveles.all %}
+                        {% if nivel.nivel == 'muy_bueno' %}
+                        <div class="nivel-descripcion">
+                            {{ nivel.descripcion|default:"Sin descripción" }}
+                        </div>
+                        {% endif %}
+                    {% endfor %}
+                </td>
+                
+                <!-- Bueno -->
+                <td class="nivel-cell">
+                    {% for nivel in criterio.niveles.all %}
+                        {% if nivel.nivel == 'bueno' %}
+                        <div class="nivel-descripcion">
+                            {{ nivel.descripcion|default:"Sin descripción" }}
+                        </div>
+                        {% endif %}
+                    {% endfor %}
+                </td>
+                
+                <!-- Regular -->
+                <td class="nivel-cell">
+                    {% for nivel in criterio.niveles.all %}
+                        {% if nivel.nivel == 'regular' %}
+                        <div class="nivel-descripcion">
+                            {{ nivel.descripcion|default:"Sin descripción" }}
+                        </div>
+                        {% endif %}
+                    {% endfor %}
+                </td>
+                
+                <!-- Necesita Mejorar -->
+                <td class="nivel-cell">
+                    {% for nivel in criterio.niveles.all %}
+                        {% if nivel.nivel == 'necesita_mejorar' %}
+                        <div class="nivel-descripcion">
+                            {{ nivel.descripcion|default:"Sin descripción" }}
+                        </div>
+                        {% endif %}
+                    {% endfor %}
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="6" style="text-align: center; padding: 20px; color: #999;">
+                    No se han definido criterios para esta rúbrica.
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    
+    <!-- Resumen -->
+    <div style="margin-top: 15px; padding: 10px; background: #f8f9fa; border-left: 4px solid #2c3e50;">
+        <strong>Total de Criterios:</strong> {{ criterios.count }}<br>
+        <strong>Ponderación Total:</strong> {{ rubrica.total_ponderacion|floatformat:0 }}%<br>
+        <strong>Puntaje Máximo:</strong> {{ rubrica.puntaje_maximo|floatformat:2 }} / 100.00
+    </div>
+    
+    <!-- Resultados de Evaluaciones -->
+    {% if evaluaciones_con_resultados %}
+    <div style="page-break-before: always; margin-top: 30px;">
+        <h2 style="text-align: center; color: #2c3e50; margin-bottom: 20px; border-bottom: 2px solid #333; padding-bottom: 10px;">
+            RESULTADOS DE EVALUACIONES
+        </h2>
+        
+        {% for eval_data in evaluaciones_con_resultados %}
+        <div style="margin-bottom: 30px; page-break-inside: avoid;">
+            <!-- Información de la Evaluación -->
+            <div style="background: #e9ecef; padding: 10px; margin-bottom: 10px; border-left: 4px solid #2c3e50;">
+                <strong style="font-size: 11pt;">{{ eval_data.evaluacion.titulo }}</strong><br>
+                <div style="font-size: 9pt; margin-top: 5px;">
+                    <strong>Fecha:</strong> {{ eval_data.evaluacion.fecha_evaluacion|date:"d/m/Y" }} | 
+                    <strong>Período:</strong> {{ eval_data.evaluacion.periodo }} | 
+                    <strong>Estudiantes Evaluados:</strong> {{ eval_data.total_estudiantes }}
+                </div>
+                {% if eval_data.evaluacion.descripcion %}
+                <div style="font-size: 8pt; margin-top: 3px; color: #666;">
+                    {{ eval_data.evaluacion.descripcion }}
+                </div>
+                {% endif %}
+            </div>
+            
+            <!-- Tabla de Resultados -->
+            <table class="rubrica-table" style="font-size: 8pt;">
+                <thead>
+                    <tr>
+                        <th style="width: 15%;">ESTUDIANTE</th>
+                        {% for criterio in criterios %}
+                        <th style="font-size: 7pt;">
+                            {{ criterio.nombre }}<br>
+                            <span style="font-size: 6pt;">({{ criterio.ponderacion|floatformat:0 }}%)</span>
+                        </th>
+                        {% endfor %}
+                        <th style="width: 8%; background: #ffc107;">TOTAL</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for resultado in eval_data.estudiantes %}
+                    <tr>
+                        <td style="font-weight: bold; background: #f8f9fa;">
+                            {{ resultado.estudiante.last_name }}, {{ resultado.estudiante.first_name }}
+                        </td>
+                        {% for criterio in criterios %}
+                        <td style="text-align: center; {% if not resultado.criterios|get_item:criterio.id %}background: #ffe5e5;{% endif %}">
+                            {% if resultado.criterios|get_item:criterio.id %}
+                                {% with cal=resultado.criterios|get_item:criterio.id %}
+                                <div style="font-weight: bold; color: #2c3e50;">
+                                    {{ cal.nivel.get_nivel_display }}
+                                </div>
+                                <div style="font-size: 7pt; color: #666;">
+                                    {{ cal.puntaje|floatformat:2 }} pts
+                                </div>
+                                {% endwith %}
+                            {% else %}
+                                <span style="color: #999; font-style: italic;">Sin evaluar</span>
+                            {% endif %}
+                        </td>
+                        {% endfor %}
+                        <td style="text-align: center; font-weight: bold; font-size: 10pt; background: {% if resultado.completado %}#d4edda{% else %}#fff3cd{% endif %};">
+                            {{ resultado.total|floatformat:2 }}
+                            {% if not resultado.completado %}
+                            <div style="font-size: 7pt; color: #856404;">Incompleto</div>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="100" style="text-align: center; color: #999; padding: 15px;">
+                            No hay estudiantes evaluados en esta aplicación de la rúbrica.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            
+            <!-- Estadísticas de la Evaluación -->
+            {% if eval_data.estudiantes %}
+            <div style="margin-top: 10px; padding: 8px; background: #f8f9fa; border-left: 3px solid #28a745; font-size: 8pt;">
+                <strong>Promedio del Grupo:</strong> {{ eval_data.promedio_grupo|floatformat:2 }} / 100.00
+            </div>
+            {% endif %}
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div style="margin-top: 20px; padding: 15px; background: #fff3cd; border-left: 4px solid #ffc107; text-align: center;">
+        <strong>Nota:</strong> No se han realizado evaluaciones con esta rúbrica aún.
+    </div>
+    {% endif %}
+    
+    <!-- Sección de Firmas -->
+    <div class="firma-section" style="page-break-before: always;">
+        <div class="firma-box">
+            <div class="firma-label">Profesor(a)</div>
+        </div>
+        <div class="firma-box">
+            <div class="firma-label">Coordinador(a)</div>
+        </div>
+        <div class="firma-box">
+            <div class="firma-label">Director(a)</div>
+        </div>
+    </div>
+    
+    <!-- Pie de página -->
+    <div class="footer">
+        Sistema de Gestión Escolar - Generado el {{ fecha_actual|date:"d/m/Y" }} a las {{ fecha_actual|time:"H:i" }}<br>
+        Este documento es una herramienta de evaluación objetiva basada en criterios y niveles de desempeño definidos.
+    </div>
+    
+    <script>
+        // Auto-imprimir al cargar (opcional)
+        // window.onload = function() { window.print(); }
+    </script>
+</body>
+</html>

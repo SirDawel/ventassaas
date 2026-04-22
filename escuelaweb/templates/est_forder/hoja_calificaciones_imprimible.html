@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+{% load custom_filters %}
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hoja de Calificaciones - {{ materia.nombre }}</title>
+    <style>
+        @page {
+            size: letter portrait;
+            margin: 0.5cm;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            font-size: 9pt;
+            padding: 10px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 10px;
+            border-bottom: 2px solid #000;
+            padding-bottom: 8px;
+        }
+
+        .header h1 {
+            font-size: 14pt;
+            margin-bottom: 4px;
+        }
+
+        .header .info {
+            font-size: 9pt;
+            margin: 2px 0;
+        }
+
+        .selection-info {
+            background-color: #f0f0f0;
+            padding: 6px;
+            margin-bottom: 8px;
+            border: 1px solid #ccc;
+            text-align: center;
+            font-weight: bold;
+            font-size: 10pt;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+
+        th, td {
+            border: 1px solid #000;
+            padding: 4px 3px;
+            text-align: center;
+        }
+
+        th {
+            background-color: #e0e0e0;
+            font-weight: bold;
+            font-size: 8pt;
+        }
+
+        td.student-name {
+            text-align: left;
+            padding-left: 6px;
+            font-size: 8pt;
+        }
+
+        td.num {
+            width: 25px;
+            font-weight: bold;
+            font-size: 8pt;
+        }
+
+        td.name-col {
+            width: 170px;
+        }
+
+        /* Columnas para notas - tamaño fijo */
+        td.nota, th.nota {
+            width: 40px;
+            min-height: 22px;
+        }
+
+        .footer {
+            margin-top: 15px;
+            page-break-inside: avoid;
+        }
+
+        .signature-section {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 20px;
+        }
+
+        .signature-box {
+            width: 45%;
+            border-top: 1px solid #000;
+            padding-top: 3px;
+            text-align: center;
+            font-size: 8pt;
+        }
+
+        @media print {
+            body {
+                padding: 0;
+            }
+            
+            .no-print {
+                display: none !important;
+            }
+
+            .page-break {
+                page-break-after: always;
+            }
+        }
+
+        .print-button {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            padding: 10px 20px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            z-index: 1000;
+        }
+
+        .print-button:hover {
+            background-color: #0056b3;
+        }
+
+        .options-bar {
+            background-color: #f8f9fa;
+            padding: 15px;
+            margin-bottom: 15px;
+            border: 1px solid #dee2e6;
+            border-radius: 5px;
+        }
+
+        .options-bar label {
+            margin-right: 15px;
+            font-weight: bold;
+        }
+
+        .options-bar select {
+            padding: 5px 10px;
+            border: 1px solid #ced4da;
+            border-radius: 3px;
+            margin-right: 20px;
+        }
+
+        /* Estilos para sistema modular */
+        .ra-header {
+            font-size: 8pt;
+        }
+    </style>
+</head>
+<body>
+    <button onclick="window.print()" class="print-button no-print">🖨️ Imprimir</button>
+    
+    <div class="options-bar no-print">
+        <label for="tipo-select">Seleccionar período/tipo:</label>
+        <select id="tipo-select" onchange="cambiarTipo()">
+            {% if materia.categoria == 'periodo' %}
+            <option value="periodo1" {% if tipo_evaluacion == 'periodo1' %}selected{% endif %}>Período 1</option>
+            <option value="periodo2" {% if tipo_evaluacion == 'periodo2' %}selected{% endif %}>Período 2</option>
+            <option value="periodo3" {% if tipo_evaluacion == 'periodo3' %}selected{% endif %}>Período 3</option>
+            <option value="periodo4" {% if tipo_evaluacion == 'periodo4' %}selected{% endif %}>Período 4</option>
+            {% else %}
+            <option value="modular" {% if tipo_evaluacion == 'modular' %}selected{% endif %}>Evaluación Modular (RA)</option>
+            {% endif %}
+        </select>
+        <button onclick="window.print()" style="padding: 5px 15px; background-color: #28a745; color: white; border: none; border-radius: 3px; cursor: pointer;">Imprimir</button>
+        <button onclick="window.close()" style="padding: 5px 15px; background-color: #6c757d; color: white; border: none; border-radius: 3px; cursor: pointer; margin-left: 10px;">Cerrar</button>
+    </div>
+
+    <div class="header">
+        <h1>HOJA DE CALIFICACIONES</h1>
+        <div class="info"><strong>Materia:</strong> {{ materia.nombre }} ({{ materia.codigo }})</div>
+        <div class="info"><strong>Curso:</strong> {{ curso.nombre }} - {{ curso.anho_escolar.nombre }}</div>
+        <div class="info"><strong>Profesor/a:</strong> {{ materia.profesor.get_full_name }}</div>
+        <div class="info"><strong>Fecha:</strong> ____ / ____ / ______</div>
+    </div>
+
+    <div class="selection-info">
+        {% if materia.categoria == 'periodo' %}
+            {% if tipo_evaluacion == 'periodo1' %}PERÍODO 1{% endif %}
+            {% if tipo_evaluacion == 'periodo2' %}PERÍODO 2{% endif %}
+            {% if tipo_evaluacion == 'periodo3' %}PERÍODO 3{% endif %}
+            {% if tipo_evaluacion == 'periodo4' %}PERÍODO 4{% endif %}
+        {% else %}
+            EVALUACIÓN MODULAR - RESULTADOS DE APRENDIZAJE (RA)
+        {% endif %}
+    </div>
+
+    {% if materia.categoria == 'periodo' %}
+    <!-- Tabla para evaluación por períodos -->
+    <table>
+        <thead>
+            <tr>
+                <th class="num">#</th>
+                <th class="name-col">Nombre del Estudiante</th>
+                <th class="nota">Com</th>
+                <th class="nota">Mat</th>
+                <th class="nota">Cie</th>
+                <th class="nota">Eti</th>
+                <th class="nota">Prom</th>
+                <th style="width: 90px;">Observaciones</th>
+            </tr>
+            <tr>
+                <th colspan="2" style="text-align: left; padding-left: 6px; font-size: 7pt;">
+                    Com=Comunicativa | Mat=Lógico-Matemática | Cie=Científica | Eti=Ética y Ciudadana
+                </th>
+                <th colspan="6"></th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for matricula in matriculas %}
+            <tr>
+                <td class="num">{{ forloop.counter }}</td>
+                <td class="student-name">{{ matricula.estudiante.last_name }}, {{ matricula.estudiante.first_name }}</td>
+                <td class="nota"></td>
+                <td class="nota"></td>
+                <td class="nota"></td>
+                <td class="nota"></td>
+                <td class="nota"></td>
+                <td></td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="8" style="text-align: center; padding: 20px;">
+                    No hay estudiantes matriculados en esta materia
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    {% else %}
+    <!-- Tabla para evaluación modular -->
+    <table>
+        <thead>
+            <tr>
+                <th class="num">#</th>
+                <th class="name-col">Nombre del Estudiante</th>
+                {% if materia.ra_configuracion %}
+                    {% for i in "1234567890"|make_list %}
+                        {% if forloop.counter <= materia.ra_configuracion.cantidad %}
+                        <th class="nota ra-header">RA{{ forloop.counter }}<br><small>({{ materia.ra_configuracion.valores|index:forloop.counter0 }}%)</small></th>
+                        {% endif %}
+                    {% endfor %}
+                {% else %}
+                    <th class="nota ra-header">RA1</th>
+                    <th class="nota ra-header">RA2</th>
+                    <th class="nota ra-header">RA3</th>
+                    <th class="nota ra-header">RA4</th>
+                    <th class="nota ra-header">RA5</th>
+                    <th class="nota ra-header">RA6</th>
+                    <th class="nota ra-header">RA7</th>
+                {% endif %}
+                <th class="nota">Total</th>
+                <th style="width: 80px;">Obs.</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for matricula in matriculas %}
+            <tr>
+                <td class="num">{{ forloop.counter }}</td>
+                <td class="student-name">{{ matricula.estudiante.last_name }}, {{ matricula.estudiante.first_name }}</td>
+                {% if materia.ra_configuracion %}
+                    {% for i in "1234567890"|make_list %}
+                        {% if forloop.counter <= materia.ra_configuracion.cantidad %}
+                        <td class="nota"></td>
+                        {% endif %}
+                    {% endfor %}
+                {% else %}
+                    <td class="nota"></td>
+                    <td class="nota"></td>
+                    <td class="nota"></td>
+                    <td class="nota"></td>
+                    <td class="nota"></td>
+                    <td class="nota"></td>
+                    <td class="nota"></td>
+                {% endif %}
+                <td class="nota"></td>
+                <td></td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="12" style="text-align: center; padding: 20px;">
+                    No hay estudiantes matriculados en esta materia
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% endif %}
+
+    <div class="footer">
+        <div style="margin-top: 10px; font-size: 8pt;">
+            <strong>Notas:</strong>
+            <ul style="margin-left: 20px; margin-top: 3px; line-height: 1.4;">
+                <li>Escriba las calificaciones con lápiz o bolígrafo de forma clara</li>
+                {% if materia.categoria == 'periodo' %}
+                <li>La escala de calificación es de 0 a 100 puntos</li>
+                <li>El promedio se calcula automáticamente al ingresar las notas al sistema</li>
+                {% else %}
+                <li>Cada RA tiene un valor porcentual específico que suma 100%</li>
+                <li>El total se calcula sumando todos los RA según su ponderación</li>
+                {% endif %}
+            </ul>
+        </div>
+
+        <div class="signature-section">
+            <div class="signature-box">
+                Firma del Profesor/a
+            </div>
+            <div class="signature-box">
+                Fecha de entrega
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function cambiarTipo() {
+            const select = document.getElementById('tipo-select');
+            const tipo = select.value;
+            const url = new URL(window.location.href);
+            url.searchParams.set('tipo', tipo);
+            window.location.href = url.toString();
+        }
+    </script>
+</body>
+</html>

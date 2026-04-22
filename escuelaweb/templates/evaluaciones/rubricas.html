@@ -12,16 +12,18 @@
                     <h3 class="mb-2">
                         <i class="fas fa-table text-success"></i> {{ titulo }}
                     </h3>
-                    <p class="text-muted mb-0">{{ descripcion }}</p>
+                    <p class="text-muted mb-1">{{ descripcion }}</p>
+                    {% if anho_activo %}
+                    <p class="mb-0">
+                        <span class="badge bg-primary" style="font-size: 0.9em;">
+                            <i class="fas fa-calendar-alt me-1"></i>Año Escolar: {{ anho_activo.nombre }}
+                        </span>
+                    </p>
+                    {% endif %}
                 </div>
-                <div>
-                    <a href="{% url 'evaluaciones_rubricas' %}" class="btn btn-info me-2">
-                        <i class="fas fa-clipboard-check me-1"></i>Aplicar Rúbricas a Estudiantes
-                    </a>
-                    <a href="{% url 'plataform' %}" class="btn btn-secondary">
-                        <i class="fas fa-arrow-left"></i> Volver
-                    </a>
-                </div>
+                <a href="{% url 'plataform' %}" class="btn btn-secondary">
+                    <i class="fas fa-arrow-left"></i> Volver
+                </a>
             </div>
         </div>
     </div>
@@ -45,246 +47,687 @@
         </div>
     </div>
 
-    <!-- Información sobre Rúbricas -->
-    <div class="row mb-4">
-        <div class="col-md-8">
-            <div class="card shadow-sm">
-                <div class="card-header bg-success text-white">
-                    <h5 class="mb-0"><i class="fas fa-info-circle me-2"></i>¿Qué son las Rúbricas?</h5>
-                </div>
-                <div class="card-body">
-                    <p>Las rúbricas son instrumentos de evaluación que definen criterios claros y específicos para valorar el desempeño de los estudiantes:</p>
-                    <ul class="mb-2">
-                        <li><strong>Criterios de evaluación:</strong> Aspectos específicos que se van a evaluar.</li>
-                        <li><strong>Niveles de desempeño:</strong> Escalas que describen la calidad del trabajo (Excelente, Muy Bueno, Bueno, Regular, Necesita Mejorar).</li>
-                        <li><strong>Descriptores:</strong> Explicación detallada de cada nivel de desempeño.</li>
-                        <li><strong>Ponderación:</strong> Valor o peso de cada criterio en la evaluación final.</li>
-                    </ul>
-                    <div class="alert alert-info mb-0">
-                        <i class="fas fa-lightbulb me-2"></i><strong>Uso recomendado:</strong> Ideal para evaluar proyectos, presentaciones orales, trabajos escritos, trabajos en grupo y productos creativos.
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-4">
-            <div class="card shadow-sm bg-light">
-                <div class="card-body text-center">
-                    <i class="fas fa-clipboard-list fa-4x text-info mb-3"></i>
-                    <h5>¿Listo para evaluar?</h5>
-                    <p class="text-muted mb-3">Una vez que hayas creado tu rúbrica y agregado los criterios, podrás aplicarla a tus estudiantes.</p>
-                    <a href="{% url 'evaluaciones_rubricas' %}" class="btn btn-info btn-lg w-100">
-                        <i class="fas fa-users me-2"></i>Evaluar Estudiantes
-                    </a>
-                </div>
-            </div>
-        </div>
-    </div>
+    <!-- Tabs de Navegación -->
+    <ul class="nav nav-tabs nav-fill mb-4" id="rubricasTabs" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link {% if active_tab == 'rubricas' %}active{% endif %}" 
+                    id="rubricas-tab" 
+                    data-bs-toggle="tab" 
+                    data-bs-target="#rubricas" 
+                    type="button" 
+                    role="tab">
+                <i class="fas fa-table me-1"></i>Mis Rúbricas
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link {% if active_tab == 'aplicar' %}active{% endif %}" 
+                    id="aplicar-tab" 
+                    data-bs-toggle="tab" 
+                    data-bs-target="#aplicar" 
+                    type="button" 
+                    role="tab">
+                <i class="fas fa-plus-circle me-1"></i>Aplicar a Estudiantes
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link {% if active_tab == 'evaluaciones' %}active{% endif %}" 
+                    id="evaluaciones-tab" 
+                    data-bs-toggle="tab" 
+                    data-bs-target="#evaluaciones" 
+                    type="button" 
+                    role="tab">
+                <i class="fas fa-clipboard-check me-1"></i>Evaluaciones Activas
+            </button>
+        </li>
+    </ul>
 
-    <!-- Crear Nueva Rúbrica -->
-    <div class="card shadow-sm mb-4">
-        <div class="card-header bg-success text-white">
-            <h5 class="mb-0"><i class="fas fa-plus-circle me-2"></i>Crear Rúbrica</h5>
-        </div>
-        <div class="card-body">
-            <form method="post">
-                {% csrf_token %}
-                <div class="row">
-                    <div class="col-md-6 mb-3">
-                        <label for="materia" class="form-label">Materia/Asignatura <span class="text-danger">*</span></label>
-                        <select class="form-select" id="materia" name="materia" required>
-                            <option value="">Seleccionar materia...</option>
-                            {% for materia in materias %}
-                            <option value="{{ materia.id }}">{{ materia.nombre }} - {{ materia.curso.nombre }}</option>
-                            {% endfor %}
-                        </select>
-                    </div>
-                    <div class="col-md-6 mb-3">
-                        <label for="nombre_rubrica" class="form-label">Nombre de la Rúbrica <span class="text-danger">*</span></label>
-                        <input type="text" class="form-control" id="nombre_rubrica" name="nombre_rubrica" required placeholder="Ej: Evaluación de Proyecto de Ciencias">
-                    </div>
-                </div>
-                <div class="row">
-                    <div class="col-md-12 mb-3">
-                        <label for="tipo_actividad" class="form-label">Tipo de Actividad a Evaluar</label>
-                        <select class="form-select" id="tipo_actividad" name="tipo_actividad">
-                            <option value="proyecto">Proyecto</option>
-                            <option value="presentacion">Presentación Oral</option>
-                            <option value="trabajo_escrito">Trabajo Escrito</option>
-                            <option value="trabajo_grupo">Trabajo en Grupo</option>
-                            <option value="experimentacion">Experimentación/Práctica</option>
-                            <option value="exposicion">Exposición</option>
-                            <option value="debate">Debate</option>
-                            <option value="otro">Otro</option>
-                        </select>
-                    </div>
-                </div>
-                <div class="alert alert-info">
-                    <i class="fas fa-info-circle me-2"></i><strong>Siguiente paso:</strong> Después de crear la rúbrica, podrás agregar criterios personalizados, niveles de desempeño y ponderaciones haciendo clic en el botón "Criterios".
-                </div>
-                <div class="text-end">
-                    <button type="submit" class="btn btn-success">
-                        <i class="fas fa-save me-1"></i>Crear Rúbrica
-                    </button>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <!-- Lista de Rúbricas -->
-    <div class="card shadow-sm">
-        <div class="card-header bg-info text-white">
-            <h5 class="mb-0"><i class="fas fa-list me-2"></i>Rúbricas Registradas ({{ rubricas.count }})</h5>
-        </div>
-        <div class="card-body">
-            {% if rubricas %}
-            <div class="table-responsive">
-                <table class="table table-hover align-middle">
-                    <thead class="table-light">
-                        <tr>
-                            <th>Nombre de la Rúbrica</th>
-                            <th>Materia</th>
-                            <th>Curso</th>
-                            <th>Tipo de Actividad</th>
-                            <th>Criterios</th>
-                            <th>Fecha de Creación</th>
-                            <th>Estado</th>
-                            <th class="text-center">Acciones</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for rubrica in rubricas %}
-                        <tr>
-                            <td>
-                                <strong>{{ rubrica.nombre }}</strong>
-                                {% if rubrica.descripcion %}
-                                <br><small class="text-muted">{{ rubrica.descripcion|truncatewords:15 }}</small>
-                                {% endif %}
-                            </td>
-                            <td>{{ rubrica.materia.nombre }}</td>
-                            <td>{{ rubrica.materia.curso.nombre }}</td>
-                            <td>
-                                <span class="badge bg-secondary">{{ rubrica.get_tipo_actividad_display }}</span>
-                            </td>
-                            <td class="text-center">
-                                {% if rubrica.total_criterios > 0 %}
-                                    <span class="badge bg-success">{{ rubrica.total_criterios }}</span>
-                                {% else %}
-                                    <span class="badge bg-warning text-dark">0</span>
-                                {% endif %}
-                            </td>
-                            <td class="text-muted small">{{ rubrica.fecha_creacion|date:"d/m/Y H:i" }}</td>
-                            <td>
-                                {% if rubrica.activa %}
-                                    <span class="badge bg-success">Activa</span>
-                                {% else %}
-                                    <span class="badge bg-secondary">Inactiva</span>
-                                {% endif %}
-                            </td>
-                            <td class="text-center">
-                                <button class="btn btn-sm btn-primary" 
-                                        data-bs-toggle="modal" 
-                                        data-bs-target="#modalVerRubrica{{ rubrica.id }}"
-                                        title="Ver detalles">
-                                    <i class="fas fa-eye"></i>
-                                </button>
-                                <a href="{% url 'gestionar_criterios_rubrica' rubrica.id %}" 
-                                   class="btn btn-sm btn-success" 
-                                   title="Gestionar criterios">
-                                    <i class="fas fa-tasks"></i> Criterios
-                                </a>
-                                {% if rubrica.total_criterios > 0 %}
-                                <a href="{% url 'evaluaciones_rubricas' %}" 
-                                   class="btn btn-sm btn-info" 
-                                   title="Aplicar esta rúbrica a estudiantes">
-                                    <i class="fas fa-clipboard-check"></i> Aplicar
-                                </a>
-                                {% endif %}
-                                <button class="btn btn-sm btn-warning" title="Editar">
-                                    <i class="fas fa-edit"></i>
-                                </button>
-                                <button class="btn btn-sm btn-danger" title="Eliminar">
-                                    <i class="fas fa-trash"></i>
-                                </button>
-                            </td>
-                        </tr>
-                        
-                        <!-- Modal Ver Detalles -->
-                        <div class="modal fade" id="modalVerRubrica{{ rubrica.id }}" tabindex="-1" aria-hidden="true">
-                            <div class="modal-dialog modal-lg">
-                                <div class="modal-content">
-                                    <div class="modal-header bg-info text-white">
-                                        <h5 class="modal-title">
-                                            <i class="fas fa-table me-2"></i>{{ rubrica.nombre }}
-                                        </h5>
-                                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-                                    </div>
-                                    <div class="modal-body">
-                                        <div class="row mb-3">
-                                            <div class="col-md-6">
-                                                <strong>Materia:</strong> {{ rubrica.materia.nombre }}
-                                            </div>
-                                            <div class="col-md-6">
-                                                <strong>Curso:</strong> {{ rubrica.materia.curso.nombre }}
-                                            </div>
-                                        </div>
-                                        <div class="row mb-3">
-                                            <div class="col-md-6">
-                                                <strong>Tipo de Actividad:</strong> {{ rubrica.get_tipo_actividad_display }}
-                                            </div>
-                                            <div class="col-md-6">
-                                                <strong>Creado por:</strong> {{ rubrica.creado_por.get_full_name }}
-                                            </div>
-                                        </div>
-                                        {% if rubrica.descripcion %}
-                                        <div class="mb-3">
-                                            <strong>Descripción:</strong>
-                                            <p class="text-muted">{{ rubrica.descripcion }}</p>
-                                        </div>
-                                        {% endif %}
-                                        <div class="mb-3">
-                                            <strong>Criterios de Evaluación:</strong>
-                                            {% if rubrica.total_criterios > 0 %}
-                                                <div class="alert alert-success mt-2">
-                                                    <i class="fas fa-check-circle me-2"></i>
-                                                    Esta rúbrica tiene {{ rubrica.total_criterios }} criterio(s) definido(s).
-                                                </div>
-                                            {% else %}
-                                                <div class="alert alert-warning mt-2">
-                                                    <i class="fas fa-exclamation-triangle me-2"></i>
-                                                    Esta rúbrica aún no tiene criterios definidos. Haz clic en "Agregar criterios" para comenzar.
-                                                </div>
-                                            {% endif %}
-                                        </div>
-                                        <div class="text-muted small">
-                                            <strong>Fecha de creación:</strong> {{ rubrica.fecha_creacion|date:"d/m/Y H:i" }}<br>
-                                            <strong>Última modificación:</strong> {{ rubrica.fecha_modificacion|date:"d/m/Y H:i" }}
-                                        </div>
-                                    </div>
-                                    <div class="modal-footer">
-                                        <a href="{% url 'gestionar_criterios_rubrica' rubrica.id %}" class="btn btn-success">
-                                            <i class="fas fa-tasks me-1"></i>Gestionar Criterios
-                                        </a>
-                                        {% if rubrica.total_criterios > 0 %}
-                                        <a href="{% url 'evaluaciones_rubricas' %}" class="btn btn-info">
-                                            <i class="fas fa-clipboard-check me-1"></i>Aplicar a Estudiantes
-                                        </a>
-                                        {% endif %}
-                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
-                                    </div>
-                                </div>
+    <!-- Contenido de los Tabs -->
+    <div class="tab-content" id="rubricasTabContent">
+        
+        <!-- TAB 1: MIS RÚBRICAS -->
+        <div class="tab-pane fade {% if active_tab == 'rubricas' %}show active{% endif %}" 
+             id="rubricas" 
+             role="tabpanel">
+            
+            <!-- Información sobre Rúbricas -->
+            <div class="row mb-4">
+                <div class="col-md-8">
+                    <div class="card shadow-sm">
+                        <div class="card-header bg-success text-white">
+                            <h5 class="mb-0"><i class="fas fa-info-circle me-2"></i>¿Qué son las Rúbricas?</h5>
+                        </div>
+                        <div class="card-body">
+                            <p>Las rúbricas son instrumentos de evaluación que definen criterios claros y específicos para valorar el desempeño de los estudiantes:</p>
+                            <ul class="mb-2">
+                                <li><strong>Criterios de evaluación:</strong> Aspectos específicos que se van a evaluar.</li>
+                                <li><strong>Niveles de desempeño:</strong> Escalas que describen la calidad del trabajo (Excelente, Muy Bueno, Bueno, Regular, Necesita Mejorar).</li>
+                                <li><strong>Descriptores:</strong> Explicación detallada de cada nivel de desempeño.</li>
+                                <li><strong>Ponderación:</strong> Valor o peso de cada criterio en la evaluación final.</li>
+                            </ul>
+                            <div class="alert alert-info mb-0">
+                                <i class="fas fa-lightbulb me-2"></i><strong>Uso recomendado:</strong> Ideal para evaluar proyectos, presentaciones orales, trabajos escritos, trabajos en grupo y productos creativos.
                             </div>
                         </div>
-                        {% endfor %}
-                    </tbody>
-                </table>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card shadow-sm bg-light">
+                        <div class="card-body text-center">
+                            <i class="fas fa-clipboard-list fa-4x text-info mb-3"></i>
+                            <h5>¿Listo para evaluar?</h5>
+                            <p class="text-muted mb-3">Una vez que hayas creado tu rúbrica y agregado los criterios, podrás aplicarla a tus estudiantes.</p>
+                            <button class="btn btn-info btn-lg w-100" 
+                                    onclick="document.getElementById('aplicar-tab').click()">
+                                <i class="fas fa-users me-2"></i>Evaluar Estudiantes
+                            </button>
+                        </div>
+                    </div>
+                </div>
             </div>
-            {% else %}
-            <div class="alert alert-light text-center">
-                <i class="fas fa-folder-open fa-3x text-muted mb-3"></i>
-                <p class="mb-0">No hay rúbricas registradas aún.</p>
-                <small class="text-muted">Crea tu primera rúbrica utilizando el formulario anterior.</small>
+
+            <!-- Crear Nueva Rúbrica -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0"><i class="fas fa-plus-circle me-2"></i>Crear Nueva Rúbrica</h5>
+                </div>
+                <div class="card-body">
+                    <form method="post">
+                        {% csrf_token %}
+                        <input type="hidden" name="action" value="crear_rubrica">
+                        <div class="row">
+                            <div class="col-md-12 mb-3">
+                                <label for="nombre_rubrica" class="form-label">Nombre de la Rúbrica <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="nombre_rubrica" name="nombre_rubrica" required placeholder="Ej: Evaluación de Proyecto de Ciencias">
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="tipo_actividad" class="form-label">Tipo de Actividad a Evaluar</label>
+                                <select class="form-select" id="tipo_actividad" name="tipo_actividad">
+                                    <option value="proyecto">Proyecto</option>
+                                    <option value="presentacion">Presentación Oral</option>
+                                    <option value="trabajo_escrito">Trabajo Escrito</option>
+                                    <option value="trabajo_grupo">Trabajo en Grupo</option>
+                                    <option value="experimentacion">Experimentación/Práctica</option>
+                                    <option value="exposicion">Exposición</option>
+                                    <option value="debate">Debate</option>
+                                    <option value="otro">Otro</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="descripcion_rubrica" class="form-label">Descripción (Opcional)</label>
+                                <input type="text" class="form-control" id="descripcion_rubrica" name="descripcion" placeholder="Descripción breve de la rúbrica">
+                            </div>
+                        </div>
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle me-2"></i><strong>Siguiente paso:</strong> Después de crear la rúbrica, podrás agregar criterios personalizados, niveles de desempeño y ponderaciones. Luego, al aplicar la rúbrica a estudiantes, seleccionarás la materia específica.
+                        </div>
+                        <div class="text-end">
+                            <button type="submit" class="btn btn-success">
+                                <i class="fas fa-save me-1"></i>Crear Rúbrica
+                            </button>
+                        </div>
+                    </form>
+                </div>
             </div>
-            {% endif %}
+
+            <!-- Lista de Rúbricas -->
+            <div class="card shadow-sm">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0"><i class="fas fa-list me-2"></i>Rúbricas Registradas ({{ rubricas.count }})</h5>
+                </div>
+                <div class="card-body">
+                    {% if rubricas %}
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Nombre de la Rúbrica</th>
+                                    <th>Materia</th>
+                                    <th>Curso</th>
+                                    <th>Tipo</th>
+                                    <th class="text-center">Criterios</th>
+                                    <th>Estado</th>
+                                    <th class="text-center">Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for rubrica in rubricas %}
+                                <tr>
+                                    <td>
+                                        <strong>{{ rubrica.nombre }}</strong>
+                                        {% if rubrica.descripcion %}
+                                        <br><small class="text-muted">{{ rubrica.descripcion|truncatewords:10 }}</small>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if rubrica.materia %}
+                                            {{ rubrica.materia.nombre }}
+                                        {% else %}
+                                            <span class="text-muted fst-italic">Genérica</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if rubrica.materia %}
+                                            {{ rubrica.materia.curso.nombre }}
+                                        {% else %}
+                                            <span class="text-muted fst-italic">-</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-secondary">{{ rubrica.get_tipo_actividad_display }}</span>
+                                    </td>
+                                    <td class="text-center">
+                                        {% if rubrica.total_criterios > 0 %}
+                                            <span class="badge bg-success">{{ rubrica.total_criterios }}</span>
+                                        {% else %}
+                                            <span class="badge bg-warning text-dark">0</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if rubrica.activa %}
+                                            <span class="badge bg-success">Activa</span>
+                                        {% else %}
+                                            <span class="badge bg-secondary">Inactiva</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="text-center">
+                                        <div class="btn-group btn-group-sm" role="group">
+                                            <button class="btn btn-primary" 
+                                                    data-bs-toggle="modal" 
+                                                    data-bs-target="#modalVerRubrica{{ rubrica.id }}"
+                                                    title="Ver detalles">
+                                                <i class="fas fa-eye"></i>
+                                            </button>
+                                            <a href="{% url 'gestionar_criterios_rubrica' rubrica.id %}" 
+                                               class="btn btn-success" 
+                                               title="Gestionar criterios">
+                                                <i class="fas fa-tasks"></i>
+                                            </a>
+                                            {% if rubrica.total_criterios > 0 %}
+                                            <button class="btn btn-info" 
+                                                    onclick="document.getElementById('aplicar-tab').click()"
+                                                    title="Aplicar a estudiantes">
+                                                <i class="fas fa-clipboard-check"></i>
+                                            </button>
+                                            {% endif %}
+                                            <button class="btn btn-danger" 
+                                                    data-bs-toggle="modal" 
+                                                    data-bs-target="#modalEliminarRubrica{{ rubrica.id }}"
+                                                    title="Eliminar rúbrica">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                
+                                <!-- Modal Eliminar Rúbrica -->
+                                <div class="modal fade" id="modalEliminarRubrica{{ rubrica.id }}" tabindex="-1" aria-hidden="true">
+                                    <div class="modal-dialog">
+                                        <div class="modal-content">
+                                            <div class="modal-header bg-danger text-white">
+                                                <h5 class="modal-title">
+                                                    <i class="fas fa-exclamation-triangle me-2"></i>Confirmar Eliminación
+                                                </h5>
+                                                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                                            </div>
+                                            <div class="modal-body">
+                                                <div class="alert alert-warning">
+                                                    <i class="fas fa-exclamation-circle me-2"></i>
+                                                    <strong>¡Atención!</strong> Esta acción no se puede deshacer.
+                                                </div>
+                                                <p>¿Estás seguro de que deseas eliminar la rúbrica <strong>"{{ rubrica.nombre }}"</strong>?</p>
+                                                <ul class="mb-0">
+                                                    <li>Se eliminarán todos los criterios asociados ({{ rubrica.total_criterios }})</li>
+                                                    <li>Se eliminarán todos los niveles de desempeño definidos</li>
+                                                    {% if rubrica.evaluaciones.count > 0 %}
+                                                    <li class="text-danger"><strong>Advertencia:</strong> Hay {{ rubrica.evaluaciones.count }} evaluación(es) usando esta rúbrica</li>
+                                                    {% endif %}
+                                                </ul>
+                                            </div>
+                                            <div class="modal-footer">
+                                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                                                    <i class="fas fa-times me-1"></i>Cancelar
+                                                </button>
+                                                <form method="post" style="display: inline;">
+                                                    {% csrf_token %}
+                                                    <input type="hidden" name="action" value="eliminar_rubrica">
+                                                    <input type="hidden" name="rubrica_id" value="{{ rubrica.id }}">
+                                                    <button type="submit" class="btn btn-danger">
+                                                        <i class="fas fa-trash me-1"></i>Sí, Eliminar
+                                                    </button>
+                                                </form>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Modal Ver Detalles -->
+                                <div class="modal fade" id="modalVerRubrica{{ rubrica.id }}" tabindex="-1" aria-hidden="true">
+                                    <div class="modal-dialog modal-lg">
+                                        <div class="modal-content">
+                                            <div class="modal-header bg-info text-white">
+                                                <h5 class="modal-title">
+                                                    <i class="fas fa-table me-2"></i>{{ rubrica.nombre }}
+                                                </h5>
+                                                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                                            </div>
+                                            <div class="modal-body">
+                                                <div class="row mb-3">
+                                                    <div class="col-md-6">
+                                                        <strong>Materia:</strong> 
+                                                        {% if rubrica.materia %}
+                                                            {{ rubrica.materia.nombre }}
+                                                        {% else %}
+                                                            <span class="text-muted fst-italic">Genérica (sin asignar)</span>
+                                                        {% endif %}
+                                                    </div>
+                                                    <div class="col-md-6">
+                                                        <strong>Curso:</strong> 
+                                                        {% if rubrica.materia %}
+                                                            {{ rubrica.materia.curso.nombre }}
+                                                        {% else %}
+                                                            <span class="text-muted fst-italic">-</span>
+                                                        {% endif %}
+                                                    </div>
+                                                </div>
+                                                <div class="row mb-3">
+                                                    <div class="col-md-6">
+                                                        <strong>Tipo de Actividad:</strong> {{ rubrica.get_tipo_actividad_display }}
+                                                    </div>
+                                                    <div class="col-md-6">
+                                                        <strong>Creado por:</strong> {{ rubrica.creado_por.get_full_name }}
+                                                    </div>
+                                                </div>
+                                                {% if rubrica.descripcion %}
+                                                <div class="mb-3">
+                                                    <strong>Descripción:</strong>
+                                                    <p class="text-muted">{{ rubrica.descripcion }}</p>
+                                                </div>
+                                                {% endif %}
+                                                <div class="mb-3">
+                                                    <strong>Criterios de Evaluación:</strong>
+                                                    {% if rubrica.total_criterios > 0 %}
+                                                        <div class="alert alert-success mt-2">
+                                                            <i class="fas fa-check-circle me-2"></i>
+                                                            Esta rúbrica tiene {{ rubrica.total_criterios }} criterio(s) definido(s).
+                                                        </div>
+                                                    {% else %}
+                                                        <div class="alert alert-warning mt-2">
+                                                            <i class="fas fa-exclamation-triangle me-2"></i>
+                                                            Esta rúbrica aún no tiene criterios definidos.
+                                                        </div>
+                                                    {% endif %}
+                                                </div>
+                                                <div class="text-muted small">
+                                                    <strong>Fecha de creación:</strong> {{ rubrica.fecha_creacion|date:"d/m/Y H:i" }}
+                                                </div>
+                                            </div>
+                                            <div class="modal-footer">
+                                                <button type="button" class="btn btn-danger" 
+                                                        data-bs-dismiss="modal"
+                                                        data-bs-toggle="modal" 
+                                                        data-bs-target="#modalEliminarRubrica{{ rubrica.id }}"
+                                                        title="Eliminar rúbrica">
+                                                    <i class="fas fa-trash me-1"></i>Eliminar
+                                                </button>
+                                                <a href="{% url 'gestionar_criterios_rubrica' rubrica.id %}" class="btn btn-success">
+                                                    <i class="fas fa-tasks me-1"></i>Gestionar Criterios
+                                                </a>
+                                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="alert alert-light text-center">
+                        <i class="fas fa-folder-open fa-3x text-muted mb-3"></i>
+                        <p class="mb-0">No hay rúbricas registradas aún.</p>
+                        <small class="text-muted">Crea tu primera rúbrica utilizando el formulario anterior.</small>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB 2: APLICAR A ESTUDIANTES -->
+        <div class="tab-pane fade {% if active_tab == 'aplicar' %}show active{% endif %}" 
+             id="aplicar" 
+             role="tabpanel">
+            
+            <!-- Formulario Aplicar Rúbrica -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0"><i class="fas fa-plus-circle me-2"></i>Aplicar Rúbrica a Estudiantes</h5>
+                </div>
+                <div class="card-body">
+                    {% if rubricas_disponibles %}
+                    <form method="post">
+                        {% csrf_token %}
+                        <input type="hidden" name="action" value="aplicar_rubrica">
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="rubrica" class="form-label">Seleccionar Rúbrica <span class="text-danger">*</span></label>
+                                <select class="form-select" id="rubrica" name="rubrica" required>
+                                    <option value="">Seleccionar rúbrica...</option>
+                                    {% for rub in rubricas_disponibles %}
+                                    <option value="{{ rub.id }}" {% if rub.materia %}data-materia="{{ rub.materia.id }}" data-materia-nombre="{{ rub.materia.nombre }}" data-curso-nombre="{{ rub.materia.curso.nombre }}"{% endif %}>
+                                        {{ rub.nombre }}{% if rub.materia %} - {{ rub.materia.nombre }}{% endif %} ({{ rub.total_criterios }} criterios)
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="materia_aplicar" class="form-label">Materia/Asignatura <span class="text-danger">*</span></label>
+                                <select class="form-select" id="materia_aplicar" name="materia" required>
+                                    <option value="">Seleccionar materia...</option>
+                                    {% for materia in materias %}
+                                    <option value="{{ materia.id }}" data-curso="{{ materia.curso.id }}" data-curso-nombre="{{ materia.curso.nombre }}">
+                                        {{ materia.nombre }} - {{ materia.curso.nombre }}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                                <small class="text-muted">Selecciona la materia a la que aplicarás esta rúbrica</small>
+                            </div>
+                        </div>
+                        <script>
+                        document.getElementById('rubrica').addEventListener('change', function() {
+                            const selectedOption = this.options[this.selectedIndex];
+                            const rubricaMateriaId = selectedOption.getAttribute('data-materia');
+                            const rubricaMateriaNombre = selectedOption.getAttribute('data-materia-nombre');
+                            const rubricaCursoNombre = selectedOption.getAttribute('data-curso-nombre');
+                            
+                            // Si la rúbrica ya tiene materia asociada, pre-seleccionarla
+                            if (rubricaMateriaId) {
+                                document.getElementById('materia_aplicar').value = rubricaMateriaId;
+                                // Trigger change event para actualizar el curso
+                                document.getElementById('materia_aplicar').dispatchEvent(new Event('change'));
+                            }
+                        });
+                        
+                        document.getElementById('materia_aplicar').addEventListener('change', function() {
+                            const selectedOption = this.options[this.selectedIndex];
+                            const cursoNombre = selectedOption.getAttribute('data-curso-nombre');
+                            
+                            if (cursoNombre) {
+                                document.getElementById('curso_display').value = cursoNombre;
+                            } else {
+                                document.getElementById('curso_display').value = '';
+                            }
+                        });
+                        </script>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Curso (automático)</label>
+                                <input type="text" class="form-control" id="curso_display" readonly 
+                                       placeholder="Se asignará según la materia seleccionada"
+                                       style="background-color: #e9ecef;">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="titulo" class="form-label">Título de la Evaluación <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="titulo" name="titulo" required 
+                                       placeholder="Ej: Proyecto Final de Ciencias Naturales">
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="fecha_evaluacion" class="form-label">Fecha de Evaluación <span class="text-danger">*</span></label>
+                                <input type="date" class="form-control" id="fecha_evaluacion" name="fecha_evaluacion" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="periodo" class="form-label">Período <span class="text-danger">*</span></label>
+                                <select class="form-select" id="periodo" name="periodo" required>
+                                    <option value="">Seleccionar período...</option>
+                                    <option value="Primer Período">Primer Período</option>
+                                    <option value="Segundo Período">Segundo Período</option>
+                                    <option value="Tercer Período">Tercer Período</option>
+                                    <option value="Cuarto Período">Cuarto Período</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-12 mb-3">
+                                <label for="descripcion_eval" class="form-label">Descripción de la Actividad (Opcional)</label>
+                                <textarea class="form-control" id="descripcion_eval" name="descripcion" rows="3" 
+                                          placeholder="Descripción de la actividad o proyecto a evaluar..."></textarea>
+                            </div>
+                        </div>
+                        <div class="text-end">
+                            <button type="submit" class="btn btn-success btn-lg">
+                                <i class="fas fa-check-circle me-1"></i>Crear Evaluación y Evaluar Estudiantes
+                            </button>
+                        </div>
+                    </form>
+                    {% else %}
+                    <div class="alert alert-warning">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        No hay rúbricas disponibles para aplicar. Primero debes crear una rúbrica y agregar criterios en la pestaña "Mis Rúbricas".
+                    </div>
+                    <div class="text-center">
+                        <button class="btn btn-success" onclick="document.getElementById('rubricas-tab').click()">
+                            <i class="fas fa-plus-circle me-1"></i>Crear Mi Primera Rúbrica
+                        </button>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB 3: EVALUACIONES ACTIVAS -->
+        <div class="tab-pane fade {% if active_tab == 'evaluaciones' %}show active{% endif %}" 
+             id="evaluaciones" 
+             role="tabpanel">
+            
+            <!-- Lista de Evaluaciones -->
+            <div class="card shadow-sm">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0"><i class="fas fa-clipboard-check me-2"></i>Evaluaciones Registradas ({{ evaluaciones.count }})</h5>
+                </div>
+                <div class="card-body">
+                    {% if evaluaciones %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Título</th>
+                                    <th>Rúbrica</th>
+                                    <th>Materia</th>
+                                    <th>Curso</th>
+                                    <th>Fecha</th>
+                                    <th>Período</th>
+                                    <th class="text-center">Estudiantes</th>
+                                    <th>Estado</th>
+                                    <th>Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for eval in evaluaciones %}
+                                <tr>
+                                    <td><strong>{{ eval.titulo }}</strong></td>
+                                    <td>
+                                        <span class="badge bg-secondary">{{ eval.rubrica.nombre }}</span>
+                                        <br><small class="text-muted">{{ eval.rubrica.total_criterios }} criterios</small>
+                                    </td>
+                                    <td>{{ eval.materia.nombre }}</td>
+                                    <td>{{ eval.curso.nombre }}</td>
+                                    <td>{{ eval.fecha_evaluacion|date:"d/m/Y" }}</td>
+                                    <td>{{ eval.periodo }}</td>
+                                    <td class="text-center">
+                                        {% if eval.total_estudiantes > 0 %}
+                                        <span class="badge bg-success">{{ eval.total_estudiantes }}</span>
+                                        {% else %}
+                                        <span class="badge bg-warning">0</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if eval.activa %}
+                                        <span class="badge bg-success">Activa</span>
+                                        {% else %}
+                                        <span class="badge bg-secondary">Inactiva</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <div class="btn-group btn-group-sm" role="group">
+                                            <a href="{% url 'evaluar_con_rubrica' eval.id %}" 
+                                               class="btn btn-primary" title="Evaluar estudiantes">
+                                                <i class="fas fa-edit"></i>
+                                            </a>
+                                            <button type="button" class="btn btn-info" 
+                                                    data-bs-toggle="modal" 
+                                                    data-bs-target="#verModal{{ eval.id }}" 
+                                                    title="Ver detalles">
+                                                <i class="fas fa-eye"></i>
+                                            </button>
+                                            <a href="{% url 'imprimir_evaluacion_rubrica' eval.id %}" 
+                                               class="btn btn-secondary" 
+                                               title="Imprimir evaluación"
+                                               target="_blank">
+                                                <i class="fas fa-print"></i>
+                                            </a>
+                                            <button type="button" class="btn btn-danger" 
+                                                    data-bs-toggle="modal" 
+                                                    data-bs-target="#modalEliminarEvaluacion{{ eval.id }}"
+                                                    title="Eliminar evaluación">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                
+                                <!-- Modal Eliminar Evaluación -->
+                                <div class="modal fade" id="modalEliminarEvaluacion{{ eval.id }}" tabindex="-1" aria-hidden="true">
+                                    <div class="modal-dialog">
+                                        <div class="modal-content">
+                                            <div class="modal-header bg-danger text-white">
+                                                <h5 class="modal-title">
+                                                    <i class="fas fa-exclamation-triangle me-2"></i>Confirmar Eliminación
+                                                </h5>
+                                                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                                            </div>
+                                            <div class="modal-body">
+                                                <div class="alert alert-warning">
+                                                    <i class="fas fa-exclamation-circle me-2"></i>
+                                                    <strong>¡Atención!</strong> Esta acción no se puede deshacer.
+                                                </div>
+                                                <p>¿Estás seguro de que deseas eliminar la evaluación <strong>"{{ eval.titulo }}"</strong>?</p>
+                                                <ul class="mb-0">
+                                                    <li><strong>Rúbrica:</strong> {{ eval.rubrica.nombre }}</li>
+                                                    <li><strong>Materia:</strong> {{ eval.materia.nombre }}</li>
+                                                    <li><strong>Curso:</strong> {{ eval.curso.nombre }}</li>
+                                                    <li><strong>Fecha:</strong> {{ eval.fecha_evaluacion|date:"d/m/Y" }}</li>
+                                                    {% if eval.total_estudiantes > 0 %}
+                                                    <li class="text-danger"><strong>Advertencia:</strong> Se eliminarán las calificaciones de {{ eval.total_estudiantes }} estudiante(s)</li>
+                                                    {% endif %}
+                                                </ul>
+                                            </div>
+                                            <div class="modal-footer">
+                                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                                                    <i class="fas fa-times me-1"></i>Cancelar
+                                                </button>
+                                                <form method="post" style="display: inline;">
+                                                    {% csrf_token %}
+                                                    <input type="hidden" name="action" value="eliminar_evaluacion">
+                                                    <input type="hidden" name="evaluacion_id" value="{{ eval.id }}">
+                                                    <button type="submit" class="btn btn-danger">
+                                                        <i class="fas fa-trash me-1"></i>Sí, Eliminar
+                                                    </button>
+                                                </form>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Modal Ver Detalles -->
+                                <div class="modal fade" id="verModal{{ eval.id }}" tabindex="-1">
+                                    <div class="modal-dialog modal-lg">
+                                        <div class="modal-content">
+                                            <div class="modal-header bg-info text-white">
+                                                <h5 class="modal-title">
+                                                    <i class="fas fa-info-circle me-2"></i>{{ eval.titulo }}
+                                                </h5>
+                                                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                                            </div>
+                                            <div class="modal-body">
+                                                <div class="row mb-3">
+                                                    <div class="col-md-6">
+                                                        <strong>Rúbrica:</strong> {{ eval.rubrica.nombre }}<br>
+                                                        <strong>Tipo:</strong> {{ eval.rubrica.get_tipo_actividad_display }}<br>
+                                                        <strong>Criterios:</strong> {{ eval.rubrica.total_criterios }}<br>
+                                                        <strong>Puntaje Máximo:</strong> 100 puntos
+                                                    </div>
+                                                    <div class="col-md-6">
+                                                        <strong>Materia:</strong> {{ eval.materia.nombre }}<br>
+                                                        <strong>Curso:</strong> {{ eval.curso.nombre }}<br>
+                                                        <strong>Período:</strong> {{ eval.periodo }}<br>
+                                                        <strong>Fecha:</strong> {{ eval.fecha_evaluacion|date:"d/m/Y" }}
+                                                    </div>
+                                                </div>
+                                                {% if eval.descripcion %}
+                                                <div class="mb-3">
+                                                    <strong>Descripción:</strong>
+                                                    <p class="mt-2">{{ eval.descripcion }}</p>
+                                                </div>
+                                                {% endif %}
+                                                <div class="row">
+                                                    <div class="col-md-6">
+                                                        <div class="card bg-light">
+                                                            <div class="card-body text-center">
+                                                                <h5>{{ eval.total_estudiantes }}</h5>
+                                                                <small class="text-muted">Estudiantes Evaluados</small>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-md-6">
+                                                        <div class="card bg-light">
+                                                            <div class="card-body text-center">
+                                                                <h5>{{ eval.puntaje_promedio|floatformat:2 }}/100</h5>
+                                                                <small class="text-muted">Puntaje Promedio</small>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="modal-footer">
+                                                <button type="button" class="btn btn-danger" 
+                                                        data-bs-dismiss="modal"
+                                                        data-bs-toggle="modal" 
+                                                        data-bs-target="#modalEliminarEvaluacion{{ eval.id }}"
+                                                        title="Eliminar evaluación">
+                                                    <i class="fas fa-trash me-1"></i>Eliminar
+                                                </button>
+                                                <a href="{% url 'evaluar_con_rubrica' eval.id %}" class="btn btn-primary">
+                                                    <i class="fas fa-edit"></i> Evaluar Estudiantes
+                                                </a>
+                                                <a href="{% url 'imprimir_evaluacion_rubrica' eval.id %}" class="btn btn-secondary" target="_blank">
+                                                    <i class="fas fa-print"></i> Imprimir
+                                                </a>
+                                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="alert alert-info text-center">
+                        <i class="fas fa-clipboard-check fa-3x text-muted mb-3"></i>
+                        <p class="mb-2">No hay evaluaciones registradas.</p>
+                        <small class="text-muted">Crea una nueva evaluación en la pestaña "Aplicar a Estudiantes" para empezar a evaluar.</small>
+                        <div class="mt-3">
+                            <button class="btn btn-info" onclick="document.getElementById('aplicar-tab').click()">
+                                <i class="fas fa-plus-circle me-1"></i>Crear Evaluación
+                            </button>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
         </div>
     </div>
 </div>
@@ -299,8 +742,40 @@
         border-radius: 12px 12px 0 0 !important;
     }
     
-    .shadow-sm {
-        box-shadow: 0 0.125rem 0.5rem rgba(0, 0, 0, 0.075) !important;
+    .btn {
+        border-radius: 8px;
+    }
+    
+    .table {
+        font-size: 0.95rem;
+    }
+    
+    .nav-tabs {
+        border-bottom: 2px solid #000000;
+    }
+    
+    .nav-tabs .nav-link {
+        font-weight: 500;
+        color: #212529;
+        border-radius: 8px 8px 0 0;
+    }
+    
+    .nav-tabs .nav-link:hover {
+        border-color: #e9ecef #e9ecef #dee2e6;
+        color: #000;
+    }
+    
+    .nav-tabs .nav-link.active {
+        color: #198754;
+        font-weight: 600;
+        border-color: #dee2e6 #dee2e6 #fff;
+        background-color: #057d23;
+    }
+    
+    @media print {
+        .no-print {
+            display: none !important;
+        }
     }
 </style>
 {% endblock %}

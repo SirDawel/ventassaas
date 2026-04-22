@@ -37,4 +37,80 @@ def coordinador_required(view_func):
             return redirect('plataform')
         
         return view_func(request, *args, **kwargs)
-    return _wrapped_view 
+    return _wrapped_view
+
+
+# ================================================================
+# HELPERS PARA PERMISOS DE GESTIÓN DE NOTAS
+# ================================================================
+
+def puede_editar_notas(user, materia=None):
+    """
+    Determina si un usuario puede EDITAR notas (crear/modificar).
+    
+    Roles con permiso de edición:
+    - Administrador: Acceso total
+    - Secretaria: Acceso total
+    - Director: Acceso total
+    - Profesor: Solo sus propias materias
+    
+    Args:
+        user: Usuario autenticado
+        materia: Objeto Materia (opcional, requerido para Profesor)
+    
+    Returns:
+        bool: True si puede editar, False si no
+    """
+    if not user.is_authenticated:
+        return False
+    
+    # Superuser siempre puede
+    if user.is_superuser:
+        return True
+    
+    # Administrador, Secretaria, Director pueden editar todo
+    if user.rol in ['Administrador', 'Secretaria', 'Director']:
+        return True
+    
+    # Profesor solo puede editar sus propias materias
+    if user.rol == 'Profesor' and materia:
+        return materia.profesor == user
+    
+    return False
+
+
+def puede_ver_notas(user, materia=None):
+    """
+    Determina si un usuario puede VER notas (solo lectura).
+    
+    Roles con permiso de visualización:
+    - Administrador: Acceso total
+    - Secretaria: Acceso total
+    - Director: Acceso total
+    - Coordinador: Acceso total (solo lectura)
+    - Profesor: Solo sus propias materias
+    - Estudiante: Solo sus propias notas (requiere matrícula)
+    
+    Args:
+        user: Usuario autenticado
+        materia: Objeto Materia (opcional)
+    
+    Returns:
+        bool: True si puede ver, False si no
+    """
+    if not user.is_authenticated:
+        return False
+    
+    # Roles con acceso total de visualización
+    if user.is_superuser or user.rol in ['Administrador', 'Secretaria', 'Director', 'Coordinador']:
+        return True
+    
+    # Profesor puede ver sus materias
+    if user.rol == 'Profesor' and materia:
+        return materia.profesor == user
+    
+    # Estudiante puede ver sus propias notas (validar matrícula en vista)
+    if user.rol == 'Estudiante':
+        return True
+    
+    return False 

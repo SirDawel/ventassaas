@@ -478,29 +478,49 @@ class Matricula(models.Model):
     # ------------------------
     # Notas por competencia
     # ------------------------
-    com_p1 = models.FloatField(null=True, blank=True)
-    com_p2 = models.FloatField(null=True, blank=True)
-    com_p3 = models.FloatField(null=True, blank=True)
-    com_p4 = models.FloatField(null=True, blank=True)
-    com_rp = models.FloatField(null=True, blank=True)
+    # Competencia Comunicativa
+    com_p1 = models.FloatField(null=True, blank=True, verbose_name="Com P1")
+    com_rp1 = models.FloatField(null=True, blank=True, verbose_name="Com RP1")
+    com_p2 = models.FloatField(null=True, blank=True, verbose_name="Com P2")
+    com_rp2 = models.FloatField(null=True, blank=True, verbose_name="Com RP2")
+    com_p3 = models.FloatField(null=True, blank=True, verbose_name="Com P3")
+    com_rp3 = models.FloatField(null=True, blank=True, verbose_name="Com RP3")
+    com_p4 = models.FloatField(null=True, blank=True, verbose_name="Com P4")
+    com_rp4 = models.FloatField(null=True, blank=True, verbose_name="Com RP4")
+    com_rp = models.FloatField(null=True, blank=True, verbose_name="Com RP Final")
 
-    log_p1 = models.FloatField(null=True, blank=True)
-    log_p2 = models.FloatField(null=True, blank=True)
-    log_p3 = models.FloatField(null=True, blank=True)
-    log_p4 = models.FloatField(null=True, blank=True)
-    log_rp = models.FloatField(null=True, blank=True)
+    # Competencia Lógico-Matemática
+    log_p1 = models.FloatField(null=True, blank=True, verbose_name="Mat P1")
+    log_rp1 = models.FloatField(null=True, blank=True, verbose_name="Mat RP1")
+    log_p2 = models.FloatField(null=True, blank=True, verbose_name="Mat P2")
+    log_rp2 = models.FloatField(null=True, blank=True, verbose_name="Mat RP2")
+    log_p3 = models.FloatField(null=True, blank=True, verbose_name="Mat P3")
+    log_rp3 = models.FloatField(null=True, blank=True, verbose_name="Mat RP3")
+    log_p4 = models.FloatField(null=True, blank=True, verbose_name="Mat P4")
+    log_rp4 = models.FloatField(null=True, blank=True, verbose_name="Mat RP4")
+    log_rp = models.FloatField(null=True, blank=True, verbose_name="Mat RP Final")
 
-    cie_p1 = models.FloatField(null=True, blank=True)
-    cie_p2 = models.FloatField(null=True, blank=True)
-    cie_p3 = models.FloatField(null=True, blank=True)
-    cie_p4 = models.FloatField(null=True, blank=True)
-    cie_rp = models.FloatField(null=True, blank=True)
+    # Competencia Científica
+    cie_p1 = models.FloatField(null=True, blank=True, verbose_name="Cie P1")
+    cie_rp1 = models.FloatField(null=True, blank=True, verbose_name="Cie RP1")
+    cie_p2 = models.FloatField(null=True, blank=True, verbose_name="Cie P2")
+    cie_rp2 = models.FloatField(null=True, blank=True, verbose_name="Cie RP2")
+    cie_p3 = models.FloatField(null=True, blank=True, verbose_name="Cie P3")
+    cie_rp3 = models.FloatField(null=True, blank=True, verbose_name="Cie RP3")
+    cie_p4 = models.FloatField(null=True, blank=True, verbose_name="Cie P4")
+    cie_rp4 = models.FloatField(null=True, blank=True, verbose_name="Cie RP4")
+    cie_rp = models.FloatField(null=True, blank=True, verbose_name="Cie RP Final")
 
-    eti_p1 = models.FloatField(null=True, blank=True)
-    eti_p2 = models.FloatField(null=True, blank=True)
-    eti_p3 = models.FloatField(null=True, blank=True)
-    eti_p4 = models.FloatField(null=True, blank=True)
-    eti_rp = models.FloatField(null=True, blank=True)
+    # Competencia Ética y Ciudadana
+    eti_p1 = models.FloatField(null=True, blank=True, verbose_name="Eti P1")
+    eti_rp1 = models.FloatField(null=True, blank=True, verbose_name="Eti RP1")
+    eti_p2 = models.FloatField(null=True, blank=True, verbose_name="Eti P2")
+    eti_rp2 = models.FloatField(null=True, blank=True, verbose_name="Eti RP2")
+    eti_p3 = models.FloatField(null=True, blank=True, verbose_name="Eti P3")
+    eti_rp3 = models.FloatField(null=True, blank=True, verbose_name="Eti RP3")
+    eti_p4 = models.FloatField(null=True, blank=True, verbose_name="Eti P4")
+    eti_rp4 = models.FloatField(null=True, blank=True, verbose_name="Eti RP4")
+    eti_rp = models.FloatField(null=True, blank=True, verbose_name="Eti RP Final")
 
     # ------------------------
     # Exámenes finales
@@ -528,6 +548,15 @@ class Matricula(models.Model):
     # ------------------------
     # Función interna con redondeo correcto
     # ------------------------
+    def _to_float_safe(self, valor):
+        """Convierte un valor a float de forma segura, retorna None si no es válido"""
+        if valor is None:
+            return None
+        try:
+            return float(valor)
+        except (ValueError, TypeError):
+            return None
+    
     def _calc_promedio(self, notas):
         """Calcula el promedio de una lista de notas usando redondeo matemático estándar"""
         from .utils_notas import redondear_promedio
@@ -538,47 +567,87 @@ class Matricula(models.Model):
     # ------------------------
     @property
     def prom_comunicativa(self):
-        prom = self._calc_promedio([self.com_p1, self.com_p2, self.com_p3, self.com_p4])
-        if prom is None:
-            return None
-        # Si tiene recuperación y el promedio es menor a 70, usar la recuperación
-        if prom < 70 and self.com_rp:
-            from .utils_notas import redondear_nota
-            return redondear_nota(float(self.com_rp), decimales=2)
-        return prom
+        # Usar recuperación por período si la nota es menor a 70
+        p1_val = self._to_float_safe(self.com_p1)
+        rp1_val = self._to_float_safe(self.com_rp1)
+        p1 = rp1_val if (p1_val is not None and p1_val < 70 and rp1_val is not None) else p1_val
+        
+        p2_val = self._to_float_safe(self.com_p2)
+        rp2_val = self._to_float_safe(self.com_rp2)
+        p2 = rp2_val if (p2_val is not None and p2_val < 70 and rp2_val is not None) else p2_val
+        
+        p3_val = self._to_float_safe(self.com_p3)
+        rp3_val = self._to_float_safe(self.com_rp3)
+        p3 = rp3_val if (p3_val is not None and p3_val < 70 and rp3_val is not None) else p3_val
+        
+        p4_val = self._to_float_safe(self.com_p4)
+        rp4_val = self._to_float_safe(self.com_rp4)
+        p4 = rp4_val if (p4_val is not None and p4_val < 70 and rp4_val is not None) else p4_val
+        
+        return self._calc_promedio([p1, p2, p3, p4])
 
     @property
     def prom_logico(self):
-        prom = self._calc_promedio([self.log_p1, self.log_p2, self.log_p3, self.log_p4])
-        if prom is None:
-            return None
-        # Si tiene recuperación y el promedio es menor a 70, usar la recuperación
-        if prom < 70 and self.log_rp:
-            from .utils_notas import redondear_nota
-            return redondear_nota(float(self.log_rp), decimales=2)
-        return prom
+        # Usar recuperación por período si la nota es menor a 70
+        p1_val = self._to_float_safe(self.log_p1)
+        rp1_val = self._to_float_safe(self.log_rp1)
+        p1 = rp1_val if (p1_val is not None and p1_val < 70 and rp1_val is not None) else p1_val
+        
+        p2_val = self._to_float_safe(self.log_p2)
+        rp2_val = self._to_float_safe(self.log_rp2)
+        p2 = rp2_val if (p2_val is not None and p2_val < 70 and rp2_val is not None) else p2_val
+        
+        p3_val = self._to_float_safe(self.log_p3)
+        rp3_val = self._to_float_safe(self.log_rp3)
+        p3 = rp3_val if (p3_val is not None and p3_val < 70 and rp3_val is not None) else p3_val
+        
+        p4_val = self._to_float_safe(self.log_p4)
+        rp4_val = self._to_float_safe(self.log_rp4)
+        p4 = rp4_val if (p4_val is not None and p4_val < 70 and rp4_val is not None) else p4_val
+        
+        return self._calc_promedio([p1, p2, p3, p4])
 
     @property
     def prom_cientifica(self):
-        prom = self._calc_promedio([self.cie_p1, self.cie_p2, self.cie_p3, self.cie_p4])
-        if prom is None:
-            return None
-        # Si tiene recuperación y el promedio es menor a 70, usar la recuperación
-        if prom < 70 and self.cie_rp:
-            from .utils_notas import redondear_nota
-            return redondear_nota(float(self.cie_rp), decimales=2)
-        return prom
+        # Usar recuperación por período si la nota es menor a 70
+        p1_val = self._to_float_safe(self.cie_p1)
+        rp1_val = self._to_float_safe(self.cie_rp1)
+        p1 = rp1_val if (p1_val is not None and p1_val < 70 and rp1_val is not None) else p1_val
+        
+        p2_val = self._to_float_safe(self.cie_p2)
+        rp2_val = self._to_float_safe(self.cie_rp2)
+        p2 = rp2_val if (p2_val is not None and p2_val < 70 and rp2_val is not None) else p2_val
+        
+        p3_val = self._to_float_safe(self.cie_p3)
+        rp3_val = self._to_float_safe(self.cie_rp3)
+        p3 = rp3_val if (p3_val is not None and p3_val < 70 and rp3_val is not None) else p3_val
+        
+        p4_val = self._to_float_safe(self.cie_p4)
+        rp4_val = self._to_float_safe(self.cie_rp4)
+        p4 = rp4_val if (p4_val is not None and p4_val < 70 and rp4_val is not None) else p4_val
+        
+        return self._calc_promedio([p1, p2, p3, p4])
 
     @property
     def prom_etica(self):
-        prom = self._calc_promedio([self.eti_p1, self.eti_p2, self.eti_p3, self.eti_p4])
-        if prom is None:
-            return None
-        # Si tiene recuperación y el promedio es menor a 70, usar la recuperación
-        if prom < 70 and self.eti_rp:
-            from .utils_notas import redondear_nota
-            return redondear_nota(float(self.eti_rp), decimales=2)
-        return prom
+        # Usar recuperación por período si la nota es menor a 70
+        p1_val = self._to_float_safe(self.eti_p1)
+        rp1_val = self._to_float_safe(self.eti_rp1)
+        p1 = rp1_val if (p1_val is not None and p1_val < 70 and rp1_val is not None) else p1_val
+        
+        p2_val = self._to_float_safe(self.eti_p2)
+        rp2_val = self._to_float_safe(self.eti_rp2)
+        p2 = rp2_val if (p2_val is not None and p2_val < 70 and rp2_val is not None) else p2_val
+        
+        p3_val = self._to_float_safe(self.eti_p3)
+        rp3_val = self._to_float_safe(self.eti_rp3)
+        p3 = rp3_val if (p3_val is not None and p3_val < 70 and rp3_val is not None) else p3_val
+        
+        p4_val = self._to_float_safe(self.eti_p4)
+        rp4_val = self._to_float_safe(self.eti_rp4)
+        p4 = rp4_val if (p4_val is not None and p4_val < 70 and rp4_val is not None) else p4_val
+        
+        return self._calc_promedio([p1, p2, p3, p4])
 
     # ------------------------
     # Promedio final
@@ -627,11 +696,119 @@ class Matricula(models.Model):
     
     @property
     def estado(self):
+        """
+        Determina el estado del estudiante considerando exámenes especiales.
+        Orden de prioridad:
+        1. Examen Especial (reemplaza todo)
+        2. Examen Extraordinario
+        3. Examen Completivo
+        4. Promedio Final regular
+        """
+        # 1. Si tiene examen especial, ese es el que cuenta
+        if self.ex_esp is not None:
+            calificacion_final = self.calificacion_especial_final
+            if calificacion_final is not None:
+                if calificacion_final >= 70:
+                    return "Aprobado"
+                else:
+                    return "Reprobado"
+        
+        # 2. Si tiene examen extraordinario, usar ese
+        if self.ex_ext is not None:
+            calificacion_final = self.calificacion_extraordinario_final
+            if calificacion_final is not None:
+                if calificacion_final >= 70:
+                    return "Aprobado"
+                else:
+                    return "Reprobado"
+        
+        # 3. Si tiene examen completivo, usar ese
+        if self.ex_com is not None:
+            calificacion_final = self.calificacion_completiva_final
+            if calificacion_final is not None:
+                if calificacion_final >= 70:
+                    return "Aprobado"
+                else:
+                    return "Reprobado"
+        
+        # 4. Si no hay exámenes especiales, usar promedio final regular
         if self.promedio_final is None:
             return "En proceso"
         if self.promedio_final >= 70:
             return "Aprobado"
         return "Reprobado"
+
+    @property
+    def nota_final_efectiva(self):
+        """
+        Retorna la nota final que se usa para determinar el estado.
+        Considera exámenes especiales en orden de prioridad.
+        """
+        # 1. Examen Especial tiene máxima prioridad
+        if self.ex_esp is not None and self.calificacion_especial_final is not None:
+            return self.calificacion_especial_final
+        
+        # 2. Examen Extraordinario
+        if self.ex_ext is not None and self.calificacion_extraordinario_final is not None:
+            return self.calificacion_extraordinario_final
+        
+        # 3. Examen Completivo
+        if self.ex_com is not None and self.calificacion_completiva_final is not None:
+            return self.calificacion_completiva_final
+        
+        # 4. Promedio Final regular
+        return self.promedio_final
+    
+    @property
+    def tipo_calificacion(self):
+        """
+        Retorna el tipo de calificación que se está usando para la nota final.
+        """
+        if self.ex_esp is not None:
+            return "Examen Especial"
+        if self.ex_ext is not None:
+            return "Examen Extraordinario"
+        if self.ex_com is not None:
+            return "Examen Completivo"
+        return "Promedio Regular"
+
+    def clean(self):
+        """Validar que todas las notas estén entre 0 y 100"""
+        from django.core.exceptions import ValidationError
+        
+        # Lista de todos los campos de notas
+        campos_notas = [
+            'com_p1', 'com_rp1', 'com_p2', 'com_rp2', 'com_p3', 'com_rp3', 'com_p4', 'com_rp4', 'com_rp',
+            'log_p1', 'log_rp1', 'log_p2', 'log_rp2', 'log_p3', 'log_rp3', 'log_p4', 'log_rp4', 'log_rp',
+            'cie_p1', 'cie_rp1', 'cie_p2', 'cie_rp2', 'cie_p3', 'cie_rp3', 'cie_p4', 'cie_rp4', 'cie_rp',
+            'eti_p1', 'eti_rp1', 'eti_p2', 'eti_rp2', 'eti_p3', 'eti_rp3', 'eti_p4', 'eti_rp4', 'eti_rp',
+            'ex_com', 'ex_ext', 'ex_esp'
+        ]
+        
+        # Validar campos de notas por competencias (0-100)
+        for campo in campos_notas:
+            valor = getattr(self, campo)
+            if valor is not None:
+                if valor < 0 or valor > 100:
+                    raise ValidationError(f"La nota '{campo}' debe estar entre 0 y 100. Valor actual: {valor}")
+        
+        # Validar RAs (0-10, ya que cada uno vale 10%)
+        campos_ra = ['ra_1', 'ra_2', 'ra_3', 'ra_4', 'ra_5', 'ra_6', 'ra_7', 'ra_8', 'ra_9', 'ra_10']
+        for campo in campos_ra:
+            valor = getattr(self, campo)
+            if valor is not None:
+                if valor < 0 or valor > 10:
+                    raise ValidationError(f"El {campo.upper()} debe estar entre 0 y 10. Valor actual: {valor}")
+
+    def save(self, *args, **kwargs):
+        """Sobrescribir save para ejecutar validación solo cuando sea necesario"""
+        # Permitir skip de validación para cálculos automáticos
+        skip_validation = kwargs.pop('skip_validation', False)
+        
+        if not skip_validation:
+            self.clean()
+        
+        super().save(*args, **kwargs)
 
     # -------- META CORRECTA -------
     class Meta:
@@ -3308,7 +3485,10 @@ class Rubrica(models.Model):
         'Materia',
         on_delete=models.CASCADE,
         related_name='rubricas',
-        verbose_name="Materia/Asignatura"
+        verbose_name="Materia/Asignatura",
+        null=True,
+        blank=True,
+        help_text="Materia asociada (opcional para rúbricas genéricas)"
     )
     
     nombre = models.CharField(
@@ -3360,7 +3540,9 @@ class Rubrica(models.Model):
         ordering = ['-fecha_creacion']
     
     def __str__(self):
-        return f"{self.nombre} - {self.materia.nombre}"
+        if self.materia:
+            return f"{self.nombre} - {self.materia.nombre}"
+        return f"{self.nombre} (Genérica)"
     
     def total_criterios(self):
         """Retorna el número total de criterios"""
@@ -3373,15 +3555,14 @@ class Rubrica(models.Model):
         return total if total else 0
     
     def puntaje_maximo(self):
-        """Calcula el puntaje máximo posible con esta rúbrica"""
-        # Cada criterio contribuye: puntaje_maximo_nivel (5.0) × ponderación
-        # Luego se normaliza a escala de 10
-        total = 0
-        for criterio in self.criterios.all():
-            # Puntaje máximo del criterio (nivel Excelente = 5.0)
-            total += 5.0 * (float(criterio.ponderacion) / 100)
-        # Normalizar a escala de 10
-        return round(total * 2, 2) if total > 0 else 0
+        """Calcula el puntaje máximo posible con esta rúbrica (escala 0-100)"""
+        # Si todos los criterios tienen nivel Excelente (5), el puntaje máximo es
+        # la suma de las ponderaciones (que debería ser 100)
+        # Fórmula por criterio: (5/5) × ponderación = 1 × ponderación
+        # Total: suma de todas las ponderaciones
+        # Ejemplo: 5 criterios al 20% = 20+20+20+20+20 = 100 puntos
+        total_ponderacion = self.total_ponderacion()
+        return round(float(total_ponderacion), 2) if total_ponderacion > 0 else 0
     
     def ponderacion_valida(self):
         """Verifica si las ponderaciones suman 100%"""
@@ -3566,7 +3747,7 @@ class EvaluacionRubrica(models.Model):
         return self.calificaciones.values('estudiante').distinct().count()
     
     def puntaje_promedio(self):
-        """Calcula el puntaje promedio de todos los estudiantes (escala 0-10)"""
+        """Calcula el puntaje promedio de todos los estudiantes (escala 0-100)"""
         from django.db.models import Sum, Count
         estudiantes_puntajes = {}
         
@@ -3640,12 +3821,16 @@ class CalificacionCriterio(models.Model):
         return f"{self.estudiante} - {self.criterio.nombre}: {self.nivel_otorgado.get_nivel_display() if self.nivel_otorgado else 'Sin calificar'}"
     
     def puntaje_ponderado(self):
-        """Calcula el puntaje ponderado para este criterio (escala 0-10)"""
+        """Calcula el puntaje ponderado para este criterio (escala 0-100)"""
         if not self.nivel_otorgado:
             return 0
-        ponderacion_decimal = float(self.criterio.ponderacion) / 100
-        # nivel.puntaje (1-5) × ponderación × 2 = escala 0-10
-        return round(float(self.nivel_otorgado.puntaje) * ponderacion_decimal * 2, 2)
+        # Fórmula: (nivel / 5) × ponderación = puntaje del criterio
+        # El nivel máximo es 5, por lo que normalizamos dividiéndolo entre 5
+        # Ejemplo: nivel 5 con 20% = (5/5) × 20 = 1 × 20 = 20 puntos
+        # Ejemplo: nivel 3 con 20% = (3/5) × 20 = 0.6 × 20 = 12 puntos
+        # Si hay 5 criterios al 20% todos en nivel 5: 20+20+20+20+20 = 100 puntos
+        nivel_normalizado = float(self.nivel_otorgado.puntaje) / 5.0
+        return round(nivel_normalizado * float(self.criterio.ponderacion), 2)
 
 
 # ===========================
@@ -4192,3 +4377,173 @@ Sistema de Seguridad - Escuela Online
         return cls.objects.filter(
             estado__in=['PENDIENTE', 'REVISANDO']
         ).order_by('-nivel_prioridad', '-fecha_alerta')
+
+
+# ============================================
+# MODELOS PARA SISTEMA DE PAGOS POS FÍSICOS
+# ============================================
+
+class TransaccionPOS(models.Model):
+    """
+    Registro de transacciones recibidas de dispositivos POS físicos
+    (Verifone, PAX, etc.) conectados a Cardnet, Azul u otros proveedores
+    """
+    ESTADO_CHOICES = [
+        ('procesado', 'Procesado'),
+        ('pendiente_revision', 'Pendiente de Revisión'),
+        ('sin_factura', 'Sin Factura Asociada'),
+        ('error', 'Error'),
+        ('rechazado', 'Rechazado'),
+    ]
+    
+    PROVEEDOR_CHOICES = [
+        ('cardnet', 'Cardnet'),
+        ('azul', 'Azul'),
+        ('otro', 'Otro'),
+    ]
+    
+    # Identificación de la transacción
+    transaction_id = models.CharField(
+        max_length=100,
+        unique=True,
+        help_text='ID único de la transacción en el proveedor'
+    )
+    proveedor = models.CharField(
+        max_length=20,
+        choices=PROVEEDOR_CHOICES,
+        default='cardnet'
+    )
+    terminal_id = models.CharField(
+        max_length=50,
+        help_text='ID del terminal POS que procesó el pago'
+    )
+    
+    # Datos del estudiante (si se pudo identificar)
+    estudiante = models.ForeignKey(
+        CustomUser,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='transacciones_pos',
+        limit_choices_to={'rol': 'Estudiante'}
+    )
+    
+    # Datos de la transacción
+    monto = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        help_text='Monto total de la transacción'
+    )
+    referencia = models.CharField(
+        max_length=100,
+        blank=True,
+        null=True,
+        help_text='Número de referencia de la transacción'
+    )
+    estado = models.CharField(
+        max_length=30,
+        choices=ESTADO_CHOICES,
+        default='procesado'
+    )
+    
+    # Datos de la tarjeta (solo últimos 4 dígitos)
+    tarjeta_ultimos_4 = models.CharField(
+        max_length=4,
+        blank=True,
+        null=True
+    )
+    tipo_tarjeta = models.CharField(
+        max_length=20,
+        blank=True,
+        null=True,
+        help_text='Visa, Mastercard, etc.'
+    )
+    
+    # Fechas
+    fecha_transaccion = models.DateTimeField(
+        auto_now_add=True,
+        help_text='Fecha en que se recibió la notificación'
+    )
+    fecha_procesamiento = models.DateTimeField(
+        auto_now=True,
+        help_text='Última actualización'
+    )
+    
+    # Datos adicionales
+    datos_webhook = models.JSONField(
+        blank=True,
+        null=True,
+        help_text='Datos completos recibidos del webhook'
+    )
+    observaciones = models.TextField(
+        blank=True,
+        null=True
+    )
+    
+    # Factura asociada (si aplica)
+    factura_pagada = models.ForeignKey(
+        'Factura',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='transacciones_pos'
+    )
+    
+    class Meta:
+        verbose_name = "Transacción POS"
+        verbose_name_plural = "Transacciones POS"
+        ordering = ['-fecha_transaccion']
+        indexes = [
+            models.Index(fields=['transaction_id']),
+            models.Index(fields=['proveedor', 'terminal_id']),
+            models.Index(fields=['estudiante', 'fecha_transaccion']),
+            models.Index(fields=['estado']),
+        ]
+    
+    def __str__(self):
+        estudiante_info = self.estudiante.get_full_name() if self.estudiante else 'Sin identificar'
+        return f"{self.transaction_id} - {estudiante_info} - RD${self.monto}"
+
+
+class TerminalEstudiante(models.Model):
+    """
+    Asociación entre terminales POS y estudiantes
+    Permite identificar automáticamente al estudiante cuando paga en un terminal específico
+    """
+    terminal_id = models.CharField(
+        max_length=50,
+        unique=True,
+        help_text='ID del terminal POS'
+    )
+    estudiante = models.ForeignKey(
+        CustomUser,
+        on_delete=models.CASCADE,
+        related_name='terminales_asignados',
+        limit_choices_to={'rol': 'Estudiante'}
+    )
+    proveedor = models.CharField(
+        max_length=20,
+        choices=[
+            ('cardnet', 'Cardnet'),
+            ('azul', 'Azul'),
+            ('otro', 'Otro'),
+        ],
+        default='cardnet'
+    )
+    activo = models.BooleanField(
+        default=True,
+        help_text='Si está activo, los pagos en este terminal se asociarán automáticamente al estudiante'
+    )
+    fecha_asignacion = models.DateTimeField(auto_now_add=True)
+    observaciones = models.TextField(blank=True, null=True)
+    
+    class Meta:
+        verbose_name = "Terminal-Estudiante"
+        verbose_name_plural = "Terminales-Estudiantes"
+        ordering = ['terminal_id']
+        indexes = [
+            models.Index(fields=['terminal_id', 'activo']),
+        ]
+    
+    def __str__(self):
+        return f"Terminal {self.terminal_id} → {self.estudiante.get_full_name()}"

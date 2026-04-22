@@ -1,4 +1,5 @@
 {% extends 'website/base.html' %}
+{% load l10n %}
 
 {% block title %}{{ titulo }}{% endblock %}
 
@@ -27,7 +28,7 @@
                                     <span class="badge bg-primary">{{ concepto.get_tipo_display }}</span>
                                 </p>
                                 <p class="mb-1"><strong>Nombre:</strong> {{ concepto.nombre }}</p>
-                                <p class="mb-0"><strong>Monto:</strong> RD$ {{ concepto.monto|unlocalize|floatformat:2 }}</p>
+                                <p class="mb-0"><strong>Monto:</strong> RD$ {{ concepto.monto|floatformat:2 }}</p>
                             </div>
                         </div>
                     </div>

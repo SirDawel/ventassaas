@@ -15,7 +15,7 @@ Años Escolares
                         <i class="fas fa-users me-2"></i>Lista de Años Escolares
                     </h2>
                 </div>
-                {% if user.is_superuser or user.rol == 'Administrador' or user.rol == 'Director' or user.rol == 'Secretaria' %}
+                {% if user.is_superuser or user.rol == 'Administrador' or user.rol == 'Director' %}
                 <div>
                     <a href="{% url 'agregar_anho_escolar' %}" class="btn btn-light">
                         <i class="fas fa-plus-circle me-2"></i>Nuevo Año Escolar
@@ -77,7 +77,7 @@ Años Escolares
                     <a href="{% url 'lista_cursos' %}?anho={{ anho.id }}" class="btn-anho-action">
                         <i class="fas fa-book me-1"></i>Ver Cursos
                     </a>
-                    {% if user.is_superuser or user.rol == 'Administrador' or user.rol == 'Director' or user.rol == 'Secretaria' %}
+                    {% if user.is_superuser or user.rol == 'Administrador' or user.rol == 'Director' %}
                     <div class="anho-actions">
                         <a href="{% url 'editar_anho_escolar' anho.id %}" class="btn-icon" title="Editar">
                             <i class="fas fa-edit"></i>
@@ -96,7 +96,7 @@ Años Escolares
                 <i class="fas fa-calendar-times fa-4x mb-3"></i>
                 <h5>No hay años escolares registrados</h5>
                 <p>Comienza agregando un nuevo año escolar para gestionar tus períodos académicos.</p>
-                {% if user.is_superuser or user.rol == 'Administrador' or user.rol == 'Director' or user.rol == 'Secretaria' %}
+                {% if user.is_superuser or user.rol == 'Administrador' or user.rol == 'Director' %}
                 <a href="{% url 'agregar_anho_escolar' %}" class="btn btn-primary">
                     <i class="fas fa-plus-circle me-2"></i>Agregar Primer Año Escolar
                 </a>
@@ -138,9 +138,9 @@ Años Escolares
 </div>
 
 <style>
-/* ===== HEADER AZUL ===== */
+/* ===== HEADER TURQUESA ===== */
 .page-header-blue {
-    background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+    background: linear-gradient(135deg, #17A2B8 0%, #138496 100%);
     padding: 1.5rem 0;
     margin-bottom: 2rem;
     box-shadow: 0 4px 6px rgba(0,0,0,0.1);
@@ -155,7 +155,7 @@ Años Escolares
 
 .btn-light {
     background: white;
-    color: #3b82f6;
+    color: #17A2B8;
     border: none;
     border-radius: 8px;
     font-weight: 600;
@@ -166,7 +166,7 @@ Años Escolares
 
 .btn-light:hover {
     background: #f8fafc;
-    color: #2563eb;
+    color: #138496;
     transform: translateY(-2px);
     box-shadow: 0 4px 8px rgba(0,0,0,0.15);
 }
@@ -175,7 +175,7 @@ Años Escolares
 .dashboard-title {
     font-weight: 600;
     font-size: 1.75rem;
-    color: #2c3e50;
+    color: #424242;
 }
 
 .container-fluid.p-0 {
@@ -187,7 +187,7 @@ Años Escolares
 }
 
 body {
-    background-color: #f5f7fa;
+    background-color: #f5f5f5;
 }
 
 /* ===== BOTONES PRINCIPALES ===== */
@@ -202,12 +202,14 @@ body {
 }
 
 .btn-primary {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: #20B2AA;
+    color: white;
 }
 
 .btn-primary:hover {
+    background: #1A9891;
     transform: translateY(-2px);
-    box-shadow: 0 4px 8px rgba(102, 126, 234, 0.4);
+    box-shadow: 0 4px 8px rgba(32, 178, 170, 0.4);
 }
 
 /* ===== ALERTAS ===== */
@@ -228,6 +230,7 @@ body {
     height: 100%;
     display: flex;
     flex-direction: column;
+    border: 1px solid #e0e0e0;
 }
 
 .anho-card:hover {
@@ -236,11 +239,11 @@ body {
 }
 
 .bg-gradient-success {
-    background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+    background: linear-gradient(135deg, #20B2AA 0%, #26A69A 100%);
 }
 
 .bg-gradient-secondary {
-    background: linear-gradient(135deg, #636363 0%, #a2ab9d 100%);
+    background: linear-gradient(135deg, #95A5A6 0%, #7F8C8D 100%);
 }
 
 .anho-card-header {
@@ -253,7 +256,7 @@ body {
     width: 80px;
     height: 80px;
     margin: 0 auto;
-    background: rgba(255, 255, 255, 0.2);
+    background: rgba(255, 255, 255, 0.25);
     border-radius: 12px;
     display: flex;
     align-items: center;
@@ -275,13 +278,13 @@ body {
 .anho-title {
     font-size: 1.5rem;
     font-weight: 700;
-    color: #2c3e50;
+    color: #424242;
     margin-bottom: 1rem;
 }
 
 .anho-dates {
     font-size: 0.85rem;
-    color: #64748b;
+    color: #757575;
     margin-bottom: 1rem;
     line-height: 1.8;
 }
@@ -299,19 +302,19 @@ body {
 }
 
 .status-badge.active {
-    background: #d4edda;
-    color: #155724;
+    background: #C8E6C9;
+    color: #2E7D32;
 }
 
 .status-badge.inactive {
-    background: #f8d7da;
-    color: #721c24;
+    background: #FFCDD2;
+    color: #C62828;
 }
 
 .anho-card-footer {
     padding: 1rem 1.5rem;
-    background: #f8fafc;
-    border-top: 1px solid #e2e8f0;
+    background: #fafafa;
+    border-top: 1px solid #e0e0e0;
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -321,7 +324,7 @@ body {
     flex: 1;
     text-align: center;
     padding: 0.5rem 1rem;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: #17A2B8;
     color: white;
     border-radius: 6px;
     text-decoration: none;
@@ -332,6 +335,7 @@ body {
 }
 
 .btn-anho-action:hover {
+    background: #138496;
     transform: scale(1.05);
     color: white;
 }
@@ -347,7 +351,7 @@ body {
     display: flex;
     align-items: center;
     justify-content: center;
-    background: #fbbf24;
+    background: #F39C12;
     color: white;
     border-radius: 6px;
     text-decoration: none;
@@ -355,12 +359,17 @@ body {
 }
 
 .btn-icon:hover {
+    background: #E67E22;
     transform: scale(1.1);
     color: white;
 }
 
 .btn-danger-icon {
-    background: #ef4444;
+    background: #E74C3C;
+}
+
+.btn-danger-icon:hover {
+    background: #C0392B;
 }
 
 /* ===== ESTADO VACÍO ===== */
@@ -370,20 +379,21 @@ body {
     padding: 3rem;
     text-align: center;
     box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    border: 1px solid #e0e0e0;
 }
 
 .empty-state-card i {
-    color: #cbd5e1;
+    color: #BDBDBD;
 }
 
 .empty-state-card h5 {
-    color: #64748b;
+    color: #757575;
     font-weight: 600;
     margin-top: 1rem;
 }
 
 .empty-state-card p {
-    color: #94a3b8;
+    color: #9E9E9E;
     margin-bottom: 1.5rem;
 }
 
@@ -394,25 +404,25 @@ body {
     padding: 1.5rem;
     text-align: center;
     box-shadow: 0 2px 4px rgba(0,0,0,0.08);
-    border-left: 4px solid #e2e8f0;
+    border-left: 4px solid #e0e0e0;
 }
 
 .summary-stat.summary-active {
-    border-left-color: #38ef7d;
+    border-left-color: #20B2AA;
 }
 
 .summary-stat.summary-inactive {
-    border-left-color: #ef4444;
+    border-left-color: #E74C3C;
 }
 
 .summary-stat.summary-general {
-    border-left-color: #667eea;
+    border-left-color: #17A2B8;
 }
 
 .summary-label {
     font-size: 0.85rem;
     font-weight: 600;
-    color: #64748b;
+    color: #757575;
     text-transform: uppercase;
     letter-spacing: 0.5px;
     margin-bottom: 0.5rem;
@@ -421,7 +431,7 @@ body {
 .summary-value {
     font-size: 2rem;
     font-weight: 700;
-    color: #2c3e50;
+    color: #424242;
 }
 
 /* ===== RESPONSIVE ===== */

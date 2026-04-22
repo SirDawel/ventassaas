@@ -9,6 +9,7 @@ from django.db.models import Q, Count
 from django.http import HttpResponse
 from django.template.loader import get_template
 from django.conf import settings
+from django.urls import reverse
 from xhtml2pdf import pisa
 from datetime import date
 import os
@@ -186,57 +187,226 @@ def evaluar_diagnostica(request, evaluacion_id):
 @login_required
 def rubricas(request):
     """
-    Vista para gestionar rúbricas de evaluación
-    Instrumento que define criterios y niveles de desempeño
+    Vista unificada para gestionar rúbricas y evaluaciones
+    Incluye: crear rúbricas, gestionar criterios, aplicar a estudiantes y ver evaluaciones
     """
     # Verificar permisos
     if request.user.rol not in ['Profesor', 'Director', 'Administrador', 'Coordinador']:
         messages.error(request, 'No tienes permiso para acceder a esta página.')
         return redirect('plataform')
     
-    materias = Materia.objects.filter(profesor=request.user)
+    # Obtener año escolar activo
+    anho_activo = AnhoEscolar.objects.filter(activo=True).first()
+    if not anho_activo:
+        messages.warning(request, 'No hay un año escolar activo.')
     
-    # Procesar formulario de creación
+    materias = Materia.objects.none()
+    estudiantes_por_materia = {}
+    if anho_activo:
+        if request.user.rol == 'Profesor':
+            materias = Materia.objects.filter(profesor=request.user, curso__anho_escolar=anho_activo)
+        elif request.user.rol == 'Estudiante':
+            materias = Materia.objects.filter(matriculas__estudiante=request.user, curso__anho_escolar=anho_activo).distinct()
+        else:
+            materias = Materia.objects.filter(curso__anho_escolar=anho_activo)
+        # Diccionario de estudiantes por materia
+        for materia in materias:
+            estudiantes = CustomUser.objects.filter(matriculas__materia=materia, matriculas__anho_escolar=anho_activo, rol='Estudiante').distinct().order_by('last_name', 'first_name')
+            estudiantes_por_materia[materia.id] = estudiantes
+    
+    # Variable para controlar qué tab mostrar
+    active_tab = request.GET.get('tab', 'rubricas')
+    
+    # Procesar formularios según la acción
     if request.method == 'POST':
-        try:
-            materia_id = request.POST.get('materia')
-            nombre = request.POST.get('nombre_rubrica')
-            tipo_actividad = request.POST.get('tipo_actividad')
-            
-            # Validar datos
-            if not materia_id or not nombre:
-                messages.error(request, 'Materia y nombre de la rúbrica son obligatorios.')
+        action = request.POST.get('action')
+        
+        # CREAR NUEVA RÚBRICA
+        if action == 'crear_rubrica':
+            try:
+                nombre = request.POST.get('nombre_rubrica')
+                tipo_actividad = request.POST.get('tipo_actividad')
+                descripcion = request.POST.get('descripcion', '')
+                
+                if not nombre:
+                    messages.error(request, 'El nombre de la rúbrica es obligatorio.')
+                    return redirect('rubricas')
+                
+                rubrica = Rubrica.objects.create(
+                    nombre=nombre,
+                    tipo_actividad=tipo_actividad,
+                    descripcion=descripcion,
+                    creado_por=request.user
+                )
+                
+                messages.success(request, f'Rúbrica "{nombre}" creada exitosamente.')
                 return redirect('rubricas')
-            
-            # Obtener materia
-            materia = Materia.objects.get(id=materia_id, profesor=request.user)
-            
-            # Crear rúbrica
-            rubrica = Rubrica.objects.create(
-                materia=materia,
-                nombre=nombre,
-                tipo_actividad=tipo_actividad,
-                creado_por=request.user
-            )
-            
-            messages.success(request, f'Rúbrica "{nombre}" creada exitosamente.')
-            return redirect('rubricas')
-            
-        except Materia.DoesNotExist:
-            messages.error(request, 'Materia no válida.')
-        except Exception as e:
-            messages.error(request, f'Error al crear la rúbrica: {str(e)}')
+                
+            except Materia.DoesNotExist:
+                messages.error(request, 'Materia no válida.')
+            except Exception as e:
+                messages.error(request, f'Error al crear la rúbrica: {str(e)}')
+        
+        # ELIMINAR RÚBRICA
+        elif action == 'eliminar_rubrica':
+            try:
+                rubrica_id = request.POST.get('rubrica_id')
+                
+                if not rubrica_id:
+                    messages.error(request, 'ID de rúbrica no proporcionado.')
+                    return redirect('rubricas')
+                
+                rubrica = Rubrica.objects.get(id=rubrica_id, creado_por=request.user)
+                
+                # Verificar si hay evaluaciones asociadas
+                evaluaciones_count = rubrica.evaluaciones.count()
+                if evaluaciones_count > 0:
+                    messages.error(
+                        request, 
+                        f'No se puede eliminar la rúbrica "{rubrica.nombre}" porque tiene {evaluaciones_count} '
+                        f'evaluación(es) asociada(s). Primero debes eliminar o reasignar las evaluaciones.'
+                    )
+                    return redirect('rubricas')
+                
+                nombre_rubrica = rubrica.nombre
+                rubrica.delete()
+                
+                messages.success(request, f'Rúbrica "{nombre_rubrica}" eliminada exitosamente.')
+                return redirect('rubricas')
+                
+            except Rubrica.DoesNotExist:
+                messages.error(request, 'Rúbrica no encontrada o no tienes permiso para eliminarla.')
+            except Exception as e:
+                messages.error(request, f'Error al eliminar la rúbrica: {str(e)}')
+        
+        # ELIMINAR EVALUACIÓN CON RÚBRICA
+        elif action == 'eliminar_evaluacion':
+            try:
+                evaluacion_id = request.POST.get('evaluacion_id')
+                
+                if not evaluacion_id:
+                    messages.error(request, 'ID de evaluación no proporcionado.')
+                    return redirect(reverse('rubricas') + '?tab=evaluaciones')
+                
+                evaluacion = EvaluacionRubrica.objects.get(
+                    id=evaluacion_id,
+                    materia__profesor=request.user
+                )
+                
+                titulo_evaluacion = evaluacion.titulo
+                total_calificaciones = CalificacionCriterio.objects.filter(evaluacion=evaluacion).count()
+                
+                # Eliminar la evaluación (las calificaciones se eliminan en cascada)
+                evaluacion.delete()
+                
+                if total_calificaciones > 0:
+                    messages.success(
+                        request, 
+                        f'Evaluación "{titulo_evaluacion}" eliminada exitosamente. '
+                        f'Se eliminaron {total_calificaciones} calificación(es) asociada(s).'
+                    )
+                else:
+                    messages.success(request, f'Evaluación "{titulo_evaluacion}" eliminada exitosamente.')
+                
+                return redirect(reverse('rubricas') + '?tab=evaluaciones')
+                
+            except EvaluacionRubrica.DoesNotExist:
+                messages.error(request, 'Evaluación no encontrada o no tienes permiso para eliminarla.')
+            except Exception as e:
+                messages.error(request, f'Error al eliminar la evaluación: {str(e)}')
+        
+        # APLICAR RÚBRICA (CREAR EVALUACIÓN)
+        elif action == 'aplicar_rubrica':
+            try:
+                rubrica_id = request.POST.get('rubrica')
+                materia_id = request.POST.get('materia')
+                titulo = request.POST.get('titulo')
+                descripcion = request.POST.get('descripcion', '')
+                fecha_evaluacion = request.POST.get('fecha_evaluacion')
+                periodo = request.POST.get('periodo')
+                
+                if not all([rubrica_id, materia_id, titulo, fecha_evaluacion, periodo]):
+                    messages.error(request, 'Todos los campos obligatorios deben completarse.')
+                    return redirect(reverse('rubricas') + '?tab=aplicar')
+                
+                rubrica = Rubrica.objects.get(id=rubrica_id, creado_por=request.user)
+                # La materia se selecciona en el formulario
+                materia = Materia.objects.get(id=materia_id, profesor=request.user)
+                curso = materia.curso
+                
+                if rubrica.total_criterios() == 0:
+                    messages.error(request, 'La rúbrica debe tener al menos un criterio antes de aplicarla.')
+                    return redirect(reverse('rubricas') + '?tab=aplicar')
+                
+                if not rubrica.ponderacion_valida():
+                    total_pond = rubrica.total_ponderacion()
+                    messages.warning(
+                        request, 
+                        f'Advertencia: La suma de ponderaciones es {total_pond}%. '
+                        f'Se recomienda que sumen exactamente 100%.'
+                    )
+                
+                evaluacion = EvaluacionRubrica.objects.create(
+                    rubrica=rubrica,
+                    materia=materia,
+                    curso=curso,
+                    titulo=titulo,
+                    descripcion=descripcion,
+                    fecha_evaluacion=fecha_evaluacion,
+                    periodo=periodo,
+                    creada_por=request.user
+                )
+                
+                messages.success(request, f'Evaluación "{titulo}" creada exitosamente. Ahora puedes evaluar a los estudiantes.')
+                return redirect('evaluar_con_rubrica', evaluacion_id=evaluacion.id)
+                
+            except Rubrica.DoesNotExist:
+                messages.error(request, 'Datos no válidos.')
+            except Exception as e:
+                messages.error(request, f'Error al crear la evaluación: {str(e)}')
     
-    # Obtener rúbricas del profesor
-    rubricas_list = Rubrica.objects.filter(
-        materia__profesor=request.user
-    ).select_related('materia', 'materia__curso', 'creado_por').order_by('-fecha_creacion')
+    # Obtener rúbricas
+    if anho_activo:
+        if request.user.rol == 'Profesor':
+            # Mostrar rúbricas creadas por el profesor (con o sin materia asignada)
+            rubricas_list = Rubrica.objects.filter(
+                creado_por=request.user
+            ).select_related('materia', 'materia__curso', 'creado_por').order_by('-fecha_creacion')
+        elif request.user.rol == 'Estudiante':
+            rubricas_list = Rubrica.objects.filter(
+                materia__matriculas__estudiante=request.user,
+                materia__curso__anho_escolar=anho_activo
+            ).select_related('materia', 'materia__curso', 'creado_por').distinct().order_by('-fecha_creacion')
+        else:
+            # Administradores y coordinadores ven todas del año activo
+            rubricas_list = Rubrica.objects.filter(
+                Q(materia__isnull=True) | Q(materia__curso__anho_escolar=anho_activo)
+            ).select_related('materia', 'materia__curso', 'creado_por').order_by('-fecha_creacion')
+    else:
+        rubricas_list = Rubrica.objects.none()
+    
+    # Obtener rúbricas disponibles para aplicar (solo activas con criterios)
+    rubricas_disponibles = rubricas_list.filter(activa=True)
+    
+    # Obtener evaluaciones
+    if anho_activo:
+        evaluaciones = EvaluacionRubrica.objects.filter(
+            materia__profesor=request.user,
+            materia__curso__anho_escolar=anho_activo
+        ).select_related('rubrica', 'materia', 'curso', 'creada_por').order_by('-fecha_evaluacion')
+    else:
+        evaluaciones = EvaluacionRubrica.objects.none()
     
     context = {
-        'titulo': 'Rúbricas de Evaluación',
+        'titulo': 'Gestión de Rúbricas',
         'materias': materias,
         'rubricas': rubricas_list,
-        'descripcion': 'Matriz de valoración que establece criterios y niveles de desempeño para evaluar competencias de forma objetiva y sistemática.'
+        'rubricas_disponibles': rubricas_disponibles,
+        'evaluaciones': evaluaciones,
+        'descripcion': 'Crea rúbricas, define criterios de evaluación y aplícalas a tus estudiantes.',
+        'anho_activo': anho_activo,
+        'estudiantes_por_materia': estudiantes_por_materia,
+        'active_tab': active_tab,
     }
     return render(request, 'evaluaciones/rubricas.html', context)
 
@@ -253,10 +423,12 @@ def gestionar_criterios_rubrica(request, rubrica_id):
         return redirect('plataform')
     
     # Obtener la rúbrica
+    # Permitir acceso si fue creada por el usuario (rúbricas genéricas) 
+    # o si tiene materia y el usuario es el profesor
     rubrica = get_object_or_404(
         Rubrica,
         id=rubrica_id,
-        materia__profesor=request.user
+        creado_por=request.user
     )
     
     # Procesar formulario de creación de criterio
@@ -755,109 +927,11 @@ def reporte_seguimiento_diagnostica(request, estudiante_id, materia_id):
 @login_required
 def evaluaciones_rubricas(request):
     """
-    Vista para gestionar evaluaciones con rúbricas
-    Permite aplicar rúbricas a grupos de estudiantes
+    Vista redirigida a la vista unificada de rúbricas
+    Mantiene compatibilidad con enlaces antiguos
     """
-    # Verificar permisos
-    if request.user.rol not in ['Profesor', 'Director', 'Administrador', 'Coordinador']:
-        messages.error(request, 'No tienes permiso para acceder a esta página.')
-        return redirect('plataform')
-    
-    # Verificar año escolar activo
-    anho_activo = AnhoEscolar.objects.filter(activo=True).first()
-    if not anho_activo:
-        messages.error(request, 'No hay un año escolar activo. Contacta al administrador.')
-        return redirect('plataform')
-    
-    # Obtener materias del profesor del año activo
-    materias = Materia.objects.filter(
-        profesor=request.user,
-        curso__anho_escolar=anho_activo
-    )
-    
-    # Procesar formulario de creación
-    if request.method == 'POST':
-        try:
-            rubrica_id = request.POST.get('rubrica')
-            materia_id = request.POST.get('materia')
-            curso_id = request.POST.get('curso')
-            titulo = request.POST.get('titulo')
-            descripcion = request.POST.get('descripcion', '')
-            fecha_evaluacion = request.POST.get('fecha_evaluacion')
-            periodo = request.POST.get('periodo')
-            
-            # Validar datos
-            if not all([rubrica_id, materia_id, curso_id, titulo, fecha_evaluacion, periodo]):
-                messages.error(request, 'Todos los campos obligatorios deben completarse.')
-                return redirect('evaluaciones_rubricas')
-            
-            # Obtener objetos
-            rubrica = Rubrica.objects.get(id=rubrica_id, materia__profesor=request.user)
-            materia = Materia.objects.get(id=materia_id, profesor=request.user)
-            curso = Curso.objects.get(id=curso_id)
-            
-            # Verificar que la rúbrica tiene criterios
-            if rubrica.total_criterios() == 0:
-                messages.error(request, 'La rúbrica debe tener al menos un criterio antes de aplicarla.')
-                return redirect('evaluaciones_rubricas')
-            
-            # Advertir si las ponderaciones no suman 100%
-            if not rubrica.ponderacion_valida():
-                total_pond = rubrica.total_ponderacion()
-                messages.warning(
-                    request, 
-                    f'Advertencia: La suma de ponderaciones es {total_pond}%. '
-                    f'Se recomienda que sumen exactamente 100%.'
-                )
-            
-            # Crear evaluación
-            evaluacion = EvaluacionRubrica.objects.create(
-                rubrica=rubrica,
-                materia=materia,
-                curso=curso,
-                titulo=titulo,
-                descripcion=descripcion,
-                fecha_evaluacion=fecha_evaluacion,
-                periodo=periodo,
-                creada_por=request.user
-            )
-            
-            messages.success(request, f'Evaluación "{titulo}" creada exitosamente. Ahora puedes evaluar a los estudiantes.')
-            return redirect('evaluar_con_rubrica', evaluacion_id=evaluacion.id)
-            
-        except (Rubrica.DoesNotExist, Materia.DoesNotExist, Curso.DoesNotExist):
-            messages.error(request, 'Datos no válidos.')
-        except Exception as e:
-            messages.error(request, f'Error al crear la evaluación: {str(e)}')
-    
-    # Obtener rúbricas disponibles del profesor del año activo
-    rubricas_disponibles = Rubrica.objects.filter(
-        materia__profesor=request.user,
-        materia__curso__anho_escolar=anho_activo,
-        activa=True
-    ).select_related('materia')
-    
-    # Obtener cursos disponibles del año escolar activo
-    cursos = Curso.objects.filter(
-        anho_escolar=anho_activo
-    ).order_by('nombre')
-    
-    # Obtener evaluaciones del profesor del año activo
-    evaluaciones = EvaluacionRubrica.objects.filter(
-        materia__profesor=request.user,
-        materia__curso__anho_escolar=anho_activo
-    ).select_related('rubrica', 'materia', 'curso', 'creada_por').order_by('-fecha_evaluacion')
-    
-    context = {
-        'titulo': 'Evaluaciones con Rúbricas',
-        'materias': materias,
-        'rubricas': rubricas_disponibles,
-        'cursos': cursos,
-        'evaluaciones': evaluaciones,
-        'anho_activo': anho_activo,
-        'descripcion': 'Aplica rúbricas para evaluar el desempeño de los estudiantes en actividades y proyectos.'
-    }
-    return render(request, 'evaluaciones/evaluaciones_rubricas.html', context)
+    # Redirigir a la pestaña de aplicar rúbricas
+    return redirect(reverse('rubricas') + '?tab=aplicar')
 
 
 @login_required
@@ -900,8 +974,7 @@ def evaluar_con_rubrica(request, evaluacion_id):
     estudiantes = CustomUser.objects.filter(
         rol='Estudiante',
         matriculas__anho_escolar=evaluacion.curso.anho_escolar,
-        matriculas__materia=evaluacion.materia,
-        matriculas__activo=True
+        matriculas__materia=evaluacion.materia
     ).distinct().order_by('last_name', 'first_name')
     
     # Procesar formulario de evaluación
@@ -939,7 +1012,7 @@ def evaluar_con_rubrica(request, evaluacion_id):
                     request,
                     f'Evaluación de {estudiante.get_full_name()} guardada exitosamente. '
                     f'{criterios_evaluados} criterios evaluados. '
-                    f'Puntaje: {round(puntaje_total_estudiante, 2)}/10'
+                    f'Puntaje: {round(puntaje_total_estudiante, 2)}/100'
                 )
             else:
                 messages.warning(request, 'No se evaluó ningún criterio.')
@@ -984,3 +1057,174 @@ def evaluar_con_rubrica(request, evaluacion_id):
     }
     return render(request, 'evaluaciones/evaluar_con_rubrica.html', context)
 
+
+@login_required
+def imprimir_rubrica(request, rubrica_id):
+    """
+    Vista para generar versión imprimible de una rúbrica con resultados de estudiantes
+    Muestra la estructura completa con criterios, estudiantes evaluados y sus calificaciones
+    """
+    # Verificar permisos
+    if request.user.rol not in ['Profesor', 'Director', 'Administrador', 'Coordinador']:
+        messages.error(request, 'No tienes permiso para acceder a esta página.')
+        return redirect('plataform')
+    
+    # Obtener la rúbrica
+    rubrica = get_object_or_404(
+        Rubrica.objects.select_related('materia', 'materia__curso', 'creado_por'),
+        id=rubrica_id
+    )
+    
+    # Verificar que el usuario tenga acceso a esta rúbrica
+    if request.user.rol == 'Profesor' and rubrica.materia.profesor != request.user:
+        messages.error(request, 'No tienes permiso para ver esta rúbrica.')
+        return redirect('rubricas')
+    
+    # Obtener criterios con sus niveles ordenados
+    criterios = rubrica.criterios.prefetch_related('niveles').order_by('orden', 'id')
+    
+    # Obtener todas las evaluaciones realizadas con esta rúbrica
+    evaluaciones = EvaluacionRubrica.objects.filter(
+        rubrica=rubrica
+    ).select_related('curso', 'materia', 'creada_por').order_by('-fecha_evaluacion')
+    
+    # Para cada evaluación, obtener los resultados de los estudiantes
+    evaluaciones_con_resultados = []
+    for evaluacion in evaluaciones:
+        # Obtener todas las calificaciones de esta evaluación
+        calificaciones = CalificacionCriterio.objects.filter(
+            evaluacion=evaluacion
+        ).select_related('estudiante', 'criterio', 'nivel_otorgado')
+        
+        # Organizar calificaciones por estudiante
+        estudiantes_resultados = {}
+        for cal in calificaciones:
+            if cal.estudiante_id not in estudiantes_resultados:
+                estudiantes_resultados[cal.estudiante_id] = {
+                    'estudiante': cal.estudiante,
+                    'criterios': {},
+                    'total': 0,
+                    'completado': False
+                }
+            estudiantes_resultados[cal.estudiante_id]['criterios'][cal.criterio_id] = {
+                'nivel': cal.nivel_otorgado,
+                'puntaje': cal.puntaje_ponderado(),
+                'observaciones': cal.observaciones
+            }
+            estudiantes_resultados[cal.estudiante_id]['total'] += cal.puntaje_ponderado()
+        
+        # Verificar completitud
+        total_criterios = criterios.count()
+        for est_id in estudiantes_resultados:
+            criterios_evaluados = len(estudiantes_resultados[est_id]['criterios'])
+            estudiantes_resultados[est_id]['completado'] = (criterios_evaluados == total_criterios)
+        
+        # Convertir a lista ordenada por nombre de estudiante
+        resultados_lista = sorted(
+            estudiantes_resultados.values(),
+            key=lambda x: (x['estudiante'].last_name, x['estudiante'].first_name)
+        )
+        
+        # Calcular promedio del grupo
+        promedio_grupo = 0
+        if resultados_lista:
+            suma_totales = sum(r['total'] for r in resultados_lista)
+            promedio_grupo = round(suma_totales / len(resultados_lista), 2)
+        
+        evaluaciones_con_resultados.append({
+            'evaluacion': evaluacion,
+            'estudiantes': resultados_lista,
+            'total_estudiantes': len(resultados_lista),
+            'promedio_grupo': promedio_grupo
+        })
+    
+    context = {
+        'rubrica': rubrica,
+        'criterios': criterios,
+        'evaluaciones_con_resultados': evaluaciones_con_resultados,
+        'fecha_actual': date.today(),
+    }
+    
+    return render(request, 'evaluaciones/rubrica_imprimible.html', context)
+
+
+@login_required
+def imprimir_evaluacion_rubrica(request, evaluacion_id):
+    """
+    Vista para generar versión imprimible de una evaluación específica con rúbrica
+    Muestra los resultados de los estudiantes evaluados en esta evaluación particular
+    """
+    # Verificar permisos
+    if request.user.rol not in ['Profesor', 'Director', 'Administrador', 'Coordinador']:
+        messages.error(request, 'No tienes permiso para acceder a esta página.')
+        return redirect('plataform')
+    
+    # Obtener la evaluación
+    evaluacion = get_object_or_404(
+        EvaluacionRubrica.objects.select_related('rubrica', 'materia', 'curso', 'creada_por', 'rubrica__materia', 'rubrica__materia__curso'),
+        id=evaluacion_id
+    )
+    
+    # Verificar que el usuario tenga acceso a esta evaluación
+    if request.user.rol == 'Profesor' and evaluacion.materia.profesor != request.user:
+        messages.error(request, 'No tienes permiso para ver esta evaluación.')
+        return redirect('evaluaciones_rubricas')
+    
+    # Obtener la rúbrica y sus criterios
+    rubrica = evaluacion.rubrica
+    criterios = rubrica.criterios.prefetch_related('niveles').order_by('orden', 'id')
+    
+    # Obtener todas las calificaciones de esta evaluación
+    calificaciones = CalificacionCriterio.objects.filter(
+        evaluacion=evaluacion
+    ).select_related('estudiante', 'criterio', 'nivel_otorgado')
+    
+    # Organizar calificaciones por estudiante
+    estudiantes_resultados = {}
+    for cal in calificaciones:
+        if cal.estudiante_id not in estudiantes_resultados:
+            estudiantes_resultados[cal.estudiante_id] = {
+                'estudiante': cal.estudiante,
+                'criterios': {},
+                'total': 0,
+                'completado': False
+            }
+        estudiantes_resultados[cal.estudiante_id]['criterios'][cal.criterio_id] = {
+            'nivel': cal.nivel_otorgado,
+            'puntaje': cal.puntaje_ponderado(),
+            'observaciones': cal.observaciones
+        }
+        estudiantes_resultados[cal.estudiante_id]['total'] += cal.puntaje_ponderado()
+    
+    # Verificar completitud
+    total_criterios = criterios.count()
+    for est_id in estudiantes_resultados:
+        criterios_evaluados = len(estudiantes_resultados[est_id]['criterios'])
+        estudiantes_resultados[est_id]['completado'] = (criterios_evaluados == total_criterios)
+    
+    # Convertir a lista ordenada por nombre de estudiante
+    resultados_lista = sorted(
+        estudiantes_resultados.values(),
+        key=lambda x: (x['estudiante'].last_name, x['estudiante'].first_name)
+    )
+    
+    # Calcular promedio del grupo
+    promedio_grupo = 0
+    evaluaciones_completas = 0
+    if resultados_lista:
+        suma_totales = sum(r['total'] for r in resultados_lista)
+        promedio_grupo = round(suma_totales / len(resultados_lista), 2)
+        evaluaciones_completas = sum(1 for r in resultados_lista if r['completado'])
+    
+    context = {
+        'rubrica': rubrica,
+        'criterios': criterios,
+        'evaluacion': evaluacion,
+        'estudiantes': resultados_lista,
+        'total_estudiantes': len(resultados_lista),
+        'promedio_grupo': promedio_grupo,
+        'evaluaciones_completas': evaluaciones_completas,
+        'fecha_actual': date.today(),
+    }
+    
+    return render(request, 'evaluaciones/evaluacion_rubrica_imprimible.html', context)

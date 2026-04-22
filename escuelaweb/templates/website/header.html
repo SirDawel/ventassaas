@@ -415,6 +415,15 @@
               </a>
             </li>
 
+            <!-- BOTÓN PAGOS PARA ESTUDIANTES -->
+            {% if user.rol == 'Estudiante' %}
+            <li class="nav-item">
+              <a class="nav-link" href="{% url 'estudiante_pagos' %}">
+                <i class="fas fa-credit-card me-1"></i>Mis Pagos
+              </a>
+            </li>
+            {% endif %}
+
             <!-- DROPDOWN ACADÉMICO -->
             {% if user.rol == 'Profesor' or user.rol == 'Director' or user.rol == 'Administrador' or user.rol == 'Coordinador' %}
             <li class="nav-item dropdown">
@@ -529,7 +538,7 @@
               {% else %}
               <img src="https://ui-avatars.com/api/?name={{ user.first_name }}+{{ user.last_name }}&size=35&background=0D8ABC&color=fff" alt="Foto de perfil" class="rounded-circle profile-picture">
               {% endif %}
-              <span class="text-white">{{ user.first_name }}</span>
+              <span class="text-white">{{ user.first_name }} {{ user.last_name }}</span>
             </a>
             <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
               <li><a class="dropdown-item" href="#"><i class="fas fa-envelope me-2"></i>{{ user.email }}</a></li>

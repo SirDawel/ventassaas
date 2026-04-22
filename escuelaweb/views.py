@@ -2981,7 +2981,33 @@ def lista_materias(request):
             cursos = Curso.objects.filter(materias__matriculas__estudiante=request.user).distinct().select_related('anho_escolar')
             materias_por_curso = {}
             for curso in cursos:
-                materias_por_curso[curso] = Materia.objects.filter(curso=curso, matriculas__estudiante=request.user).distinct().select_related('profesor')
+                materias_curso = Materia.objects.filter(curso=curso, matriculas__estudiante=request.user).distinct().select_related('profesor')
+                # Preparar info de matrícula y recuperaciones para cada materia
+                for materia in materias_curso:
+                    matricula = Matricula.objects.filter(materia=materia, estudiante=request.user).first()
+                    if matricula:
+                        # Preparar información de recuperaciones para el template
+                        matricula.mostrar_com_rp1 = matricula.com_p1 is not None and matricula.com_p1 < 70 and matricula.com_rp1 is not None
+                        matricula.mostrar_com_rp2 = matricula.com_p2 is not None and matricula.com_p2 < 70 and matricula.com_rp2 is not None
+                        matricula.mostrar_com_rp3 = matricula.com_p3 is not None and matricula.com_p3 < 70 and matricula.com_rp3 is not None
+                        matricula.mostrar_com_rp4 = matricula.com_p4 is not None and matricula.com_p4 < 70 and matricula.com_rp4 is not None
+                        
+                        matricula.mostrar_log_rp1 = matricula.log_p1 is not None and matricula.log_p1 < 70 and matricula.log_rp1 is not None
+                        matricula.mostrar_log_rp2 = matricula.log_p2 is not None and matricula.log_p2 < 70 and matricula.log_rp2 is not None
+                        matricula.mostrar_log_rp3 = matricula.log_p3 is not None and matricula.log_p3 < 70 and matricula.log_rp3 is not None
+                        matricula.mostrar_log_rp4 = matricula.log_p4 is not None and matricula.log_p4 < 70 and matricula.log_rp4 is not None
+                        
+                        matricula.mostrar_cie_rp1 = matricula.cie_p1 is not None and matricula.cie_p1 < 70 and matricula.cie_rp1 is not None
+                        matricula.mostrar_cie_rp2 = matricula.cie_p2 is not None and matricula.cie_p2 < 70 and matricula.cie_rp2 is not None
+                        matricula.mostrar_cie_rp3 = matricula.cie_p3 is not None and matricula.cie_p3 < 70 and matricula.cie_rp3 is not None
+                        matricula.mostrar_cie_rp4 = matricula.cie_p4 is not None and matricula.cie_p4 < 70 and matricula.cie_rp4 is not None
+                        
+                        matricula.mostrar_eti_rp1 = matricula.eti_p1 is not None and matricula.eti_p1 < 70 and matricula.eti_rp1 is not None
+                        matricula.mostrar_eti_rp2 = matricula.eti_p2 is not None and matricula.eti_p2 < 70 and matricula.eti_rp2 is not None
+                        matricula.mostrar_eti_rp3 = matricula.eti_p3 is not None and matricula.eti_p3 < 70 and matricula.eti_rp3 is not None
+                        matricula.mostrar_eti_rp4 = matricula.eti_p4 is not None and matricula.eti_p4 < 70 and matricula.eti_rp4 is not None
+                    materia.matricula = matricula
+                materias_por_curso[curso] = materias_curso
             return render(request, 'est_forder/materias_estudiante.html', {
                 'materias_por_curso': materias_por_curso,
                 'titulo': "Mis Materias",
@@ -3002,6 +3028,27 @@ def lista_materias(request):
     if request.user.rol == 'Estudiante':
         for materia in materias:
             matricula = Matricula.objects.filter(materia=materia, estudiante=request.user).first()
+            if matricula:
+                # Preparar información de recuperaciones para el template
+                matricula.mostrar_com_rp1 = matricula.com_p1 is not None and matricula.com_p1 < 70 and matricula.com_rp1 is not None
+                matricula.mostrar_com_rp2 = matricula.com_p2 is not None and matricula.com_p2 < 70 and matricula.com_rp2 is not None
+                matricula.mostrar_com_rp3 = matricula.com_p3 is not None and matricula.com_p3 < 70 and matricula.com_rp3 is not None
+                matricula.mostrar_com_rp4 = matricula.com_p4 is not None and matricula.com_p4 < 70 and matricula.com_rp4 is not None
+                
+                matricula.mostrar_log_rp1 = matricula.log_p1 is not None and matricula.log_p1 < 70 and matricula.log_rp1 is not None
+                matricula.mostrar_log_rp2 = matricula.log_p2 is not None and matricula.log_p2 < 70 and matricula.log_rp2 is not None
+                matricula.mostrar_log_rp3 = matricula.log_p3 is not None and matricula.log_p3 < 70 and matricula.log_rp3 is not None
+                matricula.mostrar_log_rp4 = matricula.log_p4 is not None and matricula.log_p4 < 70 and matricula.log_rp4 is not None
+                
+                matricula.mostrar_cie_rp1 = matricula.cie_p1 is not None and matricula.cie_p1 < 70 and matricula.cie_rp1 is not None
+                matricula.mostrar_cie_rp2 = matricula.cie_p2 is not None and matricula.cie_p2 < 70 and matricula.cie_rp2 is not None
+                matricula.mostrar_cie_rp3 = matricula.cie_p3 is not None and matricula.cie_p3 < 70 and matricula.cie_rp3 is not None
+                matricula.mostrar_cie_rp4 = matricula.cie_p4 is not None and matricula.cie_p4 < 70 and matricula.cie_rp4 is not None
+                
+                matricula.mostrar_eti_rp1 = matricula.eti_p1 is not None and matricula.eti_p1 < 70 and matricula.eti_rp1 is not None
+                matricula.mostrar_eti_rp2 = matricula.eti_p2 is not None and matricula.eti_p2 < 70 and matricula.eti_rp2 is not None
+                matricula.mostrar_eti_rp3 = matricula.eti_p3 is not None and matricula.eti_p3 < 70 and matricula.eti_rp3 is not None
+                matricula.mostrar_eti_rp4 = matricula.eti_p4 is not None and matricula.eti_p4 < 70 and matricula.eti_rp4 is not None
             materia.matricula = matricula
 
     return render(request, 'est_forder/materias.html', {
@@ -3145,7 +3192,7 @@ def reporte_general(request, curso_id):
             else:
                 m.total_ra = None
 
-            m.save()
+            m.save(skip_validation=True)
 
         except Exception as e:
             print(f"ERROR calculando notas en matrícula {m.id}: {e}")
@@ -4208,10 +4255,10 @@ def actualizar_notas(request, matricula_id):
 
     # Asegurar que los valores se muestren con punto decimal (no coma)
     for campo in [
-        'com_p1','com_p2','com_p3','com_p4',
-        'log_p1','log_p2','log_p3','log_p4',
-        'cie_p1','cie_p2','cie_p3','cie_p4',
-        'eti_p1','eti_p2','eti_p3','eti_p4',
+        'com_p1','com_p2','com_p3','com_p4','com_rp1','com_rp2','com_rp3','com_rp4',
+        'log_p1','log_p2','log_p3','log_p4','log_rp1','log_rp2','log_rp3','log_rp4',
+        'cie_p1','cie_p2','cie_p3','cie_p4','cie_rp1','cie_rp2','cie_rp3','cie_rp4',
+        'eti_p1','eti_p2','eti_p3','eti_p4','eti_rp1','eti_rp2','eti_rp3','eti_rp4',
     ]:
         valor = getattr(matricula, campo)
         if valor is not None:
@@ -4224,31 +4271,53 @@ def actualizar_notas(request, matricula_id):
             matricula.com_p2 = request.POST.get('com_p2') or None
             matricula.com_p3 = request.POST.get('com_p3') or None
             matricula.com_p4 = request.POST.get('com_p4') or None
+            matricula.com_rp1 = request.POST.get('com_rp1') or None
+            matricula.com_rp2 = request.POST.get('com_rp2') or None
+            matricula.com_rp3 = request.POST.get('com_rp3') or None
+            matricula.com_rp4 = request.POST.get('com_rp4') or None
 
             # --- Pensamiento Lógico ---
             matricula.log_p1 = request.POST.get('log_p1') or None
             matricula.log_p2 = request.POST.get('log_p2') or None
             matricula.log_p3 = request.POST.get('log_p3') or None
             matricula.log_p4 = request.POST.get('log_p4') or None
+            matricula.log_rp1 = request.POST.get('log_rp1') or None
+            matricula.log_rp2 = request.POST.get('log_rp2') or None
+            matricula.log_rp3 = request.POST.get('log_rp3') or None
+            matricula.log_rp4 = request.POST.get('log_rp4') or None
 
             # --- Científica ---
             matricula.cie_p1 = request.POST.get('cie_p1') or None
             matricula.cie_p2 = request.POST.get('cie_p2') or None
             matricula.cie_p3 = request.POST.get('cie_p3') or None
             matricula.cie_p4 = request.POST.get('cie_p4') or None
+            matricula.cie_rp1 = request.POST.get('cie_rp1') or None
+            matricula.cie_rp2 = request.POST.get('cie_rp2') or None
+            matricula.cie_rp3 = request.POST.get('cie_rp3') or None
+            matricula.cie_rp4 = request.POST.get('cie_rp4') or None
 
             # --- Ética ---
             matricula.eti_p1 = request.POST.get('eti_p1') or None
             matricula.eti_p2 = request.POST.get('eti_p2') or None
             matricula.eti_p3 = request.POST.get('eti_p3') or None
             matricula.eti_p4 = request.POST.get('eti_p4') or None
+            matricula.eti_rp1 = request.POST.get('eti_rp1') or None
+            matricula.eti_rp2 = request.POST.get('eti_rp2') or None
+            matricula.eti_rp3 = request.POST.get('eti_rp3') or None
+            matricula.eti_rp4 = request.POST.get('eti_rp4') or None
+
+            # --- Exámenes Especiales ---
+            matricula.ex_com = request.POST.get('ex_com') or None  # Completivo
+            matricula.ex_ext = request.POST.get('ex_ext') or None  # Extraordinario
+            matricula.ex_esp = request.POST.get('ex_esp') or None  # Especial
 
             # Validar y convertir valores
             for campo in [
-                'com_p1','com_p2','com_p3','com_p4',
-                'log_p1','log_p2','log_p3','log_p4',
-                'cie_p1','cie_p2','cie_p3','cie_p4',
-                'eti_p1','eti_p2','eti_p3','eti_p4',
+                'com_p1','com_p2','com_p3','com_p4','com_rp1','com_rp2','com_rp3','com_rp4',
+                'log_p1','log_p2','log_p3','log_p4','log_rp1','log_rp2','log_rp3','log_rp4',
+                'cie_p1','cie_p2','cie_p3','cie_p4','cie_rp1','cie_rp2','cie_rp3','cie_rp4',
+                'eti_p1','eti_p2','eti_p3','eti_p4','eti_rp1','eti_rp2','eti_rp3','eti_rp4',
+                'ex_com','ex_ext','ex_esp',
             ]:
                 valor = getattr(matricula, campo)
                 if valor not in [None, '']:
@@ -4353,48 +4422,102 @@ def lista_estudiantes_materia(request, materia_id):
     return render(request, 'est_forder/reporte_estudiantes_materia.html', context)
 
 
+@login_required
+def hoja_calificaciones_materia(request, materia_id):
+    """Vista para generar hoja de calificaciones imprimible para escribir notas a mano"""
+    materia = get_object_or_404(Materia, id=materia_id)
+    
+    # Verificar permisos
+    if request.user.rol not in ['Administrador', 'Director', 'Coordinador', 'Secretaria'] and materia.profesor != request.user:
+        messages.error(request, 'No tienes permiso para acceder a esta página.')
+        return redirect('plataform')
+    
+    # Obtener estudiantes matriculados ordenados por apellido y nombre
+    matriculas = Matricula.objects.filter(materia=materia).select_related('estudiante').order_by(
+        'estudiante__last_name', 
+        'estudiante__first_name'
+    )
+    
+    # Obtener el tipo de evaluación
+    tipo_evaluacion = request.GET.get('tipo', 'periodo1')  # periodo1, periodo2, periodo3, periodo4, modular
+    
+    context = {
+        'materia': materia,
+        'matriculas': matriculas,
+        'tipo_evaluacion': tipo_evaluacion,
+        'curso': materia.curso,
+    }
+    return render(request, 'est_forder/hoja_calificaciones_imprimible.html', context)
+
+
 from decimal import Decimal, ROUND_HALF_UP
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib import messages
 from .models import Materia, Matricula
+from .utils_notas import redondear_nota
+from .decorators import puede_editar_notas, puede_ver_notas
+
 @login_required
 def agregar_notas(request, materia_id):
     materia = get_object_or_404(Materia, id=materia_id)
 
-    # Validar permisos
-    if not (request.user.rol in ['Administrador', 'Director'] or
-            (request.user.rol == 'Profesor' and materia.profesor == request.user)):
+    #Verificar si el usuario puede ver esta materia
+    if not puede_ver_notas(request.user, materia):
         messages.error(request, 'No tienes permiso para acceder a esta página.')
-        return redirect('lista_cursos')
+        return redirect('plataform')
+    
+    # Determinar si el usuario puede editar (Administrador, Secretaria, Director, Profesor de la materia)
+    puede_editar = puede_editar_notas(request.user, materia)
+    
+    # Si es estudiante, filtrar solo sus propias notas
+    if request.user.rol == 'Estudiante':
+        # Solo puede ver su propia matrícula
+        matriculas = Matricula.objects.filter(
+            materia=materia,
+            estudiante=request.user
+        )
+        if not matriculas.exists():
+            messages.error(request, 'No estás matriculado en esta materia.')
+            return redirect('plataform')
+    else:
+        # Otros roles ven todas las matrículas
+        matriculas = Matricula.objects.filter(materia=materia).order_by('estudiante__first_name')
     
     # Si la materia es modular, redirigir a template específico
     if materia.categoria == 'modular':
         return agregar_notas_modular(request, materia_id)
-
-    matriculas = Matricula.objects.filter(materia=materia).order_by('estudiante__first_name')
 
     # Enumeración
     for i, m in enumerate(matriculas, start=1):
         m.numero = i
 
     campos = [
-        'com_p1', 'com_p2', 'com_p3', 'com_p4', 'com_rp',
-        'log_p1', 'log_p2', 'log_p3', 'log_p4', 'log_rp',
-        'cie_p1', 'cie_p2', 'cie_p3', 'cie_p4', 'cie_rp',
-        'eti_p1', 'eti_p2', 'eti_p3', 'eti_p4', 'eti_rp',
+        'com_p1', 'com_rp1', 'com_p2', 'com_rp2', 'com_p3', 'com_rp3', 'com_p4', 'com_rp4',
+        'log_p1', 'log_rp1', 'log_p2', 'log_rp2', 'log_p3', 'log_rp3', 'log_p4', 'log_rp4',
+        'cie_p1', 'cie_rp1', 'cie_p2', 'cie_rp2', 'cie_p3', 'cie_rp3', 'cie_p4', 'cie_rp4',
+        'eti_p1', 'eti_rp1', 'eti_p2', 'eti_rp2', 'eti_p3', 'eti_rp3', 'eti_p4', 'eti_rp4',
         'ex_com', 'ex_ext', 'ex_esp'
     ]
 
-    # Formato para template
+    # Preparar valores formateados para el template (mantiene los valores originales para comparaciones)
     for m in matriculas:
+        m.valores_display = {}
         for campo in campos:
             valor = getattr(m, campo)
             if valor is not None:
-                setattr(m, campo, str(valor).replace(',', '.'))
+                # Convertir a string con punto decimal para inputs HTML
+                m.valores_display[campo] = str(float(valor)).replace(',', '.')
+            else:
+                m.valores_display[campo] = ''
 
     # ------------ POST -------------
     if request.method == 'POST':
+        # Verificar permisos de edición antes de procesar
+        if not puede_editar:
+            messages.error(request, 'No tienes permiso para modificar notas.')
+            return redirect('agregar_notas', materia_id=materia.id)
+        
         try:
             for m in matriculas:
                 for campo in campos:
@@ -4402,12 +4525,19 @@ def agregar_notas(request, materia_id):
                     if valor == "" or valor is None:
                         setattr(m, campo, None)
                     else:
-                        setattr(m, campo, float(valor))
+                        # Validar que el valor esté entre 0 y 100
+                        valor_float = float(valor)
+                        if valor_float < 0 or valor_float > 100:
+                            messages.error(request, f"Error: La nota '{campo}' del estudiante {m.estudiante.get_full_name()} debe estar entre 0 y 100. Valor ingresado: {valor_float}")
+                            return redirect('agregar_notas', materia_id=materia.id)
+                        setattr(m, campo, valor_float)
 
                 m.save()
 
             messages.success(request, "Notas actualizadas exitosamente.")
 
+        except ValueError as e:
+            messages.error(request, f"Error: Valor inválido ingresado. Las notas deben ser números entre 0 y 100.")
         except Exception as e:
             messages.error(request, f"Error al actualizar las notas: {str(e)}")
 
@@ -4435,19 +4565,19 @@ def agregar_notas(request, materia_id):
             if None not in (prom_com, prom_log, prom_cie, prom_eti):
 
                 # 1️⃣ Nota final promedio
-                m.nota_final = round((prom_com + prom_log + prom_cie + prom_eti) / 4, 2)
+                m.nota_final = redondear_nota((prom_com + prom_log + prom_cie + prom_eti) / 4, decimales=2)
 
                 # 2️⃣ Completivo
                 if m.nota_final < 70 and ex_com is not None:
-                    m.nota_final_completivo = round((m.nota_final * 0.5) + (ex_com * 0.5), 2)
+                    m.nota_final_completivo = redondear_nota((m.nota_final * 0.5) + (ex_com * 0.5), decimales=2)
 
                 # 3️⃣ Extraordinario
                 if m.nota_final_completivo is not None and m.nota_final_completivo < 70 and ex_ext is not None:
-                    m.nota_final_extraordinario = round((m.nota_final * 0.3) + (ex_ext * 0.7), 2)
+                    m.nota_final_extraordinario = redondear_nota((m.nota_final * 0.3) + (ex_ext * 0.7), decimales=2)
 
                 # 4️⃣ Especial
                 if m.nota_final_extraordinario is not None and m.nota_final_extraordinario < 70 and ex_esp is not None:
-                    m.nota_final_especial = round(ex_esp, 2)
+                    m.nota_final_especial = redondear_nota(ex_esp, decimales=2)
 
                 # 5️⃣ Selección de nota oficial antes del redondeo
                 nota_sin_redondear = (
@@ -4459,31 +4589,25 @@ def agregar_notas(request, materia_id):
                     m.nota_final_especial or m.nota_final_extraordinario or m.nota_final_completivo or m.nota_final
                 )
 
-                # 6️⃣ Aplicar redondeo oficial
-                # redondea .50 hacia arriba
-                m.nota_final_oficial = int(nota_sin_redondear + 0.5)
+                # 6️⃣ Aplicar redondeo oficial (con 0 decimales para nota oficial)
+                # redondea .50 hacia arriba usando ROUND_HALF_UP
+                m.nota_final_oficial = redondear_nota(nota_sin_redondear, decimales=0)
 
-            m.save()
+            # Guardar sin validación porque puede haber datos antiguos fuera de rango
+            m.save(skip_validation=True)
 
         except Exception as e:
             print(f"Error en matrícula {m.id}: {e}")
             m.nota_final = m.nota_final_completivo = m.nota_final_extraordinario = m.nota_final_especial = m.nota_final_oficial = None
-
-
-
-            m.save()
-        except Exception as e:
-            print(f"Error en matrícula {m.id}: {e}")
-
-        
-
-
+            m.save(skip_validation=True)
 
     # Render
     return render(request, 'est_forder/agregar_notas.html', {
         'materia': materia,
         'matriculas': matriculas,
         'titulo': f'Agregar Notas - {materia.nombre}',
+        'puede_editar': puede_editar,
+        'es_estudiante': request.user.rol == 'Estudiante',
     })
 
 @login_required
@@ -4491,13 +4615,25 @@ def agregar_notas_modular(request, materia_id):
     """Vista específica para agregar notas a materias modulares con 10 Resultados de Aprendizaje (RA)"""
     materia = get_object_or_404(Materia, id=materia_id)
 
-    # Validar permisos
-    if not (request.user.rol == 'Administrador' or
-            (request.user.rol == 'Profesor' and materia.profesor == request.user)):
+    # Verificar si el usuario puede ver esta materia
+    if not puede_ver_notas(request.user, materia):
         messages.error(request, 'No tienes permiso para acceder a esta página.')
-        return redirect('lista_cursos')
-
-    matriculas = Matricula.objects.filter(materia=materia).order_by('estudiante__first_name')
+        return redirect('plataform')
+    
+    # Determinar si el usuario puede editar
+    puede_editar = puede_editar_notas(request.user, materia)
+    
+    # Si es estudiante, filtrar solo sus propias notas
+    if request.user.rol == 'Estudiante':
+        matriculas = Matricula.objects.filter(
+            materia=materia,
+            estudiante=request.user
+        )
+        if not matriculas.exists():
+            messages.error(request, 'No estás matriculado en esta materia.')
+            return redirect('plataform')
+    else:
+        matriculas = Matricula.objects.filter(materia=materia).order_by('estudiante__first_name')
 
     # Enumeración
     for i, m in enumerate(matriculas, start=1):
@@ -4514,6 +4650,11 @@ def agregar_notas_modular(request, materia_id):
 
     # Permitir actualizar configuración de RA
     if request.method == 'POST' and 'guardar_config_ra' in request.POST:
+        # Verificar permisos de edición
+        if not puede_editar:
+            messages.error(request, 'No tienes permiso para modificar la configuración de RA.')
+            return redirect('agregar_notas_modular', materia_id=materia.id)
+        
         try:
             cantidad = int(request.POST.get('cantidad_ra', 10))
             valores = []
@@ -4558,6 +4699,12 @@ def agregar_notas_modular(request, materia_id):
                         setattr(m, campo, None)
                     else:
                         valor_float = float(valor)
+                        # Obtener el peso máximo para este RA desde la configuración
+                        peso_max = valores_ra[idx] if idx < len(valores_ra) else 10.0
+                        # Validar que el RA esté entre 0 y su peso máximo
+                        if valor_float < 0 or valor_float > peso_max:
+                            messages.error(request, f"Error: El RA {idx+1} del estudiante {m.estudiante.get_full_name()} debe estar entre 0 y {peso_max}. Valor ingresado: {valor_float}")
+                            return redirect('agregar_notas_modular', materia_id=materia.id)
                         setattr(m, campo, valor_float)
                         ra_valores.append(valor_float)
 
@@ -4571,6 +4718,8 @@ def agregar_notas_modular(request, materia_id):
                     m.nota_final_oficial = None
                 m.save()
             messages.success(request, "Calificaciones modulares actualizadas exitosamente.")
+        except ValueError as e:
+            messages.error(request, f"Error: Valor inválido ingresado. Los RAs deben ser números entre 0 y 10.")
         except Exception as e:
             messages.error(request, f"Error al actualizar las calificaciones: {str(e)}")
         return redirect('agregar_notas_modular', materia_id=materia.id)
@@ -4594,6 +4743,8 @@ def agregar_notas_modular(request, materia_id):
         'titulo': f'Calificaciones Módulo Formativo - {materia.nombre}',
         'cantidad_ra': cantidad_ra,
         'valores_ra': valores_ra,
+        'puede_editar': puede_editar,
+        'es_estudiante': request.user.rol == 'Estudiante',
     })
 
 @login_required
@@ -4697,7 +4848,7 @@ def agregar_notas2311(request, materia_id):
                 # redondea .50 hacia arriba
                 m.nota_final_oficial = int(nota_sin_redondear + 0.5)
 
-            m.save()
+            m.save(skip_validation=True)
 
         except Exception as e:
             print(f"Error en matrícula {m.id}: {e}")
@@ -4705,7 +4856,7 @@ def agregar_notas2311(request, materia_id):
 
 
 
-            m.save()
+            m.save(skip_validation=True)
         except Exception as e:
             print(f"Error en matrícula {m.id}: {e}")
 
@@ -5012,7 +5163,7 @@ def reporte_notas_estudiante(request, estudiante_id):
 
                
                 
-            m.save()
+            m.save(skip_validation=True)
 
         except Exception as e:
             print(f"Error en matrícula {m.id}: {e}")

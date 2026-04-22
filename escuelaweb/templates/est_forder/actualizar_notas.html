@@ -140,71 +140,220 @@ Actualizar Notas - {{ matricula.estudiante.get_full_name }}
 
                     <form method="post" class="needs-validation" novalidate>
                         {% csrf_token %}
-                        <table class="table table-hover">
-                            <thead>
+                        <table class="table table-hover table-bordered">
+                            <thead class="table-light">
                                 <tr>
                                     <th>Calificaciones</th>
                                     <th>C1</th>
+                                    <th class="bg-warning bg-opacity-10">RC1</th>
                                     <th>C2</th>
+                                    <th class="bg-warning bg-opacity-10">RC2</th>
                                     <th>C3</th>
+                                    <th class="bg-warning bg-opacity-10">RC3</th>
                                     <th>C4</th>
+                                    <th class="bg-warning bg-opacity-10">RC4</th>
                                     <th>Promedio</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 <!-- Comunicativa -->
                                 <tr>
-                                    <td>P1</td>
-                                    <td><input type="number" name="com_p1" class="form-control" step="0.1" value="{{ matricula.com_p1|default:'' }}"></td>
-                                    <td><input type="number" name="com_p2" class="form-control" step="0.1" value="{{ matricula.com_p2|default:'' }}"></td>
-                                    <td><input type="number" name="com_p3" class="form-control" step="0.1" value="{{ matricula.com_p3|default:'' }}"></td>
-                                    <td><input type="number" name="com_p4" class="form-control" step="0.1" value="{{ matricula.com_p4|default:'' }}"></td>
-                                    <td>{{ matricula.prom_comunicativa|default:"-" }}</td>
+                                    <td><strong>P1</strong></td>
+                                    <td><input type="number" name="com_p1" class="form-control form-control-sm periodo-input" step="0.1" min="0" max="100" value="{{ matricula.com_p1|default:'' }}" data-rp="com_rp1"></td>
+                                    <td class="bg-warning bg-opacity-10 celda-recuperacion" data-rp-input="com_rp1">
+                                        <input type="number" name="com_rp1" class="form-control form-control-sm recuperacion-input" step="0.1" min="0" max="100" value="{{ matricula.com_rp1|default:'' }}" style="display:none;">
+                                        <span class="text-muted guion-rp">-</span>
+                                    </td>
+                                    <td><input type="number" name="com_p2" class="form-control form-control-sm periodo-input" step="0.1" min="0" max="100" value="{{ matricula.com_p2|default:'' }}" data-rp="com_rp2"></td>
+                                    <td class="bg-warning bg-opacity-10 celda-recuperacion" data-rp-input="com_rp2">
+                                        <input type="number" name="com_rp2" class="form-control form-control-sm recuperacion-input" step="0.1" min="0" max="100" value="{{ matricula.com_rp2|default:'' }}" style="display:none;">
+                                        <span class="text-muted guion-rp">-</span>
+                                    </td>
+                                    <td><input type="number" name="com_p3" class="form-control form-control-sm periodo-input" step="0.1" min="0" max="100" value="{{ matricula.com_p3|default:'' }}" data-rp="com_rp3"></td>
+                                    <td class="bg-warning bg-opacity-10 celda-recuperacion" data-rp-input="com_rp3">
+                                        <input type="number" name="com_rp3" class="form-control form-control-sm recuperacion-input" step="0.1" min="0" max="100" value="{{ matricula.com_rp3|default:'' }}" style="display:none;">
+                                        <span class="text-muted guion-rp">-</span>
+                                    </td>
+                                    <td><input type="number" name="com_p4" class="form-control form-control-sm periodo-input" step="0.1" min="0" max="100" value="{{ matricula.com_p4|default:'' }}" data-rp="com_rp4"></td>
+                                    <td class="bg-warning bg-opacity-10 celda-recuperacion" data-rp-input="com_rp4">
+                                        <input type="number" name="com_rp4" class="form-control form-control-sm recuperacion-input" step="0.1" min="0" max="100" value="{{ matricula.com_rp4|default:'' }}" style="display:none;">
+                                        <span class="text-muted guion-rp">-</span>
+                                    </td>
+                                    <td class="fw-bold">{{ matricula.prom_comunicativa|default:"-" }}</td>
                                 </tr>
 
                                 <!-- Pensamiento Lógico -->
                                 <tr>
-                                    <td>P2</td>
-                                    <td><input type="number" name="log_p1" class="form-control" step="0.1" value="{{ matricula.log_p1|default:'' }}"></td>
-                                    <td><input type="number" name="log_p2" class="form-control" step="0.1" value="{{ matricula.log_p2|default:'' }}"></td>
-                                    <td><input type="number" name="log_p3" class="form-control" step="0.1" value="{{ matricula.log_p3|default:'' }}"></td>
-                                    <td><input type="number" name="log_p4" class="form-control" step="0.1" value="{{ matricula.log_p4|default:'' }}"></td>
-                                    <td>{{ matricula.prom_logico|default:"-" }}</td>
+                                    <td><strong>P2</strong></td>
+                                    <td><input type="number" name="log_p1" class="form-control form-control-sm periodo-input" step="0.1" min="0" max="100" value="{{ matricula.log_p1|default:'' }}" data-rp="log_rp1"></td>
+                                    <td class="bg-warning bg-opacity-10 celda-recuperacion" data-rp-input="log_rp1">
+                                        <input type="number" name="log_rp1" class="form-control form-control-sm recuperacion-input" step="0.1" min="0" max="100" value="{{ matricula.log_rp1|default:'' }}" style="display:none;">
+                                        <span class="text-muted guion-rp">-</span>
+                                    </td>
+                                    <td><input type="number" name="log_p2" class="form-control form-control-sm periodo-input" step="0.1" min="0" max="100" value="{{ matricula.log_p2|default:'' }}" data-rp="log_rp2"></td>
+                                    <td class="bg-warning bg-opacity-10 celda-recuperacion" data-rp-input="log_rp2">
+                                        <input type="number" name="log_rp2" class="form-control form-control-sm recuperacion-input" step="0.1" min="0" max="100" value="{{ matricula.log_rp2|default:'' }}" style="display:none;">
+                                        <span class="text-muted guion-rp">
+                                        -
+                                        </span>
+                                    </td>
+                                    <td><input type="number" name="log_p3" class="form-control form-control-sm periodo-input" step="0.1" min="0" max="100" value="{{ matricula.log_p3|default:'' }}" data-rp="log_rp3"></td>
+                                    <td class="bg-warning bg-opacity-10 celda-recuperacion" data-rp-input="log_rp3">
+                                        <input type="number" name="log_rp3" class="form-control form-control-sm recuperacion-input" step="0.1" min="0" max="100" value="{{ matricula.log_rp3|default:'' }}" style="display:none;">
+                                        <span class="text-muted guion-rp">-</span>
+                                    </td>
+                                    <td><input type="number" name="log_p4" class="form-control form-control-sm periodo-input" step="0.1" min="0" max="100" value="{{ matricula.log_p4|default:'' }}" data-rp="log_rp4"></td>
+                                    <td class="bg-warning bg-opacity-10 celda-recuperacion" data-rp-input="log_rp4">
+                                        <input type="number" name="log_rp4" class="form-control form-control-sm recuperacion-input" step="0.1" min="0" max="100" value="{{ matricula.log_rp4|default:'' }}" style="display:none;">
+                                        <span class="text-muted guion-rp">-</span>
+                                    </td>
+                                    <td class="fw-bold">{{ matricula.prom_logico|default:"-" }}</td>
                                 </tr>
 
                                 <!-- Científica -->
                                 <tr>
-                                    <td>P3</td>
-                                    <td><input type="number" name="cie_p1" class="form-control" step="0.1" value="{{ matricula.cie_p1|default:'' }}"></td>
-                                    <td><input type="number" name="cie_p2" class="form-control" step="0.1" value="{{ matricula.cie_p2|default:'' }}"></td>
-                                    <td><input type="number" name="cie_p3" class="form-control" step="0.1" value="{{ matricula.cie_p3|default:'' }}"></td>
-                                    <td><input type="number" name="cie_p4" class="form-control" step="0.1" value="{{ matricula.cie_p4|default:'' }}"></td>
-                                    <td>{{ matricula.prom_cientifica|default:"-" }}</td>
+                                    <td><strong>P3</strong></td>
+                                    <td><input type="number" name="cie_p1" class="form-control form-control-sm periodo-input" step="0.1" min="0" max="100" value="{{ matricula.cie_p1|default:'' }}" data-rp="cie_rp1"></td>
+                                    <td class="bg-warning bg-opacity-10 celda-recuperacion" data-rp-input="cie_rp1">
+                                        <input type="number" name="cie_rp1" class="form-control form-control-sm recuperacion-input" step="0.1" min="0" max="100" value="{{ matricula.cie_rp1|default:'' }}" style="display:none;">
+                                        <span class="text-muted guion-rp">-</span>
+                                    </td>
+                                    <td><input type="number" name="cie_p2" class="form-control form-control-sm periodo-input" step="0.1" min="0" max="100" value="{{ matricula.cie_p2|default:'' }}" data-rp="cie_rp2"></td>
+                                    <td class="bg-warning bg-opacity-10 celda-recuperacion" data-rp-input="cie_rp2">
+                                        <input type="number" name="cie_rp2" class="form-control form-control-sm recuperacion-input" step="0.1" min="0" max="100" value="{{ matricula.cie_rp2|default:'' }}" style="display:none;">
+                                        <span class="text-muted guion-rp">-</span>
+                                    </td>
+                                    <td><input type="number" name="cie_p3" class="form-control form-control-sm periodo-input" step="0.1" min="0" max="100" value="{{ matricula.cie_p3|default:'' }}" data-rp="cie_rp3"></td>
+                                    <td class="bg-warning bg-opacity-10 celda-recuperacion" data-rp-input="cie_rp3">
+                                        <input type="number" name="cie_rp3" class="form-control form-control-sm recuperacion-input" step="0.1" min="0" max="100" value="{{ matricula.cie_rp3|default:'' }}" style="display:none;">
+                                        <span class="text-muted guion-rp">-</span>
+                                    </td>
+                                    <td><input type="number" name="cie_p4" class="form-control form-control-sm periodo-input" step="0.1" min="0" max="100" value="{{ matricula.cie_p4|default:'' }}" data-rp="cie_rp4"></td>
+                                    <td class="bg-warning bg-opacity-10 celda-recuperacion" data-rp-input="cie_rp4">
+                                        <input type="number" name="cie_rp4" class="form-control form-control-sm recuperacion-input" step="0.1" min="0" max="100" value="{{ matricula.cie_rp4|default:'' }}" style="display:none;">
+                                        <span class="text-muted guion-rp">-</span>
+                                    </td>
+                                    <td class="fw-bold">{{ matricula.prom_cientifica|default:"-" }}</td>
                                 </tr>
 
                                 <!-- Ética -->
                                 <tr>
-                                    <td>P4</td>
-                                    <td><input type="number" name="eti_p1" class="form-control" step="0.1" value="{{ matricula.eti_p1|default:'' }}"></td>
-                                    <td><input type="number" name="eti_p2" class="form-control" step="0.1" value="{{ matricula.eti_p2|default:'' }}"></td>
-                                    <td><input type="number" name="eti_p3" class="form-control" step="0.1" value="{{ matricula.eti_p3|default:'' }}"></td>
-                                    <td><input type="number" name="eti_p4" class="form-control" step="0.1" value="{{ matricula.eti_p4|default:'' }}"></td>
-                                    <td>{{ matricula.prom_etica|default:"-" }}</td>
+                                    <td><strong>P4</strong></td>
+                                    <td><input type="number" name="eti_p1" class="form-control form-control-sm periodo-input" step="0.1" min="0" max="100" value="{{ matricula.eti_p1|default:'' }}" data-rp="eti_rp1"></td>
+                                    <td class="bg-warning bg-opacity-10 celda-recuperacion" data-rp-input="eti_rp1">
+                                        <input type="number" name="eti_rp1" class="form-control form-control-sm recuperacion-input" step="0.1" min="0" max="100" value="{{ matricula.eti_rp1|default:'' }}" style="display:none;">
+                                        <span class="text-muted guion-rp">-</span>
+                                    </td>
+                                    <td><input type="number" name="eti_p2" class="form-control form-control-sm periodo-input" step="0.1" min="0" max="100" value="{{ matricula.eti_p2|default:'' }}" data-rp="eti_rp2"></td>
+                                    <td class="bg-warning bg-opacity-10 celda-recuperacion" data-rp-input="eti_rp2">
+                                        <input type="number" name="eti_rp2" class="form-control form-control-sm recuperacion-input" step="0.1" min="0" max="100" value="{{ matricula.eti_rp2|default:'' }}" style="display:none;">
+                                        <span class="text-muted guion-rp">-</span>
+                                    </td>
+                                    <td><input type="number" name="eti_p3" class="form-control form-control-sm periodo-input" step="0.1" min="0" max="100" value="{{ matricula.eti_p3|default:'' }}" data-rp="eti_rp3"></td>
+                                    <td class="bg-warning bg-opacity-10 celda-recuperacion" data-rp-input="eti_rp3">
+                                        <input type="number" name="eti_rp3" class="form-control form-control-sm recuperacion-input" step="0.1" min="0" max="100" value="{{ matricula.eti_rp3|default:'' }}" style="display:none;">
+                                        <span class="text-muted guion-rp">-</span>
+                                    </td>
+                                    <td><input type="number" name="eti_p4" class="form-control form-control-sm periodo-input" step="0.1" min="0" max="100" value="{{ matricula.eti_p4|default:'' }}" data-rp="eti_rp4"></td>
+                                    <td class="bg-warning bg-opacity-10 celda-recuperacion" data-rp-input="eti_rp4">
+                                        <input type="number" name="eti_rp4" class="form-control form-control-sm recuperacion-input" step="0.1" min="0" max="100" value="{{ matricula.eti_rp4|default:'' }}" style="display:none;">
+                                        <span class="text-muted guion-rp">-</span>
+                                    </td>
+                                    <td class="fw-bold">{{ matricula.prom_etica|default:"-" }}</td>
                                 </tr>
                                 
                                 <!-- Fila de Promedio Final -->
                                 <tr style="border-top: 2px solid #5c6bc0; background-color: #f0f4ff;">
-                                    <td colspan="5" class="text-end" style="font-weight: 600; color: #5c6bc0;">
-                                        <i class="fas fa-calculator me-2"></i>PROMEDIO FINAL:
+                                    <td colspan="9" class="text-end" style="font-weight: 600; color: #5c6bc0;">
+                                        <i class="fas fa-calculator me-2"></i>PROMEDIO BASE:
                                     </td>
                                     <td style="font-weight: 700; color: #5c6bc0; font-size: 1.1rem;">
                                         {% if matricula.promedio_final %}
                                             {{ matricula.promedio_final|floatformat:2 }}
-                                            {% if matricula.promedio_final >= 70 %}
-                                                <span class="badge bg-success ms-2">APROBADO</span>
+                                        {% else %}
+                                            <span class="text-muted">-</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                
+                                <!-- NOTA FINAL EFECTIVA -->
+                                <tr style="border-top: 3px solid #16a34a; background-color: #f0fdf4;">
+                                    <td colspan="9" class="text-end" style="font-weight: 700; color: #16a34a;">
+                                        <i class="fas fa-trophy me-2"></i>NOTA FINAL DEFINITIVA:
+                                        <br><small style="font-size: 0.7rem; font-weight: 400;">({{ matricula.tipo_calificacion }})</small>
+                                    </td>
+                                    <td style="font-weight: 800; font-size: 1.3rem;">
+                                        {% if matricula.nota_final_efectiva %}
+                                            <span class="{% if matricula.nota_final_efectiva >= 70 %}text-success{% else %}text-danger{% endif %}">
+                                                {{ matricula.nota_final_efectiva|floatformat:2 }}
+                                            </span>
+                                            <br>
+                                            {% if matricula.nota_final_efectiva >= 70 %}
+                                                <span class="badge bg-success mt-1">✓ APROBADO</span>
                                             {% else %}
-                                                <span class="badge bg-danger ms-2">REPROBADO</span>
+                                                <span class="badge bg-danger mt-1">✗ REPROBADO</span>
                                             {% endif %}
+                                        {% else %}
+                                            <span class="text-muted">-</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                
+                                <!-- EXÁMENES ESPECIALES -->
+                                <tr style="border-top: 3px solid #9c27b0; background-color: #f3e5f5;">
+                                    <td colspan="10" class="text-center" style="font-weight: 600; color: #9c27b0; font-size: 0.9rem;">
+                                        <i class="fas fa-clipboard-check me-2"></i>EXÁMENES ESPECIALES
+                                    </td>
+                                </tr>
+                                
+                                <!-- Examen Completivo -->
+                                <tr>
+                                    <td><strong>Completivo</strong></td>
+                                    <td colspan="2">
+                                        <input type="number" name="ex_com" class="form-control form-control-sm" step="0.1" min="0" max="100" value="{{ matricula.ex_com|default:'' }}" placeholder="Ex. Completivo">
+                                    </td>
+                                    <td colspan="6" class="text-muted" style="font-size: 0.75rem; vertical-align: middle;">
+                                        Fórmula: 50% Promedio + 50% Examen
+                                    </td>
+                                    <td class="fw-bold">
+                                        {% if matricula.calificacion_completiva_final %}
+                                            {{ matricula.calificacion_completiva_final|floatformat:2 }}
+                                        {% else %}
+                                            <span class="text-muted">-</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                
+                                <!-- Examen Extraordinario -->
+                                <tr>
+                                    <td><strong>Extraordinario</strong></td>
+                                    <td colspan="2">
+                                        <input type="number" name="ex_ext" class="form-control form-control-sm" step="0.1" min="0" max="100" value="{{ matricula.ex_ext|default:'' }}" placeholder="Ex. Extraordinario">
+                                    </td>
+                                    <td colspan="6" class="text-muted" style="font-size: 0.75rem; vertical-align: middle;">
+                                        Fórmula: 30% Promedio + 70% Examen
+                                    </td>
+                                    <td class="fw-bold">
+                                        {% if matricula.calificacion_extraordinario_final %}
+                                            {{ matricula.calificacion_extraordinario_final|floatformat:2 }}
+                                        {% else %}
+                                            <span class="text-muted">-</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                
+                                <!-- Examen Especial -->
+                                <tr>
+                                    <td><strong>Especial</strong></td>
+                                    <td colspan="2">
+                                        <input type="number" name="ex_esp" class="form-control form-control-sm" step="0.1" min="0" max="100" value="{{ matricula.ex_esp|default:'' }}" placeholder="Ex. Especial">
+                                    </td>
+                                    <td colspan="6" class="text-muted" style="font-size: 0.75rem; vertical-align: middle;">
+                                        Fórmula: 100% Examen (reemplaza promedio)
+                                    </td>
+                                    <td class="fw-bold">
+                                        {% if matricula.calificacion_especial_final %}
+                                            {{ matricula.calificacion_especial_final|floatformat:2 }}
                                         {% else %}
                                             <span class="text-muted">-</span>
                                         {% endif %}
@@ -215,8 +364,13 @@ Actualizar Notas - {{ matricula.estudiante.get_full_name }}
 
                         <div class="alert alert-info mt-3" role="alert">
                             <i class="fas fa-info-circle me-2"></i>
-                            <strong>Nota:</strong> Los promedios se calculan automáticamente usando redondeo matemático estándar 
-                            (0.5 redondea hacia arriba). El promedio final es el promedio de las 4 competencias (P1, P2, P3, P4).
+                            <strong>Información sobre Calificaciones:</strong>
+                            <ul class="mb-0 mt-2" style="font-size: 0.875rem;">
+                                <li><strong>Recuperaciones (RC1-RC4):</strong> Aparecen cuando la nota del periodo es menor a 70. Si se ingresa una recuperación, esta reemplaza la nota original en el cálculo del promedio.</li>
+                                <li><strong>Examen Completivo:</strong> Calificación final = 50% Promedio + 50% Examen Completivo</li>
+                                <li><strong>Examen Extraordinario:</strong> Calificación final = 30% Promedio + 70% Examen Extraordinario</li>
+                                <li><strong>Examen Especial:</strong> Calificación final = 100% Examen Especial (reemplaza completamente el promedio)</li>
+                            </ul>
                         </div>
 
                         <div class="d-flex justify-content-between mt-4">
@@ -252,6 +406,43 @@ Actualizar Notas - {{ matricula.estudiante.get_full_name }}
     })();
     
     document.addEventListener('DOMContentLoaded', function() {
+        // Función para mostrar/ocultar campos de recuperación
+        function toggleRecuperacion(periodoInput) {
+            var valor = parseFloat(periodoInput.value);
+            var rpName = periodoInput.getAttribute('data-rp');
+            var celda = document.querySelector('[data-rp-input="' + rpName + '"]');
+            
+            if (!celda) return;
+            
+            var rpInput = celda.querySelector('.recuperacion-input');
+            var guion = celda.querySelector('.guion-rp');
+            
+            if (!isNaN(valor) && valor < 70) {
+                // Mostrar input de recuperación
+                rpInput.style.display = 'block';
+                guion.style.display = 'none';
+            } else {
+                // Ocultar input de recuperación
+                rpInput.style.display = 'none';
+                guion.style.display = 'inline';
+            }
+        }
+        
+        // Aplicar al cargar la página
+        document.querySelectorAll('.periodo-input').forEach(function(input) {
+            toggleRecuperacion(input);
+            
+            // Escuchar cuando el usuario SALE del campo (blur) o cambia el valor
+            input.addEventListener('blur', function() {
+                toggleRecuperacion(this);
+            });
+            
+            input.addEventListener('change', function() {
+                toggleRecuperacion(this);
+            });
+        });
+        
+        // Auto-cerrar alertas después de 5 segundos
         setTimeout(function() {
             var alerts = document.querySelectorAll('.alert');
             alerts.forEach(function(alert) {

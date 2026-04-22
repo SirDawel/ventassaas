@@ -97,3 +97,35 @@ def calcular_edad(fecha_nacimiento):
         return edad
     except:
         return None
+
+@register.filter
+def formato_nota(valor, decimales=2):
+    """
+    Formatea una nota aplicando redondeo matemático estándar (ROUND_HALF_UP).
+    Retorna el valor redondeado con el número de decimales especificado.
+    
+    Uso en templates:
+        {{ nota|formato_nota }}          -> redondea a 2 decimales (default)
+        {{ nota|formato_nota:0 }}        -> redondea a entero
+        {{ promedio|formato_nota:1 }}    -> redondea a 1 decimal
+    """
+    if valor is None or valor == '':
+        return '-'
+    
+    try:
+        from escuelaweb.utils_notas import redondear_nota
+        # Convertir decimales a int
+        try:
+            decimales = int(decimales)
+        except:
+            decimales = 2
+        
+        resultado = redondear_nota(valor, decimales=decimales)
+        
+        # Formatear con los decimales especificados
+        if decimales == 0:
+            return int(resultado)
+        else:
+            return f"{resultado:.{decimales}f}"
+    except:
+        return str(valor)

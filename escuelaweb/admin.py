@@ -862,3 +862,122 @@ class SecurityAlertAdmin(admin.ModelAdmin):
             alerta.enviar_notificacion_email()
         self.message_user(request, f"Notificación enviada para {queryset.count()} alerta(s).")
     enviar_notificacion_email.short_description = "Enviar Notificación Email"
+
+
+# ============================================
+# ADMIN PARA POS FÍSICOS
+# ============================================
+
+from .models import TransaccionPOS, TerminalEstudiante
+
+@admin.register(TransaccionPOS)
+class TransaccionPOSAdmin(admin.ModelAdmin):
+    list_display = (
+        'transaction_id', 
+        'proveedor', 
+        'terminal_id', 
+        'estudiante_info',
+        'monto', 
+        'estado', 
+        'fecha_transaccion'
+    )
+    list_filter = ('proveedor', 'estado', 'fecha_transaccion')
+    search_fields = (
+        'transaction_id', 
+        'terminal_id', 
+        'estudiante__first_name', 
+        'estudiante__last_name',
+        'estudiante__cedula'
+    )
+    readonly_fields = (
+        'transaction_id', 
+        'proveedor', 
+        'terminal_id', 
+        'monto', 
+        'referencia',
+        'fecha_transaccion',
+        'fecha_procesamiento',
+        'datos_webhook',
+        'tarjeta_ultimos_4',
+        'tipo_tarjeta'
+    )
+    fieldsets = (
+        ('Información de la Transacción', {
+            'fields': (
+                'transaction_id', 
+                'proveedor', 
+                'terminal_id', 
+                'referencia',
+                'fecha_transaccion',
+                'fecha_procesamiento'
+            )
+        }),
+        ('Detalles del Pago', {
+            'fields': (
+                'monto', 
+                'tipo_tarjeta', 
+                'tarjeta_ultimos_4'
+            )
+        }),
+        ('Asociación', {
+            'fields': (
+                'estudiante', 
+                'factura_pagada',
+                'estado'
+            )
+        }),
+        ('Observaciones', {
+            'fields': ('observaciones',)
+        }),
+        ('Datos Técnicos', {
+            'fields': ('datos_webhook',),
+            'classes': ('collapse',)
+        }),
+    )
+    
+    def estudiante_info(self, obj):
+        if obj.estudiante:
+            return f"{obj.estudiante.get_full_name()} ({obj.estudiante.cedula})"
+        return "Sin identificar"
+    estudiante_info.short_description = "Estudiante"
+    
+    def has_add_permission(self, request):
+        # No permitir crear transacciones manualmente
+        return False
+    
+    def has_delete_permission(self, request, obj=None):
+        # No permitir eliminar transacciones
+        return False
+
+
+@admin.register(TerminalEstudiante)
+class TerminalEstudianteAdmin(admin.ModelAdmin):
+    list_display = (
+        'terminal_id', 
+        'proveedor',
+        'estudiante_info', 
+        'activo', 
+        'fecha_asignacion'
+    )
+    list_filter = ('proveedor', 'activo', 'fecha_asignacion')
+    search_fields = (
+        'terminal_id', 
+        'estudiante__first_name', 
+        'estudiante__last_name',
+        'estudiante__cedula'
+    )
+    fieldsets = (
+        ('Terminal', {
+            'fields': ('terminal_id', 'proveedor')
+        }),
+        ('Estudiante', {
+            'fields': ('estudiante',)
+        }),
+        ('Estado', {
+            'fields': ('activo', 'observaciones')
+        }),
+    )
+    
+    def estudiante_info(self, obj):
+        return f"{obj.estudiante.get_full_name()} ({obj.estudiante.cedula})"
+    estudiante_info.short_description = "Estudiante"

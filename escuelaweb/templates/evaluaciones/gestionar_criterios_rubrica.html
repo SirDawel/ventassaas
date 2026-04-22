@@ -34,22 +34,23 @@
         </p>
         <hr>
         <p class="mb-0">
-            <strong>Sistema de puntaje:</strong> Cada nivel otorga 1-5 puntos base que se multiplican por la ponderación del criterio. 
-            El puntaje final se normaliza a escala de 0-10.
+            <strong>Sistema de puntaje:</strong> Cada nivel (1-5) se normaliza dividiéndolo entre 5, luego se multiplica por la ponderación del criterio. 
+            El puntaje final se calcula en escala de 0-100.
         </p>
     </div>
     {% else %}
     <div class="alert alert-info shadow-sm">
         <h5><i class="fas fa-info-circle me-2"></i>Sistema de Puntaje</h5>
         <p class="mb-2">
-            <strong>Escala:</strong> Los puntajes se calculan en escala de 0-10 puntos.
+            <strong>Escala:</strong> Los puntajes se calculan en escala de 0-100 puntos.
         </p>
         <p class="mb-2">
             <strong>Niveles de desempeño:</strong> Excelente (5) → Muy Bueno (4) → Bueno (3) → Regular (2) → Necesita Mejorar (1)
         </p>
         <p class="mb-0">
-            <strong>Cálculo:</strong> Cada criterio contribuye: <code>nivel × ponderación% × 2</code>. 
-            <br><em>Ejemplo: Nivel Excelente (5) con 20% = 5 × 0.20 × 2 = 2.0 puntos</em>
+            <strong>Cálculo:</strong> Cada criterio contribuye: <code>(nivel / 5) × ponderación%</code>. 
+            <br><em>Ejemplo: Nivel Excelente (5) con 20% = (5/5) × 20 = 20 puntos</em>
+            <br><em>Si hay 5 criterios al 20% todos en nivel 5: 20+20+20+20+20 = 100 puntos</em>
         </p>
     </div>
     {% endif %}

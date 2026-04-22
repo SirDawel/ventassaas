@@ -84,7 +84,7 @@
                             <tfoot>
                                 <tr class="table-light">
                                     <td colspan="2" class="text-end"><strong>Puntaje Máximo:</strong></td>
-                                    <td><strong>10.0 puntos</strong></td>
+                                    <td><strong>{{ evaluacion.rubrica.puntaje_maximo|floatformat:2 }} puntos</strong></td>
                                 </tr>
                             </tfoot>
                         </table>
@@ -125,7 +125,7 @@
                             <td class="text-center">
                                 {% if estudiante.id in calificaciones_por_estudiante %}
                                 <span class="badge bg-success" style="font-size: 1.0em;">
-                                    {{ calificaciones_por_estudiante|get_item:estudiante.id|get_item:'total'|floatformat:2 }}/10
+                                    {{ calificaciones_por_estudiante|get_item:estudiante.id|get_item:'total'|floatformat:2 }}/100
                                 </span>
                                 {% else %}
                                 <span class="badge bg-secondary">-</span>

@@ -64,10 +64,37 @@
                         <label for="curso" class="form-label">Curso <span class="text-danger">*</span></label>
                         <select class="form-select" id="curso" name="curso" required>
                             <option value="">Seleccionar curso...</option>
-                            {% for curso in cursos %}
-                            <option value="{{ curso.id }}">{{ curso }}</option>
+                            {% for materia in materias %}
+                                <option value="{{ materia.curso.id }}" data-materia="{{ materia.id }}">{{ materia.curso }}</option>
                             {% endfor %}
                         </select>
+                    <script>
+                    // Al cambiar la materia, mostrar solo el curso correspondiente
+                    document.addEventListener('DOMContentLoaded', function() {
+                        const materiaSelect = document.getElementById('materia');
+                        const cursoSelect = document.getElementById('curso');
+                        function filtrarCursos() {
+                            const materiaId = materiaSelect.value;
+                            Array.from(cursoSelect.options).forEach(opt => {
+                                if (!opt.value) { opt.style.display = ''; return; }
+                                if (opt.getAttribute('data-materia') === materiaId) {
+                                    opt.style.display = '';
+                                } else {
+                                    opt.style.display = 'none';
+                                }
+                            });
+                            // Selecciona automáticamente el curso correcto si hay coincidencia
+                            const selected = Array.from(cursoSelect.options).find(opt => opt.getAttribute('data-materia') === materiaId);
+                            if (selected) {
+                                cursoSelect.value = selected.value;
+                            } else {
+                                cursoSelect.value = '';
+                            }
+                        }
+                        materiaSelect.addEventListener('change', filtrarCursos);
+                        filtrarCursos(); // Inicial
+                    });
+                    </script>
                     </div>
                     <div class="col-md-6 mb-3">
                         <label for="titulo" class="form-label">Título de la Evaluación <span class="text-danger">*</span></label>
@@ -167,6 +194,12 @@
                                             title="Ver detalles">
                                         <i class="fas fa-eye"></i>
                                     </button>
+                                    <a href="{% url 'imprimir_evaluacion_rubrica' eval.id %}" 
+                                       class="btn btn-secondary" 
+                                       title="Imprimir evaluación"
+                                       target="_blank">
+                                        <i class="fas fa-print"></i>
+                                    </a>
                                 </div>
                             </td>
                         </tr>

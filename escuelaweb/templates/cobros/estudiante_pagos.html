@@ -1,0 +1,815 @@
+{% extends 'website/base.html' %}
+{% load l10n %}
+
+{% block title %}Mis Pagos - Sistema de Pagos Estudiantil{% endblock %}
+
+{% block content %}
+<style>
+/* ===== SISTEMA DE PAGOS ESTUDIANTE - TEAL THEME ===== */
+.container-fluid {
+    padding: 1.5rem;
+    background-color: #f5f5f5;
+}
+
+/* ===== HEADER ===== */
+.page-header-pagos {
+    background: linear-gradient(135deg, #17A2B8 0%, #138496 100%);
+    padding: 2rem;
+    border-radius: 12px;
+    margin-bottom: 2rem;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    color: white;
+}
+
+.page-header-pagos h2 {
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+}
+
+.page-header-pagos .subtitle {
+    opacity: 0.95;
+    font-size: 1rem;
+}
+
+/* ===== RESUMEN CARDS ===== */
+.resumen-card {
+    background: white;
+    border-radius: 12px;
+    padding: 1.5rem;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    border: 1px solid #e0e0e0;
+    margin-bottom: 1.5rem;
+    transition: all 0.3s ease;
+}
+
+.resumen-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 16px rgba(0,0,0,0.15);
+}
+
+.resumen-stat {
+    text-align: center;
+}
+
+.resumen-icon {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 1rem;
+    font-size: 1.8rem;
+}
+
+.icon-pendiente {
+    background: linear-gradient(135deg, #F39C12 0%, #E67E22 100%);
+    color: white;
+    box-shadow: 0 4px 12px rgba(243, 156, 18, 0.4);
+}
+
+.icon-mora {
+    background: linear-gradient(135deg, #E74C3C 0%, #C0392B 100%);
+    color: white;
+    box-shadow: 0 4px 12px rgba(231, 76, 60, 0.4);
+}
+
+.icon-descuento {
+    background: linear-gradient(135deg, #20B2AA 0%, #26A69A 100%);
+    color: white;
+    box-shadow: 0 4px 12px rgba(32, 178, 170, 0.4);
+}
+
+.resumen-value {
+    font-size: 2rem;
+    font-weight: 700;
+    color: #424242;
+    margin-bottom: 0.25rem;
+}
+
+.resumen-label {
+    color: #757575;
+    font-size: 0.9rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* ===== BOTONES DE ACCIÓN MÚLTIPLE ===== */
+.acciones-multiples {
+    background: white;
+    border-radius: 12px;
+    padding: 1rem 1.5rem;
+    margin-bottom: 1.5rem;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    border: 1px solid #e0e0e0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+.btn-pagar-ano {
+    background: linear-gradient(135deg, #20B2AA 0%, #26A69A 100%);
+    border: none;
+    border-radius: 8px;
+    padding: 0.7rem 1.8rem;
+    font-weight: 600;
+    color: white;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 8px rgba(32, 178, 170, 0.3);
+}
+
+.btn-pagar-ano:hover {
+    background: linear-gradient(135deg, #26A69A 0%, #1F9B92 100%);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(32, 178, 170, 0.5);
+    color: white;
+}
+
+.btn-pagar-seleccionadas {
+    background: linear-gradient(135deg, #17A2B8 0%, #138496 100%);
+    border: none;
+    border-radius: 8px;
+    padding: 0.7rem 1.8rem;
+    font-weight: 600;
+    color: white;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 8px rgba(23, 162, 184, 0.3);
+}
+
+.btn-pagar-seleccionadas:hover:not(:disabled) {
+    background: linear-gradient(135deg, #138496 0%, #117A8B 100%);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(23, 162, 184, 0.5);
+    color: white;
+}
+
+.btn-pagar-seleccionadas:disabled {
+    background: #95A5A6;
+    cursor: not-allowed;
+    opacity: 0.6;
+}
+
+.checkbox-factura {
+    width: 20px;
+    height: 20px;
+    cursor: pointer;
+    accent-color: #17A2B8;
+}
+
+.seleccion-info {
+    color: #616161;
+    font-weight: 600;
+}
+
+/* ===== FACTURAS TABLE ===== */
+.facturas-card {
+    background: white;
+    border-radius: 12px;
+    padding: 1.5rem;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    border: 1px solid #e0e0e0;
+}
+
+.facturas-card h4 {
+    font-weight: 700;
+    color: #424242;
+    margin-bottom: 1.5rem;
+}
+
+.table-pagos {
+    border-collapse: separate;
+    border-spacing: 0;
+}
+
+.table-pagos thead th {
+    background: #17A2B8;
+    color: white;
+    font-weight: 600;
+    text-transform: uppercase;
+    font-size: 0.85rem;
+    letter-spacing: 0.5px;
+    padding: 1rem;
+    border: none;
+}
+
+.table-pagos thead th:first-child {
+    border-radius: 8px 0 0 0;
+}
+
+.table-pagos thead th:last-child {
+    border-radius: 0 8px 0 0;
+}
+
+.table-pagos tbody tr {
+    transition: all 0.3s ease;
+    border-bottom: 1px solid #e0e0e0;
+}
+
+.table-pagos tbody tr:hover {
+    background: #fafafa;
+    transform: scale(1.005);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+}
+
+.table-pagos tbody td {
+    padding: 1rem;
+    vertical-align: middle;
+    color: #424242;
+}
+
+/* Resaltar filas de facturas vencidas */
+.table-danger-subtle {
+    background-color: #ffe6e6 !important;
+    border-left: 4px solid #E74C3C;
+}
+
+.table-danger-subtle:hover {
+    background-color: #ffcccc !important;
+}
+
+/* ===== BADGES DE ESTADO ===== */
+.badge-estado {
+    padding: 0.5rem 1rem;
+    border-radius: 20px;
+    font-weight: 600;
+    font-size: 0.85rem;
+}
+
+.badge-pendiente {
+    background: linear-gradient(135deg, #F39C12 0%, #E67E22 100%);
+    color: white;
+}
+
+.badge-vencida {
+    background: linear-gradient(135deg, #E74C3C 0%, #C0392B 100%);
+    color: white;
+}
+
+.badge-pagada {
+    background: linear-gradient(135deg, #20B2AA 0%, #26A69A 100%);
+    color: white;
+}
+
+/* ===== BOTÓN PAGAR ===== */
+.btn-pagar {
+    background: linear-gradient(135deg, #17A2B8 0%, #138496 100%);
+    border: none;
+    border-radius: 8px;
+    padding: 0.5rem 1.5rem;
+    font-weight: 600;
+    color: white;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 8px rgba(23, 162, 184, 0.3);
+}
+
+.btn-pagar:hover {
+    background: linear-gradient(135deg, #138496 0%, #117A8B 100%);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(23, 162, 184, 0.5);
+    color: white;
+}
+
+.btn-ver-detalle {
+    background: #95A5A6;
+    border: none;
+    border-radius: 8px;
+    padding: 0.5rem 1.2rem;
+    font-weight: 500;
+    color: white;
+    transition: all 0.3s ease;
+}
+
+.btn-ver-detalle:hover {
+    background: #7F8C8D;
+    transform: translateY(-2px);
+    color: white;
+}
+
+/* ===== MODAL DE PAGO ===== */
+.modal-header-pago {
+    background: linear-gradient(135deg, #17A2B8 0%, #138496 100%);
+    color: white;
+    border-radius: 12px 12px 0 0;
+}
+
+.modal-content {
+    border-radius: 12px;
+    border: 1px solid #e0e0e0;
+}
+
+.detalle-pago {
+    background: #fafafa;
+    border-radius: 8px;
+    padding: 1rem;
+    margin-bottom: 1rem;
+}
+
+.detalle-pago .row {
+    margin-bottom: 0.5rem;
+}
+
+.detalle-label {
+    font-weight: 600;
+    color: #616161;
+}
+
+.detalle-value {
+    color: #424242;
+    font-weight: 500;
+}
+
+.total-pagar {
+    background: linear-gradient(135deg, #17A2B8 0%, #138496 100%);
+    color: white;
+    padding: 1rem;
+    border-radius: 8px;
+    text-align: center;
+    margin: 1rem 0;
+}
+
+.total-pagar h3 {
+    font-weight: 700;
+    margin: 0;
+}
+
+/* ===== FORMULARIO TARJETA ===== */
+.form-control {
+    border-radius: 8px;
+    border: 2px solid #e0e0e0;
+    padding: 0.75rem;
+    transition: all 0.3s ease;
+}
+
+.form-control:focus {
+    border-color: #17A2B8;
+    box-shadow: 0 0 0 0.2rem rgba(23, 162, 184, 0.1);
+}
+
+.form-label {
+    font-weight: 600;
+    color: #616161;
+    margin-bottom: 0.5rem;
+}
+
+/* ===== EMPTY STATE ===== */
+.empty-state {
+    text-align: center;
+    padding: 3rem;
+}
+
+.empty-state i {
+    font-size: 4rem;
+    color: #BDBDBD;
+    margin-bottom: 1rem;
+}
+
+.empty-state h5 {
+    color: #616161;
+    font-weight: 600;
+}
+
+.empty-state p {
+    color: #9E9E9E;
+}
+
+/* ===== RESPONSIVE ===== */
+@media (max-width: 768px) {
+    .container-fluid {
+        padding: 1rem;
+    }
+    
+    .page-header-pagos {
+        padding: 1.5rem;
+    }
+    
+    .resumen-card {
+        margin-bottom: 1rem;
+    }
+    
+    .table-responsive {
+        border-radius: 8px;
+    }
+}
+</style>
+
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="page-header-pagos">
+        <h2>
+            <i class="fas fa-credit-card me-2"></i>Sistema de Pagos
+        </h2>
+        <p class="subtitle">
+            <i class="fas fa-user me-2"></i>{{ user.get_full_name }}
+            <span class="ms-3"><i class="fas fa-calendar-alt me-2"></i>{{ anho_escolar.nombre }}</span>
+        </p>
+    </div>
+
+    <!-- Mensaje Informativo -->
+    <div class="alert alert-info" style="border-radius: 12px; border-left: 4px solid #17A2B8;">
+        <i class="fas fa-info-circle me-2"></i>
+        <strong>Información:</strong> Las facturas mensuales se generan automáticamente para todo el año escolar. 
+        Puedes ver todos los meses del año ({{ anho_escolar.fecha_inicio|date:"F Y" }} - {{ anho_escolar.fecha_fin|date:"F Y" }}). 
+        Las facturas vencidas están resaltadas en rojo con mora aplicada automáticamente.
+    </div>
+
+    <!-- Resumen de Estado -->
+    <div class="row mb-4">
+        <div class="col-md-4 mb-3">
+            <div class="resumen-card">
+                <div class="resumen-stat">
+                    <div class="resumen-icon icon-pendiente">
+                        <i class="fas fa-exclamation-triangle"></i>
+                    </div>
+                    <div class="resumen-value">RD$ {{ total_pendiente|unlocalize|floatformat:2 }}</div>
+                    <div class="resumen-label">Total Pendiente</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4 mb-3">
+            <div class="resumen-card">
+                <div class="resumen-stat">
+                    <div class="resumen-icon icon-mora">
+                        <i class="fas fa-clock"></i>
+                    </div>
+                    <div class="resumen-value">RD$ {{ total_mora|unlocalize|floatformat:2 }}</div>
+                    <div class="resumen-label">Mora Acumulada</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4 mb-3">
+            <div class="resumen-card">
+                <div class="resumen-stat">
+                    <div class="resumen-icon icon-descuento">
+                        <i class="fas fa-percent"></i>
+                    </div>
+                    <div class="resumen-value">RD$ {{ total_descuento|unlocalize|floatformat:2 }}</div>
+                    <div class="resumen-label">Descuentos Aplicados</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Botones de Acción Múltiple -->
+    {% if facturas_pendientes %}
+    <div class="acciones-multiples">
+        <div class="seleccion-info">
+            <i class="fas fa-check-square me-2"></i>
+            <span id="contador-seleccionadas">0</span> factura(s) seleccionada(s)
+            <span class="ms-3">Total: <strong id="total-seleccionadas">RD$ 0.00</strong></span>
+        </div>
+        <div>
+            <button class="btn btn-pagar-seleccionadas me-2" id="btnPagarSeleccionadas" onclick="pagarSeleccionadas()" disabled>
+                <i class="fas fa-credit-card me-1"></i>Pagar Seleccionadas
+            </button>
+            <button class="btn btn-pagar-ano" onclick="pagarAnoCompleto()">
+                <i class="fas fa-calendar-check me-1"></i>Pagar Año Completo ({{ total_ano_meses }} meses)
+            </button>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Tabla de Facturas -->
+    <div class="facturas-card">
+        <h4>
+            <i class="fas fa-file-invoice me-2"></i>Mis Facturas del Año Escolar
+            <small class="text-muted ms-2">({{ facturas_pendientes|length }} facturas)</small>
+        </h4>
+
+        {% if facturas_pendientes %}
+        <div class="table-responsive">
+            <table class="table table-pagos">
+                <thead>
+                    <tr>
+                        <th><input type="checkbox" id="selectAll" class="checkbox-factura" onchange="toggleSeleccionarTodo()"></th>
+                        <th>N° Factura</th>
+                        <th>Mes</th>
+                        <th>Fecha Emisión</th>
+                        <th>Vencimiento</th>
+                        <th>Subtotal</th>
+                        <th>Mora</th>
+                        <th>Descuento</th>
+                        <th>Total</th>
+                        <th>Estado</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for factura in facturas_pendientes %}
+                    <tr data-factura-id="{{ factura.id }}" data-factura-total="{{ factura.total_con_mora }}" class="{% if factura.estado_pago == 'Vencida' %}table-danger-subtle{% endif %}">
+                        <td>
+                            <input type="checkbox" class="checkbox-factura factura-checkbox" 
+                                   data-id="{{ factura.id }}" 
+                                   data-total="{{ factura.total_con_mora }}"
+                                   data-numero="{{ factura.numero_factura }}"
+                                   onchange="actualizarSeleccion()">
+                        </td>
+                        <td><strong>{{ factura.numero_factura }}</strong></td>
+                        <td><strong class="text-primary">{{ factura.concepto.nombre }}</strong></td>
+                        <td>{{ factura.fecha_emision|date:"d/m/Y" }}</td>
+                        <td>{{ factura.fecha_vencimiento|date:"d/m/Y" }}</td>
+                        <td>RD$ {{ factura.subtotal|unlocalize|floatformat:2 }}</td>
+                        <td class="text-danger">
+                            {% if factura.mora_aplicada > 0 %}
+                                RD$ {{ factura.mora_aplicada|unlocalize|floatformat:2 }}
+                            {% else %}
+                                -
+                            {% endif %}
+                        </td>
+                        <td class="text-success">
+                            {% if factura.descuento_aplicado > 0 %}
+                                RD$ {{ factura.descuento_aplicado|unlocalize|floatformat:2 }}
+                            {% else %}
+                                -
+                            {% endif %}
+                        </td>
+                        <td><strong>RD$ {{ factura.total_con_mora|unlocalize|floatformat:2 }}</strong></td>
+                        <td>
+                            {% if factura.estado_pago == 'Vencida' %}
+                                <span class="badge-estado badge-vencida">Vencida</span>
+                            {% else %}
+                                <span class="badge-estado badge-pendiente">Pendiente</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <button class="btn btn-pagar btn-sm" onclick="abrirModalPagoUnico({{ factura.id }}, '{{ factura.numero_factura }}', {{ factura.total_con_mora }}, '{{ factura.concepto.nombre }}')">
+                                <i class="fas fa-credit-card me-1"></i>Pagar
+                            </button>
+                            <button class="btn btn-ver-detalle btn-sm mt-1" onclick="verDetalle({{ factura.id }})">
+                                <i class="fas fa-eye me-1"></i>Detalle
+                            </button>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="empty-state">
+            <i class="fas fa-info-circle" style="font-size: 3rem; color: #17A2B8;"></i>
+            <h5>No hay facturas disponibles</h5>
+            <p>No se encontraron facturas mensuales para este año escolar.</p>
+            <p class="text-muted">
+                <strong>Posibles razones:</strong><br>
+                • No existe un artículo configurado con "mensualidad" en el sistema<br>
+                • No estás matriculado en el año escolar activo<br>
+                • Contacta con administración para más información
+            </p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Modal de Pago -->
+<div class="modal fade" id="modalPago" tabindex="-1" aria-labelledby="modalPagoLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header modal-header-pago">
+                <h5 class="modal-title" id="modalPagoLabel">
+                    <i class="fas fa-credit-card me-2"></i>Realizar Pago
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="formPago" method="POST" action="{% url 'procesar_pago_estudiante' %}">
+                    {% csrf_token %}
+                    <input type="hidden" id="facturas_ids" name="facturas_ids">
+                    
+                    <!-- Detalle de Factura(s) -->
+                    <div class="detalle-pago" id="detalle-facturas-container">
+                        <h6 class="mb-3"><i class="fas fa-file-invoice me-2"></i>Detalle de Pago</h6>
+                        <div id="lista-facturas-pago">
+                            <!-- Se llenará dinámicamente con JavaScript -->
+                        </div>
+                    </div>
+
+                    <!-- Total a Pagar -->
+                    <div class="total-pagar">
+                        <h6 class="mb-2">Total a Pagar</h6>
+                        <h3 id="total_pagar">RD$ 0.00</h3>
+                    </div>
+
+                    <!-- Formulario de Tarjeta -->
+                    <h6 class="mb-3"><i class="fas fa-credit-card me-2"></i>Información de Tarjeta</h6>
+                    
+                    <div class="mb-3">
+                        <label for="numero_tarjeta" class="form-label">
+                            <i class="fas fa-credit-card me-1"></i>Número de Tarjeta
+                        </label>
+                        <input type="text" class="form-control" id="numero_tarjeta" name="numero_tarjeta" 
+                               placeholder="1234 5678 9012 3456" maxlength="19" required>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="nombre_titular" class="form-label">
+                                <i class="fas fa-user me-1"></i>Nombre del Titular
+                            </label>
+                            <input type="text" class="form-control" id="nombre_titular" name="nombre_titular" 
+                                   placeholder="Nombre como aparece en la tarjeta" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="tipo_tarjeta" class="form-label">
+                                <i class="fas fa-credit-card me-1"></i>Tipo de Tarjeta
+                            </label>
+                            <select class="form-control" id="tipo_tarjeta" name="tipo_tarjeta" required>
+                                <option value="">Seleccionar...</option>
+                                <option value="visa">Visa</option>
+                                <option value="mastercard">Mastercard</option>
+                                <option value="amex">American Express</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="fecha_expiracion" class="form-label">
+                                <i class="fas fa-calendar me-1"></i>Fecha de Expiración
+                            </label>
+                            <input type="text" class="form-control" id="fecha_expiracion" name="fecha_expiracion" 
+                                   placeholder="MM/AA" maxlength="5" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="cvv" class="form-label">
+                                <i class="fas fa-lock me-1"></i>CVV
+                            </label>
+                            <input type="text" class="form-control" id="cvv" name="cvv" 
+                                   placeholder="123" maxlength="4" required>
+                        </div>
+                    </div>
+
+                    <div class="alert alert-info mt-3">
+                        <i class="fas fa-info-circle me-2"></i>
+                        <strong>Nota:</strong> Este pago se procesa de forma segura. Los datos de tu tarjeta están protegidos.
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="fas fa-times me-1"></i>Cancelar
+                </button>
+                <button type="button" class="btn btn-pagar" onclick="confirmarPago()">
+                    <i class="fas fa-check me-1"></i>Confirmar Pago
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Variables globales para manejo de selección
+let facturasSeleccionadas = [];
+
+// Función para seleccionar/deseleccionar todas las facturas
+function toggleSeleccionarTodo() {
+    const selectAllCheckbox = document.getElementById('selectAll');
+    const checkboxes = document.querySelectorAll('.factura-checkbox');
+    
+    checkboxes.forEach(checkbox => {
+        checkbox.checked = selectAllCheckbox.checked;
+    });
+    
+    actualizarSeleccion();
+}
+
+// Función para actualizar el contador de selección
+function actualizarSeleccion() {
+    const checkboxes = document.querySelectorAll('.factura-checkbox:checked');
+    const contador = checkboxes.length;
+    let total = 0;
+    
+    facturasSeleccionadas = [];
+    checkboxes.forEach(checkbox => {
+        const facturaTotal = parseFloat(checkbox.getAttribute('data-total'));
+        total += facturaTotal;
+        facturasSeleccionadas.push({
+            id: checkbox.getAttribute('data-id'),
+            numero: checkbox.getAttribute('data-numero'),
+            total: facturaTotal
+        });
+    });
+    
+    document.getElementById('contador-seleccionadas').textContent = contador;
+    document.getElementById('total-seleccionadas').textContent = 'RD$ ' + total.toFixed(2);
+    
+    // Habilitar/deshabilitar botón de pagar seleccionadas
+    const btnPagar = document.getElementById('btnPagarSeleccionadas');
+    btnPagar.disabled = contador === 0;
+    
+    // Actualizar checkbox "seleccionar todo"
+    const selectAllCheckbox = document.getElementById('selectAll');
+    const totalCheckboxes = document.querySelectorAll('.factura-checkbox').length;
+    selectAllCheckbox.checked = contador === totalCheckboxes && contador > 0;
+}
+
+// Función para abrir el modal de pago único
+function abrirModalPagoUnico(facturaId, numeroFactura, total, concepto) {
+    const facturas = [{
+        id: facturaId,
+        numero: numeroFactura,
+        total: total,
+        concepto: concepto
+    }];
+    
+    abrirModalPago(facturas);
+}
+
+// Función para pagar facturas seleccionadas
+function pagarSeleccionadas() {
+    if (facturasSeleccionadas.length === 0) {
+        alert('Por favor selecciona al menos una factura.');
+        return;
+    }
+    
+    abrirModalPago(facturasSeleccionadas);
+}
+
+// Función para pagar año completo
+function pagarAnoCompleto() {
+    const checkboxes = document.querySelectorAll('.factura-checkbox');
+    const facturas = [];
+    
+    checkboxes.forEach(checkbox => {
+        facturas.push({
+            id: checkbox.getAttribute('data-id'),
+            numero: checkbox.getAttribute('data-numero'),
+            total: parseFloat(checkbox.getAttribute('data-total'))
+        });
+    });
+    
+    abrirModalPago(facturas);
+}
+
+// Función principal para abrir el modal de pago
+function abrirModalPago(facturas) {
+    // Guardar IDs de facturas
+    const facturasIds = facturas.map(f => f.id).join(',');
+    document.getElementById('facturas_ids').value = facturasIds;
+    
+    // Calcular total
+    const totalPagar = facturas.reduce((sum, f) => sum + parseFloat(f.total), 0);
+    
+    // Construir lista de facturas
+    let listaHTML = '';
+    facturas.forEach(factura => {
+        listaHTML += `
+            <div class="row mb-2">
+                <div class="col-6">
+                    <span class="detalle-label">${factura.numero}:</span>
+                </div>
+                <div class="col-6 text-end">
+                    <span class="detalle-value">RD$ ${parseFloat(factura.total).toFixed(2)}</span>
+                </div>
+            </div>
+        `;
+    });
+    
+    document.getElementById('lista-facturas-pago').innerHTML = listaHTML;
+    document.getElementById('total_pagar').textContent = 'RD$ ' + totalPagar.toFixed(2);
+    
+    const modal = new bootstrap.Modal(document.getElementById('modalPago'));
+    modal.show();
+}
+
+// Función para confirmar el pago
+function confirmarPago() {
+    const numFacturas = document.getElementById('facturas_ids').value.split(',').length;
+    const mensaje = numFacturas > 1 
+        ? `¿Estás seguro de que deseas pagar ${numFacturas} facturas?`
+        : '¿Estás seguro de que deseas realizar este pago?';
+    
+    if (confirm(mensaje)) {
+        document.getElementById('formPago').submit();
+    }
+}
+
+// Formatear número de tarjeta
+document.getElementById('numero_tarjeta').addEventListener('input', function(e) {
+    let value = e.target.value.replace(/\s+/g, '');
+    let formattedValue = value.match(/.{1,4}/g)?.join(' ') || value;
+    e.target.value = formattedValue;
+});
+
+// Formatear fecha de expiración
+document.getElementById('fecha_expiracion').addEventListener('input', function(e) {
+    let value = e.target.value.replace(/\D/g, '');
+    if (value.length >= 2) {
+        value = value.slice(0, 2) + '/' + value.slice(2, 4);
+    }
+    e.target.value = value;
+});
+
+// Solo números en CVV
+document.getElementById('cvv').addEventListener('input', function(e) {
+    e.target.value = e.target.value.replace(/\D/g, '');
+});
+
+// Ver detalle de factura
+function verDetalle(facturaId) {
+    window.location.href = `/cobros/factura/${facturaId}/`;
+}
+</script>
+
+{% endblock %}

@@ -6,15 +6,16 @@
 
 {% block extra_css %}
 <style>
-    /* Flat Business Design */
+    /* Clean Teal Business Design */
     .card {
-        border-radius: 4px;
-        box-shadow: 0 1px 2px rgba(0,0,0,0.08);
-        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        border: 1px solid #e0e0e0;
+        background: white;
     }
     
     .card-header {
-        border-radius: 4px 4px 0 0;
+        border-radius: 8px 8px 0 0;
         border-bottom: 1px solid rgba(255,255,255,0.15);
         padding: 0.8rem 1rem;
     }
@@ -24,12 +25,12 @@
     }
     
     .btn {
-        border-radius: 4px;
+        border-radius: 8px;
         font-weight: 500;
         padding: 0.5rem 1rem;
         font-size: 0.875rem;
         border: none;
-        transition: none;
+        transition: all 0.3s ease;
     }
     
     .btn-sm {
@@ -38,90 +39,97 @@
     }
     
     .btn-primary {
-        background-color: #5c6bc0;
+        background-color: #20B2AA;
+        color: white;
     }
     
     .btn-primary:hover {
-        background-color: #4a5ab3;
+        background-color: #1A9891;
     }
     
     .btn-secondary {
-        background-color: #78909c;
+        background-color: #95A5A6;
+        color: white;
     }
     
     .btn-secondary:hover {
-        background-color: #607d8b;
+        background-color: #7F8C8D;
     }
     
     .btn-info {
-        background-color: #29b6f6;
+        background-color: #5DADE2;
+        color: white;
     }
     
     .btn-info:hover {
-        background-color: #1da9e6;
+        background-color: #3498DB;
     }
     
     .btn-warning {
-        background-color: #ff9800;
+        background-color: #F39C12;
+        color: white;
     }
     
     .btn-warning:hover {
-        background-color: #f57c00;
+        background-color: #E67E22;
     }
     
     .btn-success {
-        background-color: #4caf50;
+        background-color: #26A69A;
+        color: white;
     }
     
     .btn-success:hover {
-        background-color: #43a047;
+        background-color: #229B8F;
     }
     
     .btn-danger {
-        background-color: #ef5350;
+        background-color: #E74C3C;
+        color: white;
     }
     
     .btn-danger:hover {
-        background-color: #e53935;
+        background-color: #C0392B;
     }
     
     .table {
-        border-radius: 4px;
+        border-radius: 8px;
         overflow: hidden;
         margin-bottom: 0;
     }
     
     .table thead th {
-        background-color: #f8fafc;
-        border-bottom: 2px solid #e2e8f0;
+        background-color: #fafafa;
+        border-bottom: 2px solid #e0e0e0;
         font-size: 0.75rem;
         font-weight: 600;
         text-transform: uppercase;
         letter-spacing: 0.5px;
         padding: 0.6rem 0.75rem;
-        color: #475569;
+        color: #616161;
     }
     
     .table tbody td {
         padding: 0.7rem 0.75rem;
         vertical-align: middle;
         font-size: 0.875rem;
-        border-color: #f1f5f9;
+        border-color: #f5f5f5;
+        color: #424242;
     }
     
     .table-hover tbody tr:hover {
-        background-color: #f8fafc;
+        background-color: #fafafa;
     }
     
     .badge {
-        border-radius: 3px;
-        padding: 0.25rem 0.5rem;
-        font-size: 0.7rem;
+        border-radius: 20px;
+        padding: 0.35rem 0.7rem;
+        font-size: 0.75rem;
         font-weight: 600;
     }
     
     .alert {
-        border-radius: 4px;
+        border-radius: 8px;
         border: none;
         padding: 0.75rem 1rem;
     }
@@ -129,29 +137,29 @@
     .page-header h2 {
         font-size: 1.75rem;
         font-weight: 600;
-        color: #2c3e50;
+        color: #424242;
         margin: 0;
     }
     
     .page-header .subtitle {
         font-size: 0.875rem;
-        color: #6c757d;
+        color: #757575;
     }
     
     .modal-content {
-        border-radius: 4px;
+        border-radius: 8px;
         border: none;
         box-shadow: 0 4px 12px rgba(0,0,0,0.15);
     }
     
     .modal-header {
-        border-bottom: 1px solid #e2e8f0;
-        border-radius: 4px 4px 0 0;
+        border-bottom: 1px solid #e0e0e0;
+        border-radius: 8px 8px 0 0;
         padding: 1rem 1.25rem;
     }
     
     .modal-footer {
-        border-top: 1px solid #e2e8f0;
+        border-top: 1px solid #e0e0e0;
         padding: 0.75rem 1.25rem;
     }
     
@@ -161,6 +169,7 @@
     
     .empty-state i {
         opacity: 0.3;
+        color: #BDBDBD;
     }
     
     .container {
@@ -180,7 +189,7 @@
 {% block content %}
 <div class="container mt-4">
     <!-- Header con búsqueda integrada -->
-    <div class="page-header d-flex justify-content-between align-items-center flex-wrap gap-2" style="background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); padding: 1.5rem; margin: -0.8rem -1rem 1.5rem -1rem; border-radius: 0; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+    <div class="page-header d-flex justify-content-between align-items-center flex-wrap gap-2" style="background: linear-gradient(135deg, #17A2B8 0%, #138496 100%); padding: 1.5rem; margin: -0.8rem -1rem 1.5rem -1rem; border-radius: 0; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
         <div>
             <h2 style="color: white; font-weight: 600; margin: 0;">
                 <i class="fas fa-book me-2"></i>{{ titulo }}
@@ -359,10 +368,16 @@
                                     <a href="{% url 'agregar_notas' materia.id %}" class="btn btn-sm btn-success" title="Gestionar Notas">
                                         <i class="fas fa-chart-line"></i> Gestionar Notas
                                     </a>
+                                    <a href="{% url 'hoja_calificaciones_materia' materia.id %}" class="btn btn-sm btn-secondary" title="Hoja de Calificaciones Imprimible" target="_blank">
+                                        <i class="fas fa-print"></i> Hoja Imprimible
+                                    </a>
                                     {% endif %}
                                     {% if user.is_superuser or user.rol == 'Administrador' or user.rol == 'Director' or user.rol == 'Secretaria' %}
                                     <a href="{% url 'gestionar_matriculas' materia.id %}" class="btn btn-sm btn-success" title="Gestionar Matrículas">
                                         <i class="fas fa-user-plus"></i>
+                                    </a>
+                                    <a href="{% url 'hoja_calificaciones_materia' materia.id %}" class="btn btn-sm btn-secondary" title="Hoja de Calificaciones Imprimible" target="_blank">
+                                        <i class="fas fa-print"></i>
                                     </a>
                                     <a href="{% url 'editar_materia' materia.id %}" class="btn btn-sm btn-warning" title="Editar">
                                         <i class="fas fa-edit"></i>
@@ -409,53 +424,303 @@
             <div class="modal-body">
                 {% with matricula=materia.matricula %}
                 <div class="table-responsive">
-                    <table class="table">
+                    <!-- Competencia Comunicativa -->
+                    <h6 class="mt-3 mb-2 text-primary"><i class="fas fa-comments"></i> Competencia Comunicativa</h6>
+                    <table class="table table-sm">
                         <tbody>
                             <tr>
                                 <th>Periodo 1:</th>
                                 <td class="text-end">
-                                    {% if matricula.prom_comunicativa %}
-                                        {{ matricula.prom_comunicativa|floatformat:1 }}
+                                    {% if matricula.com_p1 is not None %}
+                                        <span {% if matricula.mostrar_com_rp1 %}class="text-decoration-line-through text-muted"{% endif %}>{{ matricula.com_p1|floatformat:1 }}</span>
+                                        {% if matricula.mostrar_com_rp1 %}
+                                            <span class="badge bg-success ms-2">RP: {{ matricula.com_rp1|floatformat:1 }}</span>
+                                        {% endif %}
                                     {% else %}
-                                        <span class="text-muted">No registrado</span>
+                                        <span class="text-muted">-</span>
                                     {% endif %}
                                 </td>
                             </tr>
                             <tr>
                                 <th>Periodo 2:</th>
                                 <td class="text-end">
-                                    {% if matricula.prom_logico %}
-                                        {{ matricula.prom_logico|floatformat:1 }}
+                                    {% if matricula.com_p2 is not None %}
+                                        <span {% if matricula.mostrar_com_rp2 %}class="text-decoration-line-through text-muted"{% endif %}>{{ matricula.com_p2|floatformat:1 }}</span>
+                                        {% if matricula.mostrar_com_rp2 %}
+                                            <span class="badge bg-success ms-2">RP: {{ matricula.com_rp2|floatformat:1 }}</span>
+                                        {% endif %}
                                     {% else %}
-                                        <span class="text-muted">No registrado</span>
+                                        <span class="text-muted">-</span>
                                     {% endif %}
                                 </td>
                             </tr>
                             <tr>
                                 <th>Periodo 3:</th>
                                 <td class="text-end">
-                                    {% if matricula.prom_cientifica %}
-                                        {{ matricula.prom_cientifica|floatformat:1 }}
+                                    {% if matricula.com_p3 is not None %}
+                                        <span {% if matricula.mostrar_com_rp3 %}class="text-decoration-line-through text-muted"{% endif %}>{{ matricula.com_p3|floatformat:1 }}</span>
+                                        {% if matricula.mostrar_com_rp3 %}
+                                            <span class="badge bg-success ms-2">RP: {{ matricula.com_rp3|floatformat:1 }}</span>
+                                        {% endif %}
                                     {% else %}
-                                        <span class="text-muted">No registrado</span>
+                                        <span class="text-muted">-</span>
                                     {% endif %}
                                 </td>
                             </tr>
                             <tr>
                                 <th>Periodo 4:</th>
                                 <td class="text-end">
-                                    {% if matricula.prom_etica %}
-                                        {{ matricula.prom_etica|floatformat:1 }}
+                                    {% if matricula.com_p4 is not None %}
+                                        <span {% if matricula.mostrar_com_rp4 %}class="text-decoration-line-through text-muted"{% endif %}>{{ matricula.com_p4|floatformat:1 }}</span>
+                                        {% if matricula.mostrar_com_rp4 %}
+                                            <span class="badge bg-success ms-2">RP: {{ matricula.com_rp4|floatformat:1 }}</span>
+                                        {% endif %}
                                     {% else %}
-                                        <span class="text-muted">No registrado</span>
+                                        <span class="text-muted">-</span>
                                     {% endif %}
                                 </td>
                             </tr>
-                            <tr class="table-primary">
-                                <th>Promedio Final:</th>
+                            <tr class="table-light">
+                                <th>Promedio:</th>
                                 <td class="text-end fw-bold">
-                                    {% if matricula.promedio_final %}
+                                    {% if matricula.prom_comunicativa is not None %}
+                                        {{ matricula.prom_comunicativa|floatformat:1 }}
+                                    {% else %}
+                                        <span class="text-muted">-</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    <!-- Competencia Lógica/Matemática -->
+                    <h6 class="mt-3 mb-2 text-success"><i class="fas fa-calculator"></i> Competencia Lógica-Matemática</h6>
+                    <table class="table table-sm">
+                        <tbody>
+                            <tr>
+                                <th>Periodo 1:</th>
+                                <td class="text-end">
+                                    {% if matricula.log_p1 is not None %}
+                                        <span {% if matricula.mostrar_log_rp1 %}class="text-decoration-line-through text-muted"{% endif %}>{{ matricula.log_p1|floatformat:1 }}</span>
+                                        {% if matricula.mostrar_log_rp1 %}
+                                            <span class="badge bg-success ms-2">✓ RP: {{ matricula.log_rp1|floatformat:1 }}</span>
+                                        {% endif %}
+                                    {% else %}
+                                        <span class="text-muted">-</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            <tr>
+                                <th>Periodo 2:</th>
+                                <td class="text-end">
+                                    {% if matricula.log_p2 is not None %}
+                                        <span {% if matricula.mostrar_log_rp2 %}class="text-decoration-line-through text-muted"{% endif %}>{{ matricula.log_p2|floatformat:1 }}</span>
+                                        {% if matricula.mostrar_log_rp2 %}
+                                            <span class="badge bg-success ms-2">RP: {{ matricula.log_rp2|floatformat:1 }}</span>
+                                        {% endif %}
+                                    {% else %}
+                                        <span class="text-muted">-</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            <tr>
+                                <th>Periodo 3:</th>
+                                <td class="text-end">
+                                    {% if matricula.log_p3 is not None %}
+                                        <span {% if matricula.mostrar_log_rp3 %}class="text-decoration-line-through text-muted"{% endif %}>{{ matricula.log_p3|floatformat:1 }}</span>
+                                        {% if matricula.mostrar_log_rp3 %}
+                                            <span class="badge bg-success ms-2">RP: {{ matricula.log_rp3|floatformat:1 }}</span>
+                                        {% endif %}
+                                    {% else %}
+                                        <span class="text-muted">-</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            <tr>
+                                <th>Periodo 4:</th>
+                                <td class="text-end">
+                                    {% if matricula.log_p4 is not None %}
+                                        <span {% if matricula.mostrar_log_rp4 %}class="text-decoration-line-through text-muted"{% endif %}>{{ matricula.log_p4|floatformat:1 }}</span>
+                                        {% if matricula.mostrar_log_rp4 %}
+                                            <span class="badge bg-success ms-2">RP: {{ matricula.log_rp4|floatformat:1 }}</span>
+                                        {% endif %}
+                                    {% else %}
+                                        <span class="text-muted">-</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            <tr class="table-light">
+                                <th>Promedio:</th>
+                                <td class="text-end fw-bold">
+                                    {% if matricula.prom_logico is not None %}
+                                        {{ matricula.prom_logico|floatformat:1 }}
+                                    {% else %}
+                                        <span class="text-muted">-</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    <!-- Competencia Científica -->
+                    <h6 class="mt-3 mb-2 text-info"><i class="fas fa-flask"></i> Competencia Científica</h6>
+                    <table class="table table-sm">
+                        <tbody>
+                            <tr>
+                                <th>Periodo 1:</th>
+                                <td class="text-end">
+                                    {% if matricula.cie_p1 is not None %}
+                                        <span {% if matricula.mostrar_cie_rp1 %}class="text-decoration-line-through text-muted"{% endif %}>{{ matricula.cie_p1|floatformat:1 }}</span>
+                                        {% if matricula.mostrar_cie_rp1 %}
+                                            <span class="badge bg-success ms-2">RP: {{ matricula.cie_rp1|floatformat:1 }}</span>
+                                        {% endif %}
+                                    {% else %}
+                                        <span class="text-muted">-</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            <tr>
+                                <th>Periodo 2:</th>
+                                <td class="text-end">
+                                    {% if matricula.cie_p2 is not None %}
+                                        <span {% if matricula.mostrar_cie_rp2 %}class="text-decoration-line-through text-muted"{% endif %}>{{ matricula.cie_p2|floatformat:1 }}</span>
+                                        {% if matricula.mostrar_cie_rp2 %}
+                                            <span class="badge bg-success ms-2">RP: {{ matricula.cie_rp2|floatformat:1 }}</span>
+                                        {% endif %}
+                                    {% else %}
+                                        <span class="text-muted">-</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            <tr>
+                                <th>Periodo 3:</th>
+                                <td class="text-end">
+                                    {% if matricula.cie_p3 is not None %}
+                                        <span {% if matricula.mostrar_cie_rp3 %}class="text-decoration-line-through text-muted"{% endif %}>{{ matricula.cie_p3|floatformat:1 }}</span>
+                                        {% if matricula.mostrar_cie_rp3 %}
+                                            <span class="badge bg-success ms-2">RP: {{ matricula.cie_rp3|floatformat:1 }}</span>
+                                        {% endif %}
+                                    {% else %}
+                                        <span class="text-muted">-</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            <tr>
+                                <th>Periodo 4:</th>
+                                <td class="text-end">
+                                    {% if matricula.cie_p4 is not None %}
+                                        <span {% if matricula.mostrar_cie_rp4 %}class="text-decoration-line-through text-muted"{% endif %}>{{ matricula.cie_p4|floatformat:1 }}</span>
+                                        {% if matricula.mostrar_cie_rp4 %}
+                                            <span class="badge bg-success ms-2">RP: {{ matricula.cie_rp4|floatformat:1 }}</span>
+                                        {% endif %}
+                                    {% else %}
+                                        <span class="text-muted">-</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            <tr class="table-light">
+                                <th>Promedio:</th>
+                                <td class="text-end fw-bold">
+                                    {% if matricula.prom_cientifica is not None %}
+                                        {{ matricula.prom_cientifica|floatformat:1 }}
+                                    {% else %}
+                                        <span class="text-muted">-</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    <!-- Competencia Ética -->
+                    <h6 class="mt-3 mb-2 text-warning"><i class="fas fa-handshake"></i> Competencia Ética y Ciudadana</h6>
+                    <table class="table table-sm">
+                        <tbody>
+                            <tr>
+                                <th>Periodo 1:</th>
+                                <td class="text-end">
+                                    {% if matricula.eti_p1 is not None %}
+                                        <span {% if matricula.mostrar_eti_rp1 %}class="text-decoration-line-through text-muted"{% endif %}>{{ matricula.eti_p1|floatformat:1 }}</span>
+                                        {% if matricula.mostrar_eti_rp1 %}
+                                            <span class="badge bg-success ms-2">RP: {{ matricula.eti_rp1|floatformat:1 }}</span>
+                                        {% endif %}
+                                    {% else %}
+                                        <span class="text-muted">-</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            <tr>
+                                <th>Periodo 2:</th>
+                                <td class="text-end">
+                                    {% if matricula.eti_p2 is not None %}
+                                        <span {% if matricula.mostrar_eti_rp2 %}class="text-decoration-line-through text-muted"{% endif %}>{{ matricula.eti_p2|floatformat:1 }}</span>
+                                        {% if matricula.mostrar_eti_rp2 %}
+                                            <span class="badge bg-success ms-2">RP: {{ matricula.eti_rp2|floatformat:1 }}</span>
+                                        {% endif %}
+                                    {% else %}
+                                        <span class="text-muted">-</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            <tr>
+                                <th>Periodo 3:</th>
+                                <td class="text-end">
+                                    {% if matricula.eti_p3 is not None %}
+                                        <span {% if matricula.mostrar_eti_rp3 %}class="text-decoration-line-through text-muted"{% endif %}>{{ matricula.eti_p3|floatformat:1 }}</span>
+                                        {% if matricula.mostrar_eti_rp3 %}
+                                            <span class="badge bg-success ms-2">RP: {{ matricula.eti_rp3|floatformat:1 }}</span>
+                                        {% endif %}
+                                    {% else %}
+                                        <span class="text-muted">-</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            <tr>
+                                <th>Periodo 4:</th>
+                                <td class="text-end">
+                                    {% if matricula.eti_p4 is not None %}
+                                        <span {% if matricula.mostrar_eti_rp4 %}class="text-decoration-line-through text-muted"{% endif %}>{{ matricula.eti_p4|floatformat:1 }}</span>
+                                        {% if matricula.mostrar_eti_rp4 %}
+                                            <span class="badge bg-success ms-2">RP: {{ matricula.eti_rp4|floatformat:1 }}</span>
+                                        {% endif %}
+                                    {% else %}
+                                        <span class="text-muted">-</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            <tr class="table-light">
+                                <th>Promedio:</th>
+                                <td class="text-end fw-bold">
+                                    {% if matricula.prom_etica is not None %}
+                                        {{ matricula.prom_etica|floatformat:1 }}
+                                    {% else %}
+                                        <span class="text-muted">-</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    <!-- Resumen Final -->
+                    <table class="table table-bordered mt-3">
+                        <tbody>
+                            <tr class="table-primary">
+                                <th><i class="fas fa-star"></i> Promedio Base:</th>
+                                <td class="text-end fw-bold">
+                                    {% if matricula.promedio_final is not None %}
                                         {{ matricula.promedio_final|floatformat:1 }}
+                                    {% else %}
+                                        <span class="text-muted">No calculado</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            <tr class="table-success">
+                                <th><i class="fas fa-trophy"></i> Nota Final Definitiva:</th>
+                                <td class="text-end fw-bold" style="font-size: 1.1rem;">
+                                    {% if matricula.nota_final_efectiva is not None %}
+                                        <span class="{% if matricula.nota_final_efectiva >= 70 %}text-success{% else %}text-danger{% endif %}">
+                                            {{ matricula.nota_final_efectiva|floatformat:1 }}
+                                        </span>
+                                        <br><small class="text-muted" style="font-size: 0.75rem;">({{ matricula.tipo_calificacion }})</small>
                                     {% else %}
                                         <span class="text-muted">No calculado</span>
                                     {% endif %}
@@ -465,16 +730,55 @@
                                 <th>Estado:</th>
                                 <td class="text-end">
                                     {% if matricula.estado == "Aprobado" %}
-                                        <span class="badge bg-success">Aprobado</span>
+                                        <span class="badge bg-success">✓ Aprobado</span>
                                     {% elif matricula.estado == "Reprobado" %}
-                                        <span class="badge bg-danger">Reprobado</span>
+                                        <span class="badge bg-danger">✗ Reprobado</span>
                                     {% else %}
-                                        <span class="badge bg-secondary">En curso</span>
+                                        <span class="badge bg-secondary">⏳ En proceso</span>
                                     {% endif %}
                                 </td>
                             </tr>
                         </tbody>
                     </table>
+
+                    <!-- Exámenes Especiales (si existen) -->
+                    {% if matricula.ex_com or matricula.ex_ext or matricula.ex_esp %}
+                    <h6 class="mt-3 mb-2 text-purple"><i class="fas fa-clipboard-check"></i> Exámenes Especiales</h6>
+                    <table class="table table-sm table-bordered">
+                        <tbody>
+                            {% if matricula.ex_com is not None %}
+                            <tr>
+                                <th>Completivo:</th>
+                                <td class="text-end">
+                                    {{ matricula.ex_com|floatformat:1 }}
+                                    <span class="badge bg-info ms-2">→ Final: {{ matricula.calificacion_completiva_final|floatformat:1 }}</span>
+                                    <small class="text-muted d-block">50% Prom. + 50% Examen</small>
+                                </td>
+                            </tr>
+                            {% endif %}
+                            {% if matricula.ex_ext is not None %}
+                            <tr>
+                                <th>Extraordinario:</th>
+                                <td class="text-end">
+                                    {{ matricula.ex_ext|floatformat:1 }}
+                                    <span class="badge bg-warning ms-2">→ Final: {{ matricula.calificacion_extraordinario_final|floatformat:1 }}</span>
+                                    <small class="text-muted d-block">30% Prom. + 70% Examen</small>
+                                </td>
+                            </tr>
+                            {% endif %}
+                            {% if matricula.ex_esp is not None %}
+                            <tr>
+                                <th>Especial:</th>
+                                <td class="text-end">
+                                    {{ matricula.ex_esp|floatformat:1 }}
+                                    <span class="badge bg-danger ms-2">→ Final: {{ matricula.calificacion_especial_final|floatformat:1 }}</span>
+                                    <small class="text-muted d-block">100% Examen</small>
+                                </td>
+                            </tr>
+                            {% endif %}
+                        </tbody>
+                    </table>
+                    {% endif %}
                 </div>
                 {% endwith %}
             </div>

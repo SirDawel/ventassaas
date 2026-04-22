@@ -3,6 +3,8 @@ from . import views
 from . import views_familias
 from . import views_evaluaciones
 from . import views_listas_cotejo
+from . import views_pagos_estudiante as views_pagos
+from . import views_pos
 
 urlpatterns = [
     # ... existing urls ...
@@ -59,6 +61,7 @@ urlpatterns = [
     path('materias/<int:materia_id>/agregar-notas-modular/', views.agregar_notas_modular, name='agregar_notas_modular'),
     #lista estudiantes x materia
     path('materias/<int:materia_id>/estudiantes/', views.lista_estudiantes_materia, name='lista_estudiantes_materia'),
+    path('materias/<int:materia_id>/hoja-calificaciones/', views.hoja_calificaciones_materia, name='hoja_calificaciones_materia'),
 
     # URLs para listas de estudiantes por curso
     path('cursos/estudiantes/info/', views.lista_estudiantes_curso_info, name='lista_estudiantes_curso_info'),
@@ -95,6 +98,11 @@ urlpatterns = [
     path('cobros/', views.cobros_dashboard, name='cobros_dashboard'),
     path('cobros/buscar-estudiante/', views.buscar_estudiante_cobro, name='buscar_estudiante_cobro'),
     # Sistema de pago simple removido - usar facturas en su lugar
+    
+    # URLs para Sistema de Pagos de Estudiantes
+    path('estudiante-pagos/', views_pagos.estudiante_pagos, name='estudiante_pagos'),
+    path('estudiante-pagos/procesar/', views_pagos.procesar_pago_estudiante, name='procesar_pago_estudiante'),
+    path('generar-facturas-automatico/', views_pagos.generar_facturas_mensuales_automatico, name='generar_facturas_automatico'),
     
     # URLs para Sistema de Facturación
     path('facturas/', views.facturas_list, name='facturas_list'),
@@ -198,6 +206,7 @@ urlpatterns = [
     path('evaluaciones/rubricas/', views_evaluaciones.rubricas, name='rubricas'),
     path('evaluaciones/rubricas/<int:rubrica_id>/criterios/', views_evaluaciones.gestionar_criterios_rubrica, name='gestionar_criterios_rubrica'),
     path('evaluaciones/aplicar-rubricas/', views_evaluaciones.evaluaciones_rubricas, name='evaluaciones_rubricas'),
+    path('evaluaciones/aplicar-rubricas/<int:evaluacion_id>/imprimir/', views_evaluaciones.imprimir_evaluacion_rubrica, name='imprimir_evaluacion_rubrica'),
     path('evaluaciones/aplicar-rubricas/<int:evaluacion_id>/evaluar/', views_evaluaciones.evaluar_con_rubrica, name='evaluar_con_rubrica'),
     path('evaluaciones/portafolios/', views_evaluaciones.portafolios, name='portafolios'),
     path('evaluaciones/registros-anecdoticos/', views_evaluaciones.registros_anecdoticos, name='registros_anecdoticos'),
@@ -227,4 +236,11 @@ urlpatterns = [
     # Reportes y Visualización
     path('evaluaciones-cotejo/<int:pk>/reporte/', views_listas_cotejo.evaluacion_cotejo_reporte, name='evaluacion_cotejo_reporte'),
     path('evaluaciones-cotejo/<int:pk>/mi-evaluacion/', views_listas_cotejo.estudiante_ver_evaluacion, name='estudiante_ver_evaluacion'),
+    
+    # ============================================
+    # WEBHOOKS PARA POS FÍSICOS (Cardnet, Azul)
+    # ============================================
+    path('webhooks/pos/cardnet/', views_pos.webhook_cardnet, name='webhook_cardnet'),
+    path('webhooks/pos/azul/', views_pos.webhook_azul, name='webhook_azul'),
+    path('webhooks/pos/consultar/<str:transaction_id>/', views_pos.consultar_transaccion_pos, name='consultar_transaccion_pos'),
 ] 

@@ -27,6 +27,28 @@
                     </a>
                 </div>
             </div>
+
+            {% if messages %}
+            {% for message in messages %}
+            <div class="alert alert alert-{{ message.tags }} alert-dismissible fade show mt-3" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+            {% endfor %}
+            {% endif %}
+
+            <!-- Alerta de solo lectura -->
+            {% if not puede_editar %}
+            <div class="alert alert-info mt-3" role="alert">
+                <i class="fas fa-info-circle"></i>
+                <strong>Modo de solo lectura:</strong> Puedes visualizar las notas pero no modificarlas.
+                {% if user.rol == 'Estudiante' %}
+                Estás viendo tus propias calificaciones.
+                {% elif user.rol == 'Coordinador' %}
+                Los coordinadores pueden consultar pero no editar notas.
+                {% endif %}
+            </div>
+            {% endif %}
         </div>
     </div>
 
@@ -437,4 +459,33 @@ document.getElementById('formNotas').addEventListener('submit', function(e) {
     }
 });
 </script>
+
+{% if not puede_editar %}
+<script>
+    // Deshabilitar todos los inputs y botones en modo de solo lectura
+    document.addEventListener('DOMContentLoaded', function() {
+        // Deshabilitar todos los inputs de notas
+        const inputs = document.querySelectorAll('input[type="number"]');
+        inputs.forEach(input => {
+            input.setAttribute('readonly', 'readonly');
+            input.style.backgroundColor = '#f0f0f0';
+            input.style.cursor = 'not-allowed';
+        });
+        
+        // Deshabilitar botones de guardar
+        const buttons = document.querySelectorAll('button[type="submit"]');
+        buttons.forEach(button => {
+            button.disabled = true;
+            button.style.display = 'none';
+        });
+        
+        // Deshabilitar toggle de modo de entrada
+        const toggle = document.getElementById('modoEntrada');
+        if (toggle) {
+            toggle.disabled = true;
+        }
+    });
+</script>
+{% endif %}
+
 {% endblock %}

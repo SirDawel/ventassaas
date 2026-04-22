@@ -4,7 +4,7 @@
 {% block title %}{{ titulo }}{% endblock %}
 
 {% block content %}
-<div class="container-fluid mt-3">
+<div class="container-fluid">
     <!-- Header Section -->
     <div class="row mb-2">
         <div class="col-12">
@@ -153,7 +153,7 @@
         <!-- Facturas Parciales -->
         {% if facturas_parcial is not None %}
         <div class="col-xl-2 col-lg-3 col-md-4 col-sm-6 mb-3">
-            <div class="stat-card text-white h-100" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+            <div class="stat-card text-white h-100" style="background-color: #9B59B6;">
                 <div class="stat-card-body">
                     <div class="stat-icon-small">
                         <i class="fas fa-percentage"></i>
@@ -170,7 +170,7 @@
         <!-- Facturas Vencidas -->
         {% if facturas_vencidas is not None %}
         <div class="col-xl-2 col-lg-3 col-md-4 col-sm-6 mb-3">
-            <div class="stat-card text-white h-100" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
+            <div class="stat-card text-white h-100" style="background-color: #E91E63;">
                 <div class="stat-card-body">
                     <div class="stat-icon-small">
                         <i class="fas fa-calendar-times"></i>
@@ -204,7 +204,7 @@
         <!-- Promedio de Factura -->
         {% if promedio_factura is not None %}
         <div class="col-xl-2 col-lg-3 col-md-4 col-sm-6 mb-3">
-            <div class="stat-card text-white h-100" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
+            <div class="stat-card text-white h-100" style="background-color: #00BCD4;">
                 <div class="stat-card-body">
                     <div class="stat-icon-small">
                         <i class="fas fa-calculator"></i>
@@ -221,7 +221,7 @@
         <!-- Porcentaje Cobrado -->
         {% if porcentaje_cobrado is not None %}
         <div class="col-xl-2 col-lg-3 col-md-4 col-sm-6 mb-3">
-            <div class="stat-card text-white h-100" style="background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);">
+            <div class="stat-card text-white h-100" style="background-color: #26A69A;">
                 <div class="stat-card-body">
                     <div class="stat-icon-small">
                         <i class="fas fa-chart-pie"></i>
@@ -237,7 +237,7 @@
 
         <!-- Año Escolar Info -->
         <div class="col-xl-2 col-lg-3 col-md-4 col-sm-6 mb-3">
-            <div class="stat-card text-white h-100" style="background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);">
+            <div class="stat-card text-white h-100" style="background-color: #FF6F61;">
                 <div class="stat-card-body">
                     <div class="stat-icon-small">
                         <i class="fas fa-calendar-alt"></i>
@@ -255,12 +255,12 @@
     <div class="row">
         <div class="col-12">
             <div class="card">
-                <div class="card-header bg-primary text-white">
+                <div class="card-header text-white">
                     <div class="d-flex justify-content-between align-items-center">
                         <h5 class="m-0">
                             <i class="fas fa-file-invoice me-2"></i>Últimas Facturas Registradas
                         </h5>
-                        <span class="badge bg-light text-primary">{{ ultimos_pagos|length }} registros</span>
+                        <span class="badge bg-light">{{ ultimos_pagos|length }} registros</span>
                     </div>
                 </div>
                 <div class="card-body p-0">
@@ -292,31 +292,31 @@
                                         {% endif %}
                                     </td>
                                     <td><strong class="text-dark">RD$ {{ factura.total|unlocalize|floatformat:2 }}</strong></td>
-                                    <td><strong class="text-success">RD$ {{ factura.monto_pagado|unlocalize|floatformat:2 }}</strong></td>
+                                    <td><strong style="color: #20B2AA;">RD$ {{ factura.monto_pagado|unlocalize|floatformat:2 }}</strong></td>
                                     <td>
                                         {% if factura.estado == 'pagada' %}
-                                        <span class="badge bg-success"><i class="fas fa-check-circle me-1"></i>Pagada</span>
+                                        <span class="badge" style="background-color: #20B2AA;"><i class="fas fa-check-circle me-1"></i>Pagada</span>
                                         {% elif factura.estado == 'parcial' %}
-                                        <span class="badge bg-warning"><i class="fas fa-clock me-1"></i>Parcial</span>
+                                        <span class="badge" style="background-color: #F39C12;"><i class="fas fa-clock me-1"></i>Parcial</span>
                                         {% elif factura.estado == 'pendiente' %}
-                                        <span class="badge bg-danger"><i class="fas fa-exclamation-circle me-1"></i>Pendiente</span>
+                                        <span class="badge" style="background-color: #E74C3C;"><i class="fas fa-exclamation-circle me-1"></i>Pendiente</span>
                                         {% elif factura.estado == 'anulada' %}
-                                        <span class="badge bg-secondary"><i class="fas fa-ban me-1"></i>Anulada</span>
+                                        <span class="badge" style="background-color: #95A5A6;"><i class="fas fa-ban me-1"></i>Anulada</span>
                                         {% else %}
                                         <span class="badge bg-secondary">{{ factura.get_estado_display }}</span>
                                         {% endif %}
                                     </td>
                                     <td>
                                         <div class="btn-group btn-group-sm" role="group">
-                                            <a href="{% url 'factura_detalle' factura.id %}" class="btn btn-info" title="Ver detalle">
+                                            <a href="{% url 'factura_detalle' factura.id %}" class="btn" style="background-color: #5DADE2; color: white;" title="Ver detalle">
                                                 <i class="fas fa-eye"></i>
                                             </a>
                                             {% if factura.estado != 'pagada' and factura.estado != 'anulada' %}
-                                            <a href="{% url 'factura_registrar_pago' factura.id %}" class="btn btn-success" title="Registrar pago">
+                                            <a href="{% url 'factura_registrar_pago' factura.id %}" class="btn" style="background-color: #20B2AA; color: white;" title="Registrar pago">
                                                 <i class="fas fa-money-bill"></i>
                                             </a>
                                             {% endif %}
-                                            <a href="{% url 'factura_recibo_pos' factura.id %}" class="btn btn-secondary" title="Imprimir recibo" target="_blank">
+                                            <a href="{% url 'factura_recibo_pos' factura.id %}" class="btn" style="background-color: #95A5A6; color: white;" title="Imprimir recibo" target="_blank">
                                                 <i class="fas fa-print"></i>
                                             </a>
                                         </div>
@@ -328,8 +328,10 @@
                     </div>
                     {% else %}
                     <div class="alert alert-info m-3">
-                        <i class="fas fa-info-circle me-2"></i>
-                        No hay facturas registradas aún.
+                        <div class="d-flex align-items-center">
+                            <i class="fas fa-info-circle me-2" style="font-size: 1.5rem;"></i>
+                            <span>No hay facturas registradas aún.</span>
+                        </div>
                     </div>
                     {% endif %}
                 </div>
@@ -379,9 +381,10 @@
 </div>
 
 <style>
-/* ===== FLAT BUSINESS DESIGN ===== */
+/* ===== BUSINESS DASHBOARD - TEAL THEME ===== */
 .container-fluid {
-    padding: 0.8rem 1rem;
+    padding: 0 1rem;
+    background-color: transparent;
 }
 
 .mt-3 {
@@ -404,84 +407,91 @@
 .dashboard-title {
     font-weight: 600;
     font-size: 1.75rem;
-    color: #2c3e50;
+    color: #424242;
     margin: 0 0 0.5rem 0;
 }
 
 .badge {
-    border-radius: 3px;
-    padding: 0.35rem 0.6rem;
+    border-radius: 4px;
+    padding: 0.35rem 0.7rem;
     font-size: 0.7rem;
-    font-weight: 600;
+    font-weight: 500;
     letter-spacing: 0.3px;
 }
 
 .bg-success-flat {
-    background-color: #4caf50;
+    background-color: #20B2AA;
+    color: white !important;
 }
 
 .bg-light {
-    background-color: #f8fafc !important;
-    color: #475569 !important;
+    background-color: #fff !important;
+    color: #757575 !important;
+    border: 1px solid #e0e0e0;
 }
 
 .text-primary {
-    color: #5c6bc0 !important;
+    color: #20B2AA !important;
 }
 
-/* ===== BUTTONS ===== */
+/* ===== BUTTONS - TEAL SCHEME ===== */
 .btn {
-    border-radius: 4px;
+    border-radius: 6px;
     font-weight: 500;
-    padding: 0.5rem 1rem;
+    padding: 0.5rem 1.2rem;
     font-size: 0.875rem;
     border: none;
-    transition: none;
+    transition: all 0.2s ease;
 }
 
 .btn-sm {
-    padding: 0.25rem 0.5rem;
+    padding: 0.3rem 0.6rem;
     font-size: 0.8rem;
 }
 
 .btn-primary {
-    background-color: #5c6bc0;
+    background-color: #17A2B8;
+    color: white;
 }
 
 .btn-primary:hover {
-    background-color: #4a5ab3;
+    background-color: #138496;
 }
 
 .btn-success {
-    background-color: #4caf50;
+    background-color: #20B2AA;
+    color: white;
 }
 
 .btn-success:hover {
-    background-color: #43a047;
+    background-color: #1A9891;
 }
 
 .btn-info {
-    background-color: #29b6f6;
+    background-color: #5DADE2;
+    color: white;
 }
 
 .btn-info:hover {
-    background-color: #1da9e6;
+    background-color: #3498DB;
 }
 
 .btn-warning {
-    background-color: #ff9800;
+    background-color: #F39C12;
+    color: white;
 }
 
 .btn-warning:hover {
-    background-color: #f57c00;
+    background-color: #E67E22;
 }
 
 .btn-secondary {
-    background-color: #78909c;
+    background-color: #95A5A6;
+    color: white;
 }
 
 .btn-secondary:hover {
-    background-color: #607d8b;
+    background-color: #7F8C8D;
 }
 
 .btn-group-modern {
@@ -490,33 +500,68 @@
     flex-wrap: wrap;
 }
 
-/* ===== STATS CARDS ===== */
+/* ===== STATS CARDS - TEAL CLEAN DESIGN ===== */
 .stat-card {
-    border-radius: 4px;
+    border-radius: 8px;
     overflow: hidden;
     background: white;
-    box-shadow: 0 1px 2px rgba(0,0,0,0.08);
-    border: 1px solid #e2e8f0;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    border: 1px solid #e0e0e0;
+    transition: all 0.2s ease;
+}
+
+.stat-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 3px 8px rgba(0,0,0,0.15);
+}
+
+/* Colores específicos de cards */
+.bg-success {
+    background-color: #20B2AA !important;
+}
+
+.bg-primary {
+    background-color: #17A2B8 !important;
+}
+
+.bg-warning {
+    background-color: #F39C12 !important;
+}
+
+.bg-info {
+    background-color: #5DADE2 !important;
+}
+
+.bg-dark {
+    background-color: #546E7A !important;
+}
+
+.bg-danger {
+    background-color: #E74C3C !important;
+}
+
+.bg-secondary {
+    background-color: #95A5A6 !important;
 }
 
 .bg-primary-flat {
-    background-color: #5c6bc0 !important;
+    background-color: #17A2B8 !important;
 }
 
 .bg-success-flat {
-    background-color: #4caf50 !important;
+    background-color: #20B2AA !important;
 }
 
 .bg-warning-flat {
-    background-color: #ff9800 !important;
+    background-color: #F39C12 !important;
 }
 
 .bg-info-flat {
-    background-color: #29b6f6 !important;
+    background-color: #5DADE2 !important;
 }
 
 .stat-card-body {
-    padding: 1rem;
+    padding: 1.1rem;
     display: flex;
     align-items: center;
     gap: 1rem;
@@ -528,8 +573,8 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    border-radius: 4px;
-    background: rgba(255,255,255,0.2);
+    border-radius: 8px;
+    background: rgba(255,255,255,0.25);
 }
 
 .stat-icon i {
@@ -544,10 +589,10 @@
 
 .stat-label {
     font-size: 0.75rem;
-    font-weight: 600;
+    font-weight: 500;
     text-transform: uppercase;
     letter-spacing: 0.5px;
-    opacity: 0.9;
+    opacity: 0.95;
     margin-bottom: 0.4rem;
 }
 
@@ -558,80 +603,85 @@
 
 .stat-card-footer {
     padding: 0.5rem 1rem;
-    background: rgba(0,0,0,0.15);
+    background: rgba(0,0,0,0.1);
     font-size: 0.8rem;
     color: white;
 }
 
-/* ===== CARD ===== */
+/* ===== CARD - CLEAN STYLE ===== */
 .card {
-    border-radius: 4px;
-    border: 1px solid #e2e8f0;
-    box-shadow: 0 1px 2px rgba(0,0,0,0.08);
+    border-radius: 8px;
+    border: 1px solid #e0e0e0;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    background: white;
 }
 
 .card-header {
-    border-radius: 4px 4px 0 0;
-    padding: 0.8rem 1rem;
-    border-bottom: 1px solid rgba(255,255,255,0.15);
+    border-radius: 8px 8px 0 0;
+    padding: 0.9rem 1.1rem;
+    border-bottom: 1px solid rgba(255,255,255,0.2);
+    background-color: #17A2B8 !important;
 }
 
 .card-body {
     padding: 0;
 }
 
-/* ===== TABLE ===== */
+/* ===== TABLE - MODERN CLEAN ===== */
 .table {
     font-size: 0.875rem;
     margin-bottom: 0;
 }
 
 .table thead {
-    background-color: #f8fafc;
+    background-color: #fafafa;
+    border-bottom: 2px solid #e0e0e0;
 }
 
 .table thead th {
-    border-bottom: 2px solid #e2e8f0;
-    padding: 0.6rem 0.75rem;
+    border-bottom: 2px solid #e0e0e0;
+    padding: 0.7rem 0.8rem;
     font-weight: 600;
     text-transform: uppercase;
     font-size: 0.75rem;
     letter-spacing: 0.5px;
-    color: #475569;
+    color: #616161;
 }
 
 .table tbody td {
-    padding: 0.7rem 0.75rem;
+    padding: 0.8rem;
     vertical-align: middle;
-    border-bottom: 1px solid #f1f5f9;
+    border-bottom: 1px solid #f5f5f5;
+    color: #424242;
 }
 
 .table-hover tbody tr:hover {
-    background-color: #f8fafc;
+    background-color: #fafafa;
 }
 
-/* ===== ACTION CARDS ===== */
+/* ===== ACTION CARDS - TEAL THEME ===== */
 .action-card {
-    border-radius: 4px;
+    border-radius: 8px;
     overflow: hidden;
-    box-shadow: 0 1px 2px rgba(0,0,0,0.08);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
     height: 100%;
+    border: 1px solid #e0e0e0;
 }
 
 .action-card-inner {
-    padding: 1.5rem;
+    padding: 1.8rem;
     text-align: center;
 }
 
 .action-card-icon {
     width: 70px;
     height: 70px;
-    margin: 0 auto 1rem;
+    margin: 0 auto 1.2rem;
     display: flex;
     align-items: center;
     justify-content: center;
-    border-radius: 4px;
-    background: rgba(255,255,255,0.2);
+    border-radius: 50%;
+    background: rgba(255,255,255,0.25);
 }
 
 .action-card-icon i {
@@ -650,37 +700,48 @@
     color: rgba(255,255,255,0.95);
     font-size: 0.875rem;
     margin-bottom: 1.5rem;
-    line-height: 1.5;
+    line-height: 1.6;
 }
 
 .action-card .btn-light {
     background: white;
-    color: #2c3e50;
-    font-weight: 600;
-}
-
-.alert {
-    border-radius: 4px;
+    color: #424242;
+    font-weight: 500;
     border: none;
 }
 
-/* ===== SMALL STAT CARDS ===== */
+.action-card .btn-light:hover {
+    background: #f5f5f5;
+}
+
+.alert {
+    border-radius: 6px;
+    border: 1px solid #e0e0e0;
+}
+
+.alert-info {
+    background-color: #E3F2FD;
+    color: #1976D2;
+    border-color: #90CAF9;
+}
+
+/* ===== SMALL STAT CARDS - CLEAN DESIGN ===== */
 .stat-card-body {
-    padding: 1rem;
+    padding: 1.1rem;
     display: flex;
     align-items: center;
-    gap: 0.75rem;
+    gap: 0.9rem;
 }
 
 .stat-icon-small {
     flex-shrink: 0;
-    width: 45px;
-    height: 45px;
+    width: 48px;
+    height: 48px;
     display: flex;
     align-items: center;
     justify-content: center;
-    border-radius: 8px;
-    background: rgba(255, 255, 255, 0.2);
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.25);
 }
 
 .stat-icon-small i {
@@ -695,36 +756,64 @@
 .stat-label-small {
     font-size: 0.7rem;
     font-weight: 500;
-    opacity: 0.9;
-    margin-bottom: 0.25rem;
+    opacity: 0.95;
+    margin-bottom: 0.3rem;
     text-transform: uppercase;
     letter-spacing: 0.5px;
 }
 
 .stat-value-small {
-    font-size: 1.4rem;
+    font-size: 1.5rem;
     font-weight: 700;
     line-height: 1.2;
     word-wrap: break-word;
 }
 
 .stat-card {
-    border-radius: 12px;
+    border-radius: 10px;
     overflow: hidden;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-    transition: all 0.3s ease;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
+    transition: all 0.2s ease;
     border: none;
 }
 
 .stat-card:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.18);
+}
+
+/* Badges modernos */
+.badge {
+    border-radius: 4px;
+    font-weight: 500;
+}
+
+.badge.bg-success {
+    background-color: #20B2AA !important;
+}
+
+.badge.bg-warning {
+    background-color: #F39C12 !important;
+}
+
+.badge.bg-danger {
+    background-color: #E74C3C !important;
+}
+
+.badge.bg-secondary {
+    background-color: #95A5A6 !important;
+}
+
+.badge.bg-light {
+    background-color: #fff !important;
+    color: #17A2B8 !important;
+    border: 1px solid #17A2B8;
 }
 
 /* Responsive adjustments */
 @media (max-width: 768px) {
     .stat-value-small {
-        font-size: 1.2rem;
+        font-size: 1.3rem;
     }
     
     .stat-label-small {
@@ -732,18 +821,32 @@
     }
     
     .stat-icon-small {
-        width: 40px;
-        height: 40px;
+        width: 42px;
+        height: 42px;
     }
     
     .stat-icon-small i {
-        font-size: 1.2rem;
+        font-size: 1.3rem;
     }
 }
 
 @media (max-width: 576px) {
     .stat-card-body {
-        padding: 0.75rem;
+        padding: 0.9rem;
+    }
+    
+    .dashboard-title {
+        font-size: 1.5rem;
+    }
+    
+    .btn-group-modern {
+        width: 100%;
+    }
+    
+    .btn-group-modern .btn {
+        flex: 1;
+        font-size: 0.8rem;
+        padding: 0.4rem 0.6rem;
     }
 }
 </style>

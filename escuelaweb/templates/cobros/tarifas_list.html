@@ -3,19 +3,19 @@
 {% block content %}
 
 <style>
-  /* ===== VARIABLES MODERNAS ===== */
+  /* ===== VARIABLES TEAL MODERNAS ===== */
   :root {
-    --tarifa-primary: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    --tarifa-success: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
-    --tarifa-warning: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-    --tarifa-shadow: 0 8px 30px rgba(0,0,0,0.12);
-    --tarifa-hover-shadow: 0 12px 40px rgba(0,0,0,0.18);
+    --tarifa-primary: linear-gradient(135deg, #17A2B8 0%, #138496 100%);
+    --tarifa-success: linear-gradient(135deg, #20B2AA 0%, #26A69A 100%);
+    --tarifa-warning: linear-gradient(135deg, #F39C12 0%, #E67E22 100%);
+    --tarifa-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    --tarifa-hover-shadow: 0 8px 20px rgba(0,0,0,0.15);
   }
 
-  /* ===== HEADER MODERNO ===== */
+  /* ===== HEADER MODERNO TEAL ===== */
   .tarifas-header {
     background: var(--tarifa-primary);
-    border-radius: 20px;
+    border-radius: 12px;
     padding: 2rem;
     margin-bottom: 2rem;
     box-shadow: var(--tarifa-shadow);
@@ -57,11 +57,11 @@
   /* ===== STATS CARDS ===== */
   .stats-card {
     background: white;
-    border-radius: 15px;
+    border-radius: 12px;
     padding: 1.5rem;
     box-shadow: var(--tarifa-shadow);
     transition: all 0.3s ease;
-    border: none;
+    border: 1px solid #e0e0e0;
     position: relative;
     overflow: hidden;
   }
@@ -84,7 +84,7 @@
   .stats-icon {
     width: 60px;
     height: 60px;
-    border-radius: 15px;
+    border-radius: 12px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -93,24 +93,24 @@
   }
 
   .stats-icon.primary {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+    background: linear-gradient(135deg, #17A2B8 0%, #138496 100%);
+    box-shadow: 0 4px 12px rgba(23, 162, 184, 0.4);
   }
 
   .stats-icon.warning {
-    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-    box-shadow: 0 5px 15px rgba(240, 147, 251, 0.4);
+    background: linear-gradient(135deg, #F39C12 0%, #E67E22 100%);
+    box-shadow: 0 4px 12px rgba(243, 156, 18, 0.4);
   }
 
   .stats-value {
     font-size: 2rem;
     font-weight: 700;
-    color: #2d3748;
+    color: #424242;
     margin-bottom: 0.25rem;
   }
 
   .stats-label {
-    color: #718096;
+    color: #757575;
     font-size: 0.9rem;
     font-weight: 500;
   }
@@ -118,10 +118,11 @@
   /* ===== BUSCADOR MODERNO ===== */
   .search-card {
     background: white;
-    border-radius: 20px;
+    border-radius: 12px;
     padding: 1.5rem;
     box-shadow: var(--tarifa-shadow);
     margin-bottom: 2rem;
+    border: 1px solid #e0e0e0;
   }
 
   .search-input-group {
@@ -129,16 +130,17 @@
   }
 
   .search-input-group .form-control {
-    border-radius: 12px;
-    border: 2px solid #e2e8f0;
+    border-radius: 8px;
+    border: 2px solid #e0e0e0;
     padding: 0.75rem 3rem 0.75rem 1rem;
     font-size: 0.95rem;
     transition: all 0.3s ease;
+    color: #424242;
   }
 
   .search-input-group .form-control:focus {
-    border-color: #667eea;
-    box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
+    border-color: #17A2B8;
+    box-shadow: 0 0 0 4px rgba(23, 162, 184, 0.1);
   }
 
   .search-icon {
@@ -146,55 +148,56 @@
     right: 15px;
     top: 50%;
     transform: translateY(-50%);
-    color: #a0aec0;
+    color: #BDBDBD;
     pointer-events: none;
   }
 
   .filter-select {
-    border-radius: 12px;
-    border: 2px solid #e2e8f0;
+    border-radius: 8px;
+    border: 2px solid #e0e0e0;
     padding: 0.75rem 1rem;
     transition: all 0.3s ease;
+    color: #424242;
   }
 
   .filter-select:focus {
-    border-color: #667eea;
-    box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
+    border-color: #17A2B8;
+    box-shadow: 0 0 0 4px rgba(23, 162, 184, 0.1);
   }
 
   .btn-search, .btn-clear {
-    border-radius: 12px;
+    border-radius: 8px;
     padding: 0.75rem 1.5rem;
     font-weight: 600;
     transition: all 0.3s ease;
   }
 
   .btn-search {
-    background: var(--tarifa-primary);
+    background: #20B2AA;
     border: none;
     color: white;
   }
 
   .btn-search:hover {
+    background: #1A9891;
     transform: translateY(-2px);
-    box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+    box-shadow: 0 4px 12px rgba(32, 178, 170, 0.4);
   }
 
   .btn-clear {
-    background: #f7fafc;
-    border: 2px solid #e2e8f0;
-    color: #4a5568;
+    background: #fafafa;
+    border: 2px solid #e0e0e0;
+    color: #616161;
   }
 
   .btn-clear:hover {
-    background: #edf2f7;
-    border-color: #cbd5e0;
+    background: #e0e0e0;
   }
 
   /* ===== TARJETAS DE CONCEPTOS ===== */
   .conceptos-card {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    border-radius: 15px;
+    background: linear-gradient(135deg, #17A2B8 0%, #138496 100%);
+    border-radius: 12px;
     padding: 1.5rem;
     margin-bottom: 2rem;
     color: white;
@@ -213,7 +216,7 @@
   }
 
   .conceptos-card .btn {
-    border-radius: 10px;
+    border-radius: 8px;
     font-weight: 600;
     padding: 0.5rem 1rem;
     transition: all 0.3s ease;
@@ -227,10 +230,11 @@
   /* ===== TABLA MODERNA ===== */
   .tarifas-table-card {
     background: white;
-    border-radius: 20px;
+    border-radius: 12px;
     padding: 1.5rem;
     box-shadow: var(--tarifa-shadow);
     overflow: hidden;
+    border: 1px solid #e0e0e0;
   }
 
   .table-header {
@@ -239,19 +243,19 @@
     align-items: center;
     margin-bottom: 1.5rem;
     padding-bottom: 1rem;
-    border-bottom: 2px solid #e2e8f0;
+    border-bottom: 2px solid #e0e0e0;
   }
 
   .table-header h4 {
     font-weight: 700;
-    color: #2d3748;
+    color: #424242;
     margin: 0;
   }
 
   .btn-create {
-    background: var(--tarifa-primary);
+    background: #20B2AA;
     border: none;
-    border-radius: 12px;
+    border-radius: 8px;
     padding: 0.75rem 1.5rem;
     font-weight: 600;
     color: white;
@@ -259,8 +263,9 @@
   }
 
   .btn-create:hover {
+    background: #1A9891;
     transform: translateY(-2px);
-    box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+    box-shadow: 0 4px 12px rgba(32, 178, 170, 0.4);
     color: white;
   }
 
@@ -270,7 +275,7 @@
   }
 
   .modern-table thead th {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: #17A2B8;
     color: white;
     font-weight: 600;
     text-transform: uppercase;
@@ -281,20 +286,20 @@
   }
 
   .modern-table thead th:first-child {
-    border-radius: 12px 0 0 0;
+    border-radius: 8px 0 0 0;
   }
 
   .modern-table thead th:last-child {
-    border-radius: 0 12px 0 0;
+    border-radius: 0 8px 0 0;
   }
 
   .modern-table tbody tr {
     transition: all 0.3s ease;
-    border-bottom: 1px solid #e2e8f0;
+    border-bottom: 1px solid #e0e0e0;
   }
 
   .modern-table tbody tr:hover {
-    background: #f7fafc;
+    background: #fafafa;
     transform: scale(1.01);
     box-shadow: 0 2px 8px rgba(0,0,0,0.05);
   }
@@ -302,18 +307,19 @@
   .modern-table tbody td {
     padding: 1rem;
     vertical-align: middle;
+    color: #424242;
   }
 
   .student-name {
     font-weight: 600;
-    color: #2d3748;
+    color: #424242;
     font-size: 1rem;
   }
 
   /* ===== BADGES MODERNOS ===== */
   .tarifa-badge {
     padding: 0.5rem 1rem;
-    border-radius: 10px;
+    border-radius: 20px;
     font-weight: 600;
     font-size: 0.9rem;
     display: inline-block;
@@ -321,17 +327,17 @@
   }
 
   .tarifa-badge.mensualidad {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, #17A2B8 0%, #138496 100%);
     color: white;
   }
 
   .tarifa-badge.inscripcion {
-    background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+    background: linear-gradient(135deg, #20B2AA 0%, #26A69A 100%);
     color: white;
   }
 
   .tarifa-badge.transporte {
-    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    background: linear-gradient(135deg, #F39C12 0%, #E67E22 100%);
     color: white;
   }
 
@@ -339,7 +345,7 @@
   .action-btn {
     width: 38px;
     height: 38px;
-    border-radius: 10px;
+    border-radius: 8px;
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -354,46 +360,46 @@
   }
 
   .action-btn.primary {
-    background: rgba(102, 126, 234, 0.1);
-    border-color: #667eea;
-    color: #667eea;
+    background: rgba(23, 162, 184, 0.1);
+    border-color: #17A2B8;
+    color: #17A2B8;
   }
 
   .action-btn.primary:hover {
-    background: #667eea;
+    background: #17A2B8;
     color: white;
   }
 
   .action-btn.success {
-    background: rgba(17, 153, 142, 0.1);
-    border-color: #11998e;
-    color: #11998e;
+    background: rgba(32, 178, 170, 0.1);
+    border-color: #20B2AA;
+    color: #20B2AA;
   }
 
   .action-btn.success:hover {
-    background: #11998e;
+    background: #20B2AA;
     color: white;
   }
 
   .action-btn.warning {
-    background: rgba(240, 147, 251, 0.1);
-    border-color: #f093fb;
-    color: #f093fb;
+    background: rgba(243, 156, 18, 0.1);
+    border-color: #F39C12;
+    color: #F39C12;
   }
 
   .action-btn.warning:hover {
-    background: #f093fb;
+    background: #F39C12;
     color: white;
   }
 
   .action-btn.secondary {
-    background: rgba(113, 128, 150, 0.1);
-    border-color: #718096;
-    color: #718096;
+    background: rgba(149, 165, 166, 0.1);
+    border-color: #95A5A6;
+    color: #95A5A6;
   }
 
   .action-btn.secondary:hover {
-    background: #718096;
+    background: #95A5A6;
     color: white;
   }
 
@@ -405,31 +411,31 @@
     gap: 0.5rem;
     margin-top: 2rem;
     padding-top: 1.5rem;
-    border-top: 2px solid #e2e8f0;
+    border-top: 2px solid #e0e0e0;
   }
 
   .modern-pagination .page-link {
-    border: 2px solid #e2e8f0;
-    border-radius: 10px;
+    border: 2px solid #e0e0e0;
+    border-radius: 8px;
     padding: 0.5rem 1rem;
-    color: #667eea;
+    color: #17A2B8;
     font-weight: 600;
     transition: all 0.3s ease;
     margin: 0 0.25rem;
   }
 
   .modern-pagination .page-link:hover {
-    background: var(--tarifa-primary);
-    border-color: transparent;
+    background: #17A2B8;
+    border-color: #17A2B8;
     color: white;
     transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+    box-shadow: 0 4px 12px rgba(23, 162, 184, 0.4);
   }
 
   .modern-pagination .page-item.disabled .page-link {
-    background: #f7fafc;
-    border-color: #e2e8f0;
-    color: #a0aec0;
+    background: #fafafa;
+    border-color: #e0e0e0;
+    color: #BDBDBD;
   }
 
   /* ===== EMPTY STATE ===== */
@@ -440,28 +446,28 @@
 
   .empty-state i {
     font-size: 4rem;
-    color: #cbd5e0;
+    color: #BDBDBD;
     margin-bottom: 1rem;
   }
 
   .empty-state h5 {
-    color: #4a5568;
+    color: #616161;
     font-weight: 600;
     margin-bottom: 0.5rem;
   }
 
   .empty-state p {
-    color: #a0aec0;
+    color: #9E9E9E;
   }
 
   /* ===== SIN TARIFAS CARD ===== */
   .sin-tarifas-card {
     background: white;
-    border-radius: 20px;
+    border-radius: 12px;
     padding: 1.5rem;
     box-shadow: var(--tarifa-shadow);
     margin-bottom: 2rem;
-    border-left: 5px solid #f093fb;
+    border-left: 5px solid #F39C12;
   }
 
   .sin-tarifas-header {
@@ -471,17 +477,17 @@
     margin-bottom: 1rem;
     cursor: pointer;
     padding: 0.5rem;
-    border-radius: 12px;
+    border-radius: 8px;
     transition: all 0.3s ease;
   }
 
   .sin-tarifas-header:hover {
-    background: #f7fafc;
+    background: #fafafa;
   }
 
   .sin-tarifas-header h5 {
     font-weight: 700;
-    color: #2d3748;
+    color: #424242;
     margin: 0;
   }
 
@@ -501,17 +507,17 @@
   }
 
   .estudiante-card {
-    background: linear-gradient(135deg, #f7fafc 0%, #edf2f7 100%);
-    border-radius: 12px;
+    background: white;
+    border-radius: 8px;
     padding: 1rem;
-    border: 2px solid #e2e8f0;
+    border: 2px solid #e0e0e0;
     transition: all 0.3s ease;
   }
 
   .estudiante-card:hover {
     transform: translateY(-3px);
     box-shadow: 0 8px 20px rgba(0,0,0,0.1);
-    border-color: #667eea;
+    border-color: #17A2B8;
   }
 
   .estudiante-info {
@@ -520,17 +526,17 @@
 
   .estudiante-name {
     font-weight: 600;
-    color: #2d3748;
+    color: #424242;
     margin-bottom: 0.25rem;
   }
 
   .estudiante-cedula {
     font-size: 0.85rem;
-    color: #718096;
+    color: #757575;
   }
 
   .btn-asignar {
-    background: var(--tarifa-primary);
+    background: #20B2AA;
     border: none;
     border-radius: 8px;
     padding: 0.5rem 1rem;
@@ -542,13 +548,14 @@
   }
 
   .btn-asignar:hover {
+    background: #1A9891;
     transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+    box-shadow: 0 4px 12px rgba(32, 178, 170, 0.4);
     color: white;
   }
 
   .sin-tarifas-badge {
-    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    background: linear-gradient(135deg, #F39C12 0%, #E67E22 100%);
     color: white;
     padding: 0.25rem 0.75rem;
     border-radius: 20px;
@@ -567,7 +574,7 @@
     }
 
     .table-responsive {
-      border-radius: 12px;
+      border-radius: 8px;
       overflow-x: auto;
     }
 

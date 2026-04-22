@@ -29,6 +29,19 @@
             </div>
             {% endfor %}
             {% endif %}
+
+            <!-- Alerta de solo lectura -->
+            {% if not puede_editar %}
+            <div class="alert alert-info" role="alert">
+                <i class="fas fa-info-circle"></i>
+                <strong>Modo de solo lectura:</strong> Puedes visualizar las notas pero no modificarlas.
+                {% if user.rol == 'Estudiante' %}
+                Estás viendo tus propias calificaciones.
+                {% elif user.rol == 'Coordinador' %}
+                Los coordinadores pueden consultar pero no editar notas.
+                {% endif %}
+            </div>
+            {% endif %}
         </div>
     </div>
 
@@ -44,12 +57,15 @@
                                 <th>#</th>
                                 <th>Alumno</th>
                                 <th>Competencia</th>
-                                <th>C1</th>
-                                <th>C2</th>
-                                <th>C3</th>
-                                <th>C4</th>
+                                <th>P1</th>
+                                <th class="bg-warning bg-opacity-25">RP1</th>
+                                <th>P2</th>
+                                <th class="bg-warning bg-opacity-25">RP2</th>
+                                <th>P3</th>
+                                <th class="bg-warning bg-opacity-25">RP3</th>
+                                <th>P4</th>
+                                <th class="bg-warning bg-opacity-25">RP4</th>
                                 <th>Promedio</th>
-                                <th>RP</th>
                                 <th>Estado</th>
                             </tr>
                         </thead>
@@ -64,34 +80,73 @@
                                 <td rowspan="5" class="text-center fw-bold">{{ forloop.counter }}</td>
                                 <td rowspan="5" class="fw-bold">{{ m.estudiante.get_full_name }}</td>
 
-                                <td>P1</td>
+                                <td>Comunicativa</td>
+                                
+                                <!-- P1 -->
                                 <td><input type="number" name="com_p1_{{ m.id }}"
-                                        value="{{ m.com_p1|default_if_none:'' }}" min="0" max="100"
+                                        value="{{ m.valores_display.com_p1 }}" min="0" max="100"
                                         class="form-control form-control-sm text-center"></td>
-
-                                <td><input type="number" name="com_p2_{{ m.id }}"
-                                        value="{{ m.com_p2|default_if_none:'' }}" min="0" max="100"
-                                        class="form-control form-control-sm text-center"></td>
-
-                                <td><input type="number" name="com_p3_{{ m.id }}"
-                                        value="{{ m.com_p3|default_if_none:'' }}" min="0" max="100"
-                                        class="form-control form-control-sm text-center"></td>
-
-                                <td><input type="number" name="com_p4_{{ m.id }}"
-                                        value="{{ m.com_p4|default_if_none:'' }}" min="0" max="100"
-                                        class="form-control form-control-sm text-center"></td>
-
-                                <td class="text-center">{{ m.prom_comunicativa|default:"-" }}</td>
-
-                                <td class="text-center">
-                                    {% if m.prom_comunicativa < 70 or m.com_rp %} <input type="number"
-                                        name="com_rp_{{ m.id }}" value="{{ m.com_rp|default_if_none:'' }}" min="0"
-                                        max="100" class="form-control form-control-sm text-center">
-                                        {% else %}
-                                        -
-                                        {% endif %}
+                                
+                                <!-- RP1 -->
+                                <td class="bg-warning bg-opacity-10">
+                                    {% if m.com_p1 and m.com_p1 < 70 %}
+                                    <input type="number" name="com_rp1_{{ m.id }}"
+                                        value="{{ m.valores_display.com_rp1 }}" min="0" max="100"
+                                        class="form-control form-control-sm text-center bg-warning bg-opacity-25">
+                                    {% else %}
+                                    -
+                                    {% endif %}
                                 </td>
 
+                                <!-- P2 -->
+                                <td><input type="number" name="com_p2_{{ m.id }}"
+                                        value="{{ m.valores_display.com_p2 }}" min="0" max="100"
+                                        class="form-control form-control-sm text-center"></td>
+                                
+                                <!-- RP2 -->
+                                <td class="bg-warning bg-opacity-10">
+                                    {% if m.com_p2 and m.com_p2 < 70 %}
+                                    <input type="number" name="com_rp2_{{ m.id }}"
+                                        value="{{ m.valores_display.com_rp2 }}" min="0" max="100"
+                                        class="form-control form-control-sm text-center bg-warning bg-opacity-25">
+                                    {% else %}
+                                    -
+                                    {% endif %}
+                                </td>
+
+                                <!-- P3 -->
+                                <td><input type="number" name="com_p3_{{ m.id }}"
+                                        value="{{ m.valores_display.com_p3 }}" min="0" max="100"
+                                        class="form-control form-control-sm text-center"></td>
+                                
+                                <!-- RP3 -->
+                                <td class="bg-warning bg-opacity-10">
+                                    {% if m.com_p3 and m.com_p3 < 70 %}
+                                    <input type="number" name="com_rp3_{{ m.id }}"
+                                        value="{{ m.valores_display.com_rp3 }}" min="0" max="100"
+                                        class="form-control form-control-sm text-center bg-warning bg-opacity-25">
+                                    {% else %}
+                                    -
+                                    {% endif %}
+                                </td>
+
+                                <!-- P4 -->
+                                <td><input type="number" name="com_p4_{{ m.id }}"
+                                        value="{{ m.valores_display.com_p4 }}" min="0" max="100"
+                                        class="form-control form-control-sm text-center"></td>
+                                
+                                <!-- RP4 -->
+                                <td class="bg-warning bg-opacity-10">
+                                    {% if m.com_p4 and m.com_p4 < 70 %}
+                                    <input type="number" name="com_rp4_{{ m.id }}"
+                                        value="{{ m.valores_display.com_rp4 }}" min="0" max="100"
+                                        class="form-control form-control-sm text-center bg-warning bg-opacity-25">
+                                    {% else %}
+                                    -
+                                    {% endif %}
+                                </td>
+
+                                <td class="text-center fw-bold">{{ m.prom_comunicativa|formato_nota }}</td>
 
                                 <td rowspan="5" class="text-center align-middle">
                                     {% if m.estado == "Aprobado" %}
@@ -99,7 +154,7 @@
                                     <h5 class="fw-bold">
                                         Nota Final:
                                         <span class="badge bg-info text-dark fs-6">
-                                            {{ m.nota_final_oficial|default:"-" }}
+                                            {{ m.nota_final_oficial|formato_nota:0 }}
                                         </span>
                                     </h5>
                                     {% elif m.estado == "Reprobado" %}
@@ -107,7 +162,7 @@
                                     <h5 class="fw-bold">
                                         Nota Final:
                                         <span class="badge bg-info text-dark fs-6">
-                                            {{ m.nota_final_oficial|default:"-" }}
+                                            {{ m.nota_final_oficial|formato_nota:0 }}
                                         </span>
                                     </h5>
                                     {% else %}
@@ -115,7 +170,7 @@
                                     <h5 class="fw-bold">
                                         Nota Final:
                                         <span class="badge bg-info text-dark fs-6">
-                                            {{ m.nota_final_oficial|default:"-" }}
+                                            {{ m.nota_final_oficial|formato_nota:0 }}
                                         </span>
                                     </h5>
                                     {% endif %}
@@ -126,106 +181,226 @@
                                  2) LÓGICO MATEMÁTICA
                             ================================= -->
                             <tr>
-                                <td>P2</td>
+                                <td>Matemática</td>
+                                
+                                <!-- P1 -->
                                 <td><input type="number" name="log_p1_{{ m.id }}"
-                                        value="{{ m.log_p1|default_if_none:'' }}" min="0" max="100"
+                                        value="{{ m.valores_display.log_p1 }}" min="0" max="100"
                                         class="form-control form-control-sm text-center"></td>
-
-                                <td><input type="number" name="log_p2_{{ m.id }}"
-                                        value="{{ m.log_p2|default_if_none:'' }}" min="0" max="100"
-                                        class="form-control form-control-sm text-center"></td>
-
-                                <td><input type="number" name="log_p3_{{ m.id }}"
-                                        value="{{ m.log_p3|default_if_none:'' }}" min="0" max="100"
-                                        class="form-control form-control-sm text-center"></td>
-
-                                <td><input type="number" name="log_p4_{{ m.id }}"
-                                        value="{{ m.log_p4|default_if_none:'' }}" min="0" max="100"
-                                        class="form-control form-control-sm text-center"></td>
-
-                                <td class="text-center">{{ m.prom_logico|default:"-" }}</td>
-
-                                <td class="text-center">
-                                    {% if m.prom_logico < 70 or m.log_rp %} <input type="number"
-                                        name="log_rp_{{ m.id }}" value="{{ m.log_rp|default_if_none:'' }}" min="0"
-                                        max="100" class="form-control form-control-sm text-center">
-                                        {% else %}
-                                        -
-                                        {% endif %}
+                                
+                                <!-- RP1 -->
+                                <td class="bg-warning bg-opacity-10">
+                                    {% if m.log_p1 and m.log_p1 < 70 %}
+                                    <input type="number" name="log_rp1_{{ m.id }}"
+                                        value="{{ m.valores_display.log_rp1 }}" min="0" max="100"
+                                        class="form-control form-control-sm text-center bg-warning bg-opacity-25">
+                                    {% else %}
+                                    -
+                                    {% endif %}
                                 </td>
+
+                                <!-- P2 -->
+                                <td><input type="number" name="log_p2_{{ m.id }}"
+                                        value="{{ m.valores_display.log_p2 }}" min="0" max="100"
+                                        class="form-control form-control-sm text-center"></td>
+                                
+                                <!-- RP2 -->
+                                <td class="bg-warning bg-opacity-10">
+                                    {% if m.log_p2 and m.log_p2 < 70 %}
+                                    <input type="number" name="log_rp2_{{ m.id }}"
+                                        value="{{ m.valores_display.log_rp2 }}" min="0" max="100"
+                                        class="form-control form-control-sm text-center bg-warning bg-opacity-25">
+                                    {% else %}
+                                    -
+                                    {% endif %}
+                                </td>
+
+                                <!-- P3 -->
+                                <td><input type="number" name="log_p3_{{ m.id }}"
+                                        value="{{ m.valores_display.log_p3 }}" min="0" max="100"
+                                        class="form-control form-control-sm text-center"></td>
+                                
+                                <!-- RP3 -->
+                                <td class="bg-warning bg-opacity-10">
+                                    {% if m.log_p3 and m.log_p3 < 70 %}
+                                    <input type="number" name="log_rp3_{{ m.id }}"
+                                        value="{{ m.valores_display.log_rp3 }}" min="0" max="100"
+                                        class="form-control form-control-sm text-center bg-warning bg-opacity-25">
+                                    {% else %}
+                                    -
+                                    {% endif %}
+                                </td>
+
+                                <!-- P4 -->
+                                <td><input type="number" name="log_p4_{{ m.id }}"
+                                        value="{{ m.valores_display.log_p4 }}" min="0" max="100"
+                                        class="form-control form-control-sm text-center"></td>
+                                
+                                <!-- RP4 -->
+                                <td class="bg-warning bg-opacity-10">
+                                    {% if m.log_p4 and m.log_p4 < 70 %}
+                                    <input type="number" name="log_rp4_{{ m.id }}"
+                                        value="{{ m.valores_display.log_rp4 }}" min="0" max="100"
+                                        class="form-control form-control-sm text-center bg-warning bg-opacity-25">
+                                    {% else %}
+                                    -
+                                    {% endif %}
+                                </td>
+
+                                <td class="text-center fw-bold">{{ m.prom_logico|formato_nota }}</td>
                             </tr>
 
                             <!-- ================================
                                  3) CIENTÍFICA
                             ================================= -->
                             <tr>
-                                <td>P3</td>
+                                <td>Científica</td>
+                                
+                                <!-- P1 -->
                                 <td><input type="number" name="cie_p1_{{ m.id }}"
-                                        value="{{ m.cie_p1|default_if_none:'' }}" min="0" max="100"
+                                        value="{{ m.valores_display.cie_p1 }}" min="0" max="100"
                                         class="form-control form-control-sm text-center"></td>
-
-                                <td><input type="number" name="cie_p2_{{ m.id }}"
-                                        value="{{ m.cie_p2|default_if_none:'' }}" min="0" max="100"
-                                        class="form-control form-control-sm text-center"></td>
-
-                                <td><input type="number" name="cie_p3_{{ m.id }}"
-                                        value="{{ m.cie_p3|default_if_none:'' }}" min="0" max="100"
-                                        class="form-control form-control-sm text-center"></td>
-
-                                <td><input type="number" name="cie_p4_{{ m.id }}"
-                                        value="{{ m.cie_p4|default_if_none:'' }}" min="0" max="100"
-                                        class="form-control form-control-sm text-center"></td>
-
-                                <td class="text-center">{{ m.prom_cientifica|default:"-" }}</td>
-
-                                <td class="text-center">
-                                    {% if m.prom_cientifica < 70 or m.cie_rp %} <input type="number"
-                                        name="cie_rp_{{ m.id }}" value="{{ m.cie_rp|default_if_none:'' }}" min="0"
-                                        max="100" class="form-control form-control-sm text-center">
-                                        {% else %}
-                                        -
-                                        {% endif %}
+                                
+                                <!-- RP1 -->
+                                <td class="bg-warning bg-opacity-10">
+                                    {% if m.cie_p1 and m.cie_p1 < 70 %}
+                                    <input type="number" name="cie_rp1_{{ m.id }}"
+                                        value="{{ m.valores_display.cie_rp1 }}" min="0" max="100"
+                                        class="form-control form-control-sm text-center bg-warning bg-opacity-25">
+                                    {% else %}
+                                    -
+                                    {% endif %}
                                 </td>
+
+                                <!-- P2 -->
+                                <td><input type="number" name="cie_p2_{{ m.id }}"
+                                        value="{{ m.valores_display.cie_p2 }}" min="0" max="100"
+                                        class="form-control form-control-sm text-center"></td>
+                                
+                                <!-- RP2 -->
+                                <td class="bg-warning bg-opacity-10">
+                                    {% if m.cie_p2 and m.cie_p2 < 70 %}
+                                    <input type="number" name="cie_rp2_{{ m.id }}"
+                                        value="{{ m.valores_display.cie_rp2 }}" min="0" max="100"
+                                        class="form-control form-control-sm text-center bg-warning bg-opacity-25">
+                                    {% else %}
+                                    -
+                                    {% endif %}
+                                </td>
+
+                                <!-- P3 -->
+                                <td><input type="number" name="cie_p3_{{ m.id }}"
+                                        value="{{ m.valores_display.cie_p3 }}" min="0" max="100"
+                                        class="form-control form-control-sm text-center"></td>
+                                
+                                <!-- RP3 -->
+                                <td class="bg-warning bg-opacity-10">
+                                    {% if m.cie_p3 and m.cie_p3 < 70 %}
+                                    <input type="number" name="cie_rp3_{{ m.id }}"
+                                        value="{{ m.valores_display.cie_rp3 }}" min="0" max="100"
+                                        class="form-control form-control-sm text-center bg-warning bg-opacity-25">
+                                    {% else %}
+                                    -
+                                    {% endif %}
+                                </td>
+
+                                <!-- P4 -->
+                                <td><input type="number" name="cie_p4_{{ m.id }}"
+                                        value="{{ m.valores_display.cie_p4 }}" min="0" max="100"
+                                        class="form-control form-control-sm text-center"></td>
+                                
+                                <!-- RP4 -->
+                                <td class="bg-warning bg-opacity-10">
+                                    {% if m.cie_p4 and m.cie_p4 < 70 %}
+                                    <input type="number" name="cie_rp4_{{ m.id }}"
+                                        value="{{ m.valores_display.cie_rp4 }}" min="0" max="100"
+                                        class="form-control form-control-sm text-center bg-warning bg-opacity-25">
+                                    {% else %}
+                                    -
+                                    {% endif %}
+                                </td>
+
+                                <td class="text-center fw-bold">{{ m.prom_cientifica|formato_nota }}</td>
                             </tr>
 
                             <!-- ================================
                                  4) ÉTICA
                             ================================= -->
                             <tr>
-                                <td>P4</td>
+                                <td>Ética</td>
+                                
+                                <!-- P1 -->
                                 <td><input type="number" name="eti_p1_{{ m.id }}"
-                                        value="{{ m.eti_p1|default_if_none:'' }}" min="0" max="100"
+                                        value="{{ m.valores_display.eti_p1 }}" min="0" max="100"
                                         class="form-control form-control-sm text-center"></td>
-
-                                <td><input type="number" name="eti_p2_{{ m.id }}"
-                                        value="{{ m.eti_p2|default_if_none:'' }}" min="0" max="100"
-                                        class="form-control form-control-sm text-center"></td>
-
-                                <td><input type="number" name="eti_p3_{{ m.id }}"
-                                        value="{{ m.eti_p3|default_if_none:'' }}" min="0" max="100"
-                                        class="form-control form-control-sm text-center"></td>
-
-                                <td><input type="number" name="eti_p4_{{ m.id }}"
-                                        value="{{ m.eti_p4|default_if_none:'' }}" min="0" max="100"
-                                        class="form-control form-control-sm text-center"></td>
-
-                                <td class="text-center">{{ m.prom_etica|default:"-" }}</td>
-
-                                <td class="text-center">
-                                    {% if m.prom_etica < 70 or m.eti_rp %} <input type="number" name="eti_rp_{{ m.id }}"
-                                        value="{{ m.eti_rp|default_if_none:'' }}" min="0" max="100"
-                                        class="form-control form-control-sm text-center">
-                                        {% else %}
-                                        -
-                                        {% endif %}
+                                
+                                <!-- RP1 -->
+                                <td class="bg-warning bg-opacity-10">
+                                    {% if m.eti_p1 and m.eti_p1 < 70 %}
+                                    <input type="number" name="eti_rp1_{{ m.id }}"
+                                        value="{{ m.valores_display.eti_rp1 }}" min="0" max="100"
+                                        class="form-control form-control-sm text-center bg-warning bg-opacity-25">
+                                    {% else %}
+                                    -
+                                    {% endif %}
                                 </td>
+
+                                <!-- P2 -->
+                                <td><input type="number" name="eti_p2_{{ m.id }}"
+                                        value="{{ m.valores_display.eti_p2 }}" min="0" max="100"
+                                        class="form-control form-control-sm text-center"></td>
+                                
+                                <!-- RP2 -->
+                                <td class="bg-warning bg-opacity-10">
+                                    {% if m.eti_p2 and m.eti_p2 < 70 %}
+                                    <input type="number" name="eti_rp2_{{ m.id }}"
+                                        value="{{ m.valores_display.eti_rp2 }}" min="0" max="100"
+                                        class="form-control form-control-sm text-center bg-warning bg-opacity-25">
+                                    {% else %}
+                                    -
+                                    {% endif %}
+                                </td>
+
+                                <!-- P3 -->
+                                <td><input type="number" name="eti_p3_{{ m.id }}"
+                                        value="{{ m.valores_display.eti_p3 }}" min="0" max="100"
+                                        class="form-control form-control-sm text-center"></td>
+                                
+                                <!-- RP3 -->
+                                <td class="bg-warning bg-opacity-10">
+                                    {% if m.eti_p3 and m.eti_p3 < 70 %}
+                                    <input type="number" name="eti_rp3_{{ m.id }}"
+                                        value="{{ m.valores_display.eti_rp3 }}" min="0" max="100"
+                                        class="form-control form-control-sm text-center bg-warning bg-opacity-25">
+                                    {% else %}
+                                    -
+                                    {% endif %}
+                                </td>
+
+                                <!-- P4 -->
+                                <td><input type="number" name="eti_p4_{{ m.id }}"
+                                        value="{{ m.valores_display.eti_p4 }}" min="0" max="100"
+                                        class="form-control form-control-sm text-center"></td>
+                                
+                                <!-- RP4 -->
+                                <td class="bg-warning bg-opacity-10">
+                                    {% if m.eti_p4 and m.eti_p4 < 70 %}
+                                    <input type="number" name="eti_rp4_{{ m.id }}"
+                                        value="{{ m.valores_display.eti_rp4 }}" min="0" max="100"
+                                        class="form-control form-control-sm text-center bg-warning bg-opacity-25">
+                                    {% else %}
+                                    -
+                                    {% endif %}
+                                </td>
+
+                                <td class="text-center fw-bold">{{ m.prom_etica|formato_nota }}</td>
                             </tr>
 
                             <!-- ================================
                                  5) ACORDEÓN - RECUPERACIONES
                             ================================= -->
                             <tr>
-                                <td colspan="8" class="p-0">
+                                <td colspan="14" class="p-0">
                                     <div class="accordion" id="accordion{{ m.id }}">
                                         <div class="accordion-item">
                                             <h2 class="accordion-header">
@@ -241,49 +416,52 @@
                                                     <div class="row g-3">
 
                                                         <!-- Completivo -->
+                                                        {% if m.nota_final and m.nota_final < 70 %}
                                                         <div class="col-md-4">
                                                             <label class="form-label fw-bold">Completivo</label>
                                                             <input type="number" name="ex_com_{{ m.id }}"
-                                                                value="{{ m.ex_com|default_if_none:'' }}"
-                                                                class="form-control form-control-sm" min="0" max="100"
-                                                                {% if m.nota_final is None or m.nota_final >= 70 %}disabled{% endif %}>
+                                                                value="{{ m.valores_display.ex_com }}"
+                                                                class="form-control form-control-sm" min="0" max="100">
                                                             <div class="mt-2 text-center">
                                                                 <strong>Cal. Comp. Final:</strong>
                                                                 <span class="badge bg-info text-dark">
-                                                                    {{ m.nota_final_completivo|default:"-" }}
+                                                                    {{ m.nota_final_completivo|formato_nota }}
                                                                 </span>
                                                             </div>
                                                         </div>
+                                                        {% endif %}
 
                                                         <!-- Extraordinario -->
+                                                        {% if m.nota_final_completivo and m.nota_final_completivo < 70 %}
                                                         <div class="col-md-4">
                                                             <label class="form-label fw-bold">Extraordinario</label>
                                                             <input type="number" name="ex_ext_{{ m.id }}"
-                                                                value="{{ m.ex_ext|default_if_none:'' }}"
-                                                                class="form-control form-control-sm" min="0" max="100"
-                                                                {% if m.nota_final_completivo is None or m.nota_final_completivo >= 70 %}disabled{% endif %}>
+                                                                value="{{ m.valores_display.ex_ext }}"
+                                                                class="form-control form-control-sm" min="0" max="100">
                                                             <div class="mt-2 text-center">
                                                                 <strong>Cal. Extraordinario:</strong>
                                                                 <span class="badge bg-info text-dark">
-                                                                    {{ m.nota_final_extraordinario|default:"-" }}
+                                                                    {{ m.nota_final_extraordinario|formato_nota }}
                                                                 </span>
                                                             </div>
                                                         </div>
+                                                        {% endif %}
 
                                                         <!-- Especial -->
+                                                        {% if m.nota_final_extraordinario and m.nota_final_extraordinario < 70 %}
                                                         <div class="col-md-4">
                                                             <label class="form-label fw-bold">Especial</label>
                                                             <input type="number" name="ex_esp_{{ m.id }}"
-                                                                value="{{ m.ex_esp|default_if_none:'' }}"
-                                                                class="form-control form-control-sm" min="0" max="100"
-                                                                {% if m.nota_final_extraordinario is None or m.nota_final_extraordinario >= 70 %}disabled{% endif %}>
+                                                                value="{{ m.valores_display.ex_esp }}"
+                                                                class="form-control form-control-sm" min="0" max="100">
                                                             <div class="mt-2 text-center">
                                                                 <strong>Cal. Especial:</strong>
                                                                 <span class="badge bg-info text-dark">
-                                                                    {{ m.nota_final_especial|default:"-" }}
+                                                                    {{ m.nota_final_especial|formato_nota }}
                                                                 </span>
                                                             </div>
                                                         </div>
+                                                        {% endif %}
 
                                                     </div>
 
@@ -302,7 +480,7 @@
                     </table>
                 </div>
 
-                {% if matriculas %}
+                {% if matriculas and puede_editar %}
                 <div class="mt-4 text-end">
                     <button type="submit" class="btn btn-primary">
                         <i class="fas fa-save"></i> Guardar Notas
@@ -314,4 +492,19 @@
         </div>
     </div>
 </div>
+
+{% if not puede_editar %}
+<script>
+    // Deshabilitar todos los inputs en modo de solo lectura
+    document.addEventListener('DOMContentLoaded', function() {
+        const inputs = document.querySelectorAll('input[type="number"]');
+        inputs.forEach(input => {
+            input.setAttribute('readonly', 'readonly');
+            input.style.backgroundColor = '#f0f0f0';
+            input.style.cursor = 'not-allowed';
+        });
+    });
+</script>
+{% endif %}
+
 {% endblock %}

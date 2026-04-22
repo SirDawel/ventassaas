@@ -344,3 +344,44 @@ LOGGING = {
 }
 
 
+# ============================================
+# CONFIGURACIÓN DE POS FÍSICOS (Cardnet, Azul)
+# ============================================
+
+# Proveedor de pago principal
+PAYMENT_PROVIDER = os.getenv('PAYMENT_PROVIDER', 'cardnet')
+
+# Credenciales Cardnet
+CARDNET_API_KEY = os.getenv('CARDNET_API_KEY', '')
+CARDNET_MERCHANT_ID = os.getenv('CARDNET_MERCHANT_ID', '')
+CARDNET_WEBHOOK_SECRET = os.getenv('CARDNET_WEBHOOK_SECRET', '')
+CARDNET_API_URL = os.getenv('CARDNET_API_URL', 'https://sandbox.cardnet.com.do/api')
+
+# Credenciales Azul
+AZUL_USER = os.getenv('AZUL_USER', '')
+AZUL_PASSWORD = os.getenv('AZUL_PASSWORD', '')
+AZUL_STORE_ID = os.getenv('AZUL_STORE_ID', '')
+AZUL_WEBHOOK_SECRET = os.getenv('AZUL_WEBHOOK_SECRET', '')
+AZUL_API_URL = os.getenv('AZUL_API_URL', 'https://sandbox.azul.com.do')
+
+# Configuración de impresora POS
+AUTO_PRINT_INVOICES = os.getenv('AUTO_PRINT_INVOICES', 'False') == 'True'
+POS_PRINTER_ENABLED = os.getenv('POS_PRINTER_ENABLED', 'False') == 'True'
+POS_PRINTER_TYPE = os.getenv('POS_PRINTER_TYPE', 'network')  # network, usb, file
+POS_PRINTER_NAME = os.getenv('POS_PRINTER_NAME', 'EPSON_TM_T88')
+
+# Impresora en red
+POS_PRINTER_IP = os.getenv('POS_PRINTER_IP', '192.168.1.100')
+POS_PRINTER_PORT = int(os.getenv('POS_PRINTER_PORT', '9100'))
+
+# Impresora USB
+POS_PRINTER_VENDOR_ID = int(os.getenv('POS_PRINTER_VENDOR_ID', '0x04b8'), 16)
+POS_PRINTER_PRODUCT_ID = int(os.getenv('POS_PRINTER_PRODUCT_ID', '0x0e15'), 16)
+
+# Impresora a archivo (para pruebas)
+POS_PRINTER_PATH = os.getenv('POS_PRINTER_PATH', '/tmp/receipt.txt')
+
+# Envío automático de facturas por email
+AUTO_EMAIL_INVOICES = os.getenv('AUTO_EMAIL_INVOICES', 'False') == 'True'
+
+

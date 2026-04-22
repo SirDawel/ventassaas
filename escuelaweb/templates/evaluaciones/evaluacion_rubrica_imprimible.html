@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+{% load custom_filters %}
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ evaluacion.titulo }} - Resultados</title>
+    <style>
+        @page {
+            size: A4 landscape;
+            margin: 1.5cm;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: Arial, Helvetica, sans-serif;
+            font-size: 10pt;
+            color: #000;
+            background: white;
+            padding: 10px;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 15px;
+            border-bottom: 2px solid #333;
+            padding-bottom: 10px;
+        }
+        
+        .header h1 {
+            font-size: 16pt;
+            margin-bottom: 5px;
+            color: #2c3e50;
+        }
+        
+        .header .subtitle {
+            font-size: 11pt;
+            color: #555;
+            margin: 3px 0;
+        }
+        
+        .info-section {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 15px;
+            font-size: 9pt;
+        }
+        
+        .info-item {
+            padding: 5px;
+            background: #f8f9fa;
+            border-left: 3px solid #2c3e50;
+        }
+        
+        .info-item strong {
+            color: #2c3e50;
+        }
+        
+        .rubrica-info {
+            background: #e9ecef;
+            padding: 10px;
+            margin-bottom: 15px;
+            border-left: 4px solid #2c3e50;
+            font-size: 9pt;
+        }
+        
+        .resultados-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+            font-size: 8pt;
+        }
+        
+        .resultados-table th {
+            background-color: #2c3e50;
+            color: white;
+            padding: 8px 6px;
+            text-align: center;
+            font-weight: bold;
+            border: 1px solid #000;
+        }
+        
+        .resultados-table td {
+            border: 1px solid #333;
+            padding: 6px;
+            vertical-align: middle;
+            text-align: center;
+        }
+        
+        .estudiante-nombre {
+            text-align: left;
+            font-weight: bold;
+            background-color: #f8f9fa;
+        }
+        
+        .nivel-nombre {
+            font-weight: bold;
+            color: #2c3e50;
+            font-size: 8pt;
+        }
+        
+        .nivel-puntaje {
+            font-size: 7pt;
+            color: #666;
+        }
+        
+        .total-cell {
+            font-weight: bold;
+            font-size: 10pt;
+            background: #d4edda;
+        }
+        
+        .incompleto {
+            background: #fff3cd !important;
+        }
+        
+        .sin-evaluar {
+            background: #ffe5e5;
+            color: #999;
+            font-style: italic;
+        }
+        
+        .estadisticas {
+            margin-top: 15px;
+            padding: 10px;
+            background: #f8f9fa;
+            border-left: 4px solid #28a745;
+            font-size: 9pt;
+        }
+        
+        .footer {
+            margin-top: 20px;
+            padding-top: 10px;
+            border-top: 1px solid #ccc;
+            font-size: 8pt;
+            color: #666;
+            text-align: center;
+        }
+        
+        .firma-section {
+            margin-top: 30px;
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 20px;
+            page-break-inside: avoid;
+        }
+        
+        .firma-box {
+            text-align: center;
+            padding-top: 50px;
+            border-top: 1px solid #000;
+        }
+        
+        .firma-label {
+            font-size: 9pt;
+            color: #333;
+        }
+        
+        @media print {
+            body {
+                padding: 0;
+            }
+            
+            .no-print {
+                display: none !important;
+            }
+        }
+        
+        .print-button {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            padding: 10px 20px;
+            background: #28a745;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 12pt;
+            z-index: 1000;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+        
+        .print-button:hover {
+            background: #218838;
+        }
+        
+        .criterio-header {
+            font-size: 7pt;
+        }
+    </style>
+</head>
+<body>
+    <!-- Botón de Impresión -->
+    <button class="print-button no-print" onclick="window.print()">
+        🖨️ Imprimir Resultados
+    </button>
+    
+    <!-- Encabezado -->
+    <div class="header">
+        <h1>EVALUACIÓN CON RÚBRICA - RESULTADOS</h1>
+        <div class="subtitle">{{ evaluacion.titulo }}</div>
+        <div class="subtitle">{{ evaluacion.materia.nombre }} - {{ evaluacion.curso.nombre }}</div>
+    </div>
+    
+    <!-- Información de la Evaluación -->
+    <div class="info-section">
+        <div class="info-item">
+            <strong>Fecha de Evaluación:</strong> {{ evaluacion.fecha_evaluacion|date:"d/m/Y" }}
+        </div>
+        <div class="info-item">
+            <strong>Período:</strong> {{ evaluacion.periodo }}
+        </div>
+        <div class="info-item">
+            <strong>Año Escolar:</strong> {{ evaluacion.curso.anho_escolar.nombre }}
+        </div>
+        <div class="info-item">
+            <strong>Profesor:</strong> {{ evaluacion.materia.profesor.get_full_name }}
+        </div>
+        <div class="info-item">
+            <strong>Estudiantes Evaluados:</strong> {{ total_estudiantes }}
+        </div>
+        <div class="info-item">
+            <strong>Fecha de Impresión:</strong> {{ fecha_actual|date:"d/m/Y" }}
+        </div>
+    </div>
+    
+    {% if evaluacion.descripcion %}
+    <div class="info-item" style="margin-bottom: 15px;">
+        <strong>Descripción:</strong> {{ evaluacion.descripcion }}
+    </div>
+    {% endif %}
+    
+    <!-- Información de la Rúbrica -->
+    <div class="rubrica-info">
+        <strong style="font-size: 10pt;">Rúbrica Utilizada:</strong> {{ rubrica.nombre }}<br>
+        <strong>Tipo de Actividad:</strong> {{ rubrica.get_tipo_actividad_display }} | 
+        <strong>Total de Criterios:</strong> {{ criterios.count }} | 
+        <strong>Ponderación Total:</strong> {{ rubrica.total_ponderacion|floatformat:0 }}% | 
+        <strong>Puntaje Máximo:</strong> {{ rubrica.puntaje_maximo|floatformat:2 }} / 100.00
+    </div>
+    
+    <!-- Tabla de Resultados -->
+    <table class="resultados-table">
+        <thead>
+            <tr>
+                <th style="width: 15%;">ESTUDIANTE</th>
+                {% for criterio in criterios %}
+                <th class="criterio-header">
+                    {{ criterio.nombre }}<br>
+                    <span style="font-size: 6pt;">({{ criterio.ponderacion|floatformat:0 }}%)</span>
+                </th>
+                {% endfor %}
+                <th style="width: 8%; background: #ffc107;">TOTAL<br><span style="font-size: 6pt;">/100</span></th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for resultado in estudiantes %}
+            <tr>
+                <td class="estudiante-nombre">
+                    {{ resultado.estudiante.last_name }}, {{ resultado.estudiante.first_name }}
+                </td>
+                {% for criterio in criterios %}
+                <td {% if not resultado.criterios|get_item:criterio.id %}class="sin-evaluar"{% endif %}>
+                    {% if resultado.criterios|get_item:criterio.id %}
+                        {% with cal=resultado.criterios|get_item:criterio.id %}
+                        <div class="nivel-nombre">
+                            {{ cal.nivel.get_nivel_display }}
+                        </div>
+                        <div class="nivel-puntaje">
+                            {{ cal.puntaje|floatformat:2 }} pts
+                        </div>
+                        {% endwith %}
+                    {% else %}
+                        Sin evaluar
+                    {% endif %}
+                </td>
+                {% endfor %}
+                <td class="total-cell {% if not resultado.completado %}incompleto{% endif %}">
+                    {{ resultado.total|floatformat:2 }}
+                    {% if not resultado.completado %}
+                    <div style="font-size: 7pt; color: #856404;">Incompleto</div>
+                    {% endif %}
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="100" style="text-align: center; color: #999; padding: 20px;">
+                    No hay estudiantes evaluados en esta evaluación.
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    
+    <!-- Estadísticas -->
+    {% if estudiantes %}
+    <div class="estadisticas">
+        <strong>Estadísticas del Grupo:</strong><br>
+        <strong>Promedio General:</strong> {{ promedio_grupo|floatformat:2 }} / 100.00 | 
+        <strong>Total Estudiantes:</strong> {{ total_estudiantes }} | 
+        <strong>Evaluaciones Completas:</strong> {{ evaluaciones_completas }} de {{ total_estudiantes }}
+    </div>
+    {% endif %}
+    
+    <!-- Detalles de Criterios (para referencia) -->
+    <div style="page-break-before: always; margin-top: 20px;">
+        <h2 style="text-align: center; color: #2c3e50; margin-bottom: 15px; border-bottom: 2px solid #333; padding-bottom: 10px;">
+            CRITERIOS DE EVALUACIÓN - REFERENCIA
+        </h2>
+        
+        <table class="resultados-table">
+            <thead>
+                <tr>
+                    <th style="width: 20%;">CRITERIO</th>
+                    <th>EXCELENTE (5)</th>
+                    <th>MUY BUENO (4)</th>
+                    <th>BUENO (3)</th>
+                    <th>REGULAR (2)</th>
+                    <th>NECESITA MEJORAR (1)</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for criterio in criterios %}
+                <tr>
+                    <td style="text-align: left; font-weight: bold; background: #f8f9fa;">
+                        {{ criterio.nombre }}<br>
+                        <span style="color: #e74c3c; font-size: 8pt;">({{ criterio.ponderacion|floatformat:0 }}%)</span>
+                    </td>
+                    {% for nivel in criterio.niveles.all %}
+                        {% if nivel.nivel == 'excelente' %}
+                        <td style="text-align: left; font-size: 7pt;">{{ nivel.descripcion|default:"Sin descripción" }}</td>
+                        {% endif %}
+                    {% endfor %}
+                    {% for nivel in criterio.niveles.all %}
+                        {% if nivel.nivel == 'muy_bueno' %}
+                        <td style="text-align: left; font-size: 7pt;">{{ nivel.descripcion|default:"Sin descripción" }}</td>
+                        {% endif %}
+                    {% endfor %}
+                    {% for nivel in criterio.niveles.all %}
+                        {% if nivel.nivel == 'bueno' %}
+                        <td style="text-align: left; font-size: 7pt;">{{ nivel.descripcion|default:"Sin descripción" }}</td>
+                        {% endif %}
+                    {% endfor %}
+                    {% for nivel in criterio.niveles.all %}
+                        {% if nivel.nivel == 'regular' %}
+                        <td style="text-align: left; font-size: 7pt;">{{ nivel.descripcion|default:"Sin descripción" }}</td>
+                        {% endif %}
+                    {% endfor %}
+                    {% for nivel in criterio.niveles.all %}
+                        {% if nivel.nivel == 'necesita_mejorar' %}
+                        <td style="text-align: left; font-size: 7pt;">{{ nivel.descripcion|default:"Sin descripción" }}</td>
+                        {% endif %}
+                    {% endfor %}
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    
+    <!-- Sección de Firmas -->
+    <div class="firma-section">
+        <div class="firma-box">
+            <div class="firma-label">Profesor(a)</div>
+        </div>
+        <div class="firma-box">
+            <div class="firma-label">Coordinador(a)</div>
+        </div>
+        <div class="firma-box">
+            <div class="firma-label">Director(a)</div>
+        </div>
+    </div>
+    
+    <!-- Pie de página -->
+    <div class="footer">
+        Sistema de Gestión Escolar - Generado el {{ fecha_actual|date:"d/m/Y" }} a las {{ fecha_actual|time:"H:i" }}<br>
+        Evaluación: {{ evaluacion.titulo }} | Curso: {{ evaluacion.curso.nombre }} | Período: {{ evaluacion.periodo }}
+    </div>
+</body>
+</html>
