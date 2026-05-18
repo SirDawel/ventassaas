@@ -19,22 +19,22 @@ class RateLimitMiddleware:
     def __init__(self, get_response):
         self.get_response = get_response
         
-        # Configuración de rate limiting
+        # Configuración de rate limiting (valores estándar recomendados)
         self.rate_limits = {
             'login': {
-                'requests': 5,  # Máximo 5 intentos
+                'requests': 20,  # Máximo 20 intentos (estándar: 10-20)
                 'window': 60,  # En 1 minuto
-                'block_minutes': 30,  # Bloquear IP por 30 minutos si excede
+                'block_minutes': 15,  # Bloquear IP por 15 minutos si excede
             },
             'api': {
-                'requests': 100,  # Máximo 100 requests
+                'requests': 2000,  # Máximo 2000 requests (estándar: 1000-3000)
                 'window': 60,  # En 1 minuto
-                'block_minutes': 15,
+                'block_minutes': 10,  # Bloquear IP por 10 minutos
             },
             'general': {
-                'requests': 500,  # Máximo 500 requests
+                'requests': 5000,  # Máximo 5000 requests (estándar: 3000-5000)
                 'window': 60,  # En 1 minuto
-                'block_minutes': 10,
+                'block_minutes': 5,  # Bloquear IP por 5 minutos
             }
         }
     

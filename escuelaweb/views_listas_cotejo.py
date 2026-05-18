@@ -88,7 +88,7 @@ def lista_cotejo_crear(request):
         return redirect('plataform')
     
     if request.method == 'POST':
-        form = ListaCotejoForm(request.POST)
+        form = ListaCotejoForm(request.POST, user=request.user)
         formset = CriterioFormSet(request.POST)
         
         if form.is_valid() and formset.is_valid():
@@ -122,7 +122,7 @@ def lista_cotejo_crear(request):
             else:
                 messages.error(request, 'Por favor corrige los errores en el formulario.')
     else:
-        form = ListaCotejoForm()
+        form = ListaCotejoForm(user=request.user)
         formset = CriterioFormSet()
     
     context = {
@@ -156,7 +156,7 @@ def lista_cotejo_editar(request, pk):
     )
     
     if request.method == 'POST':
-        form = ListaCotejoForm(request.POST, instance=lista)
+        form = ListaCotejoForm(request.POST, instance=lista, user=request.user)
         formset = CriterioFormSetEdit(request.POST, instance=lista)
         
         if form.is_valid() and formset.is_valid():
@@ -184,7 +184,7 @@ def lista_cotejo_editar(request, pk):
             else:
                 messages.error(request, 'Por favor corrige los errores en el formulario.')
     else:
-        form = ListaCotejoForm(instance=lista)
+        form = ListaCotejoForm(instance=lista, user=request.user)
         formset = CriterioFormSetEdit(instance=lista)
     
     context = {
@@ -241,19 +241,31 @@ def lista_cotejo_eliminar(request, pk):
         messages.error(request, 'No tienes permiso para eliminar esta lista.')
         return redirect('listas_cotejo_lista')
     
-    # Verificar si tiene evaluaciones asociadas
-    if lista.evaluaciones.exists():
-        messages.error(request, 'No se puede eliminar esta lista porque tiene evaluaciones asociadas.')
-        return redirect('lista_cotejo_detalle', pk=lista.id)
+    # Contar evaluaciones y calificaciones asociadas
+    num_evaluaciones = lista.evaluaciones.count()
+    num_calificaciones = CalificacionCotejo.objects.filter(
+        evaluacion__lista_cotejo=lista
+    ).count()
     
     if request.method == 'POST':
         nombre = lista.nombre
-        lista.delete()
-        messages.success(request, f'Lista de cotejo "{nombre}" eliminada exitosamente.')
+        with transaction.atomic():
+            # Django eliminará en cascada las evaluaciones y calificaciones relacionadas
+            lista.delete()
+        
+        if num_evaluaciones > 0:
+            messages.success(request, 
+                f'Lista de cotejo "{nombre}" eliminada exitosamente junto con '
+                f'{num_evaluaciones} evaluación(es) y {num_calificaciones} calificación(es) asociadas.')
+        else:
+            messages.success(request, f'Lista de cotejo "{nombre}" eliminada exitosamente.')
+        
         return redirect('listas_cotejo_lista')
     
     context = {
         'lista': lista,
+        'num_evaluaciones': num_evaluaciones,
+        'num_calificaciones': num_calificaciones,
         'titulo': 'Eliminar Lista de Cotejo',
     }
     return render(request, 'listas_cotejo/eliminar.html', context)

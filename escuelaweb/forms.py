@@ -1418,6 +1418,37 @@ class ListaCotejoForm(forms.ModelForm):
             'puntaje_total': 'Puntaje máximo (usualmente 10)',
             'es_plantilla': 'Si es plantilla, puede ser reutilizada múltiples veces'
         }
+    
+    def __init__(self, *args, **kwargs):
+        user = kwargs.pop('user', None)
+        super().__init__(*args, **kwargs)
+        
+        # Filtrar materias según el usuario y año activo
+        if user:
+            from .models import AnhoEscolar
+            anho_activo = AnhoEscolar.objects.filter(activo=True).first()
+            
+            if anho_activo:
+                if user.rol == 'Profesor':
+                    # Solo materias del profesor en el año activo
+                    self.fields['materia'].queryset = Materia.objects.filter(
+                        profesor=user,
+                        curso__anho_escolar=anho_activo
+                    ).distinct()
+                else:
+                    # Administradores y directores: todas las materias del año activo
+                    self.fields['materia'].queryset = Materia.objects.filter(
+                        curso__anho_escolar=anho_activo
+                    ).distinct()
+            else:
+                # Si no hay año activo, filtrar según rol sin restricción de año
+                if user.rol == 'Profesor':
+                    self.fields['materia'].queryset = Materia.objects.filter(
+                        profesor=user
+                    ).distinct()
+        
+        # Hacer materia opcional (puede quedar en blanco)
+        self.fields['materia'].required = False
 
 
 class CriterioListaCotejoForm(forms.ModelForm):
@@ -1601,3 +1632,19 @@ class BuscarListaCotejoForm(forms.Form):
                 self.fields['materia'].queryset = Materia.objects.filter(profesor=user)
             else:
                 self.fields['materia'].queryset = Materia.objects.all()
+
+
+# ====================================================================
+#  FORMULARIO PARA IMPORTACIÓN DE USUARIOS POR CSV
+# ====================================================================
+
+class ImportarUsuariosCSVForm(forms.Form):
+    """Formulario para subir archivo CSV con usuarios"""
+    archivo_csv = forms.FileField(
+        label='Archivo CSV',
+        widget=forms.FileInput(attrs={
+            'class': 'form-control',
+            'accept': '.csv',
+        }),
+        help_text='Seleccione un archivo CSV con los datos de los usuarios'
+    )

@@ -243,103 +243,98 @@
 .client-selected-card {
     background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
     color: white;
-    border-radius: 12px;
+    border-radius: 8px;
 }
 
 .client-info-badge {
-    font-size: 1rem;
+    font-size: 0.9rem;
     display: flex;
     align-items: center;
-    margin-bottom: 0.4rem;
+    margin-bottom: 0.3rem;
 }
 
 .client-name {
-    font-size: 1.1rem;
+    font-size: 1rem;
     font-weight: 700;
     margin-left: 0.5rem;
 }
 
 .client-details {
     display: flex;
-    gap: 1rem;
+    gap: 0.5rem;
     flex-wrap: wrap;
-    font-size: 0.85rem;
+    font-size: 0.75rem;
 }
 
 .client-detail-item {
     display: inline-flex;
     align-items: center;
     background: rgba(255,255,255,0.2);
-    padding: 0.25rem 0.6rem;
-    border-radius: 15px;
+    padding: 0.2rem 0.5rem;
+    border-radius: 12px;
     backdrop-filter: blur(10px);
 }
 
 .client-detail-item code {
     background: rgba(255,255,255,0.3);
-    padding: 0.15rem 0.4rem;
+    padding: 0.1rem 0.3rem;
     border-radius: 4px;
     color: white;
-    font-size: 0.85rem;
+    font-size: 0.75rem;
 }
 </style>
 
-<div class="container-fluid mt-3">
-    <!-- Header -->
-    <div class="row mb-3 animate-slide-down">
-        <div class="col-12">
+<div class="container-fluid mt-2">
+    <!-- Card Principal Compacta -->
+    <div class="card shadow-sm">
+        <div class="card-header bg-primary text-white py-2">
             <div class="d-flex justify-content-between align-items-center">
                 <div>
-                    <h2 class="dashboard-title">
-                        <i class="fas fa-cash-register me-2 icon-pulse"></i>Punto de Venta - Nueva Factura
-                    </h2>
-                    <span class="badge badge-modern bg-gradient-success">
-                        <i class="fas fa-calendar-alt me-1"></i>{{ anho_escolar.nombre }}
-                    </span>
+                    <h5 class="mb-0">
+                        <i class="fas fa-cash-register me-2"></i>Nueva Factura
+                        <span class="badge bg-success ms-2" style="font-size: 0.75rem;">
+                            <i class="fas fa-calendar-alt me-1"></i>{{ anho_escolar.nombre }}
+                        </span>
+                    </h5>
                 </div>
                 <div>
-                    <a href="{% url 'cobros_dashboard' %}" class="btn btn-modern btn-secondary">
-                        <i class="fas fa-arrow-left me-2"></i>Salir
+                    <a href="{% url 'cobros_dashboard' %}" class="btn btn-secondary btn-sm">
+                        <i class="fas fa-arrow-left me-1"></i>Salir
                     </a>
                 </div>
             </div>
         </div>
-    </div>
+        <div class="card-body p-2">
 
     <!-- Búsqueda y Cliente -->
-    <div class="row mb-3">
+    <div class="row mb-2">
         <div class="col-12">
             <!-- Búsqueda de Estudiante -->
-            <div class="card modern-card shadow-lg mb-3 animate-fade-in" style="animation-delay: 0.1s">
-                <div class="card-header-modern bg-gradient-primary">
-                    <h5 class="m-0 text-white">
-                        <i class="fas fa-search me-2"></i>Búsqueda de Cliente
-                    </h5>
+            <div class="card shadow-sm mb-2">
+                <div class="card-header bg-info text-white py-1">
+                    <h6 class="m-0">
+                        <i class="fas fa-search me-1"></i>Búsqueda de Cliente
+                    </h6>
                 </div>
-                <div class="card-body py-3">
+                <div class="card-body p-2">
                     <form method="get" id="buscarForm">
-                        <div class="row g-3 align-items-center">
-                            <div class="col-md-8">
-                                <div class="search-input-wrapper">
-                                    <i class="fas fa-barcode search-icon"></i>
-                                    <input type="text" class="form-control form-control-lg search-input" id="buscarInput" name="buscar"
-                                           placeholder="🔍 Escanea código de barras de estudiante o familia..." 
+                        <div class="row g-2 align-items-center">
+                            <div class="col-md-9">
+                                <div class="input-group input-group-sm">
+                                    <span class="input-group-text"><i class="fas fa-barcode"></i></span>
+                                    <input type="text" class="form-control" id="buscarInput" name="buscar"
+                                           placeholder="Escanea código o busca por nombre..." 
                                            value="{{ buscar }}" autocomplete="off" autofocus>
+                                    <button type="submit" class="btn btn-primary" id="buscarBtn">
+                                        <i class="fas fa-search"></i>
+                                    </button>
                                 </div>
-                                <small class="text-muted d-block mt-1">
-                                    <i class="fas fa-magic text-success"></i> Código exacto = redirección automática
-                                </small>
-                            </div>
-                            <div class="col-md-4">
-                                <button type="submit" class="btn btn-modern btn-primary btn-lg w-100" id="buscarBtn">
-                                    <i class="fas fa-search me-2"></i>Buscar Cliente
-                                </button>
                             </div>
                         </div>
                     </form>
                     
                     <!-- Resultados de búsqueda -->
-                    <div id="resultadosBusqueda" class="mt-3" style="max-height: 300px; overflow-y: auto;">
+                    <div id="resultadosBusqueda" class="mt-2" style="max-height: 200px; overflow-y: auto;">
                         {% if buscar and familias_encontradas %}
                             <div class="results-header mb-2">
                                 <small class="text-success"><i class="fas fa-users me-1"></i>{{ familias_encontradas|length }} Familia(s) encontrada(s)</small>
@@ -409,8 +404,8 @@
             </div>
 
             <!-- Cliente Seleccionado -->
-            <div class="card modern-card shadow-lg mb-0 {% if not estudiante %}d-none{% endif %} animate-fade-in" id="clienteCard" style="animation-delay: 0.2s">
-                <div class="card-body py-2 client-selected-card">
+            <div class="card shadow-sm mb-2 {% if not estudiante %}d-none{% endif %}" id="clienteCard">
+                <div class="card-body p-2 client-selected-card">
                     <div class="row align-items-center">
                         <div class="col">
                             <div class="client-info-badge">
@@ -453,12 +448,12 @@
                         </div>
                         <div class="col-auto">
                             {% if estudiante and not es_cliente_generico %}
-                            <a href="{% url 'tarifa_create' %}?estudiante={{ estudiante.id }}&return_to=factura" class="btn btn-modern btn-warning me-2" title="Agregar tarifa del estudiante">
-                                <i class="fas fa-tag me-1"></i> Agregar Tarifa
+                            <a href="{% url 'tarifa_create' %}?estudiante={{ estudiante.id }}&return_to=factura" class="btn btn-warning btn-sm me-1" title="Agregar tarifa">
+                                <i class="fas fa-tag"></i>
                             </a>
                             {% endif %}
-                            <button type="button" class="btn btn-modern btn-light" onclick="limpiarCliente()">
-                                <i class="fas fa-times me-1"></i> Cambiar
+                            <button type="button" class="btn btn-light btn-sm" onclick="limpiarCliente()">
+                                <i class="fas fa-times"></i>
                             </button>
                         </div>
                     </div>
@@ -512,50 +507,42 @@
             <div class="col-lg-8">
 
                 <!-- Agregar Concepto Rápido -->
-                <div class="card shadow-sm mb-3">
-                    <div class="card-header bg-primary text-white py-2">
-                        <strong><i class="fas fa-plus-circle me-2"></i>Agregar Concepto</strong>
+                <div class="card shadow-sm mb-2">
+                    <div class="card-header bg-primary text-white py-1">
+                        <h6 class="mb-0"><i class="fas fa-plus-circle me-1"></i>Agregar Concepto</h6>
                     </div>
-                    <div class="card-body py-2">
+                    <div class="card-body p-2">
                         <!-- Campo de Código de Barras -->
                         <div class="row g-2 mb-2">
-                            <div class="col-12">
-                                <div class="input-group">
-                                    <span class="input-group-text bg-warning">
-                                        <i class="fas fa-barcode"></i>
-                                    </span>
-                                    <input type="text" class="form-control form-control-lg" id="codigoBarrasInput" 
-                                           placeholder="🔍 Escanea código de barras del producto/servicio..." 
-                                           autocomplete="off">
-                                    <button type="button" class="btn btn-warning" onclick="buscarPorCodigoBarras()">
-                                        <i class="fas fa-search"></i> Buscar
-                                    </button>
-                                </div>
-                                <!-- Buscar por nombre -->
-                                <div class="input-group mt-2">
-                                    <span class="input-group-text bg-info">
+                            <div class="col-md-6">
+                                <div class="input-group input-group-sm">
+                                    <span class="input-group-text bg-warning"><i class="fas fa-barcode"></i></span>
+                                    <input type="text" class="form-control" id="codigoBarrasInput" 
+                                           placeholder="Código de barras..." autocomplete="off">
+                                    <button type="button" class="btn btn-warning btn-sm" onclick="buscarPorCodigoBarras()">
                                         <i class="fas fa-search"></i>
-                                    </span>
-                                    <input type="text" class="form-control form-control-lg" id="buscarNombreInput"
-                                           placeholder="Buscar artículo o servicio por nombre..." autocomplete="off">
-                                    <button type="button" class="btn btn-info" onclick="buscarPorNombre()">
-                                        <i class="fas fa-search"></i> Buscar
                                     </button>
                                 </div>
-                                <div id="resultadosArticulos" class="mt-2" style="max-height: 200px; overflow-y: auto;"></div>
-                                <small class="text-muted">
-                                    <i class="fas fa-info-circle"></i> 
-                                    Escanea el código de barras o escríbelo y presiona Enter/Buscar
-                                </small>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="input-group input-group-sm">
+                                    <span class="input-group-text bg-info"><i class="fas fa-search"></i></span>
+                                    <input type="text" class="form-control" id="buscarNombreInput"
+                                           placeholder="Buscar por nombre..." autocomplete="off">
+                                    <button type="button" class="btn btn-info btn-sm" onclick="buscarPorNombre()">
+                                        <i class="fas fa-search"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="col-12">
+                                <div id="resultadosArticulos" style="max-height: 150px; overflow-y: auto;"></div>
                             </div>
                         </div>
-                        
-                        <hr class="my-2">
                         
                         <!-- O agregar por concepto manual -->
                         <div class="row g-2">
                             <div class="col-md-4">
-                                <select class="form-select" id="conceptoSelect" onchange="toggleCamposMes()">
+                                <select class="form-select form-select-sm" id="conceptoSelect" onchange="toggleCamposMes()">
                                     <option value="">Seleccionar concepto...</option>
                                     {% for concepto in conceptos %}
                                     <option value="{{ concepto.id }}" data-monto="{{ concepto.monto }}" data-tipo="{{ concepto.tipo }}">
@@ -569,10 +556,10 @@
                                 </select>
                             </div>
                             <div class="col-md-1">
-                                <input type="number" class="form-control text-center" id="cantidadInput" value="1" min="1" title="Cantidad">
+                                <input type="number" class="form-control form-control-sm text-center" id="cantidadInput" value="1" min="1" title="Cantidad">
                             </div>
                             <div class="col-md-2" id="mesDesdeContainer">
-                                <select class="form-select" id="mesInput" disabled>
+                                <select class="form-select form-select-sm" id="mesInput" disabled>
                                     <option value="">Mes</option>
                                     <option value="1">Enero</option>
                                     <option value="2">Febrero</option>
@@ -589,7 +576,7 @@
                                 </select>
                             </div>
                             <div class="col-md-2" id="mesHastaContainer">
-                                <select class="form-select" id="mesHastaInput" title="Hasta mes (para agregar varios)" disabled>
+                                <select class="form-select form-select-sm" id="mesHastaInput" title="Hasta mes (para agregar varios)" disabled>
                                     <option value="">Hasta mes</option>
                                     <option value="1">Enero</option>
                                     <option value="2">Febrero</option>
@@ -606,10 +593,10 @@
                                 </select>
                             </div>
                             <div class="col-md-1" id="anioContainer">
-                                <input type="number" class="form-control text-center" id="anioInput" value="{{ anio_actual }}" min="2020" max="2030" disabled>
+                                <input type="number" class="form-control form-control-sm text-center" id="anioInput" value="{{ anio_actual }}" min="2020" max="2030" disabled>
                             </div>
                             <div class="col-md-2">
-                                <button type="button" id="agregarBtn" class="btn btn-success w-100" onclick="agregarConceptoRapido()">
+                                <button type="button" id="agregarBtn" class="btn btn-success btn-sm w-100" onclick="agregarConceptoRapido()">
                                     <i class="fas fa-plus"></i> Agregar
                                 </button>
                             </div>
@@ -618,28 +605,28 @@
                 </div>
 
                 <!-- Lista de Conceptos -->
-                <div class="card shadow">
-                    <div class="card-header bg-light py-2">
-                        <strong><i class="fas fa-list me-2"></i>Conceptos en Factura</strong>
+                <div class="card shadow-sm">
+                    <div class="card-header bg-light py-1">
+                        <h6 class="mb-0"><i class="fas fa-list me-1"></i>Conceptos en Factura</h6>
                     </div>
                     <div class="card-body p-0">
-                        <div class="table-responsive" style="max-height: 450px; overflow-y: auto;">
-                            <table class="table table-hover mb-0" style="font-size: 0.95rem;">
+                        <div class="table-responsive" style="max-height: 350px; overflow-y: auto;">
+                            <table class="table table-hover table-sm mb-0">
                                 <thead class="table-light sticky-top">
                                     <tr>
-                                        <th class="py-3">Concepto</th>
-                                        <th class="text-center py-3">Cant.</th>
-                                        <th class="text-end py-3">Precio</th>
-                                        <th class="text-center py-3">Mes/Año</th>
-                                        <th class="text-end py-3">Total</th>
-                                        <th class="py-3"></th>
+                                        <th class="py-1">Concepto</th>
+                                        <th class="text-center py-1">Cant.</th>
+                                        <th class="text-end py-1">Precio</th>
+                                        <th class="text-center py-1">Mes/Año</th>
+                                        <th class="text-end py-1">Total</th>
+                                        <th class="py-1"></th>
                                     </tr>
                                 </thead>
                                 <tbody id="conceptosBody">
                                     <tr id="emptyRow">
-                                        <td colspan="6" class="text-center text-muted py-4">
-                                            <i class="fas fa-shopping-cart fa-2x mb-2"></i><br>
-                                            No hay conceptos agregados
+                                        <td colspan="6" class="text-center text-muted py-3">
+                                            <i class="fas fa-shopping-cart mb-1"></i><br>
+                                            <small>No hay conceptos agregados</small>
                                         </td>
                                     </tr>
                                 </tbody>
@@ -652,14 +639,14 @@
             <!-- Panel Derecho: Resumen y Total -->
             <div class="col-lg-4">
                 <!-- Totales -->
-                <div class="card shadow sticky-top" style="top: 20px;">
-                    <div class="card-header bg-dark text-white">
-                        <h5 class="mb-0"><i class="fas fa-calculator me-2"></i>Resumen de Factura</h5>
+                <div class="card shadow-sm sticky-top" style="top: 10px;">
+                    <div class="card-header bg-dark text-white py-1">
+                        <h6 class="mb-0"><i class="fas fa-calculator me-1"></i>Resumen</h6>
                     </div>
-                    <div class="card-body">
-                        <div class="mb-3">
-                            <label class="form-label">Método de Pago</label>
-                            <select class="form-select" name="metodo_pago" id="metodo_pago">
+                    <div class="card-body p-2">
+                        <div class="mb-2">
+                            <label class="form-label small mb-1">Método de Pago</label>
+                            <select class="form-select form-select-sm" name="metodo_pago" id="metodo_pago">
                                 <option value="efectivo" selected>💵 Efectivo</option>
                                 <option value="tarjeta">💳 Tarjeta de Crédito/Débito</option>
                                 <option value="transferencia">🏦 Transferencia Bancaria</option>
@@ -668,68 +655,67 @@
                             </select>
                         </div>
                         
-                        <div class="mb-3">
-                            <label class="form-label">Referencia/No. Transacción</label>
-                            <input type="text" class="form-control" name="referencia_pago" id="referencia_pago" 
-                                   placeholder="Ej: No. autorización, cheque, referencia...">
-                            <small class="text-muted">Para tarjeta, transferencia, cheque, etc.</small>
+                        <div class="mb-2">
+                            <label class="form-label small mb-1">Referencia</label>
+                            <input type="text" class="form-control form-control-sm" name="referencia_pago" id="referencia_pago" 
+                                   placeholder="No. transacción...">
                         </div>
                         
-                        <div class="mb-3">
-                            <label class="form-label">Fecha de Vencimiento</label>
-                            <input type="date" class="form-control" name="fecha_vencimiento">
+                        <div class="mb-2">
+                            <label class="form-label small mb-1">Fecha Vencimiento</label>
+                            <input type="date" class="form-control form-control-sm" name="fecha_vencimiento">
                         </div>
                         
-                        <div class="mb-3">
-                            <label class="form-label">Descuento General (RD$)</label>
-                            <input type="number" class="form-control" id="descuento_factura" name="descuento_factura" 
+                        <div class="mb-2">
+                            <label class="form-label small mb-1">Descuento (RD$)</label>
+                            <input type="number" class="form-control form-control-sm" id="descuento_factura" name="descuento_factura" 
                                    value="{% if factura_origen %}{{ factura_origen.descuento|floatformat:2 }}{% else %}0{% endif %}" 
                                    step="0.01" min="0" onchange="calcularTotales()">
                         </div>
                         
-                        <div class="mb-3">
-                            <label class="form-label">Observaciones</label>
-                            <textarea class="form-control" name="observaciones" rows="2"></textarea>
+                        <div class="mb-2">
+                            <label class="form-label small mb-1">Observaciones</label>
+                            <textarea class="form-control form-control-sm" name="observaciones" rows="2"></textarea>
                         </div>
                         
-                        <hr>
+                        <hr class="my-2">
                         
                         <!-- Totales -->
-                        <div class="d-flex justify-content-between mb-2">
+                        <div class="d-flex justify-content-between mb-1 small">
                             <span>Subtotal:</span>
                             <strong id="subtotalDisplay">RD$0.00</strong>
                         </div>
-                        <div class="d-flex justify-content-between mb-2">
+                        <div class="d-flex justify-content-between mb-1 small">
                             <span>Descuento:</span>
                             <strong id="descuentoDisplay">RD$0.00</strong>
                         </div>
-                        <div class="d-flex justify-content-between mb-2" id="moraRow" style="display: none;">
+                        <div class="d-flex justify-content-between mb-1 small" id="moraRow" style="display: none;">
                             <span class="text-warning">
                                 <i class="fas fa-exclamation-triangle me-1"></i>Mora:
                             </span>
                             <strong class="text-warning" id="moraDisplay">RD$0.00</strong>
                         </div>
-                        <div class="d-flex justify-content-between mb-2">
+                        <div class="d-flex justify-content-between mb-1 small">
                             <span>ITBIS (18%):</span>
                             <strong id="itbisDisplay" class="text-info">RD$0.00</strong>
                         </div>
                         <input type="hidden" name="impuesto" id="impuesto" value="0">
-                        <hr>
-                        <div class="d-flex justify-content-between mb-3">
-                            <h4>TOTAL:</h4>
-                            <h4 class="text-primary" id="totalDisplay">RD$0.00</h4>
+                        <hr class="my-2">
+                        <div class="d-flex justify-content-between mb-2">
+                            <h5 class="mb-0">TOTAL:</h5>
+                            <h5 class="mb-0 text-primary" id="totalDisplay">RD$0.00</h5>
                         </div>
                         
-                        <hr>
+                        <hr class="my-2">
                         
                         <!-- Cálculo de Cambio -->
-                        <div class="card bg-light mb-3">
-                            <div class="card-body">
-                                <h5 class="card-title mb-3">
-                                    <i class="fas fa-money-bill-wave me-2"></i>Cálculo de Cambio
-                                </h5>
+                        <div class="card bg-light mb-2">
+                            <div class="card-body p-2">
+                                <h6 class="mb-2">
+                                    <i class="fas fa-money-bill-wave me-1"></i>Cálculo de Cambio
+                                </h6>
                                 
-                                <div class="mb-3">
+                                <div class="mb-2">
                                     <label for="dineroRecibido" class="form-label">
                                         <strong>Dinero Recibido (RD$)</strong>
                                     </label>
@@ -742,7 +728,7 @@
                                     
                                     {% endif %}
                                     
-                                    <input type="number" class="form-control form-control-lg" 
+                                    <input type="number" class="form-control" 
                                         id="dineroRecibido" step="0.01" min="0" 
                                         placeholder="0.00" oninput="calcularCambio()"
                                         value="{% if monto_pagado_copiado is not None %}{{ monto_pagado_copiado|unlocalize }}{% else %}0{% endif %}"
@@ -764,19 +750,16 @@
                                     })();
                                     </script>
                                     
-                                    <small class="text-muted">Monto con el que paga el cliente</small>
                                     
-                                    <!-- Advertencia para cliente genérico -->
                                     {% if es_cliente_generico %}
-                                    <div class="alert alert-warning mt-2 mb-0" role="alert">
-                                        <i class="fas fa-exclamation-triangle me-2"></i>
-                                        <strong>¡ATENCIÓN!</strong> El cliente genérico <strong>NO puede tener facturas a crédito</strong>.
-                                        Debes ingresar el pago completo.
+                                    <div class="alert alert-warning mt-1 mb-0 py-1 small" role="alert">
+                                        <i class="fas fa-exclamation-triangle"></i>
+                                        Cliente genérico NO puede tener crédito.
                                     </div>
                                     {% endif %}
                                     
                                     <!-- Botones de acceso rápido -->
-                                    <div class="btn-group btn-group-sm mt-2 w-100" role="group">
+                                    <div class="btn-group btn-group-sm mt-1 w-100" role="group">
                                         <button type="button" class="btn btn-outline-secondary" onclick="setDineroRecibido(100)">
                                             100
                                         </button>
@@ -798,24 +781,26 @@
                                     </div>
                                 </div>
                                 
-                                <div class="d-flex justify-content-between align-items-center p-3 bg-white rounded">
-                                    <h5 class="mb-0">CAMBIO:</h5>
-                                    <h4 class="mb-0 text-success" id="cambioDisplay">RD$0.00</h4>
+                                <div class="d-flex justify-content-between align-items-center p-2 bg-white rounded">
+                                    <strong>CAMBIO:</strong>
+                                    <h5 class="mb-0 text-success" id="cambioDisplay">RD$0.00</h5>
                                 </div>
                             </div>
                         </div>
                         
-                        <button type="submit" class="btn btn-primary btn-lg w-100 mb-2">
-                            <i class="fas fa-check-circle me-2"></i>Crear Factura
+                        <button type="submit" class="btn btn-primary w-100 mb-1">
+                            <i class="fas fa-check-circle me-1"></i>Crear Factura
                         </button>
-                        <button type="button" class="btn btn-danger btn-lg w-100" onclick="limpiarTodo()">
-                            <i class="fas fa-trash me-2"></i>Limpiar Todo
+                        <button type="button" class="btn btn-danger w-100" onclick="limpiarTodo()">
+                            <i class="fas fa-trash me-1"></i>Limpiar
                         </button>
                     </div>
                 </div>
             </div>
         </div>
     </form>
+        </div>
+    </div>
 </div>
 
 <script>

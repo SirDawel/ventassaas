@@ -1,0 +1,486 @@
+{% extends 'website/base.html' %}
+{% load static %}
+
+{% block title %}Checkout - {{ plan.nombre }} - {{ block.super }}{% endblock %}
+
+{% block content %}
+<div class="container my-5">
+    <div class="row mb-3">
+        <div class="col-12">
+            <a href="{% url 'planes_disponibles' %}" class="btn btn-outline-secondary btn-sm">
+                <i class="fas fa-arrow-left"></i> Volver a Planes
+            </a>
+        </div>
+    </div>
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0"><i class="fas fa-credit-card"></i> Checkout - Pago Seguro</h4>
+                </div>
+                <div class="card-body">
+                    <!-- Información del Plan -->
+                    <div class="row mb-4">
+                        <div class="col-md-8">
+                            <h5 class="text-primary">{{ plan.nombre }}</h5>
+                            <p class="text-muted">{{ plan.descripcion }}</p>
+                            
+                            <div class="alert alert-info">
+                                <h6><i class="fas fa-info-circle"></i> Incluye:</h6>
+                                <ul class="mb-0">
+                                    <li>{{ plan.max_usuarios }} usuarios</li>
+                                    <li>{{ plan.max_estudiantes }} estudiantes</li>
+                                    {% if plan.permite_reportes_avanzados %}
+                                    <li>Reportes avanzados</li>
+                                    {% endif %}
+                                    {% if plan.permite_integracion_api %}
+                                    <li>Integración API</li>
+                                    {% endif %}
+                                    {% if plan.permite_multiples_sedes %}
+                                    <li>Múltiples sedes</li>
+                                    {% endif %}
+                                    {% if plan.soporte_prioritario %}
+                                    <li>Soporte prioritario 24/7</li>
+                                    {% endif %}
+                                </ul>
+                            </div>
+                        </div>
+                        <div class="col-md-4 text-end">
+                            <div class="card bg-light">
+                                <div class="card-body text-center">
+                                    <h6 class="text-muted mb-2">Total a Pagar</h6>
+                                    <h2 class="text-primary mb-0">${{ monto }}</h2>
+                                    <p class="text-muted small mb-0">{{ periodo|lower }}</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Selector de Período -->
+                    <div class="mb-4">
+                        <h6>Selecciona el Período de Facturación:</h6>
+                        <div class="btn-group w-100" role="group">
+                            <a href="?periodo=MENSUAL" class="btn btn-outline-primary {% if periodo == 'MENSUAL' %}active{% endif %}">
+                                <i class="fas fa-calendar-alt"></i> Mensual - ${{ plan.precio_mensual }}
+                            </a>
+                            <a href="?periodo=ANUAL" class="btn btn-outline-primary {% if periodo == 'ANUAL' %}active{% endif %}">
+                                <i class="fas fa-calendar-check"></i> Anual - ${{ plan.precio_anual }}
+                                <span class="badge bg-success ms-2">Ahorra 2 meses</span>
+                            </a>
+                        </div>
+                    </div>
+                    
+                    <!-- Información de Seguridad -->
+                    <div class="alert alert-success mb-4">
+                        <div class="d-flex align-items-center">
+                            <i class="fas fa-shield-alt fa-2x me-3"></i>
+                            <div>
+                                <strong>Pago 100% Seguro</strong><br>
+                                <small>Procesado por Stripe con encriptación SSL de nivel bancario. No almacenamos tu información de tarjeta.</small>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Formulario de Tarjeta -->
+                    <form id="payment-form">
+                        <h6 class="mb-3"><i class="fas fa-credit-card"></i> Información de la Tarjeta</h6>
+                        
+                        <!-- Nombre del Titular -->
+                        <div class="mb-3">
+                            <label class="form-label">Nombre del Titular <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="card-name" placeholder="Como aparece en la tarjeta" required>
+                            <small class="text-muted">Ingrese el nombre completo como aparece en su tarjeta</small>
+                        </div>
+                        
+                        <!-- Número de Tarjeta -->
+                        <div class="mb-3">
+                            <label class="form-label">Número de Tarjeta <span class="text-danger">*</span></label>
+                            <div id="card-number-element">
+                                <!-- Stripe insertará el campo aquí -->
+                            </div>
+                            <div id="card-number-errors" role="alert" class="text-danger small mt-1"></div>
+                        </div>
+                        
+                        <!-- Fecha de Vencimiento y CVV -->
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Fecha de Vencimiento <span class="text-danger">*</span></label>
+                                <div id="card-expiry-element">
+                                    <!-- Stripe insertará el campo aquí -->
+                                </div>
+                                <div id="card-expiry-errors" role="alert" class="text-danger small mt-1"></div>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">CVV/CVC <span class="text-danger">*</span></label>
+                                <div id="card-cvc-element">
+                                    <!-- Stripe insertará el campo aquí -->
+                                </div>
+                                <div id="card-cvc-errors" role="alert" class="text-danger small mt-1"></div>
+                                <small class="text-muted">3 o 4 dígitos al reverso de la tarjeta</small>
+                            </div>
+                        </div>
+                        
+                        <!-- Email para Recibo -->
+                        <div class="mb-3">
+                            <label class="form-label">Email para Recibo <span class="text-danger">*</span></label>
+                            <input type="email" class="form-control" id="card-email" value="{{ user.email }}" required>
+                            <small class="text-muted">Recibirás la confirmación de pago en este correo</small>
+                        </div>
+                        
+                        <!-- Opción de guardar tarjeta -->
+                        <div class="form-check mb-4">
+                            <input class="form-check-input" type="checkbox" id="save-card" name="save_card" checked>
+                            <label class="form-check-label" for="save-card">
+                                <i class="fas fa-save"></i> <strong>Guardar esta tarjeta para futuros pagos</strong>
+                                <small class="text-muted d-block">Tu tarjeta se guardará de forma segura en Stripe y podrás usarla en próximas renovaciones</small>
+                            </label>
+                        </div>
+                        
+                        <!-- Botón de Pago -->
+                        <button type="submit" id="submit-button" class="btn btn-primary btn-lg w-100">
+                            <i class="fas fa-lock me-2"></i> Proceder al Pago Seguro - ${{ monto }}
+                        </button>
+                        
+                        <div id="payment-message" class="mt-3"></div>
+                    </form>
+                    
+                    <div class="text-center mt-3">
+                        <a href="{% url 'planes_disponibles' %}" class="btn btn-link">
+                            <i class="fas fa-arrow-left"></i> Volver a Planes
+                        </a>
+                    </div>
+                    
+                    <!-- Términos y Condiciones -->
+                    <div class="mt-4 text-center text-muted small">
+                        <p class="mb-1">Al hacer clic en "Proceder al Pago", aceptas nuestros términos y condiciones.</p>
+                        <p class="mb-0">Tu suscripción se renovará automáticamente. Puedes cancelar en cualquier momento.</p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Información Adicional -->
+            <div class="row mt-4">
+                <div class="col-md-4 text-center">
+                    <i class="fas fa-sync-alt fa-2x text-primary mb-2"></i>
+                    <p class="small"><strong>Cancelación Flexible</strong><br>Cancela en cualquier momento sin penalizaciones</p>
+                </div>
+                <div class="col-md-4 text-center">
+                    <i class="fas fa-headset fa-2x text-primary mb-2"></i>
+                    <p class="small"><strong>Soporte 24/7</strong><br>Estamos aquí para ayudarte cuando lo necesites</p>
+                </div>
+                <div class="col-md-4 text-center">
+                    <i class="fas fa-check-circle fa-2x text-primary mb-2"></i>
+                    <p class="small"><strong>Garantía de Satisfacción</strong><br>30 días de prueba sin riesgo</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Stripe.js -->
+<script src="https://js.stripe.com/v3/"></script>
+<script>
+    // Verificar que la clave pública de Stripe esté configurada
+    const stripePublicKey = '{{ stripe_public_key }}';
+    
+    if (!stripePublicKey || stripePublicKey.trim() === '') {
+        console.error('STRIPE_PUBLIC_KEY no está configurada en las variables de entorno');
+        document.getElementById('payment-message').innerHTML = `
+            <div class="alert alert-warning">
+                <i class="fas fa-exclamation-triangle me-2"></i>
+                <strong>Configuración Pendiente:</strong><br>
+                La clave pública de Stripe no está configurada. 
+                Por favor, agrega <code>STRIPE_PUBLIC_KEY=pk_test_...</code> al archivo .env y reinicia el servidor.
+                <br><br>
+                <a href="https://dashboard.stripe.com/apikeys" target="_blank" class="btn btn-sm btn-primary">
+                    Obtener Claves de Stripe
+                </a>
+            </div>
+        `;
+        document.getElementById('submit-button').disabled = true;
+        throw new Error('Stripe no está configurado correctamente');
+    }
+    
+    console.log('Inicializando Stripe con clave:', stripePublicKey.substring(0, 10) + '...');
+    
+    // Configurar Stripe
+    const stripe = Stripe(stripePublicKey);
+    const elements = stripe.elements();
+    
+    // Estilo común para todos los elementos
+    const elementStyles = {
+        base: {
+            fontSize: '16px',
+            color: '#32325d',
+            fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+            '::placeholder': {
+                color: '#aab7c4'
+            }
+        },
+        invalid: {
+            color: '#dc3545',
+            iconColor: '#dc3545'
+        }
+    };
+    
+    const elementClasses = {
+        focus: 'StripeElement--focus',
+        empty: 'StripeElement--empty',
+        invalid: 'StripeElement--invalid',
+    };
+    
+    // Crear elementos separados
+    console.log('Creando elementos de Stripe...');
+    const cardNumberElement = elements.create('cardNumber', {
+        style: elementStyles,
+        classes: elementClasses,
+        placeholder: '1234 5678 9012 3456',
+        disabled: false  // Explícitamente habilitado
+    });
+    console.log('✓ cardNumberElement creado');
+    
+    const cardExpiryElement = elements.create('cardExpiry', {
+        style: elementStyles,
+        classes: elementClasses,
+        placeholder: 'MM / AA',
+        disabled: false  // Explícitamente habilitado
+    });
+    console.log('✓ cardExpiryElement creado');
+    
+    const cardCvcElement = elements.create('cardCvc', {
+        style: elementStyles,
+        classes: elementClasses,
+        placeholder: '123',
+        disabled: false  // Explícitamente habilitado
+    });
+    console.log('✓ cardCvcElement creado');
+    
+    // Montar elementos en el DOM
+    console.log('Montando elementos en el DOM...');
+    try {
+        cardNumberElement.mount('#card-number-element');
+        console.log('✓ cardNumberElement montado en #card-number-element');
+        
+        cardExpiryElement.mount('#card-expiry-element');
+        console.log('✓ cardExpiryElement montado en #card-expiry-element');
+        
+        cardCvcElement.mount('#card-cvc-element');
+        console.log('✓ cardCvcElement montado en #card-cvc-element');
+        
+        console.log('✓ Todos los elementos montados exitosamente. Los campos deberían estar activos.');
+        
+        // Forzar habilitación explícita después de montar
+        setTimeout(() => {
+            console.log('Habilitando elementos explícitamente...');
+            cardNumberElement.update({ disabled: false });
+            cardExpiryElement.update({ disabled: false });
+            cardCvcElement.update({ disabled: false });
+            console.log('✓ Elementos habilitados mediante .update()');
+        }, 100);
+        
+    } catch (error) {
+        console.error('Error al montar elementos:', error);
+        document.getElementById('payment-message').innerHTML = `
+            <div class="alert alert-danger">
+                <i class="fas fa-exclamation-triangle me-2"></i>
+                <strong>Error:</strong> No se pudieron cargar los campos de pago. ${error.message}
+            </div>
+        `;
+    }
+    
+    // Manejar eventos de los elementos
+    cardNumberElement.on('ready', () => {
+        console.log('cardNumber está listo');
+        // Verificar y habilitar cuando esté listo
+        cardNumberElement.update({ disabled: false });
+    });
+    cardExpiryElement.on('ready', () => {
+        console.log('cardExpiry está listo');
+        cardExpiryElement.update({ disabled: false });
+    });
+    cardCvcElement.on('ready', () => {
+        console.log('cardCvc está listo');
+        cardCvcElement.update({ disabled: false });
+    });
+    
+    // Manejar errores en tiempo real para cada campo
+    cardNumberElement.on('change', function(event) {
+        const displayError = document.getElementById('card-number-errors');
+        if (event.error) {
+            displayError.textContent = event.error.message;
+        } else {
+            displayError.textContent = '';
+        }
+    });
+    
+    cardExpiryElement.on('change', function(event) {
+        const displayError = document.getElementById('card-expiry-errors');
+        if (event.error) {
+            displayError.textContent = event.error.message;
+        } else {
+            displayError.textContent = '';
+        }
+    });
+    
+    cardCvcElement.on('change', function(event) {
+        const displayError = document.getElementById('card-cvc-errors');
+        if (event.error) {
+            displayError.textContent = event.error.message;
+        } else {
+            displayError.textContent = '';
+        }
+    });
+    
+    // Manejar el envío del formulario
+    const form = document.getElementById('payment-form');
+    const submitButton = document.getElementById('submit-button');
+    const messageContainer = document.getElementById('payment-message');
+    
+    form.addEventListener('submit', async function(event) {
+        event.preventDefault();
+        
+        // Deshabilitar botón y mostrar loading
+        submitButton.disabled = true;
+        submitButton.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i> Procesando Pago...';
+        messageContainer.innerHTML = '';
+        
+        try {
+            // Obtener datos del formulario
+            const cardholderName = document.getElementById('card-name').value;
+            const email = document.getElementById('card-email').value;
+            const saveCard = document.getElementById('save-card').checked;
+            
+            // Validar campos
+            if (!cardholderName || !email) {
+                throw new Error('Por favor completa todos los campos');
+            }
+            
+            // Crear PaymentMethod con el elemento de número de tarjeta
+            const { error, paymentMethod } = await stripe.createPaymentMethod({
+                type: 'card',
+                card: cardNumberElement,
+                billing_details: {
+                    name: cardholderName,
+                    email: email
+                }
+            });
+            
+            if (error) {
+                throw new Error(error.message);
+            }
+            
+            // Enviar al servidor
+            const response = await fetch("{% url 'procesar_pago_tarjeta' %}", {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': '{{ csrf_token }}'
+                },
+                body: JSON.stringify({
+                    payment_method_id: paymentMethod.id,
+                    plan_id: {{ plan.id }},
+                    periodo: '{{ periodo }}',
+                    save_card: saveCard,
+                    email: email
+                })
+            });
+            
+            const result = await response.json();
+            
+            if (result.error) {
+                throw new Error(result.error);
+            }
+            
+            // Si requiere autenticación 3D Secure
+            if (result.requires_action) {
+                const { error: confirmError } = await stripe.confirmCardPayment(
+                    result.payment_intent_client_secret
+                );
+                
+                if (confirmError) {
+                    throw new Error(confirmError.message);
+                }
+                
+                // Notificar al servidor que la autenticación fue exitosa
+                const confirmResponse = await fetch("{% url 'confirmar_pago_tarjeta' %}", {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': '{{ csrf_token }}'
+                    },
+                    body: JSON.stringify({
+                        payment_intent_id: result.payment_intent_id
+                    })
+                });
+                
+                const confirmResult = await confirmResponse.json();
+                if (confirmResult.error) {
+                    throw new Error(confirmResult.error);
+                }
+            }
+            
+            // Pago exitoso - mostrar mensaje y redirigir
+            messageContainer.innerHTML = `
+                <div class="alert alert-success">
+                    <i class="fas fa-check-circle me-2"></i>
+                    <strong>¡Pago Procesado Exitosamente!</strong><br>
+                    Redirigiendo...
+                </div>
+            `;
+            
+            // Redirigir a página de éxito
+            setTimeout(function() {
+                window.location.href = "{% url 'pago_exitoso' %}?session_id=" + result.session_id;
+            }, 2000);
+            
+        } catch (error) {
+            console.error('Error:', error);
+            messageContainer.innerHTML = `
+                <div class="alert alert-danger">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    <strong>Error:</strong> ${error.message}
+                </div>
+            `;
+            submitButton.disabled = false;
+            submitButton.innerHTML = '<i class="fas fa-lock me-2"></i> Proceder al Pago Seguro - ${{ monto }}';
+        }
+    });
+</script>
+
+<style>
+    .btn-group .btn.active {
+        background-color: #0d6efd;
+        color: white;
+    }
+    .card {
+        border-radius: 10px;
+    }
+    .alert {
+        border-radius: 8px;
+    }
+    #card-number-element,
+    #card-expiry-element,
+    #card-cvc-element {
+        border: 1px solid #ced4da;
+        border-radius: 0.25rem;
+        background: white;
+        padding: 12px;
+        min-height: 40px;
+    }
+    #card-number-element.StripeElement--focus,
+    #card-expiry-element.StripeElement--focus,
+    #card-cvc-element.StripeElement--focus {
+        border-color: #80bdff;
+        box-shadow: 0 0 0 0.2rem rgba(0,123,255,.25);
+        outline: 0;
+    }
+    #card-number-element.StripeElement--invalid,
+    #card-expiry-element.StripeElement--invalid,
+    #card-cvc-element.StripeElement--invalid {
+        border-color: #dc3545;
+    }
+    .text-danger {
+        font-size: 0.875em;
+    }
+</style>
+{% endblock %}

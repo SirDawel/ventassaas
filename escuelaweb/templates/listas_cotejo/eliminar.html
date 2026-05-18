@@ -1,0 +1,114 @@
+{% extends 'website/base.html' %}
+{% load static %}
+
+{% block title %}{{ titulo }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow">
+                <div class="card-header bg-danger text-white">
+                    <h4 class="mb-0">
+                        <i class="fas fa-exclamation-triangle me-2"></i>{{ titulo }}
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-danger">
+                        <h5 class="alert-heading">
+                            <i class="fas fa-exclamation-circle me-2"></i>¿Estás seguro?
+                        </h5>
+                        <p class="mb-0">
+                            Esta acción no se puede deshacer. Se eliminará permanentemente la lista de cotejo y todos sus criterios asociados.
+                        </p>
+                    </div>
+
+                    {% if num_evaluaciones > 0 %}
+                    <div class="alert alert-warning">
+                        <h5 class="alert-heading">
+                            <i class="fas fa-exclamation-triangle me-2"></i>Advertencia: Datos Asociados
+                        </h5>
+                        <p>
+                            Esta lista de cotejo tiene <strong>{{ num_evaluaciones }} evaluación(es)</strong> y 
+                            <strong>{{ num_calificaciones }} calificación(es)</strong> asociadas.
+                        </p>
+                        <p class="mb-0">
+                            <strong>Al eliminar esta lista, también se eliminarán todas las evaluaciones y calificaciones registradas con ella.</strong>
+                            Esto puede afectar los registros académicos de los estudiantes.
+                        </p>
+                    </div>
+                    {% endif %}
+
+                    <h5 class="mb-3">Detalles de la Lista de Cotejo:</h5>
+                    <div class="table-responsive">
+                        <table class="table table-bordered">
+                            <tr>
+                                <th style="width: 30%;">Nombre:</th>
+                                <td><strong>{{ lista.nombre }}</strong></td>
+                            </tr>
+                            {% if lista.descripcion %}
+                            <tr>
+                                <th>Descripción:</th>
+                                <td>{{ lista.descripcion }}</td>
+                            </tr>
+                            {% endif %}
+                            <tr>
+                                <th>Tipo de Evaluación:</th>
+                                <td>{{ lista.get_tipo_evaluacion_display }}</td>
+                            </tr>
+                            <tr>
+                                <th>Materia:</th>
+                                <td>
+                                    {% if lista.materia %}
+                                        {{ lista.materia.nombre }}
+                                    {% else %}
+                                        <span class="text-muted">General</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            <tr>
+                                <th>Puntaje Total:</th>
+                                <td>{{ lista.puntaje_total }}</td>
+                            </tr>
+                            <tr>
+                                <th>Número de Criterios:</th>
+                                <td>{{ lista.criterios.count }}</td>
+                            </tr>
+                            <tr>
+                                <th>Creado por:</th>
+                                <td>{{ lista.creador.get_full_name }}</td>
+                            </tr>
+                            <tr>
+                                <th>Fecha de Creación:</th>
+                                <td>{{ lista.fecha_creacion|date:"d/m/Y H:i" }}</td>
+                            </tr>
+                            <tr>
+                                <th>Estado:</th>
+                                <td>
+                                    {% if lista.activa %}
+                                        <span class="badge bg-success">Activa</span>
+                                    {% else %}
+                                        <span class="badge bg-secondary">Inactiva</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                        </table>
+                    </div>
+
+                    <form method="post" class="mt-4">
+                        {% csrf_token %}
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                            <a href="{% url 'lista_cotejo_detalle' lista.id %}" class="btn btn-secondary">
+                                <i class="fas fa-times me-2"></i>Cancelar
+                            </a>
+                            <button type="submit" class="btn btn-danger">
+                                <i class="fas fa-trash-alt me-2"></i>Sí, Eliminar Lista
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

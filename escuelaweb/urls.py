@@ -5,14 +5,22 @@ from . import views_evaluaciones
 from . import views_listas_cotejo
 from . import views_pagos_estudiante as views_pagos
 from . import views_pos
+from . import views_importar_csv
+from . import views_suscripcion
 
 urlpatterns = [
+    # ============================================
+    # REGISTRO PÚBLICO DE ESCUELAS (MULTI-TENANT)
+    # ============================================
+    path('registrar-escuela/', views.registrar_escuela, name='registrar_escuela'),
+    
     # ... existing urls ...
     # Reporte general PDF (notas por curso)
     path('reporte-general/<int:curso_id>/pdf/', views.reporte_general_pdf, name='reporte_general_pdf'),
     path('register/', views.register_user, name='register'),
     
     path("activate/<uidb64>/<token>/", views.activate, name="activate"),
+    path("activate-school/<uidb64>/<token>/", views.activate_school, name="activate_school"),
 
     path('users/', views.user_list, name='user_list'),
     path('users/create/', views.user_create, name='user_create'),
@@ -22,7 +30,12 @@ urlpatterns = [
     path('users/profile/<int:user_id>/', views.user_profile, name='user_profile'),
     path('users/log-eliminados/', views.log_usuarios_eliminados, name='log_usuarios_eliminados'),
     path('profile/picture/update/', views.update_profile_picture, name='update_profile_picture'),
-    # URLs para A�o Escolar
+    
+    # URLs para Importación de Usuarios por CSV
+    path('users/importar-csv/', views_importar_csv.importar_usuarios_csv_vista, name='importar_usuarios_csv'),
+    path('users/descargar-plantilla-csv/', views_importar_csv.descargar_plantilla_csv, name='descargar_plantilla_csv'),
+    
+    # URLs para Año Escolar
     path('anhos-escolares/', views.lista_anhos_escolares, name='lista_anhos_escolares'),
     path('anhos-escolares/agregar/', views.agregar_anho_escolar, name='agregar_anho_escolar'),
     path('anhos-escolares/editar/<int:pk>/', views.editar_anho_escolar, name='editar_anho_escolar'),
@@ -243,4 +256,25 @@ urlpatterns = [
     path('webhooks/pos/cardnet/', views_pos.webhook_cardnet, name='webhook_cardnet'),
     path('webhooks/pos/azul/', views_pos.webhook_azul, name='webhook_azul'),
     path('webhooks/pos/consultar/<str:transaction_id>/', views_pos.consultar_transaccion_pos, name='consultar_transaccion_pos'),
+    
+    # ============================================
+    # SUSCRIPCIONES Y PAGOS
+    # ============================================
+    path('suscripcion/', views_suscripcion.suscripcion_dashboard, name='suscripcion_dashboard'),
+    path('suscripcion/planes/', views_suscripcion.planes_disponibles, name='planes_disponibles'),
+    path('suscripcion/cambiar-plan/<int:plan_id>/', views_suscripcion.cambiar_plan, name='cambiar_plan'),
+    path('suscripcion/api/estado/', views_suscripcion.estado_suscripcion_api, name='estado_suscripcion_api'),
+    
+    # Checkout y Pagos con Stripe
+    path('suscripcion/checkout/<int:plan_id>/', views_suscripcion.checkout_suscripcion, name='checkout_suscripcion'),
+    path('suscripcion/crear-checkout-session/', views_suscripcion.crear_checkout_session, name='crear_checkout_session'),
+    path('suscripcion/procesar-pago-tarjeta/', views_suscripcion.procesar_pago_tarjeta, name='procesar_pago_tarjeta'),
+    path('suscripcion/confirmar-pago-tarjeta/', views_suscripcion.confirmar_pago_tarjeta, name='confirmar_pago_tarjeta'),
+    path('suscripcion/pago-exitoso/', views_suscripcion.pago_exitoso, name='pago_exitoso'),
+    
+    # Webhook de Stripe
+    path('webhooks/stripe/', views_suscripcion.stripe_webhook, name='stripe_webhook'),
+    
+    # Ruta para manejar peticiones huérfanas (evitar 404 en recursos no existentes)
+    path('reporte/', views.empty_response, name='empty_reporte'),
 ] 

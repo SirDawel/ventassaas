@@ -395,7 +395,7 @@
       <div class="container-fluid">
         <a class="navbar-brand" href="{% url 'index' %}">
           <img src="{% static 'img/logoescuelaonline.jpg' %}" alt="Logo">
-          Centro Cristiano
+          {{ nombre_escuela_config }}
         </a>
         <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent"
           aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
@@ -506,10 +506,16 @@
                 <li><a class="dropdown-item" href="{% url 'user_list' %}">
                   <i class="fas fa-users me-2 text-primary"></i>Usuarios
                 </a></li>
+                <li><a class="dropdown-item" href="{% url 'importar_usuarios_csv' %}">
+                  <i class="fas fa-file-csv me-2 text-success"></i>Importar Usuarios CSV
+                </a></li>
                 {% endif %}
                 {% if user.rol == 'Administrador' or user.rol == 'Director' %}
                 <li><a class="dropdown-item" href="{% url 'configuracion_escuela' %}">
                   <i class="fas fa-cogs me-2 text-info"></i>Configuración Escuela
+                </a></li>
+                <li><a class="dropdown-item" href="{% url 'suscripcion_dashboard' %}">
+                  <i class="fas fa-crown me-2 text-warning"></i>Mi Suscripción
                 </a></li>
                 {% endif %}
                 {% if user.rol == 'Administrador' %}

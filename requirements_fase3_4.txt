@@ -1,0 +1,14 @@
+# Nuevas dependencias agregadas en Fase 3 y Fase 4
+
+# Stripe - Sistema de Pagos
+stripe==15.1.0
+
+# Celery - Tareas Asíncronas
+celery==5.6.3
+redis==7.4.0
+django-celery-beat==2.9.0
+django-celery-results==2.6.0
+
+# INSTRUCCIONES:
+# Agrega estas líneas al final de tu archivo requirements.txt existente
+# O ejecuta: pip install -r requirements_fase3_4.txt

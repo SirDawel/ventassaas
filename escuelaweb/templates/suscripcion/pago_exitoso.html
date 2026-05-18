@@ -1,0 +1,146 @@
+{% extends 'website/base.html' %}
+{% load static %}
+
+{% block title %}¡Pago Exitoso! - {{ block.super }}{% endblock %}
+
+{% block content %}
+<div class="container my-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <!-- Mensaje de Éxito -->
+            <div class="text-center mb-4">
+                <div class="success-icon mb-3">
+                    <i class="fas fa-check-circle fa-5x text-success"></i>
+                </div>
+                <h2 class="text-success mb-3">¡Pago Procesado Exitosamente!</h2>
+                <p class="lead text-muted">Tu suscripción ha sido activada</p>
+            </div>
+            
+            <!-- Detalles del Pago -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0"><i class="fas fa-receipt"></i> Detalles de la Transacción</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <strong class="text-muted">Estado del Pago:</strong>
+                            <p class="mb-0">
+                                <span class="badge bg-success">
+                                    <i class="fas fa-check"></i> Completado
+                                </span>
+                            </p>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <strong class="text-muted">Método de Pago:</strong>
+                            <p class="mb-0">
+                                <i class="fas fa-credit-card"></i> Tarjeta de Crédito/Débito
+                            </p>
+                        </div>
+                        {% if checkout_session.amount_total %}
+                        <div class="col-md-6 mb-3">
+                            <strong class="text-muted">Monto Pagado:</strong>
+                            <p class="mb-0 h5 text-primary">${{ checkout_session.amount_total|floatformat:2|add:"0"|divisibleby:"100" }}</p>
+                        </div>
+                        {% endif %}
+                        <div class="col-md-6 mb-3">
+                            <strong class="text-muted">ID de Transacción:</strong>
+                            <p class="mb-0"><code>{{ checkout_session.id }}</code></p>
+                        </div>
+                    </div>
+                    
+                    <hr>
+                    
+                    <div class="alert alert-info mb-0">
+                        <i class="fas fa-info-circle"></i> 
+                        Recibirás un correo electrónico con la confirmación y el recibo de tu pago.
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Próximos Pasos -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="fas fa-list-check"></i> Próximos Pasos</h5>
+                </div>
+                <div class="card-body">
+                    <ol class="mb-0">
+                        <li class="mb-2">
+                            <strong>Revisa tu Dashboard:</strong> Verifica el estado de tu suscripción y uso de recursos.
+                        </li>
+                        <li class="mb-2">
+                            <strong>Configura tu Método de Pago:</strong> Asegúrate de que tu método de pago esté actualizado para renovaciones automáticas.
+                        </li>
+                        <li class="mb-2">
+                            <strong>Explora las Funcionalidades:</strong> Aprovecha todas las características incluidas en tu plan.
+                        </li>
+                        <li class="mb-0">
+                            <strong>Contacta al Soporte:</strong> Si tienes alguna pregunta, nuestro equipo está disponible 24/7.
+                        </li>
+                    </ol>
+                </div>
+            </div>
+            
+            <!-- Acciones -->
+            <div class="text-center">
+                <a href="{% url 'suscripcion_dashboard' %}" class="btn btn-primary btn-lg me-2">
+                    <i class="fas fa-tachometer-alt"></i> Ver Mi Suscripción
+                </a>
+                <a href="{% url 'plataform' %}" class="btn btn-outline-secondary btn-lg">
+                    <i class="fas fa-home"></i> Ir al Inicio
+                </a>
+            </div>
+            
+            <!-- Soporte -->
+            <div class="text-center mt-4">
+                <p class="text-muted small">
+                    <i class="fas fa-question-circle"></i> ¿Necesitas ayuda? 
+                    <a href="#">Contacta a soporte</a>
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .success-icon i {
+        animation: checkAnimation 0.6s ease-in-out;
+    }
+    
+    @keyframes checkAnimation {
+        0% {
+            transform: scale(0);
+            opacity: 0;
+        }
+        50% {
+            transform: scale(1.1);
+        }
+        100% {
+            transform: scale(1);
+            opacity: 1;
+        }
+    }
+    
+    .card {
+        border-radius: 10px;
+        overflow: hidden;
+    }
+    
+    .card-header {
+        border-bottom: 3px solid rgba(0,0,0,0.1);
+    }
+</style>
+
+<script>
+    // Confeti de celebración (opcional - requiere canvas-confetti library)
+    // Si quieres agregar confeti, incluye: <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Animación simple de entrada
+        document.querySelector('.success-icon').style.opacity = '0';
+        setTimeout(function() {
+            document.querySelector('.success-icon').style.transition = 'opacity 0.5s';
+            document.querySelector('.success-icon').style.opacity = '1';
+        }, 100);
+    });
+</script>
+{% endblock %}

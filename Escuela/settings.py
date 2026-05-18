@@ -27,6 +27,12 @@ def get_env_list(name, default=''):
 
 
 # ============================================
+# DJANGO-TENANTS CONFIGURATION
+# ============================================
+TENANT_MODEL = "escuelaweb.Client"
+TENANT_DOMAIN_MODEL = "escuelaweb.Domain"
+
+# ============================================
 # SEGURIDAD
 # ============================================
 
@@ -41,8 +47,12 @@ if not SECRET_KEY:
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.getenv('DEBUG', 'True') == 'True'
 
-# Hosts permitidos
-ALLOWED_HOSTS = get_env_list('ALLOWED_HOSTS', 'localhost,127.0.0.1')
+# Hosts permitidos (Multi-Tenant: permitir subdominios)
+ALLOWED_HOSTS = get_env_list('ALLOWED_HOSTS', 'localhost,127.0.0.1,.localhost,.escuelaenlinea.com')
+
+# Permitir todos los subdominios en desarrollo
+if DEBUG:
+    ALLOWED_HOSTS += ['.localhost', '*.localhost', '127.0.0.1']
 
 # Entorno de ejecución
 ENVIRONMENT = os.getenv('ENVIRONMENT', 'development')
@@ -96,19 +106,39 @@ LOGOUT_REDIRECT_URL = '/login/'
 
 # Application definition
 
-INSTALLED_APPS = [
-    'django.contrib.admin',
-    'django.contrib.auth',
+# Apps compartidas entre todos los tenants (public schema)
+SHARED_APPS = [
+    'django_tenants',  # Debe ser la primera app
     'django.contrib.contenttypes',
+    'django.contrib.auth',
     'django.contrib.sessions',
     'django.contrib.messages',
+    'django.contrib.admin',
     'django.contrib.staticfiles',
     'django.contrib.humanize',
-    'django_recaptcha',  # django-recaptcha para CAPTCHA en login
+    'django_recaptcha',
+    'django_celery_beat',  # Celery Beat para tareas programadas
+    'django_celery_results',  # Resultados de Celery
+    'escuelaweb',  # Necesario en shared para Client y Domain models
+]
+
+# Apps específicas de cada tenant (en su propio schema)
+TENANT_APPS = [
+    'django.contrib.contenttypes',
+    'django.contrib.auth',
+    'django.contrib.sessions',
+    'django.contrib.messages',
+    'django.contrib.admin',
+    'django.contrib.staticfiles',
+    'django.contrib.humanize',
+    'django_recaptcha',
     'escuelaweb',
 ]
 
+INSTALLED_APPS = list(set(SHARED_APPS + TENANT_APPS))
+
 MIDDLEWARE = [
+    'django_tenants.middleware.main.TenantMainMiddleware',  # django-tenants PRIMERO
     'django.middleware.security.SecurityMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',
     'escuelaweb.security_middleware.RateLimitMiddleware',  # Rate limiting y bloqueo de IPs
@@ -116,6 +146,7 @@ MIDDLEWARE = [
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
+    # 'escuelaweb.subscription_middleware.SubscriptionMiddleware',  # Verificación de suscripción - DESHABILITADO TEMPORALMENTE
     'escuelaweb.middleware.RoleBasedSessionMiddleware',  # Tiempos de sesión por rol
     'escuelaweb.security_middleware.SessionSecurityMiddleware',  # Seguridad de sesiones
     'django.contrib.messages.middleware.MessageMiddleware',
@@ -123,6 +154,12 @@ MIDDLEWARE = [
 ]
 
 ROOT_URLCONF = 'Escuela.urls'
+PUBLIC_SCHEMA_URLCONF = 'Escuela.urls_public'  # URLs para public schema (registro, login)
+
+# Database routers for multi-tenancy
+DATABASE_ROUTERS = [
+    'django_tenants.routers.TenantSyncRouter',
+]
 
 TEMPLATES = [
     {
@@ -135,6 +172,7 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
+                'escuelaweb.context_processors.school_configuration',
             ],
         },
     },
@@ -160,7 +198,7 @@ if not all([_db_name, _db_user, _db_password]):
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.postgresql',
+        'ENGINE': 'django_tenants.postgresql_backend',  # Motor con soporte multi-tenant
         'NAME': _db_name,
         'USER': _db_user,
         'PASSWORD': _db_password,
@@ -363,6 +401,66 @@ AZUL_PASSWORD = os.getenv('AZUL_PASSWORD', '')
 AZUL_STORE_ID = os.getenv('AZUL_STORE_ID', '')
 AZUL_WEBHOOK_SECRET = os.getenv('AZUL_WEBHOOK_SECRET', '')
 AZUL_API_URL = os.getenv('AZUL_API_URL', 'https://sandbox.azul.com.do')
+
+
+# ============================================
+# STRIPE - SISTEMA DE SUSCRIPCIONES
+# ============================================
+
+# Claves de Stripe (obtener en: https://dashboard.stripe.com/apikeys)
+STRIPE_PUBLIC_KEY = os.getenv('STRIPE_PUBLIC_KEY', '')
+STRIPE_SECRET_KEY = os.getenv('STRIPE_SECRET_KEY', '')
+STRIPE_WEBHOOK_SECRET = os.getenv('STRIPE_WEBHOOK_SECRET', '')
+
+# Modo de prueba (True para usar claves de test, False para producción)
+STRIPE_TEST_MODE = os.getenv('STRIPE_TEST_MODE', 'True') == 'True'
+
+# URLs para redireccionamiento después del pago
+STRIPE_SUCCESS_URL = os.getenv('STRIPE_SUCCESS_URL', 'http://localhost:8000/suscripcion/pago-exitoso/')
+STRIPE_CANCEL_URL = os.getenv('STRIPE_CANCEL_URL', 'http://localhost:8000/suscripcion/planes/')
+
+# Moneda por defecto
+STRIPE_CURRENCY = os.getenv('STRIPE_CURRENCY', 'usd')
+
+# Validar configuración de Stripe en producción
+if not DEBUG and not STRIPE_SECRET_KEY:
+    print("⚠️  ADVERTENCIA: STRIPE_SECRET_KEY no está configurada en producción")
+
+
+# ============================================
+# CELERY - SISTEMA DE TAREAS ASÍNCRONAS
+# ============================================
+
+# Broker de mensajes (Redis)
+CELERY_BROKER_URL = os.getenv('CELERY_BROKER_URL', 'redis://localhost:6379/0')
+CELERY_RESULT_BACKEND = 'django-db'  # Usar django-celery-results
+
+# Configuración de zona horaria
+CELERY_TIMEZONE = TIME_ZONE
+CELERY_ENABLE_UTC = True
+
+# Serialización
+CELERY_ACCEPT_CONTENT = ['json']
+CELERY_TASK_SERIALIZER = 'json'
+CELERY_RESULT_SERIALIZER = 'json'
+
+# Configuración de resultados
+CELERY_RESULT_EXTENDED = True
+CELERY_RESULT_EXPIRES = 3600  # 1 hora
+
+# Configuración de tareas
+CELERY_TASK_TRACK_STARTED = True
+CELERY_TASK_TIME_LIMIT = 30 * 60  # 30 minutos máximo
+CELERY_TASK_SOFT_TIME_LIMIT = 25 * 60  # 25 minutos (límite suave)
+
+# Configuración de Beat (tareas programadas)
+CELERY_BEAT_SCHEDULER = 'django_celery_beat.schedulers:DatabaseScheduler'
+
+# Logging de Celery
+CELERY_WORKER_HIJACK_ROOT_LOGGER = False
+CELERY_WORKER_LOG_FORMAT = '[%(asctime)s: %(levelname)s/%(processName)s] %(message)s'
+CELERY_WORKER_TASK_LOG_FORMAT = '[%(asctime)s: %(levelname)s/%(processName)s][%(task_name)s(%(task_id)s)] %(message)s'
+
 
 # Configuración de impresora POS
 AUTO_PRINT_INVOICES = os.getenv('AUTO_PRINT_INVOICES', 'False') == 'True'

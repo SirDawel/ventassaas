@@ -42,6 +42,7 @@ from .models import Asistencia, AsistenciaPersonal, GrupoFamiliar
 from .models import TarifaEstudiante
 from .models import AsientoContable, DetalleAsiento
 from .models import ConfiguracionEscuela
+from .models import Plan, Suscripcion, HistorialPago
 
 # Registro de Grupo Familiar
 @admin.register(GrupoFamiliar)
@@ -981,3 +982,243 @@ class TerminalEstudianteAdmin(admin.ModelAdmin):
     def estudiante_info(self, obj):
         return f"{obj.estudiante.get_full_name()} ({obj.estudiante.cedula})"
     estudiante_info.short_description = "Estudiante"
+
+
+# ============================================================================
+# ADMINISTRACIÓN DE SUSCRIPCIONES
+# ============================================================================
+
+@admin.register(Plan)
+class PlanAdmin(admin.ModelAdmin):
+    list_display = (
+        'nombre',
+        'tipo',
+        'precio_mensual_formatted',
+        'precio_anual_formatted',
+        'max_usuarios',
+        'max_estudiantes',
+        'activo',
+        'orden'
+    )
+    list_filter = ('activo', 'tipo')
+    search_fields = ('nombre', 'descripcion')
+    ordering = ('orden', 'tipo')
+    
+    fieldsets = (
+        ('Información Básica', {
+            'fields': ('nombre', 'tipo', 'descripcion', 'activo', 'orden')
+        }),
+        ('Precios', {
+            'fields': ('precio_mensual', 'precio_anual')
+        }),
+        ('Límites', {
+            'fields': ('max_usuarios', 'max_estudiantes')
+        }),
+        ('Características', {
+            'fields': (
+                'permite_reportes_avanzados',
+                'permite_integracion_api',
+                'permite_multiples_sedes',
+                'soporte_prioritario'
+            )
+        }),
+        ('Integración Stripe', {
+            'fields': ('stripe_price_id_mensual', 'stripe_price_id_anual'),
+            'classes': ('collapse',)
+        }),
+    )
+    
+    def precio_mensual_formatted(self, obj):
+        return f"${obj.precio_mensual}"
+    precio_mensual_formatted.short_description = "Precio Mensual"
+    precio_mensual_formatted.admin_order_field = 'precio_mensual'
+    
+    def precio_anual_formatted(self, obj):
+        return f"${obj.precio_anual}"
+    precio_anual_formatted.short_description = "Precio Anual"
+    precio_anual_formatted.admin_order_field = 'precio_anual'
+
+
+@admin.register(Suscripcion)
+class SuscripcionAdmin(admin.ModelAdmin):
+    list_display = (
+        'tenant_info',
+        'plan',
+        'estado_badge',
+        'periodo',
+        'fecha_proximo_pago',
+        'dias_restantes',
+        'usuarios_disponibles_info'
+    )
+    list_filter = ('estado', 'periodo', 'plan', 'auto_renovacion')
+    search_fields = ('tenant__name', 'tenant__schema_name', 'stripe_customer_id')
+    readonly_fields = (
+        'fecha_inicio',
+        'created_at',
+        'updated_at',
+        'stripe_customer_id',
+        'stripe_subscription_id'
+    )
+    date_hierarchy = 'fecha_proximo_pago'
+    
+    fieldsets = (
+        ('Tenant', {
+            'fields': ('tenant',)
+        }),
+        ('Plan y Estado', {
+            'fields': ('plan', 'estado', 'periodo')
+        }),
+        ('Fechas', {
+            'fields': (
+                'fecha_inicio',
+                'fecha_fin_trial',
+                'fecha_proximo_pago',
+                'fecha_cancelacion'
+            )
+        }),
+        ('Método de Pago', {
+            'fields': ('metodo_pago_tipo', 'metodo_pago_ultimo4')
+        }),
+        ('Configuración', {
+            'fields': ('auto_renovacion', 'notificacion_vencimiento_enviada')
+        }),
+        ('Stripe', {
+            'fields': ('stripe_customer_id', 'stripe_subscription_id'),
+            'classes': ('collapse',)
+        }),
+        ('Notas', {
+            'fields': ('notas',)
+        }),
+        ('Auditoría', {
+            'fields': ('fecha_creacion', 'fecha_actualizacion'),
+            'classes': ('collapse',)
+        }),
+    )
+    
+    def tenant_info(self, obj):
+        return f"{obj.tenant.name} ({obj.tenant.schema_name})"
+    tenant_info.short_description = "Escuela"
+    
+    def estado_badge(self, obj):
+        color = obj.get_color_estado()
+        return f'<span style="padding: 3px 8px; border-radius: 3px; background-color: {color}; color: white;">{obj.get_estado_display()}</span>'
+    estado_badge.short_description = "Estado"
+    estado_badge.allow_tags = True
+    
+    def dias_restantes(self, obj):
+        if obj.estado == 'TRIAL':
+            dias = obj.dias_restantes_trial()
+            if dias is not None:
+                return f"{dias} días"
+            return "Expirado"
+        return "-"
+    dias_restantes.short_description = "Días Trial Restantes"
+    
+    def usuarios_disponibles_info(self, obj):
+        disponibles = obj.usuarios_disponibles()
+        max_usuarios = obj.plan.max_usuarios
+        return f"{disponibles}/{max_usuarios}"
+    usuarios_disponibles_info.short_description = "Usuarios Disponibles"
+
+
+class HistorialPagoInline(admin.TabularInline):
+    model = HistorialPago
+    extra = 0
+    readonly_fields = ('fecha_pago', 'fecha_procesado', 'numero_factura', 'monto', 'estado')
+    fields = ('fecha_pago', 'monto', 'estado', 'numero_factura', 'metodo_pago')
+    can_delete = False
+    
+    def has_add_permission(self, request, obj=None):
+        return False
+
+
+@admin.register(HistorialPago)
+class HistorialPagoAdmin(admin.ModelAdmin):
+    list_display = (
+        'numero_factura',
+        'suscripcion_info',
+        'monto_formatted',
+        'estado_badge',
+        'metodo_pago',
+        'fecha_pago',
+        'fecha_procesado'
+    )
+    list_filter = ('estado', 'metodo_pago', 'moneda', 'fecha_pago')
+    search_fields = (
+        'numero_factura',
+        'suscripcion__tenant__name',
+        'stripe_payment_intent_id',
+        'stripe_invoice_id'
+    )
+    readonly_fields = (
+        'numero_factura',
+        'fecha_pago',
+        'fecha_procesado',
+        'stripe_payment_intent_id',
+        'stripe_invoice_id',
+        'stripe_charge_id'
+    )
+    date_hierarchy = 'fecha_pago'
+    ordering = ('-fecha_pago',)
+    
+    fieldsets = (
+        ('Información del Pago', {
+            'fields': (
+                'suscripcion',
+                'numero_factura',
+                'monto',
+                'moneda',
+                'estado'
+            )
+        }),
+        ('Detalles', {
+            'fields': ('descripcion', 'metodo_pago')
+        }),
+        ('Fechas', {
+            'fields': ('fecha_pago', 'fecha_procesado')
+        }),
+        ('Factura', {
+            'fields': ('factura_url',)
+        }),
+        ('Stripe', {
+            'fields': (
+                'stripe_payment_intent_id',
+                'stripe_invoice_id',
+                'stripe_charge_id'
+            ),
+            'classes': ('collapse',)
+        }),
+        ('Metadata', {
+            'fields': ('metadata',),
+            'classes': ('collapse',)
+        }),
+    )
+    
+    def suscripcion_info(self, obj):
+        return f"{obj.suscripcion.tenant.name} - {obj.suscripcion.plan.nombre}"
+    suscripcion_info.short_description = "Suscripción"
+    
+    def monto_formatted(self, obj):
+        return f"{obj.monto} {obj.moneda}"
+    monto_formatted.short_description = "Monto"
+    monto_formatted.admin_order_field = 'monto'
+    
+    def estado_badge(self, obj):
+        colors = {
+            'PENDIENTE': '#ffc107',
+            'COMPLETADO': '#28a745',
+            'FALLIDO': '#dc3545',
+            'REEMBOLSADO': '#6c757d'
+        }
+        color = colors.get(obj.estado, '#6c757d')
+        return f'<span style="padding: 3px 8px; border-radius: 3px; background-color: {color}; color: white;">{obj.get_estado_display()}</span>'
+    estado_badge.short_description = "Estado"
+    estado_badge.allow_tags = True
+    
+    def has_add_permission(self, request):
+        # No permitir crear pagos manualmente desde el admin
+        return False
+    
+    def has_delete_permission(self, request, obj=None):
+        # No permitir eliminar pagos
+        return False

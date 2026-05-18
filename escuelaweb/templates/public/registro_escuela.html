@@ -1,0 +1,476 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Registrar Escuela - Sistema Escolar</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="https://www.google.com/recaptcha/api.js" async defer></script>
+    <style>
+        :root {
+            --primary-color: #4e73df;
+            --secondary-color: #858796;
+            --success-color: #1cc88a;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 40px 0;
+        }
+        
+        .register-container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+        
+        .card {
+            border: none;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+        
+        .card-header {
+            background: linear-gradient(135deg, var(--primary-color) 0%, #224abe 100%);
+            color: white;
+            border-radius: 15px 15px 0 0 !important;
+            padding: 30px;
+        }
+        
+        .card-header h2 {
+            margin: 0;
+            font-weight: 600;
+        }
+        
+        .card-header p {
+            margin: 10px 0 0 0;
+            opacity: 0.9;
+        }
+        
+        .form-label {
+            font-weight: 600;
+            color: #5a5c69;
+            margin-bottom: 8px;
+        }
+        
+        .form-control, .form-select {
+            border-radius: 8px;
+            padding: 12px 15px;
+            border: 1px solid #d1d3e2;
+        }
+        
+        .form-control:focus, .form-select:focus {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 0.2rem rgba(78, 115, 223, 0.25);
+        }
+        
+        .section-title {
+            color: var(--primary-color);
+            font-weight: 600;
+            font-size: 1.2rem;
+            margin: 30px 0 20px 0;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #e3e6f0;
+        }
+        
+        .section-title i {
+            margin-right: 10px;
+        }
+        
+        .btn-register {
+            background: linear-gradient(135deg, var(--success-color) 0%, #13855c 100%);
+            border: none;
+            padding: 15px 40px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            border-radius: 8px;
+            transition: all 0.3s;
+        }
+        
+        .btn-register:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(28, 200, 138, 0.4);
+        }
+        
+        .btn-register:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            background: linear-gradient(135deg, #858796 0%, #60616f 100%);
+        }
+        
+        .btn-register.btn-secondary {
+            background: linear-gradient(135deg, #858796 0%, #60616f 100%);
+        }
+        
+        .help-text {
+            font-size: 0.85rem;
+            color: #858796;
+            margin-top: 5px;
+        }
+        
+        .required-mark {
+            color: #e74a3b;
+        }
+        
+        .feature-box {
+            background: #f8f9fc;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .feature-box h5 {
+            color: var(--primary-color);
+            font-weight: 600;
+            margin-bottom: 15px;
+        }
+        
+        .feature-list {
+            list-style: none;
+            padding: 0;
+        }
+        
+        .feature-list li {
+            padding: 8px 0;
+            color: #5a5c69;
+        }
+        
+        .feature-list li i {
+            color: var(--success-color);
+            margin-right: 10px;
+        }
+        
+        .login-link {
+            text-align: center;
+            margin-top: 20px;
+            color: white;
+        }
+        
+        .login-link a {
+            color: white;
+            text-decoration: underline;
+            font-weight: 600;
+        }
+        
+        .subdomain-preview {
+            background: #f8f9fc;
+            padding: 10px 15px;
+            border-radius: 5px;
+            font-family: monospace;
+            color: var(--primary-color);
+            font-weight: 600;
+            margin-top: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="register-container">
+            <div class="card">
+                <div class="card-header text-center">
+                    <h2><i class="fas fa-school"></i> Registrar Mi Escuela</h2>
+                    <p>Crea tu cuenta y comienza a gestionar tu institución educativa</p>
+                </div>
+                
+                <div class="card-body p-4">
+                    {% if messages %}
+                        {% for message in messages %}
+                            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                                {{ message|safe }}
+                                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+                    
+                    <!-- Características del Sistema -->
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <div class="feature-box">
+                                <h5><i class="fas fa-check-circle"></i> Incluye:</h5>
+                                <ul class="feature-list">
+                                    <li><i class="fas fa-check"></i> Panel de administración completo</li>
+                                    <li><i class="fas fa-check"></i> Gestión de estudiantes y profesores</li>
+                                    <li><i class="fas fa-check"></i> Sistema de calificaciones</li>
+                                    <li><i class="fas fa-check"></i> Control de pagos y facturación</li>
+                                </ul>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="feature-box">
+                                <h5><i class="fas fa-rocket"></i> Ventajas:</h5>
+                                <ul class="feature-list">
+                                    <li><i class="fas fa-check"></i> Tu propio subdominio exclusivo</li>
+                                    <li><i class="fas fa-check"></i> Datos 100% aislados y seguros</li>
+                                    <li><i class="fas fa-check"></i> Personalización completa</li>
+                                    <li><i class="fas fa-check"></i> Soporte técnico incluido</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <form method="POST" enctype="multipart/form-data" id="formRegistro">
+                        {% csrf_token %}
+                        
+                        <!-- INFORMACIÓN DE LA ESCUELA -->
+                        <div class="section-title">
+                            <i class="fas fa-building"></i> Información de la Institución
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-12 mb-3">
+                                <label for="nombre_escuela" class="form-label">
+                                    Nombre de la Escuela/Colegio <span class="required-mark">*</span>
+                                </label>
+                                <input type="text" class="form-control" id="nombre_escuela" 
+                                       name="nombre_escuela" required placeholder="Ej: Colegio Santo Domingo">
+                                <small class="help-text">Nombre oficial completo de la institución</small>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="nombre_corto" class="form-label">
+                                    Nombre Corto (Subdominio) <span class="required-mark">*</span>
+                                </label>
+                                <input type="text" class="form-control" id="nombre_corto" 
+                                       name="nombre_corto" required placeholder="ej: santodomingo"
+                                       pattern="[a-z0-9-]+" maxlength="30">
+                                <small class="help-text">Solo letras minúsculas, números y guiones. Sin espacios ni tildes.</small>
+                                <div class="subdomain-preview" id="subdomainPreview">
+                                    Tu escuela estará en: <span id="previewUrl">tunombre.escuelaenlinea.com</span>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6 mb-3">
+                                <label for="email_escuela" class="form-label">
+                                    Email Institucional <span class="required-mark">*</span>
+                                </label>
+                                <input type="email" class="form-control" id="email_escuela" 
+                                       name="email_escuela" required placeholder="info@tuescuela.edu">
+                                <small class="help-text">Email principal de contacto de la escuela</small>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-12 mb-3">
+                                <label for="telefono_escuela" class="form-label">
+                                    Teléfono <span class="required-mark">*</span>
+                                </label>
+                                <input type="tel" class="form-control" id="telefono_escuela" 
+                                       name="telefono_escuela" required placeholder="(809) 555-0000">
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="direccion_escuela" class="form-label">
+                                Dirección <span class="required-mark">*</span>
+                            </label>
+                            <textarea class="form-control" id="direccion_escuela" 
+                                      name="direccion_escuela" rows="2" required
+                                      placeholder="Calle, número, sector, ciudad"></textarea>
+                        </div>
+                        
+                        <!-- PLAN DE SUSCRIPCIÓN -->
+                        <div class="section-title">
+                            <i class="fas fa-crown"></i> Plan de Suscripción
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="plan" class="form-label">
+                                    Selecciona tu Plan <span class="required-mark">*</span>
+                                </label>
+                                <select class="form-select" id="plan" name="plan" required>
+                                    <option value="">Selecciona...</option>
+                                    <option value="gratis">🆓 Gratis - Hasta 50 usuarios (30 días de prueba)</option>
+                                    <option value="basico">📦 Básico - Hasta 200 usuarios - $29/mes</option>
+                                    <option value="estandar">🏢 Estándar - Hasta 500 usuarios - $59/mes</option>
+                                    <option value="premium">⭐ Premium - Usuarios ilimitados - $99/mes</option>
+                                </select>
+                            </div>
+                            
+                            <div class="col-md-6 mb-3">
+                                <label for="max_usuarios" class="form-label">
+                                    Cantidad Estimada de Usuarios
+                                </label>
+                                <input type="number" class="form-control" id="max_usuarios" 
+                                       name="max_usuarios" value="50" min="1" max="10000">
+                                <small class="help-text">Estudiantes + profesores + administrativos</small>
+                            </div>
+                        </div>
+                        
+                        <!-- USUARIO ADMINISTRADOR -->
+                        <div class="section-title">
+                            <i class="fas fa-user-shield"></i> Cuenta del Administrador
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="admin_nombre" class="form-label">
+                                    Nombre Completo <span class="required-mark">*</span>
+                                </label>
+                                <input type="text" class="form-control" id="admin_nombre" 
+                                       name="admin_nombre" required placeholder="Juan Pérez">
+                            </div>
+                            
+                            <div class="col-md-6 mb-3">
+                                <label for="admin_email" class="form-label">
+                                    Email del Administrador <span class="required-mark">*</span>
+                                </label>
+                                <input type="email" class="form-control" id="admin_email" 
+                                       name="admin_email" required placeholder="admin@correo.com">
+                                <small class="help-text">Usarás este email para iniciar sesión</small>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="admin_password" class="form-label">
+                                    Contraseña <span class="required-mark">*</span>
+                                </label>
+                                <input type="password" class="form-control" id="admin_password" 
+                                       name="admin_password" required minlength="8">
+                                <small class="help-text">Mínimo 8 caracteres</small>
+                            </div>
+                            
+                            <div class="col-md-6 mb-3">
+                                <label for="admin_password_confirm" class="form-label">
+                                    Confirmar Contraseña <span class="required-mark">*</span>
+                                </label>
+                                <input type="password" class="form-control" id="admin_password_confirm" 
+                                       name="admin_password_confirm" required minlength="8">
+                            </div>
+                        </div>
+                        
+                        <!-- TÉRMINOS Y CONDICIONES -->
+                        <div class="mb-4">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="terminos" 
+                                       name="terminos" required>
+                                <label class="form-check-label" for="terminos">
+                                    Acepto los <a href="#" target="_blank">Términos y Condiciones</a> 
+                                    y la <a href="#" target="_blank">Política de Privacidad</a> 
+                                    <span class="required-mark">*</span>
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <!-- 🔒 VERIFICACIÓN CAPTCHA (Seguridad Anti-Bot) -->
+                        {% if not ip_blocked %}
+                        <div class="row mb-4">
+                            <div class="col-12">
+                                <div class="d-flex justify-content-center">
+                                    <div class="g-recaptcha" 
+                                         data-sitekey="6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI"
+                                         data-callback="onRecaptchaSuccess"
+                                         data-expired-callback="onRecaptchaExpired"></div>
+                                </div>
+                                <small class="text-muted d-block text-center mt-2">
+                                    <i class="fas fa-shield-alt"></i> Verificación de seguridad para prevenir registros automatizados
+                                </small>
+                            </div>
+                        </div>
+                        {% endif %}
+                        
+                        <!-- ℹ️ NOTA DE CONFIRMACIÓN POR EMAIL -->
+                        <div class="alert alert-info mb-4" role="alert">
+                            <i class="fas fa-envelope"></i> <strong>Confirmación requerida:</strong>
+                            Después de registrarte, recibirás un correo electrónico con un enlace para activar tu escuela. 
+                            Por favor, revisa tu bandeja de entrada (y la carpeta de spam).
+                        </div>
+                        
+                        <!-- BOTÓN DE REGISTRO -->
+                        <div class="text-center">
+                            {% if ip_blocked %}
+                            <div class="alert alert-warning" role="alert">
+                                <i class="fas fa-exclamation-triangle"></i>
+                                <strong>Demasiados intentos de registro desde tu IP.</strong><br>
+                                Por favor, intenta nuevamente en una hora. Esto es para prevenir el uso automatizado del sistema.
+                            </div>
+                            {% else %}
+                            <button type="submit" id="btnRegistro" class="btn btn-success btn-register" disabled>
+                                <i class="fas fa-rocket"></i> Crear Mi Escuela Ahora
+                            </button>
+                            <small class="text-muted d-block mt-2">
+                                <i class="fas fa-info-circle"></i> Acepta los términos y completa la verificación para continuar
+                            </small>
+                            {% endif %}
+                        </div>
+                    </form>
+                </div>
+            </div>
+            
+            <div class="login-link">
+                ¿Ya tienes una cuenta? <a href="{% url 'login' %}">Inicia Sesión Aquí</a>
+            </div>
+        </div>
+    </div>
+    
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Preview del subdominio
+        document.getElementById('nombre_corto').addEventListener('input', function(e) {
+            let valor = e.target.value.toLowerCase()
+                .replace(/[^a-z0-9-]/g, '')  // Solo letras, números y guiones
+                .replace(/\s+/g, '-');       // Espacios a guiones
+            
+            e.target.value = valor;
+            
+            if (valor) {
+                document.getElementById('previewUrl').textContent = valor + '.escuelaenlinea.com';
+            } else {
+                document.getElementById('previewUrl').textContent = 'tunombre.escuelaenlinea.com';
+            }
+        });
+        
+        // Validar contraseñas coinciden
+        document.getElementById('formRegistro').addEventListener('submit', function(e) {
+            const password = document.getElementById('admin_password').value;
+            const confirm = document.getElementById('admin_password_confirm').value;
+            
+            if (password !== confirm) {
+                e.preventDefault();
+                alert('Las contraseñas no coinciden. Por favor, verifícalas.');
+                return false;
+            }
+        });
+        
+        // 🔒 CONTROL DE HABILITACIÓN DEL BOTÓN
+        let recaptchaCompleted = false;
+        
+        // Callback cuando reCAPTCHA se completa exitosamente
+        function onRecaptchaSuccess() {
+            recaptchaCompleted = true;
+            checkFormReady();
+        }
+        
+        // Callback cuando reCAPTCHA expira
+        function onRecaptchaExpired() {
+            recaptchaCompleted = false;
+            checkFormReady();
+        }
+        
+        // Verificar si el formulario está listo para enviar
+        function checkFormReady() {
+            const btnRegistro = document.getElementById('btnRegistro');
+            const terminosAceptados = document.getElementById('terminos').checked;
+            
+            // Habilitar botón solo si ambas condiciones se cumplen
+            if (terminosAceptados && recaptchaCompleted) {
+                btnRegistro.disabled = false;
+                btnRegistro.classList.remove('btn-secondary');
+                btnRegistro.classList.add('btn-success');
+            } else {
+                btnRegistro.disabled = true;
+                btnRegistro.classList.remove('btn-success');
+                btnRegistro.classList.add('btn-secondary');
+            }
+        }
+        
+        // Escuchar cambios en el checkbox de términos
+        document.getElementById('terminos').addEventListener('change', checkFormReady);
+    </script>
+</body>
+</html>

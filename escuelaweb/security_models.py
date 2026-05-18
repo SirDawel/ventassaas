@@ -79,6 +79,66 @@ class LoginAttempt(models.Model):
         )
 
 
+class RegistroEscuelaAttempt(models.Model):
+    """
+    Registra intentos de registro de escuelas para prevenir abuso
+    Implementa rate limiting basado en IP
+    """
+    ip_address = models.GenericIPAddressField(verbose_name="Dirección IP")
+    nombre_corto_intentado = models.CharField(max_length=50, verbose_name="Subdominio Intentado", blank=True)
+    exitoso = models.BooleanField(default=False, verbose_name="Registro Exitoso")
+    fecha = models.DateTimeField(auto_now_add=True, verbose_name="Fecha del Intento")
+    razon_fallo = models.CharField(max_length=255, blank=True, null=True, verbose_name="Razón del Fallo")
+    user_agent = models.TextField(blank=True, verbose_name="User Agent")
+    
+    class Meta:
+        verbose_name = "Intento de Registro de Escuela"
+        verbose_name_plural = "Intentos de Registro de Escuelas"
+        ordering = ['-fecha']
+        indexes = [
+            models.Index(fields=['ip_address', 'fecha']),
+            models.Index(fields=['-fecha']),
+        ]
+    
+    def __str__(self):
+        status = "Exitoso" if self.exitoso else "Fallido"
+        return f"{self.ip_address} - {self.nombre_corto_intentado} - {status} ({self.fecha.strftime('%Y-%m-%d %H:%M:%S')})"
+    
+    @classmethod
+    def get_recent_attempts_by_ip(cls, ip_address, hours=1):
+        """
+        Obtiene intentos de registro de una IP en las últimas N horas
+        """
+        from django.utils import timezone
+        from datetime import timedelta
+        cutoff_time = timezone.now() - timedelta(hours=hours)
+        return cls.objects.filter(
+            ip_address=ip_address,
+            fecha__gte=cutoff_time
+        ).count()
+    
+    @classmethod
+    def is_ip_blocked(cls, ip_address, max_attempts=3, block_hours=1):
+        """
+        Verifica si una IP está bloqueada por exceder intentos permitidos
+        """
+        attempts = cls.get_recent_attempts_by_ip(ip_address, block_hours)
+        return attempts >= max_attempts
+    
+    @classmethod
+    def record_attempt(cls, ip_address, nombre_corto='', exitoso=False, razon_fallo=None, user_agent=''):
+        """
+        Registra un intento de registro de escuela
+        """
+        return cls.objects.create(
+            ip_address=ip_address,
+            nombre_corto_intentado=nombre_corto[:50],
+            exitoso=exitoso,
+            razon_fallo=razon_fallo,
+            user_agent=user_agent[:500] if user_agent else ''
+        )
+
+
 class SecurityLog(models.Model):
     """
     Registro de auditoría de eventos de seguridad importantes
@@ -99,6 +159,8 @@ class SecurityLog(models.Model):
         ('SUSPICIOUS_ACTIVITY', 'Actividad sospechosa'),
         ('DATA_EXPORT', 'Exportación de datos'),
         ('ADMIN_ACTION', 'Acción administrativa'),
+        ('SCHOOL_REGISTERED', 'Escuela registrada'),
+        ('SCHOOL_ACTIVATED', 'Escuela activada'),
     ]
     
     NIVEL_SEVERIDAD_CHOICES = [

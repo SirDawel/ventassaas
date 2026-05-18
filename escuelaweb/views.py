@@ -63,13 +63,19 @@ def resetpass(request):
     return render(request, 'website/password_reset.html')
 
 
-@login_required(login_url="login")  # Redirige a la página de login si no está autenticado
+@login_required(login_url="login")  # Redirige a la pÃ¡gina de login si no estÃ¡ autenticado
 
 def plataform(request):
     return render(request, "website/plataform.html")
 
 def noticias(request):
     return render(request, 'website/noticias.html')
+
+
+def empty_response(request):
+    """Vista para manejar peticiones a recursos no existentes sin generar error 404"""
+    from django.http import HttpResponse
+    return HttpResponse(status=204)  # 204 No Content
 
 
 # user form views
@@ -85,9 +91,9 @@ def signup_view(request):
 
             user = form.save()
 
-            login(request, user)  # Autenticar al usuario después del registro
+            login(request, user)  # Autenticar al usuario despuÃ©s del registro
 
-            return redirect("home")  # Redirige a la página de inicio o dashboard
+            return redirect("home")  # Redirige a la pÃ¡gina de inicio o dashboard
 
     else:
 
@@ -119,13 +125,13 @@ def registerold(request):
         })
 
     if password != confirm_password:
-        messages.error(request, "Las contraseñas no coinciden.")
+        messages.error(request, "Las contraseÃ±as no coinciden.")
         return render(request, "website/register.html", {
             "firstname": firstname, "lastname": lastname, "email": email
         })
 
     if User.objects.filter(email=email).exists():
-        messages.error(request, "Este correo ya está registrado.")
+        messages.error(request, "Este correo ya estÃ¡ registrado.")
         return render(request, "website/register.html", {
             "firstname": firstname, "lastname": lastname, "email": email
         })
@@ -142,14 +148,14 @@ def registerold(request):
         user.activation_token = uuid.uuid4()
         user.save()
 
-        # ⚠️ ESTE ES EL BLOQUE CLAVE
+        # â ï¸ ESTE ES EL BLOQUE CLAVE
         uid = urlsafe_base64_encode(force_bytes(user.pk))
-        print("UID:", uid)  # 👈 Mira en consola qué imprime
+        print("UID:", uid)  # ð Mira en consola quÃ© imprime
         print("TOKEN:", user.activation_token)
 
         current_site = get_current_site(request)
         activation_url = f"{request.scheme}://{current_site.domain}/activate/{uid}/{user.activation_token}/"
-        print("DEBUG URL FINAL:", activation_url)  # 👈 Comprueba en consola
+        print("DEBUG URL FINAL:", activation_url)  # ð Comprueba en consola
 
         mail_subject = "Activa tu cuenta"
         message = render_to_string(
@@ -193,12 +199,185 @@ def activate(request, uidb64, token):
 
         user.save()
 
-        messages.success(request, "Tu cuenta ha sido activada. ¡Ya puedes iniciar sesión!")
+        messages.success(request, "Tu cuenta ha sido activada. Â¡Ya puedes iniciar sesiÃ³n!")
 
         return redirect("login")
-    messages.error(request, "El enlace de activación no es válido.")
+    messages.error(request, "El enlace de activaciÃ³n no es vÃ¡lido.")
 
     return redirect("register")
+
+
+def activate_school(request, uidb64, token):
+    """
+    Vista pública para activar una escuela registrada mediante email
+    Similar a activate() pero para el modelo Client (tenant)
+    🔒 SEGURIDAD: Verifica token UUID antes de activar la escuela
+    """
+    from .tenant_models import Client
+    
+    ip_address = get_client_ip(request)
+    user_agent = request.META.get('HTTP_USER_AGENT', '')
+    
+    try:
+        # Decodificar UID
+        uid = urlsafe_base64_decode(uidb64).decode()
+        tenant = Client.objects.get(pk=uid)
+        
+        # Verificar que el token coincida
+        if str(tenant.activation_token) != str(token):
+            logger.warning(f'Token de activación inválido para tenant {tenant.schema_name}')
+            messages.error(
+                request, 
+                '❌ El enlace de activación no es válido o ha expirado. '
+                'Por favor, contacta con soporte si necesitas ayuda.'
+            )
+            return redirect('login')
+        
+        # Verificar que no esté ya activado
+        if tenant.activo:
+            messages.info(
+                request,
+                f'✅ La escuela "{tenant.nombre}" ya está activada. Puedes iniciar sesión.'
+            )
+            return redirect('login')
+        
+        # ✅ ACTIVAR LA ESCUELA
+        tenant.activo = True
+        tenant.activation_token = None  # Limpiar token usado
+        tenant.save()
+        
+        logger.info(f'Escuela activada: {tenant.schema_name} ({tenant.nombre})')
+        
+        # 🔒 Log de seguridad
+        try:
+            from .models import SecurityLog
+            SecurityLog.objects.create(
+                tipo_evento='SCHOOL_ACTIVATED',
+                nivel='INFO',
+                usuario_email=tenant.email_contacto,
+                ip_address=ip_address,
+                user_agent=user_agent,
+                descripcion=f'Escuela activada por email: {tenant.nombre} ({tenant.schema_name})',
+                metadatos={
+                    'nombre_escuela': tenant.nombre,
+                    'nombre_corto': tenant.schema_name,
+                    'email_contacto': tenant.email_contacto,
+                    'tenant_id': tenant.id
+                }
+            )
+        except Exception as e:
+            logger.error(f'Error registrando SecurityLog: {e}')
+        
+        # Enviar email de bienvenida (ahora que está activo)
+        try:
+            from django.core.mail import EmailMessage
+            
+            url_acceso = f'http://{tenant.schema_name}.localhost:8000' if settings.DEBUG else f'https://{tenant.schema_name}.escuelaenlinea.com'
+            
+            subject = f'🎉 ¡Bienvenido a Sistema Escolar, {tenant.nombre}!'
+            
+            html_message = f"""
+            <html>
+            <body style="font-family: Arial, sans-serif;">
+                <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+                    <h2 style="color: #1cc88a; border-bottom: 3px solid #1cc88a; padding-bottom: 10px;">
+                        ✅ ¡Tu Escuela Está Activa!
+                    </h2>
+                    <p>Tu institución <strong>{tenant.nombre}</strong> ha sido activada exitosamente.</p>
+                    
+                    <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
+                                color: white; padding: 25px; border-radius: 10px; margin: 20px 0;">
+                        <h3 style="margin-top: 0; color: white;">🚀 Datos de Acceso</h3>
+                        <p style="margin: 10px 0;"><strong>URL:</strong> <a href="{url_acceso}" style="color: #fff;">{url_acceso}</a></p>
+                        <p style="margin: 10px 0;"><strong>Plan:</strong> {tenant.plan.title()}</p>
+                        <p style="margin: 10px 0;"><strong>Usuarios:</strong> {tenant.max_usuarios}</p>
+                    </div>
+                    
+                    <div style="background: #d4edda; padding: 15px; border-radius: 10px; margin: 20px 0; border-left: 5px solid #28a745;">
+                        <h3 style="color: #155724; margin-top: 0;">📚 Próximos Pasos</h3>
+                        <ol style="color: #155724; margin: 10px 0;">
+                            <li>Inicia sesión con tu correo y contraseña</li>
+                            <li>Configura el año escolar actual</li>
+                            <li>Agrega profesores y estudiantes</li>
+                            <li>Crea cursos y materias</li>
+                            <li>¡Comienza a gestionar tu escuela!</li>
+                        </ol>
+                    </div>
+                    
+                    <div style="text-align: center; margin: 30px 0;">
+                        <a href="{url_acceso}/login/" 
+                           style="background: linear-gradient(180deg, #1cc88a 10%, #17a673 100%); 
+                                  color: white; 
+                                  padding: 15px 40px; 
+                                  text-decoration: none; 
+                                  border-radius: 5px; 
+                                  display: inline-block;
+                                  font-weight: bold;
+                                  font-size: 16px;
+                                  box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+                            🔐 Iniciar Sesión Ahora
+                        </a>
+                    </div>
+                    
+                    <div style="background: #f8f9fc; padding: 15px; border-radius: 10px; margin: 20px 0;">
+                        <p style="margin: 0; color: #5a5c69; font-size: 14px;">
+                            <strong>🔒 Seguridad y Privacidad</strong><br>
+                            Tu escuela opera en su propio schema PostgreSQL completamente aislado.
+                            Ninguna otra institución puede acceder a tus datos.
+                        </p>
+                    </div>
+                    
+                    <p style="color: #858796; font-size: 13px; margin-top: 30px;">
+                        Si tienes alguna pregunta o necesitas asistencia, nuestro equipo está listo para ayudarte.
+                    </p>
+                    
+                    <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #e3e6f0; color: #858796; font-size: 12px; text-align: center;">
+                        <p><strong>Sistema Escolar Online</strong> - Gestión Educativa Profesional</p>
+                        <p>Soporte: soporte@sistemaescolar.com</p>
+                    </div>
+                </div>
+            </body>
+            </html>
+            """
+            
+            email = EmailMessage(
+                subject,
+                html_message,
+                settings.DEFAULT_FROM_EMAIL,
+                [tenant.email_contacto],
+            )
+            email.content_subtype = 'html'
+            email.send(fail_silently=True)
+            
+        except Exception as e:
+            logger.error(f'Error enviando email de bienvenida: {e}')
+        
+        # Mensaje de éxito
+        messages.success(
+            request,
+            f'🎉 ¡Felicidades! Tu escuela <strong>{tenant.nombre}</strong> ha sido activada exitosamente. '
+            f'Ya puedes iniciar sesión.'
+        )
+        
+        # Redirigir al login del subdominio de la escuela activada
+        url_acceso = f'http://{tenant.schema_name}.localhost:8000' if settings.DEBUG else f'https://{tenant.schema_name}.escuelaenlinea.com'
+        from django.http import HttpResponseRedirect
+        return HttpResponseRedirect(f'{url_acceso}/login/')
+        
+    except (TypeError, ValueError, OverflowError) as e:
+        logger.error(f'Error decodificando UID de activación: {e}')
+        messages.error(request, '❌ El enlace de activación no es válido.')
+        return redirect('login')
+        
+    except Client.DoesNotExist:
+        logger.error(f'Tenant no encontrado para activación: uid={uid}')
+        messages.error(request, '❌ No se encontró la escuela. El enlace puede haber expirado.')
+        return redirect('login')
+        
+    except Exception as e:
+        logger.error(f'Error activando escuela: {e}', exc_info=True)
+        messages.error(request, f'❌ Error al activar la escuela. Contacta con soporte.')
+        return redirect('login')
 
 
 def login_view(request):
@@ -206,7 +385,25 @@ def login_view(request):
     ip_address = get_client_ip(request)
     user_agent = request.META.get('HTTP_USER_AGENT', '')
     
-    # Verificar si la IP está bloqueada
+    # 🔒 Verificar si estamos en un tenant y si está activo
+    try:
+        from django.db import connection
+        if hasattr(connection, 'tenant') and connection.tenant:
+            tenant = connection.tenant
+            # Si no es el schema público y el tenant no está activo
+            if tenant.schema_name != 'public' and not tenant.activo:
+                messages.warning(
+                    request,
+                    f'⚠️ La escuela <strong>{tenant.nombre}</strong> aún no ha sido activada. '
+                    f'<br><br>📧 Por favor, revisa el correo electrónico enviado a <strong>{tenant.email_contacto}</strong> '
+                    f'y haz clic en el enlace de activación. '
+                    f'<br><br>💡 Si no encuentras el correo, revisa la carpeta de spam.'
+                )
+                return render(request, 'website/login.html', {'form': None, 'tenant_inactive': True})
+    except Exception as e:
+        logger.error(f'Error verificando estado del tenant: {e}')
+    
+    # Verificar si la IP estÃ¡ bloqueada
     try:
         from escuelaweb.models import IPBlocklist
         if IPBlocklist.is_blocked(ip_address):
@@ -215,7 +412,7 @@ def login_view(request):
     except Exception:
         pass
     
-    # Verificar si debe mostrar CAPTCHA (después de 2 intentos fallidos)
+    # Verificar si debe mostrar CAPTCHA (despuÃ©s de 2 intentos fallidos)
     show_captcha = False
     if request.method == "POST":
         email = request.POST.get("email", "").strip()
@@ -248,7 +445,7 @@ def login_view(request):
                     user_agent=user_agent,
                     nivel_severidad='WARNING'
                 )
-                # Bloquear IP automáticamente
+                # Bloquear IP automÃ¡ticamente
                 from escuelaweb.models import IPBlocklist
                 IPBlocklist.block_ip(
                     ip_address=ip_address,
@@ -271,7 +468,7 @@ def login_view(request):
         email = form.cleaned_data['email']
         password = form.cleaned_data['password']
         
-        # Verificar si la cuenta está bloqueada por múltiples intentos fallidos
+        # Verificar si la cuenta estÃ¡ bloqueada por mÃºltiples intentos fallidos
         if LoginAttempt.is_blocked(email, max_attempts=5, block_minutes=15):
             SecurityLog.log_event(
                 tipo_evento='ACCOUNT_LOCKED',
@@ -291,7 +488,7 @@ def login_view(request):
             if intentos_totales >= 10:
                 SecurityAlert.create_alert(
                     tipo_alerta='BRUTE_FORCE',
-                    titulo=f'Múltiples intentos fallidos en cuenta: {email}',
+                    titulo=f'MÃºltiples intentos fallidos en cuenta: {email}',
                     descripcion=f'Se han detectado {intentos_totales} intentos fallidos de login para {email}. IP: {ip_address}',
                     nivel_prioridad='HIGH',
                     ip_address=ip_address,
@@ -300,7 +497,7 @@ def login_view(request):
             
             messages.error(
                 request, 
-                'Cuenta temporalmente bloqueada por múltiples intentos fallidos. '
+                'Cuenta temporalmente bloqueada por mÃºltiples intentos fallidos. '
                 'Intenta nuevamente en 15 minutos.'
             )
             return render(request, 'website/login.html', {'form': form})
@@ -334,11 +531,11 @@ def login_view(request):
                 
                 login(request, user)
                 
-                # Actualizar último acceso
+                # Actualizar Ãºltimo acceso
                 user.ultimo_acceso = timezone.now()
                 user.save(update_fields=['ultimo_acceso'])
                 
-                # Inicializar sesión
+                # Inicializar sesiÃ³n
                 request.session['last_activity'] = timezone.now().isoformat()
 
                 messages.success(request, f"Bienvenido, {user.get_full_name()}")
@@ -363,11 +560,11 @@ def login_view(request):
                     nivel_severidad='WARNING'
                 )
                 
-                messages.error(request, "Tu cuenta no está activa. Por favor, verifica tu correo electrónico para activarla.")
+                messages.error(request, "Tu cuenta no estÃ¡ activa. Por favor, verifica tu correo electrÃ³nico para activarla.")
                 return render(request, 'website/login.html', {'form': form})
         else:
             # Login fallido
-            razon = 'Usuario no existe' if not user_exists else 'Contraseña incorrecta'
+            razon = 'Usuario no existe' if not user_exists else 'ContraseÃ±a incorrecta'
             
             LoginAttempt.record_attempt(
                 email=email,
@@ -387,20 +584,20 @@ def login_view(request):
                 nivel_severidad='WARNING'
             )
             
-            # Verificar cuántos intentos fallidos lleva
+            # Verificar cuÃ¡ntos intentos fallidos lleva
             intentos_fallidos = LoginAttempt.get_recent_failed_attempts(email, minutes=15)
             intentos_restantes = 5 - intentos_fallidos
             
             if intentos_restantes > 0:
                 messages.error(
                     request, 
-                    f"Correo electrónico o contraseña incorrectos. "
+                    f"Correo electrÃ³nico o contraseÃ±a incorrectos. "
                     f"Te quedan {intentos_restantes} intentos antes de bloquear la cuenta."
                 )
             else:
                 messages.error(
                     request, 
-                    "Cuenta bloqueada temporalmente por múltiples intentos fallidos. "
+                    "Cuenta bloqueada temporalmente por mÃºltiples intentos fallidos. "
                     "Intenta nuevamente en 15 minutos."
                 )
             
@@ -408,11 +605,11 @@ def login_view(request):
 
     except Exception as e:
         logger.error(f"Error en login_view: {str(e)}")
-        messages.error(request, f"Error al iniciar sesión: {str(e)}")
+        messages.error(request, f"Error al iniciar sesiÃ³n: {str(e)}")
         return render(request, 'website/login.html', {'form': None})
 
 
-# Función auxiliar para obtener IP del cliente
+# FunciÃ³n auxiliar para obtener IP del cliente
 def get_client_ip(request):
     """Obtiene la IP real del cliente"""
     x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
@@ -424,7 +621,7 @@ def get_client_ip(request):
 
 
 def logout_view(request):
-    """Vista mejorada de logout con auditoría"""
+    """Vista mejorada de logout con auditorÃ­a"""
     if request.user.is_authenticated:
         from escuelaweb.models import SecurityLog, UserSession
         
@@ -438,7 +635,7 @@ def logout_view(request):
             nivel_severidad='INFO'
         )
         
-        # Cerrar sesión en base de datos
+        # Cerrar sesiÃ³n en base de datos
         try:
             session_key = request.session.session_key
             if session_key:
@@ -446,7 +643,7 @@ def logout_view(request):
                 if user_session:
                     user_session.cerrar_sesion()
         except Exception as e:
-            logger.error(f"Error cerrando sesión en DB: {e}")
+            logger.error(f"Error cerrando sesiÃ³n en DB: {e}")
 
     logout(request)
     return redirect("login")
@@ -472,18 +669,18 @@ def password_reset_request(request):
 
         # Enviar correo
         send_mail(
-            "Recuperación de contraseña",
-            f"Haz clic en el siguiente enlace para restablecer tu contraseña:\n{reset_link}",
+            "RecuperaciÃ³n de contraseÃ±a",
+            f"Haz clic en el siguiente enlace para restablecer tu contraseÃ±a:\n{reset_link}",
             settings.EMAIL_HOST_USER,
             [email],
             fail_silently=False,
         )
 
-        messages.success(request, "Se ha enviado un correo con las instrucciones para restablecer tu contraseña.")
-        return redirect("login")  # ✅ Ahora correctamente fuera del paréntesis
+        messages.success(request, "Se ha enviado un correo con las instrucciones para restablecer tu contraseÃ±a.")
+        return redirect("login")  # â Ahora correctamente fuera del parÃ©ntesis
 
     else:
-        messages.error(request, "No se encontró ninguna cuenta con ese correo.")
+        messages.error(request, "No se encontrÃ³ ninguna cuenta con ese correo.")
 
     return redirect("password_reset")
 
@@ -502,7 +699,7 @@ def password_reset_confirm2(request, uidb64, token):
         user = None
 
     if not (user and default_token_generator.check_token(user, token)):
-        return HttpResponse("Enlace inválido o expirado.", status=400)
+        return HttpResponse("Enlace invÃ¡lido o expirado.", status=400)
     if request.method == "POST":
         new_password = request.POST.get("password")
         confirm_password = request.POST.get("confirm_password")
@@ -510,9 +707,9 @@ def password_reset_confirm2(request, uidb64, token):
             user.set_password(new_password)
             user.save()
             update_session_auth_hash(request, user)
-            messages.success(request, "Tu contraseña ha sido restablecida con éxito.")
+            messages.success(request, "Tu contraseÃ±a ha sido restablecida con Ã©xito.")
             return redirect("login")
-        messages.error(request, "Las contraseñas no coinciden.")
+        messages.error(request, "Las contraseÃ±as no coinciden.")
     return render(request, "website/password_reset_confirm.html", {"valid": True})
 
 
@@ -524,7 +721,7 @@ def password_reset_confirm(request, uidb64, token):
         user = None
 
     if not (user is not None and default_token_generator.check_token(user, token)):
-        messages.error(request, "El enlace no es válido o ha expirado.")
+        messages.error(request, "El enlace no es vÃ¡lido o ha expirado.")
         return render(request, "website/password_reset_confirm.html", {"valid": False})
     if request.method == "POST":
         password = request.POST["password"]
@@ -532,9 +729,9 @@ def password_reset_confirm(request, uidb64, token):
         if password == confirm_password:
             user.set_password(password)
             user.save()
-            messages.success(request, "Tu contraseña ha sido cambiada. Inicia sesión.")
+            messages.success(request, "Tu contraseÃ±a ha sido cambiada. Inicia sesiÃ³n.")
             return redirect("login")
-        messages.error(request, "Las contraseñas no coinciden.")
+        messages.error(request, "Las contraseÃ±as no coinciden.")
     return render(
         request,
         "website/password_reset_confirm.html",
@@ -542,7 +739,7 @@ def password_reset_confirm(request, uidb64, token):
     )
 
 
-#año Escolar
+#aÃ±o Escolar
 
 admin_required
 def crear_ano_escolar(request):
@@ -550,7 +747,7 @@ def crear_ano_escolar(request):
         form = AnhoEscolarForm(request.POST)
         if form.is_valid():
             form.save()
-            return redirect('lista_anos_escolares')  # Redirige a la lista de años escolares
+            return redirect('lista_anos_escolares')  # Redirige a la lista de aÃ±os escolares
     else:
         form = AnhoEscolarForm()
     return render(request, "website/crear_anho.html", {"form": form})
@@ -560,7 +757,7 @@ def crear_ano_escolar(request):
 
 
 def lista_estudiantes(request):
-    """Muestra la lista de estudiantes y permite búsqueda por ID, nombre o apellido."""
+    """Muestra la lista de estudiantes y permite bÃºsqueda por ID, nombre o apellido."""
     query = request.GET.get('q')
 
     if query:
@@ -609,7 +806,7 @@ def editar_estudiante(request, id):
 
 
 def eliminar_estudiante(request, id):
-    """Permite eliminar un estudiante con confirmación."""
+    """Permite eliminar un estudiante con confirmaciÃ³n."""
     estudiante = get_object_or_404(Estudiante, id=id)
     if request.method == "POST":
         estudiante.delete()
@@ -623,20 +820,20 @@ def eliminar_estudiante(request, id):
 from django.contrib.auth.mixins import UserPassesTestMixin
 from django.views.generic import TemplateView
 
-# 🔹 Verifica si el usuario es superusuario (Definido UNA SOLA VEZ)
+# ð¹ Verifica si el usuario es superusuario (Definido UNA SOLA VEZ)
 def is_superuser(user):
     return user.is_superuser
 
-# 🔹 Mensaje y redirección para usuarios sin permisos
+# ð¹ Mensaje y redirecciÃ³n para usuarios sin permisos
 def custom_redirect(request):
-    messages.warning(request, "No tienes permisos para acceder a esta página.")
+    messages.warning(request, "No tienes permisos para acceder a esta pÃ¡gina.")
     return redirect("home")
 
 @login_required
 def user_list(request):
     # Permitir acceso a Administrador, Director y Secretaria
     if request.user.rol not in ['Administrador', 'Director', 'Secretaria']:
-        messages.error(request, 'No tienes permiso para acceder a esta página.')
+        messages.error(request, 'No tienes permiso para acceder a esta pÃ¡gina.')
         return redirect('plataform')
     
     query = request.GET.get('q', '').strip()
@@ -653,7 +850,7 @@ def user_list(request):
             Q(cedula__icontains=query)
         )
 
-    # Estadísticas por rol
+    # EstadÃ­sticas por rol
     cant_estudiantes = User.objects.filter(rol='Estudiante', is_active=True).count()
     cant_profesores = User.objects.filter(rol='Profesor', is_active=True).count()
     cant_directores = User.objects.filter(rol='Director', is_active=True).count()
@@ -700,7 +897,7 @@ def user_list(request):
 def user_create(request):
     # Administradores, Directores y Secretaria pueden crear usuarios
     if request.user.rol not in ['Administrador', 'Director', 'Secretaria']:
-        messages.error(request, 'No tienes permiso para acceder a esta página.')
+        messages.error(request, 'No tienes permiso para acceder a esta pÃ¡gina.')
         return redirect('plataform')
     
     if request.method == "POST":
@@ -710,25 +907,25 @@ def user_create(request):
                 # Verificar si el email ya existe
                 email = form.cleaned_data.get('email')
                 if CustomUser.objects.filter(email=email).exists():
-                    messages.error(request, "Este correo electrónico ya está registrado.")
+                    messages.error(request, "Este correo electrÃ³nico ya estÃ¡ registrado.")
                     return render(request, "users/user_form.html", {"form": form, "editing_user": None})
 
                 # Crear el usuario
                 user = form.save(commit=False)
                 user.set_password(form.cleaned_data.get('password1'))
-                # Asegurar que todos los campos estén correctamente establecidos
+                # Asegurar que todos los campos estÃ©n correctamente establecidos
                 user.is_active = True
                 user.is_staff = False
                 user.is_superuser = False
                 # estado ya tiene default='Activo' en el modelo
-                # date_joined se establece automáticamente con auto_now_add=True
+                # date_joined se establece automÃ¡ticamente con auto_now_add=True
                 user.save()
 
                 # Si es estudiante, crear tarifas predeterminadas
                 if user.rol == 'Estudiante':
                     from .models import TarifaEstudiante, ConceptoPago
                     
-                    # Obtener conceptos estándar (marcados como es_estandar=True)
+                    # Obtener conceptos estÃ¡ndar (marcados como es_estandar=True)
                     conceptos_estandar = ConceptoPago.objects.filter(
                         activo=True,
                         es_estandar=True
@@ -751,7 +948,7 @@ def user_create(request):
                         )
                         tarifas_creadas.append('Mensualidad')
                     
-                    # Crear tarifa de inscripción (obligatoria)
+                    # Crear tarifa de inscripciÃ³n (obligatoria)
                     if concepto_inscripcion:
                         TarifaEstudiante.objects.create(
                             estudiante=user,
@@ -759,9 +956,9 @@ def user_create(request):
                             monto=concepto_inscripcion.monto,
                             activo=True
                         )
-                        tarifas_creadas.append('Inscripción')
+                        tarifas_creadas.append('InscripciÃ³n')
                     
-                    # Crear tarifa de transporte (opcional, si está marcada como estándar)
+                    # Crear tarifa de transporte (opcional, si estÃ¡ marcada como estÃ¡ndar)
                     if concepto_transporte:
                         TarifaEstudiante.objects.create(
                             estudiante=user,
@@ -773,23 +970,23 @@ def user_create(request):
                     
                     if tarifas_creadas:
                         tarifas_texto = ', '.join(tarifas_creadas)
-                        messages.success(request, f"Usuario creado exitosamente. Se asignaron tarifas estándar: {tarifas_texto}. Puede editar las tarifas desde el módulo de Tarifas.")
+                        messages.success(request, f"Usuario creado exitosamente. Se asignaron tarifas estÃ¡ndar: {tarifas_texto}. Puede editar las tarifas desde el mÃ³dulo de Tarifas.")
                     else:
-                        messages.warning(request, "Usuario creado exitosamente. No hay tarifas estándar configuradas. Por favor, configure las tarifas manualmente.")
+                        messages.warning(request, "Usuario creado exitosamente. No hay tarifas estÃ¡ndar configuradas. Por favor, configure las tarifas manualmente.")
                 else:
                     messages.success(request, "Usuario creado exitosamente.")
                 
                 return redirect("user_list")
             except Exception as e:
                 messages.error(request, f"Error al crear usuario: {str(e)}")
-                # Limpiar el formulario después de un error
+                # Limpiar el formulario despuÃ©s de un error
                 form = UserRegistrationForm(initial={
                     'email': '',
                     'password1': '',
                     'password2': ''
                 })
     else:
-        # Crear un nuevo formulario vacío
+        # Crear un nuevo formulario vacÃ­o
         form = UserRegistrationForm(initial={
             'email': '',
             'password1': '',
@@ -807,7 +1004,7 @@ from .forms import UserUpdateForm
 @login_required
 def user_update(request, user_id=None):
     # ----------------------------------------------------
-    # 1. ¿ES CREAR O ACTUALIZAR?
+    # 1. Â¿ES CREAR O ACTUALIZAR?
     # ----------------------------------------------------
     if user_id:
         user = get_object_or_404(CustomUser, id=user_id)
@@ -816,18 +1013,18 @@ def user_update(request, user_id=None):
         # Verificar permisos: Administradores, Directores y Secretaria pueden editar a cualquiera,
         # Usuarios comunes solo pueden cambiar su propia foto
         if request.user.rol not in ['Administrador', 'Director', 'Secretaria'] and request.user.id != user_id:
-            messages.error(request, 'No tienes permiso para acceder a esta página.')
+            messages.error(request, 'No tienes permiso para acceder a esta pÃ¡gina.')
             return redirect('plataform')
     else:
         # Administradores, Directores y Secretaria pueden crear usuarios
         if request.user.rol not in ['Administrador', 'Director', 'Secretaria']:
-            messages.error(request, 'No tienes permiso para acceder a esta página.')
+            messages.error(request, 'No tienes permiso para acceder a esta pÃ¡gina.')
             return redirect('plataform')
         user = None
         editing = False
 
     # ----------------------------------------------------
-    # 2. PETICIÓN POST
+    # 2. PETICIÃN POST
     # ----------------------------------------------------
     if request.method == "POST":
 
@@ -837,7 +1034,7 @@ def user_update(request, user_id=None):
             user.save()
             messages.success(request, "Foto de perfil actualizada.")
             
-            # Redirigir según el rol
+            # Redirigir segÃºn el rol
             if request.user.rol == 'Administrador' and request.user.id != user.id:
                 return redirect("update_user", user_id=user.id)
             else:
@@ -845,7 +1042,7 @@ def user_update(request, user_id=None):
         
         # ----------- SOLO ADMINISTRADORES, DIRECTORES Y SECRETARIA PUEDEN EDITAR DATOS COMPLETOS -----------
         if request.user.rol not in ['Administrador', 'Director', 'Secretaria']:
-            messages.error(request, 'Solo los administradores, directores y secretarias pueden editar información completa de usuarios.')
+            messages.error(request, 'Solo los administradores, directores y secretarias pueden editar informaciÃ³n completa de usuarios.')
             return redirect('user_profile', user_id=user.id)
 
         # ------------- FORMULARIO PARA CREAR O EDITAR -------------
@@ -855,7 +1052,7 @@ def user_update(request, user_id=None):
             else UserRegistrationForm(request.POST)
         )
 
-        # Validación dinámica por rol
+        # ValidaciÃ³n dinÃ¡mica por rol
         rol = request.POST.get("rol")
         if rol != "Profesor":
             form.fields["especialidad"].required = False
@@ -872,7 +1069,7 @@ def user_update(request, user_id=None):
             if editing:
                 qs = qs.exclude(id=user_id)
             if qs.exists():
-                messages.error(request, "Este correo ya está registrado.")
+                messages.error(request, "Este correo ya estÃ¡ registrado.")
                 return render(request, "users/user_form.html", {
                     "form": form,
                     "editing_user": user,
@@ -907,7 +1104,7 @@ def user_update(request, user_id=None):
             messages.success(request, "Usuario actualizado correctamente.")
             return redirect("user_list")
 
-        # Si no es válido
+        # Si no es vÃ¡lido
         for f, errors in form.errors.items():
             for e in errors:
                 messages.error(request, f"Error en {f}: {e}")
@@ -930,7 +1127,7 @@ def user_updateantes(request, user_id):
     user = get_object_or_404(CustomUser, id=user_id)
 
     if request.method == "POST":
-        # Si solo se está actualizando la foto de perfil
+        # Si solo se estÃ¡ actualizando la foto de perfil
         if "foto_perfil" in request.FILES and not request.POST.get('email'):
             try:
                 user.foto_perfil = request.FILES['foto_perfil']
@@ -941,10 +1138,10 @@ def user_updateantes(request, user_id):
                 messages.error(request, f"Error al actualizar la foto: {str(e)}")
                 return redirect("user_profile", user_id=user.id)
 
-        # --- Lógica del formulario general ---
+        # --- LÃ³gica del formulario general ---
         form = UserUpdateForm(request.POST, instance=user)
 
-        # 🔧 Ajustar obligatoriedad de campos según el rol
+        # ð§ Ajustar obligatoriedad de campos segÃºn el rol
         if user.rol != 'Profesor':
             form.fields['especialidad'].required = False
             form.fields['departamento'].required = False
@@ -957,7 +1154,7 @@ def user_updateantes(request, user_id):
                 # Validar correo duplicado
                 email = form.cleaned_data.get('email')
                 if CustomUser.objects.filter(email=email).exclude(id=user_id).exists():
-                    messages.error(request, "Este correo electrónico ya está registrado.")
+                    messages.error(request, "Este correo electrÃ³nico ya estÃ¡ registrado.")
                     return render(request, "users/user_form.html", {"form": form, "editing_user": user})
 
                 # Campos comunes
@@ -971,7 +1168,7 @@ def user_updateantes(request, user_id):
                 user.cedula = form.cleaned_data.get('cedula')
                 user.rol = form.cleaned_data.get('rol')
 
-                # 🔄 Campos según rol
+                # ð Campos segÃºn rol
                 if user.rol == 'Estudiante':
                     user.grado = form.cleaned_data.get('grado')
                     user.seccion = form.cleaned_data.get('seccion')
@@ -994,7 +1191,7 @@ def user_updateantes(request, user_id):
                 user.contacto_emergencia_telefono = form.cleaned_data.get('contacto_emergencia_telefono')
                 user.contacto_emergencia_parentesco = form.cleaned_data.get('contacto_emergencia_parentesco')
 
-                # Contraseña (opcional)
+                # ContraseÃ±a (opcional)
                 if form.cleaned_data.get('password1'):
                     user.set_password(form.cleaned_data.get('password1'))
 
@@ -1019,12 +1216,12 @@ def user_updateantes(request, user_id):
 def user_delete(request, user_id):
     # Solo Administradores y Secretaria pueden eliminar usuarios
     if request.user.rol not in ['Administrador', 'Secretaria']:
-        messages.error(request, 'No tienes permiso para eliminar usuarios. Solo Administradores y Secretaria pueden realizar esta acción.')
+        messages.error(request, 'No tienes permiso para eliminar usuarios. Solo Administradores y Secretaria pueden realizar esta acciÃ³n.')
         return redirect('plataform')
     
     user = get_object_or_404(CustomUser, id=user_id)
     
-    # Validación adicional: no permitir eliminar superusuarios o el propio usuario
+    # ValidaciÃ³n adicional: no permitir eliminar superusuarios o el propio usuario
     if user.is_superuser:
         messages.error(request, 'No se puede eliminar un superusuario.')
         return redirect('user_list')
@@ -1040,15 +1237,15 @@ def user_delete(request, user_id):
         codigo_anulacion = request.POST.get('codigo_anulacion', '').strip()
         
         if not password or not codigo_anulacion:
-            messages.error(request, 'Debe ingresar la contraseña y el código de anulación.')
+            messages.error(request, 'Debe ingresar la contraseÃ±a y el cÃ³digo de anulaciÃ³n.')
             return redirect('user_list')
         
         if not check_password(password, request.user.password):
-            messages.error(request, 'Contraseña incorrecta.')
+            messages.error(request, 'ContraseÃ±a incorrecta.')
             return redirect('user_list')
         
         if not CodigoAnulacion.validar_codigo(codigo_anulacion):
-            messages.error(request, 'Código de anulación incorrecto.')
+            messages.error(request, 'CÃ³digo de anulaciÃ³n incorrecto.')
             return redirect('user_list')
         
         try:
@@ -1056,7 +1253,7 @@ def user_delete(request, user_id):
             from .models import SecurityLog
             from django.db import IntegrityError
             
-            # Preparar información detallada del usuario eliminado
+            # Preparar informaciÃ³n detallada del usuario eliminado
             usuario_eliminado_info = {
                 'id': user.id,
                 'nombre_completo': user.get_full_name(),
@@ -1065,7 +1262,7 @@ def user_delete(request, user_id):
                 'cedula': user.cedula if hasattr(user, 'cedula') else None,
             }
             
-            # Preparar información del usuario que eliminó
+            # Preparar informaciÃ³n del usuario que eliminÃ³
             usuario_elimino_info = {
                 'id': request.user.id,
                 'nombre_completo': request.user.get_full_name(),
@@ -1083,16 +1280,16 @@ def user_delete(request, user_id):
                 accion_realizada = 'eliminacion_fisica'
                 
             except IntegrityError:
-                # Si tiene relaciones (facturas, matrículas, etc.), marcar como inactivo
+                # Si tiene relaciones (facturas, matrÃ­culas, etc.), marcar como inactivo
                 user.is_active = False
                 user.save()
-                mensaje_accion = f"Usuario {user.get_full_name()} marcado como inactivo (tiene registros relacionados: facturas, matrículas, etc.)."
+                mensaje_accion = f"Usuario {user.get_full_name()} marcado como inactivo (tiene registros relacionados: facturas, matrÃ­culas, etc.)."
                 accion_realizada = 'inactivacion'
             
             # Registrar en log de seguridad
             SecurityLog.log_event(
                 tipo_evento='ADMIN_ACTION',
-                descripcion=f"ELIMINACIÓN DE USUARIO - Usuario: {usuario_eliminado_info['nombre_completo']} ({usuario_eliminado_info['email']}, Rol: {usuario_eliminado_info['rol']}) | Acción: {accion_realizada.upper()} | Eliminado por: {usuario_elimino_info['nombre_completo']} ({usuario_elimino_info['email']}, Rol: {usuario_elimino_info['rol']})",
+                descripcion=f"ELIMINACIÃN DE USUARIO - Usuario: {usuario_eliminado_info['nombre_completo']} ({usuario_eliminado_info['email']}, Rol: {usuario_eliminado_info['rol']}) | AcciÃ³n: {accion_realizada.upper()} | Eliminado por: {usuario_elimino_info['nombre_completo']} ({usuario_elimino_info['email']}, Rol: {usuario_elimino_info['rol']})",
                 usuario=request.user,
                 ip_address=request.META.get('REMOTE_ADDR'),
                 user_agent=request.META.get('HTTP_USER_AGENT', ''),
@@ -1107,11 +1304,11 @@ def user_delete(request, user_id):
             
             messages.success(request, mensaje_accion)
         except Exception as e:
-            messages.error(request, f"Error al procesar la eliminación: {str(e)}")
+            messages.error(request, f"Error al procesar la eliminaciÃ³n: {str(e)}")
         return redirect("user_list")
     
-    # Si es GET, redirigir a user_list (la eliminación ahora se hace desde el modal)
-    messages.info(request, 'Use el botón de eliminar desde la lista de usuarios.')
+    # Si es GET, redirigir a user_list (la eliminaciÃ³n ahora se hace desde el modal)
+    messages.info(request, 'Use el botÃ³n de eliminar desde la lista de usuarios.')
     return redirect("user_list")
 
 @login_required
@@ -1124,20 +1321,20 @@ def user_reactivate(request, user_id):
     
     user = get_object_or_404(CustomUser, id=user_id)
     
-    # Validación: el usuario debe estar inactivo
+    # ValidaciÃ³n: el usuario debe estar inactivo
     if user.is_active:
-        messages.warning(request, 'Este usuario ya está activo.')
+        messages.warning(request, 'Este usuario ya estÃ¡ activo.')
         return redirect('user_list')
     
     if request.method == "POST":
         password = request.POST.get('password', '').strip()
         
         if not password:
-            messages.error(request, 'Debe ingresar su contraseña.')
+            messages.error(request, 'Debe ingresar su contraseÃ±a.')
             return redirect('user_list')
         
         if not check_password(password, request.user.password):
-            messages.error(request, 'Contraseña incorrecta.')
+            messages.error(request, 'ContraseÃ±a incorrecta.')
             return redirect('user_list')
         
         try:
@@ -1165,7 +1362,7 @@ def user_reactivate(request, user_id):
             
             SecurityLog.log_event(
                 tipo_evento='ADMIN_ACTION',
-                descripcion=f"REACTIVACIÓN DE USUARIO - Usuario reactivado: {user.get_full_name()} ({user.email}, Rol: {user.rol}) | Reactivado por: {request.user.get_full_name()} ({request.user.email}, Rol: {request.user.rol})",
+                descripcion=f"REACTIVACIÃN DE USUARIO - Usuario reactivado: {user.get_full_name()} ({user.email}, Rol: {user.rol}) | Reactivado por: {request.user.get_full_name()} ({request.user.email}, Rol: {request.user.rol})",
                 usuario=request.user,
                 ip_address=request.META.get('REMOTE_ADDR'),
                 user_agent=request.META.get('HTTP_USER_AGENT', ''),
@@ -1183,13 +1380,13 @@ def user_reactivate(request, user_id):
         return redirect("user_list")
     
     # Si es GET, redirigir a user_list
-    messages.info(request, 'Use el botón de reactivar desde la lista de usuarios.')
+    messages.info(request, 'Use el botÃ³n de reactivar desde la lista de usuarios.')
     return redirect("user_list")
 
-#_______________________ Panel de Administración _________________________
+#_______________________ Panel de AdministraciÃ³n _________________________
 
 
-# 🔹 Vista protegida con clase (para vistas basadas en clases)
+# ð¹ Vista protegida con clase (para vistas basadas en clases)
 
 class SuperUserOnlyView(UserPassesTestMixin, TemplateView):
 
@@ -1204,7 +1401,7 @@ class SuperUserOnlyView(UserPassesTestMixin, TemplateView):
         return custom_redirect(self.request)
 
 
-# 🔹 Dashboard de administrador con estadísticas
+# ð¹ Dashboard de administrador con estadÃ­sticas
 
 @login_required
 
@@ -1229,24 +1426,24 @@ def admin_dashboard(request):
 
 
 # ===========================
-# CONFIGURACIÓN DE LA ESCUELA
+# CONFIGURACIÃN DE LA ESCUELA
 # ===========================
 
 @login_required
 @admin_required
 def configuracion_escuela(request):
-    """Vista para mostrar y editar la configuración de la escuela"""
+    """Vista para mostrar y editar la configuraciÃ³n de la escuela"""
     from .models import ConfiguracionEscuela
     
     # Verificar que sea Administrador o Director
     if request.user.rol not in ['Administrador', 'Director']:
-        messages.error(request, 'No tienes permisos para acceder a esta página.')
+        messages.error(request, 'No tienes permisos para acceder a esta pÃ¡gina.')
         return redirect('index')
     
     config = ConfiguracionEscuela.get_configuracion()
     
     if request.method == 'POST':
-        # Actualizar campos básicos
+        # Actualizar campos bÃ¡sicos
         config.nombre_escuela = request.POST.get('nombre_escuela', '')
         config.rnc = request.POST.get('rnc', '')
         config.direccion = request.POST.get('direccion', '')
@@ -1257,7 +1454,7 @@ def configuracion_escuela(request):
         config.mision = request.POST.get('mision', '')
         config.vision = request.POST.get('vision', '')
         
-        # Información administrativa
+        # InformaciÃ³n administrativa
         config.director_nombre = request.POST.get('director_nombre', '')
         config.codigo_centro = request.POST.get('codigo_centro', '')
         config.distrito_educativo = request.POST.get('distrito_educativo', '')
@@ -1266,7 +1463,7 @@ def configuracion_escuela(request):
         config.modalidad = request.POST.get('modalidad', '')
         config.horario_atencion = request.POST.get('horario_atencion', '')
         
-        # Año de fundación
+        # AÃ±o de fundaciÃ³n
         anho_fundacion = request.POST.get('anho_fundacion', '')
         if anho_fundacion:
             try:
@@ -1276,7 +1473,7 @@ def configuracion_escuela(request):
         else:
             config.anho_fundacion = None
         
-        # Configuración de reportes
+        # ConfiguraciÃ³n de reportes
         config.pie_pagina_reportes = request.POST.get('pie_pagina_reportes', '')
         config.mostrar_logo_reportes = request.POST.get('mostrar_logo_reportes') == 'on'
         
@@ -1299,22 +1496,22 @@ def configuracion_escuela(request):
         
         try:
             config.save()
-            messages.success(request, 'Configuración de la escuela actualizada con éxito.')
+            messages.success(request, 'ConfiguraciÃ³n de la escuela actualizada con Ã©xito.')
         except Exception as e:
-            messages.error(request, f'Error al guardar la configuración: {str(e)}')
+            messages.error(request, f'Error al guardar la configuraciÃ³n: {str(e)}')
         
         return redirect('configuracion_escuela')
     
     context = {
         'config': config,
-        'titulo': 'Configuración de la Escuela',
+        'titulo': 'ConfiguraciÃ³n de la Escuela',
     }
     
     return render(request, 'est_forder/configuracion_escuela.html', context)
 
 #________________buscar user
 from django.shortcuts import render
-from django.db.models import Q  # Importa Q para la búsqueda
+from django.db.models import Q  # Importa Q para la bÃºsqueda
 from .models import CustomUser  # Importa el modelo correctamente
 
 def user_list1(request):
@@ -1335,14 +1532,14 @@ from django.core.paginator import Paginator
 from django.shortcuts import render
 from .models import CustomUser
 
-# FUNCIÓN DUPLICADA COMENTADA - La función user_list correcta está más arriba (línea ~426)
-# Esta versión antigua solo permitía Administrador, ahora usamos la nueva que permite Secretaria también
+# FUNCIÃN DUPLICADA COMENTADA - La funciÃ³n user_list correcta estÃ¡ mÃ¡s arriba (lÃ­nea ~426)
+# Esta versiÃ³n antigua solo permitÃ­a Administrador, ahora usamos la nueva que permite Secretaria tambiÃ©n
 """
 @login_required
 def user_list(request):
     # Solo administradores pueden gestionar usuarios
     if request.user.rol != 'Administrador':
-        messages.error(request, 'No tienes permiso para acceder a esta página.')
+        messages.error(request, 'No tienes permiso para acceder a esta pÃ¡gina.')
         return redirect('plataform')
     
     query = request.GET.get('q', '').strip()
@@ -1359,7 +1556,7 @@ def user_list(request):
             Q(cedula__icontains=query)
         )
 
-    # Estadísticas por rol
+    # EstadÃ­sticas por rol
     cant_estudiantes = CustomUser.objects.filter(rol='Estudiante', is_active=True).count()
     cant_profesores = CustomUser.objects.filter(rol='Profesor', is_active=True).count()
     cant_directores = CustomUser.objects.filter(rol='Director', is_active=True).count()
@@ -1413,7 +1610,7 @@ def user_profile(request, user_id):
     
     user = get_object_or_404(CustomUser, id=user_id)
     
-    # Si es Administrador, agregar código de anulación
+    # Si es Administrador, agregar cÃ³digo de anulaciÃ³n
     context = {"user": user}
     if user.rol == 'Administrador':
         from .models import CodigoAnulacion
@@ -1430,7 +1627,7 @@ def get_users_data(request):
     labels = []
     data = []
 
-    for i in range(6):  # Últimos 6 meses
+    for i in range(6):  # Ãltimos 6 meses
         month = today - timedelta(days=i * 30)
         month_label = month.strftime("%Y-%m")
         user_count = User.objects.filter(
@@ -1467,21 +1664,21 @@ def persona_create(request, user_id):
         form = PersonaForm(request.POST)
         if form.is_valid():
             try:
-                # Verificar campos únicos
+                # Verificar campos Ãºnicos
                 correo = form.cleaned_data.get('correo')
                 cedula = form.cleaned_data.get('cedula')
                 rne = form.cleaned_data.get('rne')
 
                 if Persona.objects.filter(correo=correo).exists():
-                    messages.error(request, "Este correo ya está registrado.")
+                    messages.error(request, "Este correo ya estÃ¡ registrado.")
                     return render(request, "persona/persona_form.html", {"form": form, "user": user})
 
                 if cedula and Persona.objects.filter(cedula=cedula).exists():
-                    messages.error(request, "Esta cédula ya está registrada.")
+                    messages.error(request, "Esta cÃ©dula ya estÃ¡ registrada.")
                     return render(request, "persona/persona_form.html", {"form": form, "user": user})
 
                 if rne and Persona.objects.filter(rne=rne).exists():
-                    messages.error(request, "Este RNE ya está registrado.")
+                    messages.error(request, "Este RNE ya estÃ¡ registrado.")
                     return render(request, "persona/persona_form.html", {"form": form, "user": user})
 
                 # Crear o actualizar tutores
@@ -1552,19 +1749,19 @@ from .models import Persona
 def persona_list(request):
     personas = Persona.objects.all().order_by("id")  # Obtener todas las personas ordenadas por ID
 
-    # Obtener el número de elementos por página desde la URL (default: 50)
+    # Obtener el nÃºmero de elementos por pÃ¡gina desde la URL (default: 50)
     items_per_page = request.GET.get("items", 50)
 
-    paginator = Paginator(personas, items_per_page)  # Configurar paginación
-    page_number = request.GET.get("page")  # Obtener número de página desde la URL
-    page_obj = paginator.get_page(page_number)  # Obtener la página actual
+    paginator = Paginator(personas, items_per_page)  # Configurar paginaciÃ³n
+    page_number = request.GET.get("page")  # Obtener nÃºmero de pÃ¡gina desde la URL
+    page_obj = paginator.get_page(page_number)  # Obtener la pÃ¡gina actual
 
     return render(request, "persona/persona_list.html", {"page_obj": page_obj})
 
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required, user_passes_test
 from .models import CustomUser
-from .forms import UserUpdateForm  # 🚨 Asegúrate de importar correctamente el formulario
+from .forms import UserUpdateForm  # ð¨ AsegÃºrate de importar correctamente el formulario
 
 def is_superuser(user):
     return user.is_superuser
@@ -1590,9 +1787,9 @@ def persona_update(request, persona_id):
         form = PersonaForm(request.POST, instance=persona)
         if form.is_valid():
             form.save()
-            return redirect("persona_list")  # Redirigir a la lista después de editar
+            return redirect("persona_list")  # Redirigir a la lista despuÃ©s de editar
     else:
-        form = PersonaForm(instance=persona)  # Al cargar la página, pre-poblar con los datos existentes
+        form = PersonaForm(instance=persona)  # Al cargar la pÃ¡gina, pre-poblar con los datos existentes
 
     return render(request, "persona/persona_form.html", {"form": form, "persona": persona})
 
@@ -1628,14 +1825,14 @@ def register_user(request):
             cedula = request.POST.get('cedula')
             rol = request.POST.get('rol')
 
-            # Campos específicos por rol
+            # Campos especÃ­ficos por rol
             grado = request.POST.get('grado')
             seccion = request.POST.get('seccion')
             especialidad = request.POST.get('especialidad')
             departamento = request.POST.get('departamento')
             cargo = request.POST.get('cargo')
 
-            # Información de contacto de emergencia
+            # InformaciÃ³n de contacto de emergencia
             contacto_emergencia_nombre = request.POST.get('contacto_emergencia_nombre')
             contacto_emergencia_telefono = request.POST.get('contacto_emergencia_telefono')
             contacto_emergencia_parentesco = request.POST.get('contacto_emergencia_parentesco')
@@ -1663,28 +1860,28 @@ def register_user(request):
                 is_active=False
             )
 
-            # 🔑 Generar token de activación
+            # ð Generar token de activaciÃ³n
             user.activation_token = uuid.uuid4()
             user.save()
 
-            # ✅ Generar UID codificado
+            # â Generar UID codificado
             uid = urlsafe_base64_encode(force_bytes(user.pk))
 
-            # ✅ Construir URL con uid y token
+            # â Construir URL con uid y token
             current_site = get_current_site(request)
             activation_url = f"{request.scheme}://{current_site.domain}/activate/{uid}/{user.activation_token}/"
 
-            # Log para depuración
+            # Log para depuraciÃ³n
             logger.warning(f"DEBUG Activation URL: {activation_url}")
 
-            # 📧 Construir mensaje
+            # ð§ Construir mensaje
             html_message = render_to_string('emails/activation_email.html', {
                 'user': user,
                 'activation_url': activation_url,
             })
             plain_message = strip_tags(html_message)
 
-            # ✅ Enviar correo HTML
+            # â Enviar correo HTML
             email_message = EmailMessage(
                 'Activa tu cuenta',
                 html_message,
@@ -1758,7 +1955,7 @@ def agregar_anho_escolar(request):
     if request.method == 'POST':
         form = AnhoEscolarForm(request.POST)
         if form.is_valid():
-            form.save()
+            anho = form.save()
             messages.success(request, 'Año escolar agregado exitosamente.')
             return redirect('lista_anhos_escolares')
     else:
@@ -1775,13 +1972,13 @@ def editar_anho_escolar(request, pk):
         form = AnhoEscolarForm(request.POST, instance=anho_escolar)
         if form.is_valid():
             form.save()
-            messages.success(request, 'Año escolar actualizado exitosamente.')
+            messages.success(request, 'AÃ±o escolar actualizado exitosamente.')
             return redirect('lista_anhos_escolares')
     else:
         form = AnhoEscolarForm(instance=anho_escolar)
     return render(request, 'est_forder/form_anho_escolar.html', {
         'form': form,
-        'titulo': 'Editar Año Escolar'
+        'titulo': 'Editar AÃ±o Escolar'
     })
 
 @admin_required
@@ -1790,7 +1987,7 @@ def eliminar_anho_escolar(request, pk):
 
     # Solo admin/director/superuser
     if not (request.user.is_superuser or getattr(request.user, 'rol', None) in ['Administrador', 'Director']):
-        messages.error(request, 'Solo administradores y directores pueden eliminar años escolares.')
+        messages.error(request, 'Solo administradores y directores pueden eliminar aÃ±os escolares.')
         return redirect('lista_anhos_escolares')
 
     from .models import CodigoAnulacion
@@ -1798,22 +1995,22 @@ def eliminar_anho_escolar(request, pk):
         password = request.POST.get('password', '').strip()
         codigo_anulacion = request.POST.get('codigo_anulacion', '').strip()
         if not password or not codigo_anulacion:
-            messages.error(request, 'Debe ingresar la contraseña y el código de anulación.')
+            messages.error(request, 'Debe ingresar la contraseÃ±a y el cÃ³digo de anulaciÃ³n.')
             return redirect('confirmar_eliminar_anho', pk=pk)
 
         if not check_password(password, request.user.password):
-            messages.error(request, 'Contraseña incorrecta.')
+            messages.error(request, 'ContraseÃ±a incorrecta.')
             return redirect('confirmar_eliminar_anho', pk=pk)
 
         if not CodigoAnulacion.validar_codigo(codigo_anulacion):
-            messages.error(request, 'Código de anulación incorrecto.')
+            messages.error(request, 'CÃ³digo de anulaciÃ³n incorrecto.')
             return redirect('confirmar_eliminar_anho', pk=pk)
 
         try:
             anho.delete()
-            messages.success(request, 'Año escolar eliminado exitosamente.')
+            messages.success(request, 'AÃ±o escolar eliminado exitosamente.')
         except Exception as e:
-            messages.error(request, f'Error al eliminar el año escolar: {str(e)}')
+            messages.error(request, f'Error al eliminar el aÃ±o escolar: {str(e)}')
         return redirect('lista_anhos_escolares')
 
     return render(request, 'est_forder/confirmar_eliminar_anho.html', {'anho': anho})
@@ -1828,7 +2025,7 @@ def lista_cursosAntigua(request):
         if anho_id:
             cursos = Curso.objects.filter(anho_escolar_id=anho_id).select_related('anho_escolar', 'profesor')
             anho = get_object_or_404(AnhoEscolar, id=anho_id)
-            titulo = f"Cursos del año escolar: {anho.nombre}"
+            titulo = f"Cursos del aÃ±o escolar: {anho.nombre}"
         else:
             cursos = Curso.objects.all().select_related('anho_escolar', 'profesor')
             titulo = "Lista de Cursos"
@@ -1843,7 +2040,7 @@ def lista_cursosAntigua(request):
             anho = get_object_or_404(AnhoEscolar, id=anho_id)
             titulo = f"Mis Cursos - {anho.nombre}"
         else:
-            # Agrupar cursos por año escolar
+            # Agrupar cursos por aÃ±o escolar
             anhos_escolares = AnhoEscolar.objects.filter(
                 cursos__materias__profesor=request.user
             ).distinct().order_by('-nombre')
@@ -1861,7 +2058,7 @@ def lista_cursosAntigua(request):
             })
 
     else:  # Estudiante
-        # Estudiantes ven solo los cursos en los que están matriculados
+        # Estudiantes ven solo los cursos en los que estÃ¡n matriculados
         if anho_id:
             cursos = Curso.objects.filter(
                 anho_escolar_id=anho_id,
@@ -1870,7 +2067,7 @@ def lista_cursosAntigua(request):
             anho = get_object_or_404(AnhoEscolar, id=anho_id)
             titulo = f"Mis Cursos - {anho.nombre}"
         else:
-            # Agrupar cursos por año escolar
+            # Agrupar cursos por aÃ±o escolar
             anhos_escolares = AnhoEscolar.objects.filter(
                 cursos__materias__matriculas__estudiante=request.user
             ).distinct().order_by('-nombre')
@@ -1898,7 +2095,7 @@ def lista_cursos(request):
     q = request.GET.get('q', '').strip()
     anho = None
     
-    # Valores usados para parsear nombre de curso en grado + sección
+    # Valores usados para parsear nombre de curso en grado + secciÃ³n
     grados_list = [
         'Primero grado (1er Nivel Primario)',
         'Segundo grado (1er Nivel Primario)',
@@ -1912,9 +2109,9 @@ def lista_cursos(request):
         'Cuarto de Secundaria (4to Nivel Secundario)',
         'Quinto de Secundaria (5to Nivel Secundario)',
         'Sexto de Secundaria (6to Nivel Secundario)',
-        '4to de Informática (Nivel Medio)',
-        '5to de Informática (Nivel Medio)',
-        '6to de Informática (Nivel Medio)',
+        '4to de InformÃ¡tica (Nivel Medio)',
+        '5to de InformÃ¡tica (Nivel Medio)',
+        '6to de InformÃ¡tica (Nivel Medio)',
         'Otros'
     ]
     secciones_list = ['A', 'B', 'C', 'D', 'E','F','G','H','I','J']
@@ -1926,12 +2123,12 @@ def lista_cursos(request):
             cursos = Curso.objects.filter(
                 anho_escolar=anho
             ).select_related('anho_escolar', 'profesor')
-            titulo = f"Cursos del año escolar: {anho.nombre}"
+            titulo = f"Cursos del aÃ±o escolar: {anho.nombre}"
         else:
             cursos = Curso.objects.all().select_related('anho_escolar', 'profesor')
             titulo = "Lista de Cursos"
 
-        # Búsqueda por nombre, descripción o profesor
+        # BÃºsqueda por nombre, descripciÃ³n o profesor
         if q:
             from django.db.models import Q
             cursos = cursos.filter(
@@ -2007,7 +2204,7 @@ def lista_cursos(request):
                 c.parsed_grade = parsed_grade
                 c.parsed_section = parsed_section
 
-            # Búsqueda para Profesor
+            # BÃºsqueda para Profesor
             if q:
                 from django.db.models import Q
                 cursos = cursos.filter(
@@ -2070,7 +2267,7 @@ def lista_cursos(request):
                 c.parsed_grade = parsed_grade
                 c.parsed_section = parsed_section
 
-            # Búsqueda para Estudiante
+            # BÃºsqueda para Estudiante
             if q:
                 from django.db.models import Q
                 cursos = cursos.filter(
@@ -2136,13 +2333,13 @@ def inscribir_estudiante_curso(request, pk):
         materias = Materia.objects.filter(curso=curso)
         created = 0
         for materia in materias:
-            # crear matrícula si no existe
+            # crear matrÃ­cula si no existe
             if not Matricula.objects.filter(estudiante=estudiante, materia=materia).exists():
                 Matricula.objects.create(estudiante=estudiante, materia=materia, anho_escolar=curso.anho_escolar)
                 created += 1
 
         if created > 0:
-            messages.success(request, f'Se inscribió a {estudiante.get_full_name()} en {created} materias del curso.')
+            messages.success(request, f'Se inscribiÃ³ a {estudiante.get_full_name()} en {created} materias del curso.')
         else:
             messages.warning(request, f'{estudiante.get_full_name()} ya estaba inscrito en todas las materias del curso.')
         return redirect(f"{reverse('lista_cursos')}?anho={curso.anho_escolar.id}")
@@ -2173,7 +2370,7 @@ def inscribir_estudiante_curso(request, pk):
         # Limitar a 50 resultados
         estudiantes = list(estudiantes_query[:LIMITE_RESULTADOS])
         
-        # Verificar si hay más resultados
+        # Verificar si hay mÃ¡s resultados
         if total_resultados > LIMITE_RESULTADOS:
             resultados_limitados = True
 
@@ -2192,7 +2389,7 @@ def inscribir_estudiante_curso(request, pk):
 @admin_required
 def desinscribir_estudiante_curso(request, pk):
     curso = get_object_or_404(Curso, pk=pk)
-    # Listar sólo los estudiantes que están matriculados en alguna materia de este curso
+    # Listar sÃ³lo los estudiantes que estÃ¡n matriculados en alguna materia de este curso
     estudiantes = CustomUser.objects.filter(matriculas__materia__curso=curso).distinct().order_by('first_name', 'last_name')
 
     if request.method == 'POST':
@@ -2215,14 +2412,14 @@ def desinscribir_estudiante_curso(request, pk):
 
 @login_required
 def agregar_curso(request):
-    # Obtener el id del año escolar desde GET
+    # Obtener el id del aÃ±o escolar desde GET
     anho_id = request.GET.get('anho')
     if not anho_id:
-        messages.error(request, 'Debe seleccionar un año escolar antes de agregar un curso.')
+        messages.error(request, 'Debe seleccionar un aÃ±o escolar antes de agregar un curso.')
         return redirect('lista_cursos')
 
     anho = get_object_or_404(AnhoEscolar, id=anho_id)
-    # Lista de grados según currículum escolar dominicano (etiquetas legibles)
+    # Lista de grados segÃºn currÃ­culum escolar dominicano (etiquetas legibles)
     grados = [
         'Primero grado (1ero Nivel Primario)',
         'Segundo grado (2do Nivel Primario)',
@@ -2236,9 +2433,9 @@ def agregar_curso(request):
         'Cuarto de Secundaria (2do Nivel Medio)',
         'Quinto de Secundaria (3ro Nivel Medio)',
         'Sexto de Secundaria (4to Nivel Medio)',
-        '4to de Informática (Nivel Medio)',
-        '5to de Informática (Nivel Medio)',
-        '6to de Informática (Nivel Medio)',
+        '4to de InformÃ¡tica (Nivel Medio)',
+        '5to de InformÃ¡tica (Nivel Medio)',
+        '6to de InformÃ¡tica (Nivel Medio)',
         'Otros'
     ]
 
@@ -2249,21 +2446,21 @@ def agregar_curso(request):
         section = request.POST.get('section')  # puede ser 'AUTO' o letra
         custom_name = request.POST.get('custom_name', '').strip()
 
-        # Si el usuario proporcionó un nombre personalizado o eligió 'Otros'
+        # Si el usuario proporcionÃ³ un nombre personalizado o eligiÃ³ 'Otros'
         if grade == 'Otros' or custom_name:
             nombre_final = custom_name if custom_name else 'Otros'
             descripcion = request.POST.get('descripcion', '')
             curso = Curso(nombre=nombre_final, descripcion=descripcion, anho_escolar=anho)
             try:
                 curso.save()
-                # No crear materias automáticas para 'Otros' a menos que se especifique
+                # No crear materias automÃ¡ticas para 'Otros' a menos que se especifique
                 messages.success(request, 'Curso agregado exitosamente.')
                 return redirect(f"{reverse('lista_cursos')}?anho={anho.id}")
             except Exception as e:
                 messages.error(request, f'Error al guardar el curso: {e}')
                 form = CursoForm(request.POST)
         else:
-            # Construir nombre con grado y sección
+            # Construir nombre con grado y secciÃ³n
             existing = Curso.objects.filter(nombre__startswith=grade + ' ')
             used = set()
             for c in existing:
@@ -2274,7 +2471,7 @@ def agregar_curso(request):
                     if len(last) == 1 and last.isalpha():
                         used.add(last.upper())
 
-            # Determinar sección a usar
+            # Determinar secciÃ³n a usar
             chosen = None
             if section and section != 'AUTO':
                 sec = section.upper()
@@ -2299,37 +2496,37 @@ def agregar_curso(request):
             try:
                 curso.save()
 
-                # Crear materias automáticamente según tipo de grado
+                # Crear materias automÃ¡ticamente segÃºn tipo de grado
                 from django.utils.text import slugify
 
                 primary_subjects = [
-                    'Español', 'Matemáticas', 'Ciencias Sociales', 'Ciencias Naturales',
-                    'Inglés', 'Educación Artística', 'Educación Física', 'Tecnología'
+                    'EspaÃ±ol', 'MatemÃ¡ticas', 'Ciencias Sociales', 'Ciencias Naturales',
+                    'InglÃ©s', 'EducaciÃ³n ArtÃ­stica', 'EducaciÃ³n FÃ­sica', 'TecnologÃ­a'
                 ]
                 secondary_subjects = [
-                    'Español', 'Matemáticas', 'Inglés', 'Biología', 'Física', 'Química',
-                    'Historia y Geografía', 'Tecnología e Informática', 'Educación Artística', 'Educación Física'
+                    'EspaÃ±ol', 'MatemÃ¡ticas', 'InglÃ©s', 'BiologÃ­a', 'FÃ­sica', 'QuÃ­mica',
+                    'Historia y GeografÃ­a', 'TecnologÃ­a e InformÃ¡tica', 'EducaciÃ³n ArtÃ­stica', 'EducaciÃ³n FÃ­sica'
                 ]
                 informatica_subjects_4t0 = [
-                    'Ofimática ', 'Análisis y diseño de sistemas informáticos',
-                    ':Diseño y desarrollo de base de datos.', ' Diseño de portales web y recursos multimedia'
+                    'OfimÃ¡tica ', 'AnÃ¡lisis y diseÃ±o de sistemas informÃ¡ticos',
+                    ':DiseÃ±o y desarrollo de base de datos.', ' DiseÃ±o de portales web y recursos multimedia'
                 ]
                 informatica_subjects_5t0 = [
-                    ' Formación y Orientación Laboral','Desarrollo de aplicaciones y sistemas de informaciónSistemas operativos', 'Administracion de base de datoss',
-                    'Analisis y diseños de reporte'
+                    ' FormaciÃ³n y OrientaciÃ³n Laboral','Desarrollo de aplicaciones y sistemas de informaciÃ³nSistemas operativos', 'Administracion de base de datoss',
+                    'Analisis y diseÃ±os de reporte'
                 ]
-                informatica_subjects_6t0 = ['Emprendimiento','Implementación y mantenimiento de aplicaciones y sistemas informáticos',
-                    'Desarrollo e implementación de soluciones web y multimedia'
+                informatica_subjects_6t0 = ['Emprendimiento','ImplementaciÃ³n y mantenimiento de aplicaciones y sistemas informÃ¡ticos',
+                    'Desarrollo e implementaciÃ³n de soluciones web y multimedia'
                 ]
                 subjects_to_create = []
                 if 'Primario' in grade or 'Primaria' in grade:
                     subjects_to_create = primary_subjects
-                elif '4to de Informática' in grade:
-                    # Para informática: materias de secundaria + materias específicas de informática
+                elif '4to de InformÃ¡tica' in grade:
+                    # Para informÃ¡tica: materias de secundaria + materias especÃ­ficas de informÃ¡tica
                     subjects_to_create = secondary_subjects + informatica_subjects_4t0
-                elif '5to de Informática' in grade:
+                elif '5to de InformÃ¡tica' in grade:
                     subjects_to_create = secondary_subjects + informatica_subjects_5t0
-                elif '6to de Informática' in grade:
+                elif '6to de InformÃ¡tica' in grade:
                     subjects_to_create = secondary_subjects + informatica_subjects_6t0
                 elif 'Medio' in grade or 'Basico' in grade:
                     subjects_to_create = secondary_subjects
@@ -2339,13 +2536,14 @@ def agregar_curso(request):
                     code = f"{slugify(sname)[:10]}-{curso.id}-{i}"
                     # Evitar duplicados
                     if not Materia.objects.filter(nombre=sname, curso=curso).exists():
-                        Materia.objects.create(
+                        materia = Materia(
                             nombre=sname,
                             codigo=code,
                             descripcion='',
                             creditos=1,
                             curso=curso
                         )
+                        materia.save()
                         created += 1
 
                 messages.success(request, f'Curso agregado exitosamente. Materias creadas: {created}')
@@ -2358,7 +2556,7 @@ def agregar_curso(request):
 
     return render(request, 'est_forder/form_curso.html', {
         'form': form,
-        'titulo': f'Agregar Curso - Año {anho.nombre}',
+        'titulo': f'Agregar Curso - AÃ±o {anho.nombre}',
         'anho': anho,
         'anho_id': anho.id,
         'grados': grados,
@@ -2370,7 +2568,7 @@ def agregar_curso(request):
 
 def editar_curso(request, pk):
     curso = get_object_or_404(Curso, pk=pk)
-    anho = curso.anho_escolar  # <-- guardamos el año escolar
+    anho = curso.anho_escolar  # <-- guardamos el aÃ±o escolar
     # Mismos listados que en agregar_curso
     grados = [
         'Primero grado (1er Nivel Primario)',
@@ -2407,7 +2605,7 @@ def editar_curso(request, pk):
             break
 
     if not grade_selected:
-        # nombre no coincide con ningún grado -> tratar como personalizado/Otros
+        # nombre no coincide con ningÃºn grado -> tratar como personalizado/Otros
         grade_selected = 'Otros'
         custom_name = curso.nombre
 
@@ -2437,11 +2635,11 @@ def eliminar_cursoAntiguo(request, pk):
     if request.method == 'POST':
         password = request.POST.get('password')
         if not password:
-            messages.error(request, 'Debe ingresar la contraseña de confirmación.')
+            messages.error(request, 'Debe ingresar la contraseÃ±a de confirmaciÃ³n.')
             return redirect('confirmar_eliminar_curso', pk=pk)
 
         if not check_password(password, request.user.password):
-            messages.error(request, 'Contraseña incorrecta.')
+            messages.error(request, 'ContraseÃ±a incorrecta.')
             return redirect('confirmar_eliminar_curso', pk=pk)
 
         try:
@@ -2486,19 +2684,19 @@ def eliminar_curso(request, pk):
         password = request.POST.get('password', '').strip()
         codigo_anulacion = request.POST.get('codigo_anulacion', '').strip()
         if not password or not codigo_anulacion:
-            messages.error(request, 'Debe ingresar la contraseña y el código de anulación.')
+            messages.error(request, 'Debe ingresar la contraseÃ±a y el cÃ³digo de anulaciÃ³n.')
             if anho_id:
                 return redirect(f"{reverse('confirmar_eliminar_curso', args=[pk])}?anho={anho_id}")
             return redirect('confirmar_eliminar_curso', pk=pk)
 
         if not check_password(password, request.user.password):
-            messages.error(request, 'Contraseña incorrecta.')
+            messages.error(request, 'ContraseÃ±a incorrecta.')
             if anho_id:
                 return redirect(f"{reverse('confirmar_eliminar_curso', args=[pk])}?anho={anho_id}")
             return redirect('confirmar_eliminar_curso', pk=pk)
 
         if not CodigoAnulacion.validar_codigo(codigo_anulacion):
-            messages.error(request, 'Código de anulación incorrecto.')
+            messages.error(request, 'CÃ³digo de anulaciÃ³n incorrecto.')
             if anho_id:
                 return redirect(f"{reverse('confirmar_eliminar_curso', args=[pk])}?anho={anho_id}")
             return redirect('confirmar_eliminar_curso', pk=pk)
@@ -2528,7 +2726,7 @@ def eliminar_curso(request, pk):
 
 @admin_required
 def lista_grupos(request):
-    # Obtener parámetros de búsqueda
+    # Obtener parÃ¡metros de bÃºsqueda
     query_nombre = request.GET.get('nombre', '').strip()
     query_grado = request.GET.get('grado', '').strip()
     query_seccion = request.GET.get('seccion', '').strip()
@@ -2545,7 +2743,7 @@ def lista_grupos(request):
     
     grupos = grupos.order_by('-created_at')
     
-    # Obtener valores únicos para filtros
+    # Obtener valores Ãºnicos para filtros
     grados = StudentGroup.objects.values_list('grado', flat=True).distinct().order_by('grado')
     secciones = StudentGroup.objects.values_list('seccion', flat=True).distinct().order_by('seccion')
     
@@ -2580,11 +2778,11 @@ def crear_grupo(request):
         seccion = request.POST.get('seccion')
 
         if not grado or not seccion:
-            messages.error(request, 'Debe seleccionar grado y sección.')
+            messages.error(request, 'Debe seleccionar grado y secciÃ³n.')
             return redirect('crear_grupo')
 
         grupo = StudentGroup.objects.create(nombre=nombre or f'Grupo {grado} {seccion}', grado=grado, seccion=seccion, creado_por=request.user)
-        # Añadir estudiantes que coincidan con grado y sección
+        # AÃ±adir estudiantes que coincidan con grado y secciÃ³n
         estudiantes = CustomUser.objects.filter(rol='Estudiante', grado=grado, seccion=seccion)
         grupo.estudiantes.set(estudiantes)
         messages.success(request, f'Grupo creado con {estudiantes.count()} estudiante(s).')
@@ -2628,7 +2826,7 @@ def crear_grupo_por_usuarios(request):
     if query_cedula:
         estudiantes_qs = estudiantes_qs.filter(cedula__icontains=query_cedula)
 
-    # Paginación
+    # PaginaciÃ³n
     try:
         per_page = int(request.GET.get('per_page', 25))
     except ValueError:
@@ -2661,7 +2859,7 @@ def crear_grupo_por_usuarios(request):
         messages.success(request, f'Grupo creado con {estudiantes_sel.count()} estudiante(s).')
         return redirect('lista_grupos')
 
-    # obtener listas únicas para filtros
+    # obtener listas Ãºnicas para filtros
     grados = CustomUser.objects.filter(rol='Estudiante').values_list('grado', flat=True).distinct()
     secciones = CustomUser.objects.filter(rol='Estudiante').values_list('seccion', flat=True).distinct()
 
@@ -2686,7 +2884,7 @@ def ver_grupo(request, pk):
     grupo = get_object_or_404(StudentGroup, pk=pk)
     anho_id = request.GET.get('anho')  # Capturar anho_id si viene en la URL
     
-    # Obtener parámetros de búsqueda
+    # Obtener parÃ¡metros de bÃºsqueda
     query_nombre = request.GET.get('nombre', '').strip()
     query_apellido = request.GET.get('apellido', '').strip()
     query_email = request.GET.get('email', '').strip()
@@ -2704,7 +2902,7 @@ def ver_grupo(request, pk):
     if query_cedula:
         estudiantes = estudiantes.filter(cedula__icontains=query_cedula)
     
-    # Ordenar alfabéticamente por nombre
+    # Ordenar alfabÃ©ticamente por nombre
     estudiantes_ordenados = estudiantes.order_by('first_name', 'last_name')
     
     return render(request, 'est_forder/grupos_detail.html', {
@@ -2805,7 +3003,7 @@ def inscribir_grupo_en_curso(request, pk):
                 if not Matricula.objects.filter(estudiante=estudiante, materia=materia).exists():
                     Matricula.objects.create(estudiante=estudiante, materia=materia, anho_escolar=curso.anho_escolar)
                     created += 1
-        messages.success(request, f'Se inscribieron {created} matrículas para el grupo en {curso.nombre}.')
+        messages.success(request, f'Se inscribieron {created} matrÃ­culas para el grupo en {curso.nombre}.')
         
         # Redirigir a ver_grupo manteniendo el anho_id
         if anho_id:
@@ -2821,7 +3019,7 @@ def inscribir_grupo_en_curso(request, pk):
         cursos = Curso.objects.filter(anho_escolar_id=anho_id).order_by('nombre')
         anho = get_object_or_404(AnhoEscolar, id=anho_id)
     else:
-        # Si no hay anho_id, obtener el año escolar más reciente
+        # Si no hay anho_id, obtener el aÃ±o escolar mÃ¡s reciente
         anho_reciente = AnhoEscolar.objects.order_by('-nombre').first()
         if anho_reciente:
             cursos = Curso.objects.filter(anho_escolar=anho_reciente).order_by('nombre')
@@ -2831,7 +3029,7 @@ def inscribir_grupo_en_curso(request, pk):
             cursos = Curso.objects.all().order_by('-anho_escolar__nombre', 'nombre')
             anho = None
     
-    # Obtener todos los años escolares para el selector
+    # Obtener todos los aÃ±os escolares para el selector
     anhos_escolares = AnhoEscolar.objects.all().order_by('-nombre')
     
     return render(request, 'est_forder/grupos_inscribir.html', {
@@ -2851,11 +3049,11 @@ def eliminar_grupo(request, pk):
     if request.method == 'POST':
         password = request.POST.get('password')
         if not password:
-            messages.error(request, 'Debe ingresar la contraseña de confirmación.')
+            messages.error(request, 'Debe ingresar la contraseÃ±a de confirmaciÃ³n.')
             return redirect('confirmar_eliminar_grupo', pk=pk)
 
         if not check_password(password, request.user.password):
-            messages.error(request, 'Contraseña incorrecta.')
+            messages.error(request, 'ContraseÃ±a incorrecta.')
             return redirect('confirmar_eliminar_grupo', pk=pk)
 
         try:
@@ -2900,7 +3098,7 @@ def lista_materiasFUNCIONALANTIGUA(request):
             titulo = "Mis Materias"
 
     else:  # Estudiante
-        # Estudiantes ven solo las materias en las que están matriculados
+        # Estudiantes ven solo las materias en las que estÃ¡n matriculados
         if curso_id:
             curso = get_object_or_404(Curso, id=curso_id)
             materias = Materia.objects.filter(
@@ -2909,7 +3107,7 @@ def lista_materiasFUNCIONALANTIGUA(request):
             ).distinct().select_related('curso', 'profesor')
             titulo = f"Materias de {curso.nombre} - {curso.anho_escolar.nombre}"
         else:
-            # Agrupar materias por curso y año escolar
+            # Agrupar materias por curso y aÃ±o escolar
             cursos = Curso.objects.filter(
                 materias__matriculas__estudiante=request.user
             ).distinct().select_related('anho_escolar')
@@ -2927,7 +3125,7 @@ def lista_materiasFUNCIONALANTIGUA(request):
                 'curso_id': curso_id  # Agregar curso_id al contexto
             })
 
-    # Agregar información de matrícula para estudiantes
+    # Agregar informaciÃ³n de matrÃ­cula para estudiantes
     if request.user.rol == 'Estudiante':
         for materia in materias:
             matricula = Matricula.objects.filter(
@@ -2939,7 +3137,7 @@ def lista_materiasFUNCIONALANTIGUA(request):
     return render(request, 'est_forder/materias.html', {
         'materias': materias,
         'titulo': titulo,
-        'curso_id': curso_id  # Asegurar que curso_id esté en el contexto
+        'curso_id': curso_id  # Asegurar que curso_id estÃ© en el contexto
     })
 
 @login_required
@@ -2982,11 +3180,11 @@ def lista_materias(request):
             materias_por_curso = {}
             for curso in cursos:
                 materias_curso = Materia.objects.filter(curso=curso, matriculas__estudiante=request.user).distinct().select_related('profesor')
-                # Preparar info de matrícula y recuperaciones para cada materia
+                # Preparar info de matrÃ­cula y recuperaciones para cada materia
                 for materia in materias_curso:
                     matricula = Matricula.objects.filter(materia=materia, estudiante=request.user).first()
                     if matricula:
-                        # Preparar información de recuperaciones para el template
+                        # Preparar informaciÃ³n de recuperaciones para el template
                         matricula.mostrar_com_rp1 = matricula.com_p1 is not None and matricula.com_p1 < 70 and matricula.com_rp1 is not None
                         matricula.mostrar_com_rp2 = matricula.com_p2 is not None and matricula.com_p2 < 70 and matricula.com_rp2 is not None
                         matricula.mostrar_com_rp3 = matricula.com_p3 is not None and matricula.com_p3 < 70 and matricula.com_rp3 is not None
@@ -3015,7 +3213,7 @@ def lista_materias(request):
                 'anho': None
             })
 
-    # Filtro de búsqueda
+    # Filtro de bÃºsqueda
     if q:
         materias = materias.filter(
             Q(nombre__icontains=q) |
@@ -3024,12 +3222,12 @@ def lista_materias(request):
             Q(profesor__last_name__icontains=q)
         )
 
-    # Agregar info de matrícula para estudiantes
+    # Agregar info de matrÃ­cula para estudiantes
     if request.user.rol == 'Estudiante':
         for materia in materias:
             matricula = Matricula.objects.filter(materia=materia, estudiante=request.user).first()
             if matricula:
-                # Preparar información de recuperaciones para el template
+                # Preparar informaciÃ³n de recuperaciones para el template
                 matricula.mostrar_com_rp1 = matricula.com_p1 is not None and matricula.com_p1 < 70 and matricula.com_rp1 is not None
                 matricula.mostrar_com_rp2 = matricula.com_p2 is not None and matricula.com_p2 < 70 and matricula.com_rp2 is not None
                 matricula.mostrar_com_rp3 = matricula.com_p3 is not None and matricula.com_p3 < 70 and matricula.com_rp3 is not None
@@ -3081,7 +3279,7 @@ from .models import Curso, Matricula
 def reporte_general(request, curso_id):
     curso = get_object_or_404(Curso, id=curso_id)
 
-    # Todas las matrículas del curso ORDENADAS POR nombre (first_name)
+    # Todas las matrÃ­culas del curso ORDENADAS POR nombre (first_name)
     matriculas = (
         Matricula.objects
         .filter(materia__curso=curso)
@@ -3089,11 +3287,11 @@ def reporte_general(request, curso_id):
         .order_by(
             "estudiante__first_name",
             "estudiante__last_name",
-            "materia__nombre"  # 👈 Ordena las materias alfabéticamente
+            "materia__nombre"  # ð Ordena las materias alfabÃ©ticamente
         )
     )
     # ===========================================
-    #   🔥 CALCULAR NOTAS PARA CADA MATRÍCULA
+    #   ð¥ CALCULAR NOTAS PARA CADA MATRÃCULA
     # ===========================================
     for m in matriculas:
         try:
@@ -3113,7 +3311,7 @@ def reporte_general(request, curso_id):
             m.nota_final_oficial = None
 
             # -------------------------
-            #   1️⃣ FINAL DIRECTO (NO MODULAR)
+            #   1ï¸â£ FINAL DIRECTO (NO MODULAR)
             # -------------------------
             if hasattr(m.materia, 'categoria') and m.materia.categoria != 'modular':
                 if None not in (prom_com, prom_log, prom_cie, prom_eti):
@@ -3158,7 +3356,7 @@ def reporte_general(request, curso_id):
                                 else:
                                     m.nota_final_oficial = int(m.nota_final_especial + 0.5)
             # -------------------------
-            #   🔥 PROMEDIO PORCENTUAL MODULAR (RA)
+            #   ð¥ PROMEDIO PORCENTUAL MODULAR (RA)
             # -------------------------
             if hasattr(m.materia, 'categoria') and m.materia.categoria == 'modular':
                 if m.materia.ra_configuracion:
@@ -3167,7 +3365,7 @@ def reporte_general(request, curso_id):
                     for idx, peso in enumerate(valores):
                         ra_val = getattr(m, f'ra_{idx+1}', None)
                         if ra_val is not None:
-                            # Calcular el porcentaje de completitud: (valor_obtenido / peso_máximo) * 100
+                            # Calcular el porcentaje de completitud: (valor_obtenido / peso_mÃ¡ximo) * 100
                             porcentaje_completitud = (ra_val / peso) * 100
                             porcentajes.append(porcentaje_completitud)
                     # Promedio de los porcentajes de RAs completados
@@ -3176,7 +3374,7 @@ def reporte_general(request, curso_id):
                     else:
                         m.total_ra = None
                 else:
-                    # Sistema antiguo: cada RA vale 10% máximo
+                    # Sistema antiguo: cada RA vale 10% mÃ¡ximo
                     porcentajes = []
                     for i in range(1, 11):
                         ra_val = getattr(m, f'ra_{i}', None)
@@ -3195,10 +3393,10 @@ def reporte_general(request, curso_id):
             m.save(skip_validation=True)
 
         except Exception as e:
-            print(f"ERROR calculando notas en matrícula {m.id}: {e}")
+            print(f"ERROR calculando notas en matrÃ­cula {m.id}: {e}")
 
     # ===========================================
-    #   🔥 AGRUPAR POR ESTUDIANTE
+    #   ð¥ AGRUPAR POR ESTUDIANTE
     # ===========================================
     reporte_estudiantes = {}
 
@@ -3228,7 +3426,7 @@ def reporte_general(request, curso_id):
             datos["materias_reprobadas"] += 1
 
     # ===========================================
-    #   🔥 PROMEDIO GENERAL POR ESTUDIANTE
+    #   ð¥ PROMEDIO GENERAL POR ESTUDIANTE
     # ===========================================
     for est, datos in reporte_estudiantes.items():
         finales = [
@@ -3271,7 +3469,7 @@ def reporte_general_pdf(request, curso_id):
         )
     )
 
-    # --- Lógica igual que en reporte_general, pero NO guardar en DB ---
+    # --- LÃ³gica igual que en reporte_general, pero NO guardar en DB ---
     for m in matriculas:
         try:
             prom_com = float(m.prom_comunicativa) if m.prom_comunicativa is not None else None
@@ -3330,7 +3528,7 @@ def reporte_general_pdf(request, curso_id):
                     for idx, peso in enumerate(valores):
                         ra_val = getattr(m, f'ra_{idx+1}', None)
                         if ra_val is not None:
-                            # Calcular el porcentaje de completitud: (valor_obtenido / peso_máximo) * 100
+                            # Calcular el porcentaje de completitud: (valor_obtenido / peso_mÃ¡ximo) * 100
                             porcentaje_completitud = (ra_val / peso) * 100
                             porcentajes.append(porcentaje_completitud)
                     # Promedio de los porcentajes de RAs completados
@@ -3339,7 +3537,7 @@ def reporte_general_pdf(request, curso_id):
                     else:
                         m.total_ra = None
                 else:
-                    # Sistema antiguo: cada RA vale 10% máximo
+                    # Sistema antiguo: cada RA vale 10% mÃ¡ximo
                     porcentajes = []
                     for i in range(1, 11):
                         ra_val = getattr(m, f'ra_{i}', None)
@@ -3355,7 +3553,7 @@ def reporte_general_pdf(request, curso_id):
             else:
                 m.total_ra = None
         except Exception as e:
-            print(f"ERROR calculando notas en matrícula {m.id}: {e}")
+            print(f"ERROR calculando notas en matrÃ­cula {m.id}: {e}")
 
     reporte_estudiantes = {}
     for m in matriculas:
@@ -3433,13 +3631,13 @@ def reporte_estudiante(request, curso_id, matricula_id):
     curso = get_object_or_404(Curso, id=curso_id)
     matricula = get_object_or_404(Matricula, id=matricula_id, curso=curso)
 
-    # aquí calculas todos los promedios que ya tienes en tu modelo
+    # aquÃ­ calculas todos los promedios que ya tienes en tu modelo
     promedios = {
-        "Comunicación": matricula.prom_comunicativa,
-        "Matemática": matricula.prom_matematica,
+        "ComunicaciÃ³n": matricula.prom_comunicativa,
+        "MatemÃ¡tica": matricula.prom_matematica,
         "Ciencias": matricula.prom_cientifica,
         "Sociales": matricula.prom_social,
-        # añade las demás competencias
+        # aÃ±ade las demÃ¡s competencias
     }
 
     return render(request, "reporte_estudiante.html", {
@@ -3551,7 +3749,7 @@ def editar_materia(request, pk):
 @admin_required
 def eliminar_materia(request, pk):
     """
-    Solo redirige a la vista de confirmación (no borra).
+    Solo redirige a la vista de confirmaciÃ³n (no borra).
     """
     return redirect('confirmar_eliminar_materia', pk=pk)
 
@@ -3559,8 +3757,8 @@ def eliminar_materia(request, pk):
 @login_required
 def confirmar_eliminar_materia(request, pk):
     """
-    Muestra el formulario de confirmación (password) y maneja el POST
-    para borrar solo si la contraseña es correcta.
+    Muestra el formulario de confirmaciÃ³n (password) y maneja el POST
+    para borrar solo si la contraseÃ±a es correcta.
     """
     materia = get_object_or_404(Materia, pk=pk)
     curso_id = materia.curso.id if materia.curso else None
@@ -3576,15 +3774,15 @@ def confirmar_eliminar_materia(request, pk):
         codigo_anulacion = request.POST.get('codigo_anulacion', '').strip()
 
         if not password or not codigo_anulacion:
-            messages.error(request, 'Debe ingresar la contraseña y el código de anulación.')
+            messages.error(request, 'Debe ingresar la contraseÃ±a y el cÃ³digo de anulaciÃ³n.')
             return redirect('confirmar_eliminar_materia', pk=pk)
 
         if not request.user.check_password(password):
-            messages.error(request, 'Contraseña incorrecta.')
+            messages.error(request, 'ContraseÃ±a incorrecta.')
             return redirect('confirmar_eliminar_materia', pk=pk)
 
         if not CodigoAnulacion.validar_codigo(codigo_anulacion):
-            messages.error(request, 'Código de anulación incorrecto.')
+            messages.error(request, 'CÃ³digo de anulaciÃ³n incorrecto.')
             return redirect('confirmar_eliminar_materia', pk=pk)
 
         try:
@@ -3597,13 +3795,13 @@ def confirmar_eliminar_materia(request, pk):
             return redirect(f"{reverse('lista_materias')}?curso={curso_id}")
         return redirect('lista_materias')
 
-    # GET: mostrar confirmación
+    # GET: mostrar confirmaciÃ³n
     return render(request, 'est_forder/confirmar_eliminar_materia.html', {
         'materia': materia,
         'curso_id': curso_id,
-        'titulo': 'Confirmar Eliminación de Materia'
+        'titulo': 'Confirmar EliminaciÃ³n de Materia'
     })
-# Vistas para Matrículas
+# Vistas para MatrÃ­culas
 @login_required
 def lista_matriculas(request):
     matriculas = Matricula.objects.all().select_related('estudiante', 'materia')
@@ -3616,7 +3814,7 @@ def agregar_matricula(request):
         if form.is_valid():
             matricula = form.save()
 
-            # Actualizar grado y sección del estudiante según el curso asociado a la materia
+            # Actualizar grado y secciÃ³n del estudiante segÃºn el curso asociado a la materia
             try:
                 curso = matricula.materia.curso
                 nombre = curso.nombre or ''
@@ -3625,7 +3823,7 @@ def agregar_matricula(request):
                     grado_text = parts[0].strip()
                     seccion_text = parts[1].upper()
                 else:
-                    # Si no tiene sección al final, dejar sección en vacío
+                    # Si no tiene secciÃ³n al final, dejar secciÃ³n en vacÃ­o
                     grado_text = nombre.strip()
                     seccion_text = ''
 
@@ -3634,10 +3832,10 @@ def agregar_matricula(request):
                 estudiante.seccion = seccion_text
                 estudiante.save()
             except Exception:
-                # No interrumpir el flujo si hay algún problema al actualizar usuario
+                # No interrumpir el flujo si hay algÃºn problema al actualizar usuario
                 pass
 
-            messages.success(request, 'Matrícula agregada exitosamente.')
+            messages.success(request, 'MatrÃ­cula agregada exitosamente.')
             return redirect('lista_matriculas')
     else:
         form = MatriculaForm()
@@ -3647,7 +3845,7 @@ def agregar_matricula(request):
 
     return render(request, 'est_forder/form_matricula.html', {
         'form': form,
-        'titulo': 'Agregar Matrícula',
+        'titulo': 'Agregar MatrÃ­cula',
         'estudiantes': estudiantes,
         'materias': materias
     })
@@ -3660,7 +3858,7 @@ def editar_matricula(request, pk):
         if form.is_valid():
             matricula = form.save()
 
-            # Actualizar grado y sección del estudiante según el curso asociado
+            # Actualizar grado y secciÃ³n del estudiante segÃºn el curso asociado
             try:
                 curso = matricula.materia.curso
                 nombre = curso.nombre or ''
@@ -3679,7 +3877,7 @@ def editar_matricula(request, pk):
             except Exception:
                 pass
 
-            messages.success(request, 'Matrícula actualizada exitosamente.')
+            messages.success(request, 'MatrÃ­cula actualizada exitosamente.')
             return redirect('lista_matriculas')
     else:
         form = MatriculaForm(instance=matricula)
@@ -3689,7 +3887,7 @@ def editar_matricula(request, pk):
 
     return render(request, 'est_forder/form_matricula.html', {
         'form': form,
-        'titulo': 'Editar Matrícula',
+        'titulo': 'Editar MatrÃ­cula',
         'estudiantes': estudiantes,
         'materias': materias
     })
@@ -3699,7 +3897,7 @@ def eliminar_matricula(request, pk):
     matricula = get_object_or_404(Matricula, pk=pk)
     if request.method == 'POST':
         matricula.delete()
-        messages.success(request, 'Matrícula eliminada exitosamente.')
+        messages.success(request, 'MatrÃ­cula eliminada exitosamente.')
         return redirect('lista_matriculas')
     return render(request, 'est_forder/confirmar_eliminar_matricula.html', {
         'matricula': matricula
@@ -3713,15 +3911,15 @@ def confirmar_eliminar_curso(request, pk):
         password = request.POST.get('password', '').strip()
         codigo_anulacion = request.POST.get('codigo_anulacion', '').strip()
         if not password or not codigo_anulacion:
-            messages.error(request, 'Debe ingresar la contraseña y el código de anulación.')
+            messages.error(request, 'Debe ingresar la contraseÃ±a y el cÃ³digo de anulaciÃ³n.')
             return render(request, 'est_forder/confirmar_eliminar_curso.html', {'curso': curso})
 
         if not request.user.check_password(password):
-            messages.error(request, 'Contraseña incorrecta.')
+            messages.error(request, 'ContraseÃ±a incorrecta.')
             return render(request, 'est_forder/confirmar_eliminar_curso.html', {'curso': curso})
 
         if not CodigoAnulacion.validar_codigo(codigo_anulacion):
-            messages.error(request, 'Código de anulación incorrecto.')
+            messages.error(request, 'CÃ³digo de anulaciÃ³n incorrecto.')
             return render(request, 'est_forder/confirmar_eliminar_curso.html', {'curso': curso})
 
         try:
@@ -3745,7 +3943,7 @@ def matriculas_materia(request, id):
         .order_by('estudiante__first_name', 'estudiante__last_name')
     )
 
-    # Obtener estudiantes que no están matriculados en esta materia
+    # Obtener estudiantes que no estÃ¡n matriculados en esta materia
     estudiantes_matriculados = matriculas.values_list('estudiante_id', flat=True)
 
     estudiantes_disponibles = (
@@ -3768,20 +3966,20 @@ def confirmar_eliminar_matricula(request, pk):
     if request.method == 'POST':
         password = request.POST.get('password')
         if not password:
-            messages.error(request, 'Debe ingresar la contraseña de confirmación.')
+            messages.error(request, 'Debe ingresar la contraseÃ±a de confirmaciÃ³n.')
             return redirect('confirmar_eliminar_matricula', pk=pk)
 
         if not check_password(password, request.user.password):
-            messages.error(request, 'Contraseña incorrecta.')
+            messages.error(request, 'ContraseÃ±a incorrecta.')
             return redirect('confirmar_eliminar_matricula', pk=pk)
 
         try:
             matricula.delete()
-            messages.success(request, 'Matrícula eliminada exitosamente.')
+            messages.success(request, 'MatrÃ­cula eliminada exitosamente.')
         except Exception as e:
-            messages.error(request, f'Error al eliminar la matrícula: {str(e)}')
+            messages.error(request, f'Error al eliminar la matrÃ­cula: {str(e)}')
 
-        # 👇 redirigir a gestionar matriculas de esa materia
+        # ð redirigir a gestionar matriculas de esa materia
         return redirect('gestionar_matriculas', materia_id=materia_id)
 
     return render(request, 'est_forder/confirmar_eliminar_matricula.html', {'matricula': matricula})
@@ -3792,18 +3990,18 @@ def confirmar_eliminar_matriculaNONE(request, pk):
     if request.method == 'POST':
         password = request.POST.get('password')
         if not password:
-            messages.error(request, 'Debe ingresar la contraseña de confirmación.')
+            messages.error(request, 'Debe ingresar la contraseÃ±a de confirmaciÃ³n.')
             return redirect('confirmar_eliminar_matricula', pk=pk)
 
         if not check_password(password, request.user.password):
-            messages.error(request, 'Contraseña incorrecta.')
+            messages.error(request, 'ContraseÃ±a incorrecta.')
             return redirect('confirmar_eliminar_matricula', pk=pk)
 
         try:
             matricula.delete()
-            messages.success(request, 'Matrícula eliminada exitosamente.')
+            messages.success(request, 'MatrÃ­cula eliminada exitosamente.')
         except Exception as e:
-            messages.error(request, f'Error al eliminar la matrícula: {str(e)}')
+            messages.error(request, f'Error al eliminar la matrÃ­cula: {str(e)}')
         return redirect('lista_matriculas')
 
     return render(request, 'est_forder/confirmar_eliminar_matricula.html', {'matricula': matricula})
@@ -3813,12 +4011,12 @@ def gestionar_matriculasNoenuso(request, materia_id):
     materia = get_object_or_404(Materia, id=materia_id)
     matriculas = Matricula.objects.filter(materia=materia).select_related('estudiante')
 
-    # Calcular estadísticas para el reporte
+    # Calcular estadÃ­sticas para el reporte
     total_aprobados = sum(1 for m in matriculas if m.promedio_final and m.promedio_final >= 60)
     total_reprobados = sum(1 for m in matriculas if m.promedio_final and m.promedio_final < 60)
     total_en_progreso = sum(1 for m in matriculas if not m.promedio_final)
 
-    # Obtener estudiantes que no están matriculados en esta materia
+    # Obtener estudiantes que no estÃ¡n matriculados en esta materia
     estudiantes_matriculados = matriculas.values_list('estudiante_id', flat=True)
     estudiantes_disponibles = CustomUser.objects.filter(
         rol='Estudiante'
@@ -3830,7 +4028,7 @@ def gestionar_matriculasNoenuso(request, materia_id):
         estudiante_id = request.POST.get('estudiante_id')
         if estudiante_id:
             estudiante = get_object_or_404(CustomUser, id=estudiante_id, rol='Estudiante')
-            # Crear nueva matrícula
+            # Crear nueva matrÃ­cula
             Matricula.objects.create(
                 estudiante=estudiante,
                 materia=materia,
@@ -3851,11 +4049,11 @@ def gestionar_matriculasNoenuso(request, materia_id):
 @admin_required
 def gestionar_matriculasAntigua(request, materia_id):
     materia = get_object_or_404(Materia, id=materia_id)
-    curso_id = materia.curso.id  # <-- Aquí tenemos el curso al que pertenece la materia
+    curso_id = materia.curso.id  # <-- AquÃ­ tenemos el curso al que pertenece la materia
 
     matriculas = Matricula.objects.filter(materia=materia).select_related('estudiante')
 
-    # Estadísticas
+    # EstadÃ­sticas
     total_aprobados = sum(1 for m in matriculas if m.promedio_final and m.promedio_final >= 70)
     total_reprobados = sum(1 for m in matriculas if m.promedio_final and m.promedio_final < 70)
     total_en_progreso = sum(1 for m in matriculas if not m.promedio_final)
@@ -3930,7 +4128,7 @@ def gestionar_matriculaAnt2s(request, materia_id):
         }
 
     # ...existing code...
-        # Ajusta según los campos de notas que tengas en tu modelo
+        # Ajusta segÃºn los campos de notas que tengas en tu modelo
         notas = [m.nota1, m.nota2, m.nota3, m.nota4] if hasattr(m, "nota1") else []
 
         if not notas or any(n is None for n in notas):
@@ -3973,7 +4171,7 @@ def gestionar_matriculaAnt2s(request, materia_id):
 
     return render(request, 'est_forder/gestionar_matriculas.html', {
         'materia': materia,
-        'resultados': resultados,  # Aquí mandamos los estados de cada matrícula
+        'resultados': resultados,  # AquÃ­ mandamos los estados de cada matrÃ­cula
         'estudiantes_disponibles': estudiantes_disponibles,
         'total_aprobados': total_aprobados,
         'total_reprobados': total_reprobados,
@@ -3986,7 +4184,7 @@ def gestionar_matriculas(request, materia_id):
     materia = get_object_or_404(Materia, id=materia_id)
     curso_id = materia.curso.id  # Curso al que pertenece la materia
 
-    # 🔥 Ordenar estudiantes por first_name dentro de las matrículas
+    # ð¥ Ordenar estudiantes por first_name dentro de las matrÃ­culas
     matriculas = (
         Matricula.objects
         .filter(materia=materia)
@@ -4000,7 +4198,7 @@ def gestionar_matriculas(request, materia_id):
 
     resultados = {}
     for m in matriculas:
-        # Detectar si es materia modular o por períodos
+        # Detectar si es materia modular o por perÃ­odos
         if hasattr(materia, 'categoria') and materia.categoria == 'modular':
             # Para materias modulares, usar RA 1-10
             notas = [
@@ -4008,11 +4206,11 @@ def gestionar_matriculas(request, materia_id):
                 m.ra_6, m.ra_7, m.ra_8, m.ra_9, m.ra_10
             ]
             
-            # Obtener pesos de los RA desde la configuración
+            # Obtener pesos de los RA desde la configuraciÃ³n
             if materia.ra_configuracion and 'valores' in materia.ra_configuracion:
                 pesos = materia.ra_configuracion['valores']
             else:
-                # Si no hay configuración, usar pesos iguales (10% cada uno para 10 RAs)
+                # Si no hay configuraciÃ³n, usar pesos iguales (10% cada uno para 10 RAs)
                 pesos = [10.0] * 10
             
             # Calcular promedio ponderado
@@ -4030,15 +4228,15 @@ def gestionar_matriculas(request, materia_id):
             
             # Calcular promedios
             if suma_pesos_usados > 0:
-                # Promedio parcial: normalizar según pesos usados y multiplicar por 10 para escala 0-100
+                # Promedio parcial: normalizar segÃºn pesos usados y multiplicar por 10 para escala 0-100
                 promedio_parcial = (suma_ponderada * (100.0 / suma_pesos_usados)) * 10.0
             else:
                 promedio_parcial = None
             
-            # Si todas están completas, es nota final
+            # Si todas estÃ¡n completas, es nota final
             if todas_completas and suma_ponderada > 0:
                 nota_final = suma_ponderada * 10.0  # Multiplicar por 10 para escala 0-100
-                if nota_final >= 70:  # Nota mínima de aprobación en escala 0-100
+                if nota_final >= 70:  # Nota mÃ­nima de aprobaciÃ³n en escala 0-100
                     estado = "Aprobado"
                     total_aprobados += 1
                 else:
@@ -4050,7 +4248,7 @@ def gestionar_matriculas(request, materia_id):
                 total_en_progreso += 1
                 
         else:
-            # Para materias por períodos, usar competencias
+            # Para materias por perÃ­odos, usar competencias
             notas = [
                 m.com_p1, m.com_p2, m.com_p3, m.com_p4,
                 m.log_p1, m.log_p2, m.log_p3, m.log_p4,
@@ -4058,7 +4256,7 @@ def gestionar_matriculas(request, materia_id):
                 m.eti_p1, m.eti_p2, m.eti_p3, m.eti_p4
             ]
 
-            # Calcular notas válidas (no None)
+            # Calcular notas vÃ¡lidas (no None)
             notas_validas = [n for n in notas if n is not None]
             promedio_parcial = sum(notas_validas) / len(notas_validas) if notas_validas else None
 
@@ -4068,7 +4266,7 @@ def gestionar_matriculas(request, materia_id):
                 nota_final = None
                 total_en_progreso += 1
             else:
-                # Todas las notas están completas
+                # Todas las notas estÃ¡n completas
                 nota_final = promedio_parcial
                 if nota_final >= 70:
                     estado = "Aprobado"
@@ -4192,18 +4390,18 @@ def eliminar_matricula(request, matricula_id):
     if request.method == 'POST':
         password = request.POST.get('password')
         if not password:
-            messages.error(request, 'Debe ingresar la contraseña de confirmación.')
+            messages.error(request, 'Debe ingresar la contraseÃ±a de confirmaciÃ³n.')
             return redirect('confirmar_eliminar_matricula', matricula_id=matricula_id)
 
         if not check_password(password, request.user.password):
-            messages.error(request, 'Contraseña incorrecta.')
+            messages.error(request, 'ContraseÃ±a incorrecta.')
             return redirect('confirmar_eliminar_matricula', matricula_id=matricula_id)
 
         try:
             matricula.delete()
-            messages.success(request, 'Matrícula eliminada exitosamente.')
+            messages.success(request, 'MatrÃ­cula eliminada exitosamente.')
         except Exception as e:
-            messages.error(request, f'Error al eliminar la matrícula: {str(e)}')
+            messages.error(request, f'Error al eliminar la matrÃ­cula: {str(e)}')
         return redirect('gestionar_matriculas', materia_id=materia_id)
 
     return render(request, 'est_forder/confirmar_eliminar_matricula.html', {
@@ -4226,7 +4424,7 @@ def actualizar_notasAntigua(request, matricula_id):
             if p3: matricula.p3 = float(p3)
             if p4: matricula.p4 = float(p4)
 
-            # Validar que las notas estén entre 0 y 100
+            # Validar que las notas estÃ©n entre 0 y 100
             for nota in [matricula.p1, matricula.p2, matricula.p3, matricula.p4]:
                 if nota is not None and (nota < 0 or nota > 100):
                     raise ValueError('Las notas deben estar entre 0 y 100')
@@ -4239,7 +4437,7 @@ def actualizar_notasAntigua(request, matricula_id):
             matricula.save()
             messages.success(request, 'Notas actualizadas exitosamente.')
         except ValueError as e:
-            messages.error(request, str(e) if str(e) != 'could not convert string to float: ' else 'Por favor ingrese valores numéricos válidos.')
+            messages.error(request, str(e) if str(e) != 'could not convert string to float: ' else 'Por favor ingrese valores numÃ©ricos vÃ¡lidos.')
         except Exception as e:
             messages.error(request, f'Error al actualizar las notas: {str(e)}')
 
@@ -4276,7 +4474,7 @@ def actualizar_notas(request, matricula_id):
             matricula.com_rp3 = request.POST.get('com_rp3') or None
             matricula.com_rp4 = request.POST.get('com_rp4') or None
 
-            # --- Pensamiento Lógico ---
+            # --- Pensamiento LÃ³gico ---
             matricula.log_p1 = request.POST.get('log_p1') or None
             matricula.log_p2 = request.POST.get('log_p2') or None
             matricula.log_p3 = request.POST.get('log_p3') or None
@@ -4286,7 +4484,7 @@ def actualizar_notas(request, matricula_id):
             matricula.log_rp3 = request.POST.get('log_rp3') or None
             matricula.log_rp4 = request.POST.get('log_rp4') or None
 
-            # --- Científica ---
+            # --- CientÃ­fica ---
             matricula.cie_p1 = request.POST.get('cie_p1') or None
             matricula.cie_p2 = request.POST.get('cie_p2') or None
             matricula.cie_p3 = request.POST.get('cie_p3') or None
@@ -4296,7 +4494,7 @@ def actualizar_notas(request, matricula_id):
             matricula.cie_rp3 = request.POST.get('cie_rp3') or None
             matricula.cie_rp4 = request.POST.get('cie_rp4') or None
 
-            # --- Ética ---
+            # --- Ãtica ---
             matricula.eti_p1 = request.POST.get('eti_p1') or None
             matricula.eti_p2 = request.POST.get('eti_p2') or None
             matricula.eti_p3 = request.POST.get('eti_p3') or None
@@ -4306,7 +4504,7 @@ def actualizar_notas(request, matricula_id):
             matricula.eti_rp3 = request.POST.get('eti_rp3') or None
             matricula.eti_rp4 = request.POST.get('eti_rp4') or None
 
-            # --- Exámenes Especiales ---
+            # --- ExÃ¡menes Especiales ---
             matricula.ex_com = request.POST.get('ex_com') or None  # Completivo
             matricula.ex_ext = request.POST.get('ex_ext') or None  # Extraordinario
             matricula.ex_esp = request.POST.get('ex_esp') or None  # Especial
@@ -4355,19 +4553,19 @@ def actualizar_notas3(request, matricula_id):
             matricula.com_p3 = request.POST.get('com_p3') or None
             matricula.com_p4 = request.POST.get('com_p4') or None
 
-            # --- Pensamiento Lógico ---
+            # --- Pensamiento LÃ³gico ---
             matricula.log_p1 = request.POST.get('log_p1') or None
             matricula.log_p2 = request.POST.get('log_p2') or None
             matricula.log_p3 = request.POST.get('log_p3') or None
             matricula.log_p4 = request.POST.get('log_p4') or None
 
-            # --- Científica ---
+            # --- CientÃ­fica ---
             matricula.cie_p1 = request.POST.get('cie_p1') or None
             matricula.cie_p2 = request.POST.get('cie_p2') or None
             matricula.cie_p3 = request.POST.get('cie_p3') or None
             matricula.cie_p4 = request.POST.get('cie_p4') or None
 
-            # --- Ética ---
+            # --- Ãtica ---
             matricula.eti_p1 = request.POST.get('eti_p1') or None
             matricula.eti_p2 = request.POST.get('eti_p2') or None
             matricula.eti_p3 = request.POST.get('eti_p3') or None
@@ -4429,7 +4627,7 @@ def hoja_calificaciones_materia(request, materia_id):
     
     # Verificar permisos
     if request.user.rol not in ['Administrador', 'Director', 'Coordinador', 'Secretaria'] and materia.profesor != request.user:
-        messages.error(request, 'No tienes permiso para acceder a esta página.')
+        messages.error(request, 'No tienes permiso para acceder a esta pÃ¡gina.')
         return redirect('plataform')
     
     # Obtener estudiantes matriculados ordenados por apellido y nombre
@@ -4438,7 +4636,7 @@ def hoja_calificaciones_materia(request, materia_id):
         'estudiante__first_name'
     )
     
-    # Obtener el tipo de evaluación
+    # Obtener el tipo de evaluaciÃ³n
     tipo_evaluacion = request.GET.get('tipo', 'periodo1')  # periodo1, periodo2, periodo3, periodo4, modular
     
     context = {
@@ -4464,7 +4662,7 @@ def agregar_notas(request, materia_id):
 
     #Verificar si el usuario puede ver esta materia
     if not puede_ver_notas(request.user, materia):
-        messages.error(request, 'No tienes permiso para acceder a esta página.')
+        messages.error(request, 'No tienes permiso para acceder a esta pÃ¡gina.')
         return redirect('plataform')
     
     # Determinar si el usuario puede editar (Administrador, Secretaria, Director, Profesor de la materia)
@@ -4472,23 +4670,23 @@ def agregar_notas(request, materia_id):
     
     # Si es estudiante, filtrar solo sus propias notas
     if request.user.rol == 'Estudiante':
-        # Solo puede ver su propia matrícula
+        # Solo puede ver su propia matrÃ­cula
         matriculas = Matricula.objects.filter(
             materia=materia,
             estudiante=request.user
         )
         if not matriculas.exists():
-            messages.error(request, 'No estás matriculado en esta materia.')
+            messages.error(request, 'No estÃ¡s matriculado en esta materia.')
             return redirect('plataform')
     else:
-        # Otros roles ven todas las matrículas
+        # Otros roles ven todas las matrÃ­culas
         matriculas = Matricula.objects.filter(materia=materia).order_by('estudiante__first_name')
     
-    # Si la materia es modular, redirigir a template específico
+    # Si la materia es modular, redirigir a template especÃ­fico
     if materia.categoria == 'modular':
         return agregar_notas_modular(request, materia_id)
 
-    # Enumeración
+    # EnumeraciÃ³n
     for i, m in enumerate(matriculas, start=1):
         m.numero = i
 
@@ -4513,7 +4711,7 @@ def agregar_notas(request, materia_id):
 
     # ------------ POST -------------
     if request.method == 'POST':
-        # Verificar permisos de edición antes de procesar
+        # Verificar permisos de ediciÃ³n antes de procesar
         if not puede_editar:
             messages.error(request, 'No tienes permiso para modificar notas.')
             return redirect('agregar_notas', materia_id=materia.id)
@@ -4525,7 +4723,7 @@ def agregar_notas(request, materia_id):
                     if valor == "" or valor is None:
                         setattr(m, campo, None)
                     else:
-                        # Validar que el valor esté entre 0 y 100
+                        # Validar que el valor estÃ© entre 0 y 100
                         valor_float = float(valor)
                         if valor_float < 0 or valor_float > 100:
                             messages.error(request, f"Error: La nota '{campo}' del estudiante {m.estudiante.get_full_name()} debe estar entre 0 y 100. Valor ingresado: {valor_float}")
@@ -4537,14 +4735,14 @@ def agregar_notas(request, materia_id):
             messages.success(request, "Notas actualizadas exitosamente.")
 
         except ValueError as e:
-            messages.error(request, f"Error: Valor inválido ingresado. Las notas deben ser números entre 0 y 100.")
+            messages.error(request, f"Error: Valor invÃ¡lido ingresado. Las notas deben ser nÃºmeros entre 0 y 100.")
         except Exception as e:
             messages.error(request, f"Error al actualizar las notas: {str(e)}")
 
         return redirect('agregar_notas', materia_id=materia.id)
 
     # ---------------------------------------
-    #  CÁLCULO DE NOTA_FINAL (SIEMPRE AQUÍ)
+    #  CÃLCULO DE NOTA_FINAL (SIEMPRE AQUÃ)
     # ---------------------------------------
     
     for m in matriculas:
@@ -4564,40 +4762,40 @@ def agregar_notas(request, materia_id):
 
             if None not in (prom_com, prom_log, prom_cie, prom_eti):
 
-                # 1️⃣ Nota final promedio
+                # 1ï¸â£ Nota final promedio
                 m.nota_final = redondear_nota((prom_com + prom_log + prom_cie + prom_eti) / 4, decimales=2)
 
-                # 2️⃣ Completivo
+                # 2ï¸â£ Completivo
                 if m.nota_final < 70 and ex_com is not None:
                     m.nota_final_completivo = redondear_nota((m.nota_final * 0.5) + (ex_com * 0.5), decimales=2)
 
-                # 3️⃣ Extraordinario
+                # 3ï¸â£ Extraordinario
                 if m.nota_final_completivo is not None and m.nota_final_completivo < 70 and ex_ext is not None:
                     m.nota_final_extraordinario = redondear_nota((m.nota_final * 0.3) + (ex_ext * 0.7), decimales=2)
 
-                # 4️⃣ Especial
+                # 4ï¸â£ Especial
                 if m.nota_final_extraordinario is not None and m.nota_final_extraordinario < 70 and ex_esp is not None:
                     m.nota_final_especial = redondear_nota(ex_esp, decimales=2)
 
-                # 5️⃣ Selección de nota oficial antes del redondeo
+                # 5ï¸â£ SelecciÃ³n de nota oficial antes del redondeo
                 nota_sin_redondear = (
                     m.nota_final if m.nota_final >= 70 else
                     m.nota_final_completivo if m.nota_final_completivo is not None and m.nota_final_completivo >= 70 else
                     m.nota_final_extraordinario if m.nota_final_extraordinario is not None and m.nota_final_extraordinario >= 70 else
                     m.nota_final_especial if m.nota_final_especial is not None else
-                    # Si ninguna pasa de 70, toma la última obtenida
+                    # Si ninguna pasa de 70, toma la Ãºltima obtenida
                     m.nota_final_especial or m.nota_final_extraordinario or m.nota_final_completivo or m.nota_final
                 )
 
-                # 6️⃣ Aplicar redondeo oficial (con 0 decimales para nota oficial)
+                # 6ï¸â£ Aplicar redondeo oficial (con 0 decimales para nota oficial)
                 # redondea .50 hacia arriba usando ROUND_HALF_UP
                 m.nota_final_oficial = redondear_nota(nota_sin_redondear, decimales=0)
 
-            # Guardar sin validación porque puede haber datos antiguos fuera de rango
+            # Guardar sin validaciÃ³n porque puede haber datos antiguos fuera de rango
             m.save(skip_validation=True)
 
         except Exception as e:
-            print(f"Error en matrícula {m.id}: {e}")
+            print(f"Error en matrÃ­cula {m.id}: {e}")
             m.nota_final = m.nota_final_completivo = m.nota_final_extraordinario = m.nota_final_especial = m.nota_final_oficial = None
             m.save(skip_validation=True)
 
@@ -4612,12 +4810,12 @@ def agregar_notas(request, materia_id):
 
 @login_required
 def agregar_notas_modular(request, materia_id):
-    """Vista específica para agregar notas a materias modulares con 10 Resultados de Aprendizaje (RA)"""
+    """Vista especÃ­fica para agregar notas a materias modulares con 10 Resultados de Aprendizaje (RA)"""
     materia = get_object_or_404(Materia, id=materia_id)
 
     # Verificar si el usuario puede ver esta materia
     if not puede_ver_notas(request.user, materia):
-        messages.error(request, 'No tienes permiso para acceder a esta página.')
+        messages.error(request, 'No tienes permiso para acceder a esta pÃ¡gina.')
         return redirect('plataform')
     
     # Determinar si el usuario puede editar
@@ -4630,29 +4828,29 @@ def agregar_notas_modular(request, materia_id):
             estudiante=request.user
         )
         if not matriculas.exists():
-            messages.error(request, 'No estás matriculado en esta materia.')
+            messages.error(request, 'No estÃ¡s matriculado en esta materia.')
             return redirect('plataform')
     else:
         matriculas = Matricula.objects.filter(materia=materia).order_by('estudiante__first_name')
 
-    # Enumeración
+    # EnumeraciÃ³n
     for i, m in enumerate(matriculas, start=1):
         m.numero = i
 
-    # Configuración de RA (cantidad y valores)
+    # ConfiguraciÃ³n de RA (cantidad y valores)
     ra_config = materia.ra_configuracion or {}
     cantidad_ra = int(ra_config.get('cantidad', 10))
     valores_ra = ra_config.get('valores', [10]*10)
-    # Asegurar que valores_ra sea lista de números
+    # Asegurar que valores_ra sea lista de nÃºmeros
     valores_ra = [float(v) for v in valores_ra]
     if len(valores_ra) != cantidad_ra:
         valores_ra = [10.0]*cantidad_ra
 
-    # Permitir actualizar configuración de RA
+    # Permitir actualizar configuraciÃ³n de RA
     if request.method == 'POST' and 'guardar_config_ra' in request.POST:
-        # Verificar permisos de edición
+        # Verificar permisos de ediciÃ³n
         if not puede_editar:
-            messages.error(request, 'No tienes permiso para modificar la configuración de RA.')
+            messages.error(request, 'No tienes permiso para modificar la configuraciÃ³n de RA.')
             return redirect('agregar_notas_modular', materia_id=materia.id)
         
         try:
@@ -4668,17 +4866,17 @@ def agregar_notas_modular(request, materia_id):
             materia.ra_configuracion = {'cantidad': cantidad, 'valores': valores}
             materia.save(update_fields=['ra_configuracion'])
 
-            # Borrar campos ra_n+1 a ra_10 en todas las matrículas si se reduce la cantidad
+            # Borrar campos ra_n+1 a ra_10 en todas las matrÃ­culas si se reduce la cantidad
             if cantidad < 10:
                 campos_extra = [f'ra_{i}' for i in range(cantidad+1, 11)]
                 Matricula.objects.filter(materia=materia).update(**{campo: None for campo in campos_extra})
 
-            messages.success(request, 'Configuración de RA actualizada.')
+            messages.success(request, 'ConfiguraciÃ³n de RA actualizada.')
             return redirect('agregar_notas_modular', materia_id=materia.id)
         except Exception as e:
-            messages.error(request, f'Error en la configuración de RA: {str(e)}')
+            messages.error(request, f'Error en la configuraciÃ³n de RA: {str(e)}')
 
-    # Usar configuración actual
+    # Usar configuraciÃ³n actual
     campos_ra = [f'ra_{i}' for i in range(1, cantidad_ra+1)]
 
     # Formato para template
@@ -4699,16 +4897,16 @@ def agregar_notas_modular(request, materia_id):
                         setattr(m, campo, None)
                     else:
                         valor_float = float(valor)
-                        # Obtener el peso máximo para este RA desde la configuración
+                        # Obtener el peso mÃ¡ximo para este RA desde la configuraciÃ³n
                         peso_max = valores_ra[idx] if idx < len(valores_ra) else 10.0
-                        # Validar que el RA esté entre 0 y su peso máximo
+                        # Validar que el RA estÃ© entre 0 y su peso mÃ¡ximo
                         if valor_float < 0 or valor_float > peso_max:
                             messages.error(request, f"Error: El RA {idx+1} del estudiante {m.estudiante.get_full_name()} debe estar entre 0 y {peso_max}. Valor ingresado: {valor_float}")
                             return redirect('agregar_notas_modular', materia_id=materia.id)
                         setattr(m, campo, valor_float)
                         ra_valores.append(valor_float)
 
-                # Calcular nota final como suma de los RA (ya están en escala del peso)
+                # Calcular nota final como suma de los RA (ya estÃ¡n en escala del peso)
                 if len(ra_valores) == cantidad_ra:
                     total_ra = sum(ra_valores)
                     m.nota_final = round(total_ra, 2)
@@ -4719,7 +4917,7 @@ def agregar_notas_modular(request, materia_id):
                 m.save()
             messages.success(request, "Calificaciones modulares actualizadas exitosamente.")
         except ValueError as e:
-            messages.error(request, f"Error: Valor inválido ingresado. Los RAs deben ser números entre 0 y 10.")
+            messages.error(request, f"Error: Valor invÃ¡lido ingresado. Los RAs deben ser nÃºmeros entre 0 y 10.")
         except Exception as e:
             messages.error(request, f"Error al actualizar las calificaciones: {str(e)}")
         return redirect('agregar_notas_modular', materia_id=materia.id)
@@ -4740,7 +4938,7 @@ def agregar_notas_modular(request, materia_id):
     return render(request, 'est_forder/agregar_notas_modular.html', {
         'materia': materia,
         'matriculas': matriculas,
-        'titulo': f'Calificaciones Módulo Formativo - {materia.nombre}',
+        'titulo': f'Calificaciones MÃ³dulo Formativo - {materia.nombre}',
         'cantidad_ra': cantidad_ra,
         'valores_ra': valores_ra,
         'puede_editar': puede_editar,
@@ -4754,12 +4952,12 @@ def agregar_notas2311(request, materia_id):
     # Validar permisos
     if not (request.user.rol == 'Administrador' or
             (request.user.rol == 'Profesor' and materia.profesor == request.user)):
-        messages.error(request, 'No tienes permiso para acceder a esta página.')
+        messages.error(request, 'No tienes permiso para acceder a esta pÃ¡gina.')
         return redirect('lista_cursos')
 
     matriculas = Matricula.objects.filter(materia=materia).order_by('estudiante__first_name')
 
-    # Enumeración
+    # EnumeraciÃ³n
     for i, m in enumerate(matriculas, start=1):
         m.numero = i
 
@@ -4799,7 +4997,7 @@ def agregar_notas2311(request, materia_id):
         return redirect('agregar_notas', materia_id=materia.id)
 
     # ---------------------------------------
-    #  CÁLCULO DE NOTA_FINAL (SIEMPRE AQUÍ)
+    #  CÃLCULO DE NOTA_FINAL (SIEMPRE AQUÃ)
     # ---------------------------------------
     
     for m in matriculas:
@@ -4819,46 +5017,46 @@ def agregar_notas2311(request, materia_id):
 
             if None not in (prom_com, prom_log, prom_cie, prom_eti):
 
-                # 1️⃣ Nota final promedio
+                # 1ï¸â£ Nota final promedio
                 m.nota_final = round((prom_com + prom_log + prom_cie + prom_eti) / 4, 2)
 
-                # 2️⃣ Completivo
+                # 2ï¸â£ Completivo
                 if m.nota_final < 70 and ex_com is not None:
                     m.nota_final_completivo = round((m.nota_final * 0.5) + (ex_com * 0.5), 2)
 
-                # 3️⃣ Extraordinario
+                # 3ï¸â£ Extraordinario
                 if m.nota_final_completivo is not None and m.nota_final_completivo < 70 and ex_ext is not None:
                     m.nota_final_extraordinario = round((m.nota_final * 0.3) + (ex_ext * 0.7), 2)
 
-                # 4️⃣ Especial
+                # 4ï¸â£ Especial
                 if m.nota_final_extraordinario is not None and m.nota_final_extraordinario < 70 and ex_esp is not None:
                     m.nota_final_especial = round(ex_esp, 2)
 
-                # 5️⃣ Selección de nota oficial antes del redondeo
+                # 5ï¸â£ SelecciÃ³n de nota oficial antes del redondeo
                 nota_sin_redondear = (
                     m.nota_final if m.nota_final >= 70 else
                     m.nota_final_completivo if m.nota_final_completivo is not None and m.nota_final_completivo >= 70 else
                     m.nota_final_extraordinario if m.nota_final_extraordinario is not None and m.nota_final_extraordinario >= 70 else
                     m.nota_final_especial if m.nota_final_especial is not None else
-                    # Si ninguna pasa de 70, toma la última obtenida
+                    # Si ninguna pasa de 70, toma la Ãºltima obtenida
                     m.nota_final_especial or m.nota_final_extraordinario or m.nota_final_completivo or m.nota_final
                 )
 
-                # 6️⃣ Aplicar redondeo oficial
+                # 6ï¸â£ Aplicar redondeo oficial
                 # redondea .50 hacia arriba
                 m.nota_final_oficial = int(nota_sin_redondear + 0.5)
 
             m.save(skip_validation=True)
 
         except Exception as e:
-            print(f"Error en matrícula {m.id}: {e}")
+            print(f"Error en matrÃ­cula {m.id}: {e}")
             m.nota_final = m.nota_final_completivo = m.nota_final_extraordinario = m.nota_final_especial = m.nota_final_oficial = None
 
 
 
             m.save(skip_validation=True)
         except Exception as e:
-            print(f"Error en matrícula {m.id}: {e}")
+            print(f"Error en matrÃ­cula {m.id}: {e}")
 
         
 
@@ -4878,7 +5076,7 @@ def agregar_notasXXX(request, materia_id):
     # --- Validar permisos ---
     if not (request.user.rol == 'Administrador' or
             (request.user.rol == 'Profesor' and materia.profesor == request.user)):
-        messages.error(request, 'No tienes permiso para acceder a esta página.')
+        messages.error(request, 'No tienes permiso para acceder a esta pÃ¡gina.')
         return redirect('lista_cursos')
 
     matriculas = Matricula.objects.filter(materia=materia)
@@ -4896,7 +5094,7 @@ def agregar_notasXXX(request, materia_id):
             if valor is not None:
                 setattr(m, campo, str(valor).replace(',', '.'))
 
-    # --- Si se envía el formulario ---
+    # --- Si se envÃ­a el formulario ---
     if request.method == 'POST':
         try:
             for matricula in matriculas:
@@ -4905,17 +5103,17 @@ def agregar_notasXXX(request, materia_id):
                     setattr(matricula, f'com_p{i}', request.POST.get(f'com_p{i}_{matricula.id}') or None)
                 matricula.rp_com = request.POST.get(f'rp_com_{matricula.id}') or None
 
-                # --- Lógico ---
+                # --- LÃ³gico ---
                 for i in range(1, 5):
                     setattr(matricula, f'log_p{i}', request.POST.get(f'log_p{i}_{matricula.id}') or None)
                 matricula.rp_log = request.POST.get(f'rp_log_{matricula.id}') or None
 
-                # --- Científica ---
+                # --- CientÃ­fica ---
                 for i in range(1, 5):
                     setattr(matricula, f'cie_p{i}', request.POST.get(f'cie_p{i}_{matricula.id}') or None)
                 matricula.rp_cie = request.POST.get(f'rp_cie_{matricula.id}') or None
 
-                # --- Ética ---
+                # --- Ãtica ---
                 for i in range(1, 5):
                     setattr(matricula, f'eti_p{i}', request.POST.get(f'eti_p{i}_{matricula.id}') or None)
                 matricula.rp_eti = request.POST.get(f'rp_eti_{matricula.id}') or None
@@ -4925,7 +5123,7 @@ def agregar_notasXXX(request, materia_id):
                     setattr(matricula, f'rp_p{i}', request.POST.get(f'rp_p{i}_{matricula.id}') or None)
 
                 # -------------------------
-                #   🔥 PROMEDIO PORCENTUAL MODULAR (RA)
+                #   ð¥ PROMEDIO PORCENTUAL MODULAR (RA)
                 # -------------------------
                 if hasattr(matricula.materia, 'categoria') and matricula.materia.categoria == 'modular':
                     if matricula.materia.ra_configuracion:
@@ -4934,7 +5132,7 @@ def agregar_notasXXX(request, materia_id):
                         for idx, peso in enumerate(valores):
                             ra_val = getattr(matricula, f'ra_{idx+1}', None)
                             if ra_val is not None:
-                                # Calcular el porcentaje de completitud: (valor_obtenido / peso_máximo) * 100
+                                # Calcular el porcentaje de completitud: (valor_obtenido / peso_mÃ¡ximo) * 100
                                 porcentaje_completitud = (ra_val / peso) * 100
                                 porcentajes.append(porcentaje_completitud)
                         # Promedio de los porcentajes de RAs completados
@@ -4943,7 +5141,7 @@ def agregar_notasXXX(request, materia_id):
                         else:
                             matricula.total_ra = None
                     else:
-                        # Sistema antiguo: cada RA vale 10% máximo
+                        # Sistema antiguo: cada RA vale 10% mÃ¡ximo
                         porcentajes = []
                         for i in range(1, 11):
                             ra_val = getattr(matricula, f'ra_{i}', None)
@@ -4959,7 +5157,7 @@ def agregar_notasXXX(request, materia_id):
                 else:
                     matricula.total_ra = None
 
-                # --- Convertir valores a float válidos ---
+                # --- Convertir valores a float vÃ¡lidos ---
                 for campo in [
                     'com_p1', 'com_p2', 'com_p3', 'com_p4', 'rp_com',
                     'log_p1', 'log_p2', 'log_p3', 'log_p4', 'rp_log',
@@ -5028,7 +5226,7 @@ def agregar_notasXXX(request, materia_id):
 def reporte_notas_estudiante2(request, estudiante_id):
     estudiante = get_object_or_404(CustomUser, id=estudiante_id, rol='Estudiante')
 
-    # Obtener todas las matrículas del estudiante con sus materias y cursos
+    # Obtener todas las matrÃ­culas del estudiante con sus materias y cursos
     matriculas = Matricula.objects.filter(
         estudiante=estudiante
     ).select_related(
@@ -5038,7 +5236,7 @@ def reporte_notas_estudiante2(request, estudiante_id):
         'materia__profesor'
     ).order_by('materia__curso__anho_escolar', 'materia__curso', 'materia__nombre')
 
-    # Agrupar matrículas por año escolar
+    # Agrupar matrÃ­culas por aÃ±o escolar
     matriculas_por_anho = {}
     for matricula in matriculas:
         anho = matricula.materia.curso.anho_escolar
@@ -5046,7 +5244,7 @@ def reporte_notas_estudiante2(request, estudiante_id):
             matriculas_por_anho[anho] = []
         matriculas_por_anho[anho].append(matricula)
 
-    # Calcular estadísticas generales
+    # Calcular estadÃ­sticas generales
     total_materias = matriculas.count()
     materias_aprobadas = sum(1 for m in matriculas if m.nota_final and m.nota_final >= 70)
     materias_reprobadas = sum(1 for m in matriculas if m.nota_final and m.nota_final < 70)
@@ -5084,17 +5282,17 @@ def reporte_notas_estudiante(request, estudiante_id):
     ).order_by('materia__curso__anho_escolar', 'materia__curso', 'materia__nombre')
 
     # ===============================
-    #   🔥 CALCULAR TODAS LAS NOTAS CON REDONDEO CORRECTO
+    #   ð¥ CALCULAR TODAS LAS NOTAS CON REDONDEO CORRECTO
     # ===============================
     for m in matriculas:
         try:
-            # Obtener promedios por competencia (ya están redondeados por el modelo)
+            # Obtener promedios por competencia (ya estÃ¡n redondeados por el modelo)
             prom_com = m.prom_comunicativa
             prom_log = m.prom_logico
             prom_cie = m.prom_cientifica
             prom_eti = m.prom_etica
 
-            # Obtener exámenes
+            # Obtener exÃ¡menes
             ex_com = float(m.ex_com) if m.ex_com is not None else None
             ex_ext = float(m.ex_ext) if m.ex_ext is not None else None
             ex_esp = float(m.ex_esp) if m.ex_esp is not None else None
@@ -5109,23 +5307,23 @@ def reporte_notas_estudiante(request, estudiante_id):
             # Solo calcular si tiene los 4 promedios base
             if m.promedio_final is not None:
 
-                # 1️⃣ Final directo (ya viene redondeado del modelo)
+                # 1ï¸â£ Final directo (ya viene redondeado del modelo)
                 m.nota_final = m.promedio_final
 
-                # 2️⃣ Completivo (usa la función del modelo con redondeo correcto)
+                # 2ï¸â£ Completivo (usa la funciÃ³n del modelo con redondeo correcto)
                 if m.nota_final < 70 and m.calificacion_completiva_final is not None:
                     m.nota_final_completivo = m.calificacion_completiva_final
 
-                # 3️⃣ Extraordinario (usa la función del modelo con redondeo correcto)
+                # 3ï¸â£ Extraordinario (usa la funciÃ³n del modelo con redondeo correcto)
                 if m.nota_final_completivo is not None and m.nota_final_completivo < 70 and m.calificacion_extraordinario_final is not None:
                     m.nota_final_extraordinario = m.calificacion_extraordinario_final
 
-                # 4️⃣ Especial
+                # 4ï¸â£ Especial
                 if m.nota_final_extraordinario is not None and m.nota_final_extraordinario < 70 and ex_esp is not None:
                     m.nota_final_especial = redondear_nota(ex_esp, decimales=2)
 
                 # ================================
-                #    📌 Nota Final Oficial (redondeada a entero)
+                #    ð Nota Final Oficial (redondeada a entero)
                 # ================================
 
                 # Aprobado directo
@@ -5135,25 +5333,25 @@ def reporte_notas_estudiante(request, estudiante_id):
                 # Requiere completivo
                 elif m.nota_final < 70:
 
-                    # Falta completivo → en proceso
+                    # Falta completivo â en proceso
                     if ex_com is None:
                         m.nota_final_oficial = None
 
-                    # Tiene completivo y aprobó
+                    # Tiene completivo y aprobÃ³
                     elif m.nota_final_completivo >= 70:
                         m.nota_final_oficial = redondear_nota(m.nota_final_completivo, decimales=0)
 
                     else:
-                        # Falta extraordinario → en proceso
+                        # Falta extraordinario â en proceso
                         if ex_ext is None:
                             m.nota_final_oficial = None
 
-                        # Tiene extraordinario y aprobó
+                        # Tiene extraordinario y aprobÃ³
                         elif m.nota_final_extraordinario >= 70:
                             m.nota_final_oficial = redondear_nota(m.nota_final_extraordinario, decimales=0)
 
                         else:
-                            # Falta especial → en proceso
+                            # Falta especial â en proceso
                             if ex_esp is None:
                                 m.nota_final_oficial = None
 
@@ -5166,11 +5364,11 @@ def reporte_notas_estudiante(request, estudiante_id):
             m.save(skip_validation=True)
 
         except Exception as e:
-            print(f"Error en matrícula {m.id}: {e}")
+            print(f"Error en matrÃ­cula {m.id}: {e}")
 
 
     # ===============================
-    #   🔥 AGRUPACIÓN POR AÑO
+    #   ð¥ AGRUPACIÃN POR AÃO
     # ===============================
     matriculas_por_anho = {}
     for m in matriculas:
@@ -5180,7 +5378,7 @@ def reporte_notas_estudiante(request, estudiante_id):
         matriculas_por_anho[anho].append(m)
 
     # ===============================
-    #   🔥 ESTADÍSTICAS DEL REPORTE
+    #   ð¥ ESTADÃSTICAS DEL REPORTE
     # ===============================
     total_materias = matriculas.count()
     materias_aprobadas = sum(1 for m in matriculas if m.nota_final_oficial and m.nota_final_oficial >= 70)
@@ -5192,7 +5390,7 @@ def reporte_notas_estudiante(request, estudiante_id):
     promedio_general = redondear_nota(sum(notas_finales) / len(notas_finales), decimales=2) if notas_finales else None
 
     # ===============================
-    #   🔥 CONTEXTO FINAL
+    #   ð¥ CONTEXTO FINAL
     # ===============================
     context = {
         'estudiante': estudiante,
@@ -5208,7 +5406,7 @@ def reporte_notas_estudiante(request, estudiante_id):
 
 @login_required
 def record_calificaciones_pdf(request, estudiante_id):
-    """Generar récord de calificaciones en PDF formato oficial"""
+    """Generar rÃ©cord de calificaciones en PDF formato oficial"""
     from django.template.loader import get_template
     from xhtml2pdf import pisa
     from django.conf import settings
@@ -5218,7 +5416,7 @@ def record_calificaciones_pdf(request, estudiante_id):
     
     estudiante = get_object_or_404(CustomUser, id=estudiante_id, rol='Estudiante')
     
-    # Obtener todas las matrículas del estudiante
+    # Obtener todas las matrÃ­culas del estudiante
     matriculas = Matricula.objects.filter(
         estudiante=estudiante
     ).select_related(
@@ -5231,13 +5429,13 @@ def record_calificaciones_pdf(request, estudiante_id):
     # Calcular notas finales con redondeo correcto
     for m in matriculas:
         try:
-            # Obtener promedios por competencia (ya están redondeados por el modelo)
+            # Obtener promedios por competencia (ya estÃ¡n redondeados por el modelo)
             prom_com = m.prom_comunicativa
             prom_log = m.prom_logico
             prom_cie = m.prom_cientifica
             prom_eti = m.prom_etica
             
-            # Obtener exámenes
+            # Obtener exÃ¡menes
             ex_com = float(m.ex_com) if m.ex_com is not None else None
             ex_ext = float(m.ex_ext) if m.ex_ext is not None else None
             ex_esp = float(m.ex_esp) if m.ex_esp is not None else None
@@ -5248,7 +5446,7 @@ def record_calificaciones_pdf(request, estudiante_id):
             if m.promedio_final is not None:
                 m.nota_final = m.promedio_final
                 
-                # Si aprobó con el promedio regular
+                # Si aprobÃ³ con el promedio regular
                 if m.nota_final >= 70:
                     m.nota_final_oficial = redondear_nota(m.nota_final, decimales=0)
                 # Si tiene completivo
@@ -5266,12 +5464,12 @@ def record_calificaciones_pdf(request, estudiante_id):
                             m.nota_final_especial = redondear_nota(ex_esp, decimales=2)
                             m.nota_final_oficial = redondear_nota(m.nota_final_especial, decimales=0)
         except Exception as e:
-            print(f"Error en matrícula {m.id}: {e}")
+            print(f"Error en matrÃ­cula {m.id}: {e}")
 
     # Agrupar materias por estudiante para crear tabla horizontal
     # Estructura: { 'materia_nombre': { 'grado1': {'nota': XX, 'fecha': 'XX', 'anho': 'XX'}, 'grado2': {...} } }
     
-    # Primero obtener todos los grados únicos ordenados
+    # Primero obtener todos los grados Ãºnicos ordenados
     grados_ordenados = []
     grados_dict = {}
     for m in matriculas:
@@ -5316,7 +5514,7 @@ def record_calificaciones_pdf(request, estudiante_id):
     response = HttpResponse(content_type='application/pdf')
     response['Content-Disposition'] = f'inline; filename="record_calificaciones_{estudiante.cedula or estudiante.id}.pdf"'
     
-    # Función para resolver rutas estáticas
+    # FunciÃ³n para resolver rutas estÃ¡ticas
     def link_callback(uri, rel):
         if os.path.isfile(uri):
             return uri
@@ -5346,7 +5544,7 @@ def record_calificaciones_pdf(request, estudiante_id):
 
 @login_required
 def record_calificaciones_completo_pdf(request, estudiante_id):
-    """Generar récord de calificaciones completo (ambos ciclos) en PDF formato Legal (8.5 x 14)"""
+    """Generar rÃ©cord de calificaciones completo (ambos ciclos) en PDF formato Legal (8.5 x 14)"""
     from django.template.loader import get_template
     from xhtml2pdf import pisa
     from django.conf import settings
@@ -5356,7 +5554,7 @@ def record_calificaciones_completo_pdf(request, estudiante_id):
     
     estudiante = get_object_or_404(CustomUser, id=estudiante_id, rol='Estudiante')
     
-    # Obtener todas las matrículas del estudiante
+    # Obtener todas las matrÃ­culas del estudiante
     matriculas = Matricula.objects.filter(
         estudiante=estudiante
     ).select_related(
@@ -5366,24 +5564,24 @@ def record_calificaciones_completo_pdf(request, estudiante_id):
         'materia__profesor'
     ).order_by('materia__curso__anho_escolar', 'materia__curso', 'materia__nombre')
 
-    # Debug: imprimir información de matrículas
+    # Debug: imprimir informaciÃ³n de matrÃ­culas
     print(f"=== DEBUG RECORD COMPLETO ===")
     print(f"Estudiante: {estudiante.get_full_name()}")
-    print(f"Total de matrículas encontradas: {matriculas.count()}")
+    print(f"Total de matrÃ­culas encontradas: {matriculas.count()}")
     if matriculas.count() > 0:
         for m in matriculas[:5]:  # Solo las primeras 5 para no saturar
-            print(f"  - {m.materia.nombre} | Curso: {m.materia.curso.nombre} | Año: {m.materia.curso.anho_escolar.nombre}")
+            print(f"  - {m.materia.nombre} | Curso: {m.materia.curso.nombre} | AÃ±o: {m.materia.curso.anho_escolar.nombre}")
 
     # Calcular notas finales con redondeo correcto
     for m in matriculas:
         try:
-            # Obtener promedios por competencia (ya están redondeados por el modelo)
+            # Obtener promedios por competencia (ya estÃ¡n redondeados por el modelo)
             prom_com = m.prom_comunicativa
             prom_log = m.prom_logico
             prom_cie = m.prom_cientifica
             prom_eti = m.prom_etica
             
-            # Obtener exámenes
+            # Obtener exÃ¡menes
             ex_com = float(m.ex_com) if m.ex_com is not None else None
             ex_ext = float(m.ex_ext) if m.ex_ext is not None else None
             ex_esp = float(m.ex_esp) if m.ex_esp is not None else None
@@ -5394,7 +5592,7 @@ def record_calificaciones_completo_pdf(request, estudiante_id):
             if m.promedio_final is not None:
                 m.nota_final = m.promedio_final
                 
-                # Si aprobó con el promedio regular
+                # Si aprobÃ³ con el promedio regular
                 if m.nota_final >= 70:
                     m.nota_final_oficial = redondear_nota(m.nota_final, decimales=0)
                 # Si tiene completivo
@@ -5412,13 +5610,13 @@ def record_calificaciones_completo_pdf(request, estudiante_id):
                             m.nota_final_especial = redondear_nota(ex_esp, decimales=2)
                             m.nota_final_oficial = redondear_nota(m.nota_final_especial, decimales=0)
         except Exception as e:
-            print(f"Error en matrícula {m.id}: {e}")
+            print(f"Error en matrÃ­cula {m.id}: {e}")
 
-    # Separar grados por ciclo - detectar automáticamente usando patrones
+    # Separar grados por ciclo - detectar automÃ¡ticamente usando patrones
     import re
     
     # PRIMERO: Agrupar TODAS las materias como en el reporte que funciona
-    # Obtener todos los grados únicos ordenados
+    # Obtener todos los grados Ãºnicos ordenados
     grados_ordenados_todos = []
     grados_dict = {}
     for m in matriculas:
@@ -5454,11 +5652,11 @@ def record_calificaciones_completo_pdf(request, estudiante_id):
         grado_nombre = grado_info['grado'].lower()
         print(f"Analizando grado: {grado_info['grado']}")
         # Buscar patrones para primer ciclo
-        if re.search(r'(1°|1er|1ro|primero?|2°|2do|2da|segundo|3°|3er|3ro|tercero)', grado_nombre):
+        if re.search(r'(1Â°|1er|1ro|primero?|2Â°|2do|2da|segundo|3Â°|3er|3ro|tercero)', grado_nombre):
             primer_ciclo_grados_ord.append(grado_info)
             print(f"  -> Asignado a PRIMER CICLO")
         # Buscar patrones para segundo ciclo
-        elif re.search(r'(4°|4to|4ta|cuarto|5°|5to|5ta|quinto|6°|6to|6ta|sexto)', grado_nombre):
+        elif re.search(r'(4Â°|4to|4ta|cuarto|5Â°|5to|5ta|quinto|6Â°|6to|6ta|sexto)', grado_nombre):
             segundo_ciclo_grados_ord.append(grado_info)
             print(f"  -> Asignado a SEGUNDO CICLO")
         else:
@@ -5467,7 +5665,7 @@ def record_calificaciones_completo_pdf(request, estudiante_id):
     print(f"Primer ciclo: {len(primer_ciclo_grados_ord)} grados")
     print(f"Segundo ciclo: {len(segundo_ciclo_grados_ord)} grados")
     
-    # Las materias son las mismas para ambos ciclos, solo filtramos qué grados mostrar en cada tabla
+    # Las materias son las mismas para ambos ciclos, solo filtramos quÃ© grados mostrar en cada tabla
     primer_ciclo_materias = materias_por_grado_todas
     segundo_ciclo_materias = materias_por_grado_todas
 
@@ -5496,7 +5694,7 @@ def record_calificaciones_completo_pdf(request, estudiante_id):
     response = HttpResponse(content_type='application/pdf')
     response['Content-Disposition'] = f'inline; filename="record_completo_{estudiante.cedula or estudiante.id}.pdf"'
     
-    # Función para resolver rutas estáticas
+    # FunciÃ³n para resolver rutas estÃ¡ticas
     def link_callback(uri, rel):
         if os.path.isfile(uri):
             return uri
@@ -5525,24 +5723,24 @@ def record_calificaciones_completo_pdf(request, estudiante_id):
 
 
 # ===============================
-# 🔥 ASISTENCIA (PASAR LISTA)
+# ð¥ ASISTENCIA (PASAR LISTA)
 # ===============================
 
 @login_required
 def seleccionar_materia_asistencia(request):
     """Vista para que el profesor seleccione la materia a la que va a pasar lista"""
     if request.user.rol not in ['Profesor', 'Administrador', 'Director']:
-        messages.error(request, 'No tienes permiso para acceder a esta página.')
+        messages.error(request, 'No tienes permiso para acceder a esta pÃ¡gina.')
         return redirect('plataform')
     
-    # Obtener año escolar activo
+    # Obtener aÃ±o escolar activo
     try:
         anho_escolar = AnhoEscolar.objects.get(activo=True)
     except AnhoEscolar.DoesNotExist:
-        messages.error(request, 'No hay un año escolar activo. Por favor, active un año escolar.')
+        messages.error(request, 'No hay un aÃ±o escolar activo. Por favor, active un aÃ±o escolar.')
         return redirect('plataform')
     
-    # Obtener materias del profesor o todas si es admin, filtradas por año activo
+    # Obtener materias del profesor o todas si es admin, filtradas por aÃ±o activo
     if request.user.rol == 'Profesor':
         materias = Materia.objects.filter(
             profesor=request.user,
@@ -5553,7 +5751,7 @@ def seleccionar_materia_asistencia(request):
             curso__anho_escolar=anho_escolar
         ).select_related('curso', 'profesor', 'curso__anho_escolar').order_by('nombre')
     
-    # Agrupar materias por año escolar (aunque solo habrá un año - el activo)
+    # Agrupar materias por aÃ±o escolar (aunque solo habrÃ¡ un aÃ±o - el activo)
     materias_por_anho = {anho_escolar: list(materias)}
     
     context = {
@@ -5571,21 +5769,21 @@ def seleccionar_materia_asistencia(request):
 def pasar_lista(request, materia_id):
     """Vista para pasar lista a los estudiantes de una materia"""
     if request.user.rol not in ['Profesor', 'Administrador']:
-        messages.error(request, 'No tienes permiso para acceder a esta página.')
+        messages.error(request, 'No tienes permiso para acceder a esta pÃ¡gina.')
         return redirect('plataform')
     
     materia = get_object_or_404(Materia, id=materia_id)
     
-    # Verificar que haya un año escolar activo
+    # Verificar que haya un aÃ±o escolar activo
     try:
         anho_escolar = AnhoEscolar.objects.get(activo=True)
     except AnhoEscolar.DoesNotExist:
-        messages.error(request, 'No hay un año escolar activo. Por favor, active un año escolar.')
+        messages.error(request, 'No hay un aÃ±o escolar activo. Por favor, active un aÃ±o escolar.')
         return redirect('plataform')
     
-    # Verificar que la materia pertenezca al año escolar activo
+    # Verificar que la materia pertenezca al aÃ±o escolar activo
     if materia.curso.anho_escolar != anho_escolar:
-        messages.error(request, f'Esta materia pertenece al año escolar {materia.curso.anho_escolar.nombre}, no al año activo {anho_escolar.nombre}.')
+        messages.error(request, f'Esta materia pertenece al aÃ±o escolar {materia.curso.anho_escolar.nombre}, no al aÃ±o activo {anho_escolar.nombre}.')
         return redirect('seleccionar_materia_asistencia')
     
     # Verificar que el profesor tenga acceso a esta materia
@@ -5607,7 +5805,7 @@ def pasar_lista(request, materia_id):
     except ValueError:
         fecha = fecha_hoy
     
-    # Obtener estudiantes matriculados en esta materia para el año escolar activo
+    # Obtener estudiantes matriculados en esta materia para el aÃ±o escolar activo
     matriculas = Matricula.objects.filter(
         materia=materia,
         anho_escolar=anho_escolar
@@ -5621,7 +5819,7 @@ def pasar_lista(request, materia_id):
             estado = request.POST.get(f'estado_{estudiante.id}')
             observaciones = request.POST.get(f'observaciones_{estudiante.id}', '').strip()
             
-            if estado:  # Solo guardar si se marcó algún estado
+            if estado:  # Solo guardar si se marcÃ³ algÃºn estado
                 asistencia, created = Asistencia.objects.update_or_create(
                     estudiante=estudiante,
                     materia=materia,
@@ -5665,14 +5863,14 @@ def pasar_lista(request, materia_id):
 def historial_asistencia(request):
     """Vista para ver el historial de asistencia en formato mensual tipo planilla"""
     if request.user.rol not in ['Profesor', 'Administrador']:
-        messages.error(request, 'No tienes permiso para acceder a esta página.')
+        messages.error(request, 'No tienes permiso para acceder a esta pÃ¡gina.')
         return redirect('plataform')
     
-    # Obtener año escolar activo
+    # Obtener aÃ±o escolar activo
     try:
         anho_escolar = AnhoEscolar.objects.get(activo=True)
     except AnhoEscolar.DoesNotExist:
-        messages.error(request, 'No hay un año escolar activo. Por favor, active un año escolar.')
+        messages.error(request, 'No hay un aÃ±o escolar activo. Por favor, active un aÃ±o escolar.')
         return redirect('plataform')
     
     # Filtros
@@ -5680,7 +5878,7 @@ def historial_asistencia(request):
     mes = request.GET.get('mes')
     anho = request.GET.get('anho')
     
-    # Obtener materias según el rol, filtradas por año activo
+    # Obtener materias segÃºn el rol, filtradas por aÃ±o activo
     if request.user.rol == 'Profesor':
         materias = Materia.objects.filter(
             profesor=request.user,
@@ -5691,7 +5889,7 @@ def historial_asistencia(request):
             curso__anho_escolar=anho_escolar
         ).select_related('curso', 'profesor').order_by('nombre')
     
-    # Valores por defecto para mes y año (mes y año actual)
+    # Valores por defecto para mes y aÃ±o (mes y aÃ±o actual)
     if not mes or not anho:
         hoy = timezone.now().date()
         mes = mes or str(hoy.month)
@@ -5714,12 +5912,12 @@ def historial_asistencia(request):
             messages.error(request, 'No tienes permiso para ver esta materia.')
             return redirect('historial_asistencia')
         
-        # Obtener el nombre del mes en español
+        # Obtener el nombre del mes en espaÃ±ol
         meses = ['', 'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 
                  'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre']
         nombre_mes = meses[mes]
         
-        # Obtener primer y último día del mes
+        # Obtener primer y Ãºltimo dÃ­a del mes
         import calendar
         primer_dia = datetime(anho, mes, 1).date()
         ultimo_dia = datetime(anho, mes, calendar.monthrange(anho, mes)[1]).date()
@@ -5731,13 +5929,13 @@ def historial_asistencia(request):
             fecha__lte=ultimo_dia
         ).select_related('estudiante').order_by('fecha', 'estudiante__first_name')
         
-        # Obtener días únicos con asistencia (días trabajados)
+        # Obtener dÃ­as Ãºnicos con asistencia (dÃ­as trabajados)
         dias_trabajados = sorted(list(set([a.fecha.day for a in asistencias])))
         
         # Obtener estudiantes matriculados
         matriculas = Matricula.objects.filter(materia=materia).select_related('estudiante').order_by('estudiante__first_name', 'estudiante__last_name')
         
-        # Crear diccionario de asistencias por estudiante y día
+        # Crear diccionario de asistencias por estudiante y dÃ­a
         asistencias_dict = {}
         for asistencia in asistencias:
             key = (asistencia.estudiante.id, asistencia.fecha.day)
@@ -5778,7 +5976,7 @@ def historial_asistencia(request):
                 'porcentaje': round(porcentaje, 1)
             })
     
-    # Generar lista de años (últimos 5 años + próximos 2)
+    # Generar lista de aÃ±os (Ãºltimos 5 aÃ±os + prÃ³ximos 2)
     anho_actual = timezone.now().year
     anhos_disponibles = list(range(anho_actual - 5, anho_actual + 3))
     
@@ -5799,17 +5997,17 @@ def historial_asistencia(request):
 
 
 # ===============================
-# 🔥 ASISTENCIA PERSONAL (PROFESORES/STAFF)
+# ð¥ ASISTENCIA PERSONAL (PROFESORES/STAFF)
 # ===============================
 
 @login_required
 def ponchar_asistencia_view(request):
-    """Vista para la interfaz de ponchado con código de barras"""
-    # Verificar que haya un año escolar activo
+    """Vista para la interfaz de ponchado con cÃ³digo de barras"""
+    # Verificar que haya un aÃ±o escolar activo
     try:
         anho_escolar = AnhoEscolar.objects.get(activo=True)
     except AnhoEscolar.DoesNotExist:
-        messages.error(request, 'No hay un año escolar activo. Por favor, active un año escolar.')
+        messages.error(request, 'No hay un aÃ±o escolar activo. Por favor, active un aÃ±o escolar.')
         return redirect('plataform')
     
     context = {
@@ -5821,13 +6019,13 @@ def ponchar_asistencia_view(request):
 
 @login_required
 def generar_codigos_barras(request):
-    """Genera códigos de barras únicos para usuarios que no los tienen"""
+    """Genera cÃ³digos de barras Ãºnicos para usuarios que no los tienen"""
     if request.user.rol not in ['Administrador', 'Director', 'Secretaria']:
-        messages.error(request, 'No tienes permiso para acceder a esta función.')
+        messages.error(request, 'No tienes permiso para acceder a esta funciÃ³n.')
         return redirect('plataform')
     
     if request.method == 'POST':
-        # Generar códigos para usuarios sin código de barras
+        # Generar cÃ³digos para usuarios sin cÃ³digo de barras
         usuarios_sin_codigo = CustomUser.objects.filter(
             codigo_barras__isnull=True,
             rol__in=['Profesor', 'Secretaria', 'Administrador', 'Coordinador', 'Bibliotecario', 'Estudiante']
@@ -5838,8 +6036,8 @@ def generar_codigos_barras(request):
         
         generados = 0
         for usuario in usuarios_sin_codigo:
-            # Generar código único basado en ID y números aleatorios
-            # Prefijo según rol: EST=Estudiante, EMP=Personal
+            # Generar cÃ³digo Ãºnico basado en ID y nÃºmeros aleatorios
+            # Prefijo segÃºn rol: EST=Estudiante, EMP=Personal
             prefijo = 'EST' if usuario.rol == 'Estudiante' else 'EMP'
             while True:
                 codigo = f"{prefijo}{usuario.id:04d}{random.randint(1000, 9999)}"
@@ -5849,19 +6047,19 @@ def generar_codigos_barras(request):
                     generados += 1
                     break
         
-        messages.success(request, f'Se generaron {generados} códigos de barras.')
+        messages.success(request, f'Se generaron {generados} cÃ³digos de barras.')
         return redirect('generar_codigos_barras')
     
-    # Obtener parámetros de búsqueda
+    # Obtener parÃ¡metros de bÃºsqueda
     busqueda = request.GET.get('busqueda', '').strip()
     rol_filtro = request.GET.get('rol', 'todos')
     
-    # Listar usuarios con y sin código
+    # Listar usuarios con y sin cÃ³digo
     usuarios = CustomUser.objects.filter(
         rol__in=['Profesor', 'Secretaria', 'Administrador', 'Coordinador', 'Bibliotecario', 'Estudiante']
     )
     
-    # Aplicar búsqueda
+    # Aplicar bÃºsqueda
     if busqueda:
         from django.db.models import Q
         usuarios = usuarios.filter(
@@ -5885,7 +6083,7 @@ def generar_codigos_barras(request):
         conteo_roles[rol] = CustomUser.objects.filter(rol=rol).count()
     
     context = {
-        'titulo': 'Gestionar Códigos de Barras',
+        'titulo': 'Gestionar CÃ³digos de Barras',
         'usuarios': usuarios,
         'busqueda': busqueda,
         'rol_filtro': rol_filtro,
@@ -5897,23 +6095,23 @@ def generar_codigos_barras(request):
 
 @login_required
 def ponchar_asistencia_api(request):
-    """API para registrar entrada/salida automática con código de barras"""
+    """API para registrar entrada/salida automÃ¡tica con cÃ³digo de barras"""
     if request.method == 'POST':
-        # Verificar que haya un año escolar activo
+        # Verificar que haya un aÃ±o escolar activo
         try:
             anho_escolar = AnhoEscolar.objects.get(activo=True)
         except AnhoEscolar.DoesNotExist:
             return JsonResponse({
                 'success': False,
-                'error': 'No hay un año escolar activo'
+                'error': 'No hay un aÃ±o escolar activo'
             }, status=400)
         
-        # Verificar que la fecha actual esté dentro del año escolar
+        # Verificar que la fecha actual estÃ© dentro del aÃ±o escolar
         fecha_hoy = timezone.now().date()
         if not (anho_escolar.fecha_inicio <= fecha_hoy <= anho_escolar.fecha_fin):
             return JsonResponse({
                 'success': False,
-                'error': f'La fecha actual está fuera del año escolar {anho_escolar.nombre}'
+                'error': f'La fecha actual estÃ¡ fuera del aÃ±o escolar {anho_escolar.nombre}'
             }, status=400)
         
         codigo_barras = request.POST.get('codigo_barras', '').strip()
@@ -5921,18 +6119,18 @@ def ponchar_asistencia_api(request):
         if not codigo_barras:
             return JsonResponse({
                 'success': False,
-                'error': 'Código de barras no proporcionado'
+                'error': 'CÃ³digo de barras no proporcionado'
             }, status=400)
         
         try:
-            # Buscar usuario por código de barras
+            # Buscar usuario por cÃ³digo de barras
             usuario = CustomUser.objects.get(codigo_barras=codigo_barras)
             
             # Verificar que sea personal o estudiante
             if usuario.rol not in ['Profesor', 'Secretaria', 'Administrador', 'Coordinador', 'Bibliotecario', 'Estudiante']:
                 return JsonResponse({
                     'success': False,
-                    'error': 'Este código no está autorizado para ponchar'
+                    'error': 'Este cÃ³digo no estÃ¡ autorizado para ponchar'
                 }, status=403)
             
             # Obtener fecha y hora local (zona horaria configurada en settings)
@@ -5947,11 +6145,11 @@ def ponchar_asistencia_api(request):
             ).first()
             
             if asistencia:
-                # Ya ponchó entrada, registrar salida
+                # Ya ponchÃ³ entrada, registrar salida
                 if asistencia.hora_salida:
                     return JsonResponse({
                         'success': False,
-                        'error': f'{usuario.get_full_name()} ya registró salida hoy',
+                        'error': f'{usuario.get_full_name()} ya registrÃ³ salida hoy',
                         'nombre': usuario.get_full_name(),
                         'hora_entrada': asistencia.hora_entrada.strftime('%H:%M') if asistencia.hora_entrada else None,
                         'hora_salida': asistencia.hora_salida.strftime('%H:%M')
@@ -5977,12 +6175,12 @@ def ponchar_asistencia_api(request):
                     registrado_por=request.user
                 )
                 
-                # Si es estudiante, marcar asistencia en las materias del día
+                # Si es estudiante, marcar asistencia en las materias del dÃ­a
                 if usuario.rol == 'Estudiante':
-                    # Obtener día de la semana actual (0=Lunes, 1=Martes, ..., 4=Viernes)
+                    # Obtener dÃ­a de la semana actual (0=Lunes, 1=Martes, ..., 4=Viernes)
                     dia_semana = fecha_hoy.weekday()
                     
-                    # Mapear día de semana a campo del modelo
+                    # Mapear dÃ­a de semana a campo del modelo
                     dias_map = {
                         0: 'lunes',
                         1: 'martes',
@@ -5991,7 +6189,7 @@ def ponchar_asistencia_api(request):
                         4: 'viernes'
                     }
                     
-                    # Si es un día de semana laboral (lunes a viernes)
+                    # Si es un dÃ­a de semana laboral (lunes a viernes)
                     if dia_semana in dias_map:
                         campo_dia = dias_map[dia_semana]
                         
@@ -6005,7 +6203,7 @@ def ponchar_asistencia_api(request):
                             **filter_kwargs
                         ).distinct()
                         
-                        # Registrar asistencia en cada materia del día
+                        # Registrar asistencia en cada materia del dÃ­a
                         materias_registradas = []
                         for materia in materias_hoy:
                             from .models import Asistencia
@@ -6041,7 +6239,7 @@ def ponchar_asistencia_api(request):
         except CustomUser.DoesNotExist:
             return JsonResponse({
                 'success': False,
-                'error': 'Código de barras no reconocido'
+                'error': 'CÃ³digo de barras no reconocido'
             }, status=404)
         except Exception as e:
             return JsonResponse({
@@ -6051,7 +6249,7 @@ def ponchar_asistencia_api(request):
     
     return JsonResponse({
         'success': False,
-        'error': 'Método no permitido'
+        'error': 'MÃ©todo no permitido'
     }, status=405)
 
 
@@ -6059,21 +6257,21 @@ def ponchar_asistencia_api(request):
 def pasar_lista_personal(request):
     """Vista para registrar asistencia diaria del personal (Profesores/Staff)"""
     if request.user.rol not in ['Secretaria', 'Administrador', 'Director']:
-        messages.error(request, 'No tienes permiso para acceder a esta página.')
+        messages.error(request, 'No tienes permiso para acceder a esta pÃ¡gina.')
         return redirect('plataform')
     
-    # Verificar que haya un año escolar activo
+    # Verificar que haya un aÃ±o escolar activo
     try:
         anho_escolar = AnhoEscolar.objects.get(activo=True)
     except AnhoEscolar.DoesNotExist:
-        messages.error(request, 'No hay un año escolar activo. Por favor, active un año escolar.')
+        messages.error(request, 'No hay un aÃ±o escolar activo. Por favor, active un aÃ±o escolar.')
         return redirect('plataform')
     
     fecha_hoy = timezone.now().date()
     fecha_seleccionada = request.GET.get('fecha', fecha_hoy)
     rol_filtro = request.GET.get('rol', 'todos')  # Filtro por rol
-    busqueda = request.GET.get('busqueda', '').strip()  # Búsqueda por nombre/apellido/código
-    pagina = request.GET.get('pagina', 1)  # Número de página
+    busqueda = request.GET.get('busqueda', '').strip()  # BÃºsqueda por nombre/apellido/cÃ³digo
+    pagina = request.GET.get('pagina', 1)  # NÃºmero de pÃ¡gina
     
     # Convertir string a date si es necesario
     if isinstance(fecha_seleccionada, str):
@@ -6082,12 +6280,12 @@ def pasar_lista_personal(request):
         except:
             fecha_seleccionada = fecha_hoy
     
-    # Validar que la fecha esté dentro del año escolar
+    # Validar que la fecha estÃ© dentro del aÃ±o escolar
     if not (anho_escolar.fecha_inicio <= fecha_seleccionada <= anho_escolar.fecha_fin):
-        messages.warning(request, f'La fecha seleccionada está fuera del año escolar {anho_escolar.nombre}.')
+        messages.warning(request, f'La fecha seleccionada estÃ¡ fuera del aÃ±o escolar {anho_escolar.nombre}.')
         fecha_seleccionada = fecha_hoy
     
-    # Obtener todos los usuarios según el filtro de rol
+    # Obtener todos los usuarios segÃºn el filtro de rol
     roles_validos = ['Profesor', 'Secretaria', 'Administrador', 'Coordinador', 'Bibliotecario', 'Estudiante']
     
     if rol_filtro == 'todos':
@@ -6095,7 +6293,7 @@ def pasar_lista_personal(request):
     else:
         usuarios = CustomUser.objects.filter(rol=rol_filtro)
     
-    # Aplicar búsqueda si hay término
+    # Aplicar bÃºsqueda si hay tÃ©rmino
     if busqueda:
         from django.db.models import Q
         usuarios = usuarios.filter(
@@ -6135,10 +6333,10 @@ def pasar_lista_personal(request):
         messages.success(request, f'Asistencia guardada exitosamente para {registros_guardados} personas.')
         return redirect(f'{request.path}?fecha={fecha_seleccionada}&rol={rol_filtro}&busqueda={busqueda}&pagina={pagina}')
     
-    # Paginación
+    # PaginaciÃ³n
     from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
     
-    paginator = Paginator(usuarios, 50)  # 50 usuarios por página
+    paginator = Paginator(usuarios, 50)  # 50 usuarios por pÃ¡gina
     
     try:
         usuarios_paginados = paginator.page(pagina)
@@ -6193,20 +6391,20 @@ def pasar_lista_personal(request):
 def historial_asistencia_personal(request):
     """Vista para ver el historial de asistencia del personal en formato mensual"""
     if request.user.rol not in ['Secretaria', 'Administrador']:
-        messages.error(request, 'No tienes permiso para acceder a esta página.')
+        messages.error(request, 'No tienes permiso para acceder a esta pÃ¡gina.')
         return redirect('plataform')
     
-    # Verificar que haya un año escolar activo
+    # Verificar que haya un aÃ±o escolar activo
     try:
         anho_escolar = AnhoEscolar.objects.get(activo=True)
     except AnhoEscolar.DoesNotExist:
-        messages.error(request, 'No hay un año escolar activo.')
+        messages.error(request, 'No hay un aÃ±o escolar activo.')
         return redirect('plataform')
     
     from calendar import monthrange
     import locale
     
-    # Intentar establecer locale en español
+    # Intentar establecer locale en espaÃ±ol
     try:
         locale.setlocale(locale.LC_TIME, 'es_ES.UTF-8')
     except:
@@ -6215,7 +6413,7 @@ def historial_asistencia_personal(request):
         except:
             pass
     
-    # Obtener mes y año de la URL o usar el actual
+    # Obtener mes y aÃ±o de la URL o usar el actual
     hoy = timezone.now().date()
     mes = int(request.GET.get('mes', hoy.month))
     anho = int(request.GET.get('anho', hoy.year))
@@ -6228,7 +6426,7 @@ def historial_asistencia_personal(request):
     fecha_ejemplo = datetime(anho, mes, 1)
     nombre_mes = fecha_ejemplo.strftime('%B').capitalize()
     
-    # Calcular días del mes
+    # Calcular dÃ­as del mes
     num_dias = monthrange(anho, mes)[1]
     dias_trabajados = list(range(1, num_dias + 1))
     
@@ -6243,7 +6441,7 @@ def historial_asistencia_personal(request):
         fecha__month=mes
     ).select_related('usuario')
     
-    # Crear diccionario de asistencias por usuario y día
+    # Crear diccionario de asistencias por usuario y dÃ­a
     asistencias_dict = {}
     for a in asistencias:
         if a.usuario.id not in asistencias_dict:
@@ -6272,7 +6470,7 @@ def historial_asistencia_personal(request):
             'total_asistencias': len(asistencias_mes)
         })
     
-    # Años disponibles
+    # AÃ±os disponibles
     anhos_disponibles = list(range(hoy.year - 2, hoy.year + 2))
     
     context = {
@@ -6291,28 +6489,28 @@ def historial_asistencia_personal(request):
 
 @login_required
 def historial_asistencia_general(request):
-    """Vista para ver estadísticas generales de asistencia de personal y estudiantes"""
+    """Vista para ver estadÃ­sticas generales de asistencia de personal y estudiantes"""
     if request.user.rol not in ['Secretaria', 'Administrador', 'Director']:
-        messages.error(request, 'No tienes permiso para acceder a esta página.')
+        messages.error(request, 'No tienes permiso para acceder a esta pÃ¡gina.')
         return redirect('plataform')
     
-    # Verificar que haya un año escolar activo
+    # Verificar que haya un aÃ±o escolar activo
     try:
         anho_escolar = AnhoEscolar.objects.get(activo=True)
     except AnhoEscolar.DoesNotExist:
-        messages.error(request, 'No hay un año escolar activo.')
+        messages.error(request, 'No hay un aÃ±o escolar activo.')
         return redirect('plataform')
     
     from calendar import monthrange
     from django.db.models import Count, Q
     
-    # Obtener mes y año de la URL o usar el actual
+    # Obtener mes y aÃ±o de la URL o usar el actual
     hoy = timezone.now().date()
     mes = int(request.GET.get('mes', hoy.month))
     anho = int(request.GET.get('anho', hoy.year))
     fecha = request.GET.get('fecha', None)
     
-    # Si se proporciona una fecha específica
+    # Si se proporciona una fecha especÃ­fica
     if fecha:
         try:
             fecha_seleccionada = datetime.strptime(fecha, '%Y-%m-%d').date()
@@ -6329,12 +6527,12 @@ def historial_asistencia_general(request):
     fecha_ejemplo = datetime(anho, mes, 1)
     nombre_mes = fecha_ejemplo.strftime('%B').capitalize()
     
-    # Estadísticas de personal
+    # EstadÃ­sticas de personal
     personal_total = CustomUser.objects.filter(
         rol__in=['Profesor', 'Secretaria', 'Administrador', 'Coordinador', 'Bibliotecario']
     ).count()
     
-    # Estadísticas de estudiantes (solo del año escolar activo)
+    # EstadÃ­sticas de estudiantes (solo del aÃ±o escolar activo)
     estudiantes_ids_activos = Matricula.objects.filter(
         materia__curso__anho_escolar=anho_escolar
     ).values_list('estudiante_id', flat=True).distinct()
@@ -6361,7 +6559,7 @@ def historial_asistencia_general(request):
         tardanzas=Count('id', filter=Q(estado='tardanza'))
     ).order_by('fecha')
     
-    # Asistencias del mes para estudiantes (solo del año escolar activo)
+    # Asistencias del mes para estudiantes (solo del aÃ±o escolar activo)
     asistencias_estudiantes_mes = AsistenciaPersonal.objects.filter(
         fecha__year=anho,
         fecha__month=mes,
@@ -6373,9 +6571,9 @@ def historial_asistencia_general(request):
         tardanzas=Count('id', filter=Q(estado='tardanza'))
     ).order_by('fecha')
     
-    # Estadísticas por grado (para estudiantes del año escolar activo)
+    # EstadÃ­sticas por grado (para estudiantes del aÃ±o escolar activo)
     grados_stats = []
-    # Obtener grados únicos de estudiantes matriculados en el año escolar activo
+    # Obtener grados Ãºnicos de estudiantes matriculados en el aÃ±o escolar activo
     grados_unicos = CustomUser.objects.filter(
         matriculas__materia__curso__anho_escolar=anho_escolar,
         rol='Estudiante'
@@ -6383,7 +6581,7 @@ def historial_asistencia_general(request):
     
     for grado in grados_unicos:
         if grado:
-            # Obtener estudiantes matriculados en este grado en el año escolar activo
+            # Obtener estudiantes matriculados en este grado en el aÃ±o escolar activo
             estudiantes_grado_ids = Matricula.objects.filter(
                 materia__curso__anho_escolar=anho_escolar,
                 estudiante__grado=grado,
@@ -6424,22 +6622,22 @@ def historial_asistencia_general(request):
                 'porcentaje': round((presentes_grado / asistencias_grado * 100) if asistencias_grado > 0 else 0, 1)
             })
     
-    # Si se solicita una fecha específica, mostrar detalles
+    # Si se solicita una fecha especÃ­fica, mostrar detalles
     detalles_fecha = None
     if fecha_seleccionada:
-        # Personal del día
+        # Personal del dÃ­a
         personal_dia = AsistenciaPersonal.objects.filter(
             fecha=fecha_seleccionada,
             usuario__rol__in=['Profesor', 'Secretaria', 'Administrador', 'Coordinador', 'Bibliotecario']
         ).select_related('usuario')
         
-        # Estudiantes del día (solo del año escolar activo)
+        # Estudiantes del dÃ­a (solo del aÃ±o escolar activo)
         estudiantes_dia = AsistenciaPersonal.objects.filter(
             fecha=fecha_seleccionada,
             usuario_id__in=estudiantes_ids_activos
         ).select_related('usuario')
         
-        # Estadísticas por grado del día (solo del año escolar activo)
+        # EstadÃ­sticas por grado del dÃ­a (solo del aÃ±o escolar activo)
         grados_dia = []
         for grado in grados_unicos:
             if grado:
@@ -6475,11 +6673,11 @@ def historial_asistencia_general(request):
             'grados': grados_dia
         }
     
-    # Años disponibles
+    # AÃ±os disponibles
     anhos_disponibles = list(range(hoy.year - 2, hoy.year + 2))
     
     context = {
-        'titulo': 'Estadísticas de Asistencia General',
+        'titulo': 'EstadÃ­sticas de Asistencia General',
         'mes': mes,
         'anho': anho,
         'nombre_mes': nombre_mes,
@@ -6504,8 +6702,8 @@ def historial_asistencia_general(request):
 
 def obtener_o_crear_cliente_generico():
     """
-    Obtiene o crea automáticamente el usuario genérico 'cliente' para ventas rápidas.
-    Este usuario se usa cuando no se tiene un estudiante específico registrado.
+    Obtiene o crea automÃ¡ticamente el usuario genÃ©rico 'cliente' para ventas rÃ¡pidas.
+    Este usuario se usa cuando no se tiene un estudiante especÃ­fico registrado.
     """
     try:
         cliente = CustomUser.objects.filter(
@@ -6514,11 +6712,11 @@ def obtener_o_crear_cliente_generico():
         ).first()
         
         if not cliente:
-            # Crear el usuario genérico automáticamente
+            # Crear el usuario genÃ©rico automÃ¡ticamente
             import random
             import string
             
-            # Generar email único
+            # Generar email Ãºnico
             random_suffix = ''.join(random.choices(string.digits, k=6))
             email = f"cliente.generico.{random_suffix}@escuela.edu.do"
             
@@ -6535,35 +6733,35 @@ def obtener_o_crear_cliente_generico():
                 seccion='N/A',
             )
             
-            # Establecer una contraseña por defecto (no se usará para login)
+            # Establecer una contraseÃ±a por defecto (no se usarÃ¡ para login)
             cliente.set_password('ClienteGenerico2026!')
             cliente.save()
             
-            print(f"✓ Usuario genérico 'cliente' creado automáticamente con ID: {cliente.id}")
+            print(f"â Usuario genÃ©rico 'cliente' creado automÃ¡ticamente con ID: {cliente.id}")
         
         return cliente
     except Exception as e:
-        print(f"Error al obtener/crear cliente genérico: {str(e)}")
+        print(f"Error al obtener/crear cliente genÃ©rico: {str(e)}")
         return None
 
 @login_required
 def cobros_dashboard(request):
     """Dashboard principal del sistema de cobros"""
     if request.user.rol not in ['Secretaria', 'Administrador']:
-        messages.error(request, 'No tienes permiso para acceder a esta página.')
+        messages.error(request, 'No tienes permiso para acceder a esta pÃ¡gina.')
         return redirect('plataform')
     
     from .models import Pago, ConceptoPago, Factura
     from django.db.models import Sum, Q
     
-    # Obtener año escolar activo
+    # Obtener aÃ±o escolar activo
     try:
         anho_escolar = AnhoEscolar.objects.get(activo=True)
     except AnhoEscolar.DoesNotExist:
-        messages.error(request, 'No hay un año escolar activo.')
+        messages.error(request, 'No hay un aÃ±o escolar activo.')
         return redirect('plataform')
     
-    # Estadísticas basadas en Facturas
+    # EstadÃ­sticas basadas en Facturas
     facturas_anho = Factura.objects.filter(anho_escolar=anho_escolar).exclude(estado='anulada')
     
     # Total de facturas
@@ -6605,21 +6803,21 @@ def cobros_dashboard(request):
     # Porcentaje de cobro
     porcentaje_cobrado = (total_recaudado / monto_total_facturas * 100) if monto_total_facturas > 0 else 0
     
-    # Últimas facturas
+    # Ãltimas facturas
     ultimas_facturas = facturas_anho.select_related(
         'cliente', 'anho_escolar'
     ).order_by('-fecha_emision')[:10]
     
-    # Estadísticas de Pagos (sistema antiguo, para compatibilidad)
+    # EstadÃ­sticas de Pagos (sistema antiguo, para compatibilidad)
     total_pagos = Pago.objects.filter(anho_escolar=anho_escolar).count()
     
-    # Obtener o crear el estudiante genérico "cliente"
+    # Obtener o crear el estudiante genÃ©rico "cliente"
     cliente_generico = obtener_o_crear_cliente_generico()
     
     context = {
         'titulo': 'Sistema de Cobros',
         'anho_escolar': anho_escolar,
-        # Estadísticas de Facturas
+        # EstadÃ­sticas de Facturas
         'total_facturas': total_facturas,
         'facturas_pagadas': facturas_pagadas,
         'facturas_pendientes': facturas_pendientes,
@@ -6646,22 +6844,22 @@ def cobros_dashboard(request):
 def buscar_estudiante_cobro(request):
     """Buscar estudiante o familia para asignar pagos"""
     if request.user.rol not in ['Secretaria', 'Administrador']:
-        messages.error(request, 'No tienes permiso para acceder a esta página.')
+        messages.error(request, 'No tienes permiso para acceder a esta pÃ¡gina.')
         return redirect('plataform')
     
-    # Obtener año escolar activo
+    # Obtener aÃ±o escolar activo
     try:
         anho_escolar = AnhoEscolar.objects.get(activo=True)
     except AnhoEscolar.DoesNotExist:
-        messages.error(request, 'No hay un año escolar activo.')
+        messages.error(request, 'No hay un aÃ±o escolar activo.')
         return redirect('plataform')
     
-    # Búsqueda
+    # BÃºsqueda
     query = request.GET.get('q', '').strip()
     grado = request.GET.get('grado', '').strip()
     seccion = request.GET.get('seccion', '').strip()
     
-    # REDIRECCIÓN AUTOMÁTICA: Si es un código de barras exacto de estudiante
+    # REDIRECCIÃN AUTOMÃTICA: Si es un cÃ³digo de barras exacto de estudiante
     if query and not grado and not seccion:
         try:
             estudiante_exacto = CustomUser.objects.get(
@@ -6669,14 +6867,14 @@ def buscar_estudiante_cobro(request):
                 rol='Estudiante',
                 is_active=True
             )
-            # Redirigir directamente a la vista rápida de facturación
+            # Redirigir directamente a la vista rÃ¡pida de facturaciÃ³n
             return redirect(f'/facturas/nueva/?estudiante_id={estudiante_exacto.id}')
         except CustomUser.DoesNotExist:
             pass
         except CustomUser.MultipleObjectsReturned:
             pass
     
-    # REDIRECCIÓN AUTOMÁTICA: Si es un código de familia exacto
+    # REDIRECCIÃN AUTOMÃTICA: Si es un cÃ³digo de familia exacto
     from .models import GrupoFamiliar
     if query and not grado and not seccion:
         try:
@@ -6691,7 +6889,7 @@ def buscar_estudiante_cobro(request):
         except GrupoFamiliar.MultipleObjectsReturned:
             pass
     
-    # Buscar familias por código o apellido (búsqueda parcial)
+    # Buscar familias por cÃ³digo o apellido (bÃºsqueda parcial)
     familias = []
     if query:
         familias = GrupoFamiliar.objects.filter(
@@ -6721,12 +6919,12 @@ def buscar_estudiante_cobro(request):
     
     estudiantes = estudiantes.order_by('first_name', 'last_name')
     
-    # Paginación
+    # PaginaciÃ³n
     paginator = Paginator(estudiantes, 25)
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
     
-    # Obtener grados y secciones únicas
+    # Obtener grados y secciones Ãºnicas
     grados_disponibles = CustomUser.objects.filter(
         rol='Estudiante', 
         grado__isnull=False
@@ -6752,11 +6950,11 @@ def buscar_estudiante_cobro(request):
 
 
 # SISTEMA DE PAGO SIMPLE OBSOLETO - REEMPLAZADO POR FACTURAS
-# Las siguientes funciones ya no se usan, conservadas solo como referencia histórica
+# Las siguientes funciones ya no se usan, conservadas solo como referencia histÃ³rica
 """
 @login_required
 def asignar_pago_estudiante(request, estudiante_id):
-    # Esta vista fue reemplazada por el sistema de facturación
+    # Esta vista fue reemplazada por el sistema de facturaciÃ³n
     messages.warning(request, 'El sistema de pago simple ha sido reemplazado por el sistema de facturas.')
     return redirect('factura_crear', estudiante_id=estudiante_id)
 
@@ -6766,7 +6964,7 @@ def ver_pagos_estudiante(request, estudiante_id):
     messages.warning(request, 'El sistema de pago simple ha sido reemplazado por el sistema de facturas.')
     return redirect('facturas_estudiante', estudiante_id=estudiante_id)
     
-    # Código original comentado:
+    # CÃ³digo original comentado:
     saldo_pendiente = total_adeudado - total_pagado
     
     pagos_pendientes = pagos.filter(estado='pendiente').count()
@@ -6788,24 +6986,24 @@ def ver_pagos_estudiante(request, estudiante_id):
 
 
 # ===========================
-# VISTAS DE FACTURACIÓN
+# VISTAS DE FACTURACIÃN
 # ===========================
 
 @login_required
 def facturas_list(request):
     """Lista todas las facturas"""
     if request.user.rol not in ['Secretaria', 'Administrador']:
-        messages.error(request, 'No tienes permiso para acceder a esta página.')
+        messages.error(request, 'No tienes permiso para acceder a esta pÃ¡gina.')
         return redirect('plataform')
     
     from .models import Factura
     from django.db.models import Q
     
-    # Obtener año escolar activo
+    # Obtener aÃ±o escolar activo
     try:
         anho_escolar = AnhoEscolar.objects.get(activo=True)
     except AnhoEscolar.DoesNotExist:
-        messages.error(request, 'No hay un año escolar activo.')
+        messages.error(request, 'No hay un aÃ±o escolar activo.')
         return redirect('plataform')
     
     # Filtros
@@ -6834,7 +7032,7 @@ def facturas_list(request):
     
     facturas = facturas.order_by('-fecha_emision')
     
-    # Paginación
+    # PaginaciÃ³n
     from django.core.paginator import Paginator
     paginator = Paginator(facturas, 20)
     page_number = request.GET.get('page')
@@ -6854,9 +7052,9 @@ def facturas_list(request):
 @login_required
 
 def factura_crear_nueva(request):
-    """Crear una nueva factura - Búsqueda de estudiante y creación integradas"""
+    """Crear una nueva factura - BÃºsqueda de estudiante y creaciÃ³n integradas"""
     if request.user.rol not in ['Secretaria', 'Administrador']:
-        messages.error(request, 'No tienes permiso para acceder a esta página.')
+        messages.error(request, 'No tienes permiso para acceder a esta pÃ¡gina.')
         return redirect('plataform')
 
     from .models import Factura, DetalleFactura, ConceptoPago, CodigoAnulacion
@@ -6865,11 +7063,11 @@ def factura_crear_nueva(request):
     from decimal import Decimal
     import json
 
-    # Obtener año escolar activo
+    # Obtener aÃ±o escolar activo
     try:
         anho_escolar = AnhoEscolar.objects.get(activo=True)
     except AnhoEscolar.DoesNotExist:
-        messages.error(request, 'No hay un año escolar activo.')
+        messages.error(request, 'No hay un aÃ±o escolar activo.')
         return redirect('plataform')
 
     # --- Seguridad para copiar factura (editar) ---
@@ -6878,24 +7076,24 @@ def factura_crear_nueva(request):
     cliente_copiado = None
     monto_pagado_copiado = None
     if copiar_factura_id:
-        # Si no se ha enviado el código, mostrar formulario de código
+        # Si no se ha enviado el cÃ³digo, mostrar formulario de cÃ³digo
         if request.method == 'GET' and not request.GET.get('codigo_seguridad_validado'):
             if request.GET.get('codigo_intento'):
                 codigo_intento = request.GET.get('codigo_intento').strip()
                 if not CodigoAnulacion.validar_codigo(codigo_intento):
                     return render(request, 'cobros/seguridad_codigo.html', {
-                        'error': 'Código incorrecto. Intente nuevamente.',
+                        'error': 'CÃ³digo incorrecto. Intente nuevamente.',
                         'copiar_factura_id': copiar_factura_id
                     })
-                # Código correcto, continuar y marcar validado
+                # CÃ³digo correcto, continuar y marcar validado
                 params = request.GET.copy()
                 params['codigo_seguridad_validado'] = '1'
                 return redirect(f"{request.path}?" + params.urlencode())
-            # Mostrar formulario de código
+            # Mostrar formulario de cÃ³digo
             return render(request, 'cobros/seguridad_codigo.html', {
                 'copiar_factura_id': copiar_factura_id
             })
-        # Si el código fue validado, cargar detalles de la factura original
+        # Si el cÃ³digo fue validado, cargar detalles de la factura original
         try:
             factura_origen = Factura.objects.get(id=copiar_factura_id)
             detalles = []
@@ -6933,17 +7131,17 @@ def factura_crear_nueva(request):
             cliente_copiado = None
     
     estudiante_seleccionado = None
-    # Si se está copiando una factura, seleccionar el cliente automáticamente
+    # Si se estÃ¡ copiando una factura, seleccionar el cliente automÃ¡ticamente
     if not request.GET.get('estudiante_id') and cliente_copiado:
         request.GET = request.GET.copy()
         request.GET['estudiante_id'] = str(cliente_copiado)
     
-    # Búsqueda de estudiante
+    # BÃºsqueda de estudiante
     buscar = request.GET.get('buscar', '')
     estudiantes_encontrados = []
     familias_encontradas = []
     
-    # REDIRECCIÓN AUTOMÁTICA: Si es un código de barras exacto de estudiante
+    # REDIRECCIÃN AUTOMÃTICA: Si es un cÃ³digo de barras exacto de estudiante
     if buscar and not request.GET.get('estudiante_id'):
         try:
             estudiante_exacto = CustomUser.objects.get(
@@ -6958,7 +7156,7 @@ def factura_crear_nueva(request):
         except CustomUser.MultipleObjectsReturned:
             pass
     
-    # REDIRECCIÓN AUTOMÁTICA: Si es un código de familia exacto
+    # REDIRECCIÃN AUTOMÃTICA: Si es un cÃ³digo de familia exacto
     from .models import GrupoFamiliar
     if buscar and not request.GET.get('estudiante_id'):
         try:
@@ -6973,7 +7171,7 @@ def factura_crear_nueva(request):
         except GrupoFamiliar.MultipleObjectsReturned:
             pass
     
-    # Búsqueda de estudiantes y familias (si no hubo redirección)
+    # BÃºsqueda de estudiantes y familias (si no hubo redirecciÃ³n)
     if buscar:
         # Buscar estudiantes
         estudiantes_encontrados = CustomUser.objects.filter(
@@ -7000,7 +7198,7 @@ def factura_crear_nueva(request):
     estudiante_id = request.GET.get('estudiante_id', '')
     meses_pagados = []  # Lista de meses ya pagados por el estudiante (formato: "mes-anio")
     
-    # Obtener cliente genérico para comparación
+    # Obtener cliente genÃ©rico para comparaciÃ³n
     cliente_generico = obtener_o_crear_cliente_generico()
     es_cliente_generico = False
     
@@ -7008,12 +7206,12 @@ def factura_crear_nueva(request):
         try:
             estudiante_seleccionado = CustomUser.objects.get(id=estudiante_id, rol='Estudiante')
             
-            # Verificar si es el cliente genérico
+            # Verificar si es el cliente genÃ©rico
             if cliente_generico and estudiante_seleccionado.id == cliente_generico.id:
                 es_cliente_generico = True
             
             # Obtener SOLO mensualidades pagadas (mismo criterio que usa JavaScript para validar)
-            # Solo conceptos con tipo='mensualidad' y que tengan mes/año asignado
+            # Solo conceptos con tipo='mensualidad' y que tengan mes/aÃ±o asignado
             detalles_pagados = DetalleFactura.objects.filter(
                 factura__cliente=estudiante_seleccionado,
                 factura__anho_escolar=anho_escolar,
@@ -7027,7 +7225,7 @@ def factura_crear_nueva(request):
             meses_unicos = set(detalles_pagados)
             meses_pagados = [f"{mes}-{anio}" for mes, anio in meses_unicos]
             
-            print(f"DEBUG - Meses encontrados en BD: {len(detalles_pagados)}, Únicos: {len(meses_unicos)}, Lista: {sorted(meses_pagados)}")
+            print(f"DEBUG - Meses encontrados en BD: {len(detalles_pagados)}, Ãnicos: {len(meses_unicos)}, Lista: {sorted(meses_pagados)}")
 
             # Cargar tarifas activas del estudiante (mensualidad, inscripcion y transporte)
             from .models import TarifaEstudiante
@@ -7094,8 +7292,8 @@ def factura_crear_nueva(request):
             estudiante_post = CustomUser.objects.get(id=estudiante_id_post, rol='Estudiante')
             fecha_vencimiento = request.POST.get('fecha_vencimiento')
             
-            # Si no se especifica fecha de vencimiento, calcularla automáticamente
-            # basada en el día de vencimiento del grupo familiar
+            # Si no se especifica fecha de vencimiento, calcularla automÃ¡ticamente
+            # basada en el dÃ­a de vencimiento del grupo familiar
             if not fecha_vencimiento and estudiante_post.grupo_familiar:
                 from datetime import date
                 from calendar import monthrange
@@ -7103,9 +7301,9 @@ def factura_crear_nueva(request):
                 dia_vencimiento = estudiante_post.grupo_familiar.dia_vencimiento
                 hoy = date.today()
                 
-                # Si ya pasó el día de vencimiento este mes, usar el próximo mes
+                # Si ya pasÃ³ el dÃ­a de vencimiento este mes, usar el prÃ³ximo mes
                 if hoy.day > dia_vencimiento:
-                    # Próximo mes
+                    # PrÃ³ximo mes
                     if hoy.month == 12:
                         fecha_base = date(hoy.year + 1, 1, 1)
                     else:
@@ -7114,11 +7312,11 @@ def factura_crear_nueva(request):
                     # Este mes
                     fecha_base = hoy
                 
-                # Ajustar el día, manejando meses con menos días
+                # Ajustar el dÃ­a, manejando meses con menos dÃ­as
                 try:
                     fecha_vencimiento = fecha_base.replace(day=dia_vencimiento).strftime('%Y-%m-%d')
                 except ValueError:
-                    # Si el mes no tiene ese día (ej: 31 en febrero), usar el último día del mes
+                    # Si el mes no tiene ese dÃ­a (ej: 31 en febrero), usar el Ãºltimo dÃ­a del mes
                     ultimo_dia = monthrange(fecha_base.year, fecha_base.month)[1]
                     fecha_vencimiento = fecha_base.replace(day=ultimo_dia).strftime('%Y-%m-%d')
             
@@ -7136,7 +7334,7 @@ def factura_crear_nueva(request):
                 else:
                     observaciones_completas = f"Ref: {referencia_pago}"
 
-            # Si se está editando una factura (copiar_factura), actualizar la original
+            # Si se estÃ¡ editando una factura (copiar_factura), actualizar la original
             factura_id_editar = request.GET.get('copiar_factura')
             factura = None
             if factura_id_editar:
@@ -7171,7 +7369,7 @@ def factura_crear_nueva(request):
             
             # Agregar detalles
             conceptos_ids = request.POST.getlist('concepto_id[]')
-            articulos_ids = request.POST.getlist('articulo_id[]')  # Nuevo: para artículos
+            articulos_ids = request.POST.getlist('articulo_id[]')  # Nuevo: para artÃ­culos
             cantidades = request.POST.getlist('cantidad[]')
             precios = request.POST.getlist('precio[]')
             descuentos = request.POST.getlist('descuento[]')
@@ -7179,9 +7377,9 @@ def factura_crear_nueva(request):
             anios = request.POST.getlist('anio[]')
             
             print(f"DEBUG - Conceptos recibidos: {len(conceptos_ids)}")
-            print(f"DEBUG - Artículos recibidos: {len(articulos_ids)}")
+            print(f"DEBUG - ArtÃ­culos recibidos: {len(articulos_ids)}")
             print(f"DEBUG - IDs Conceptos: {conceptos_ids}")
-            print(f"DEBUG - IDs Artículos: {articulos_ids}")
+            print(f"DEBUG - IDs ArtÃ­culos: {articulos_ids}")
             
             # Variable para acumular mora de mensualidades vencidas
             mora_acumulada = Decimal('0')
@@ -7191,14 +7389,14 @@ def factura_crear_nueva(request):
             max_items = max(len(conceptos_ids), len(articulos_ids))
             if max_items == 0:
                 factura.delete()
-                messages.error(request, 'Debes agregar al menos un concepto o artículo a la factura.')
+                messages.error(request, 'Debes agregar al menos un concepto o artÃ­culo a la factura.')
                 return redirect('factura_crear_nueva')
             print(f"DEBUG - IDs Conceptos: {conceptos_ids}")
-            print(f"DEBUG - IDs Artículos: {articulos_ids}")
+            print(f"DEBUG - IDs ArtÃ­culos: {articulos_ids}")
             print(f"DEBUG - Cantidades: {cantidades}")
             print(f"DEBUG - Precios: {precios}")
             print(f"DEBUG - Meses: {meses}")
-            print(f"DEBUG - Años: {anios}")
+            print(f"DEBUG - AÃ±os: {anios}")
             
             from .models import Articulo, MovimientoInventario
             
@@ -7206,7 +7404,7 @@ def factura_crear_nueva(request):
             max_items = max(len(conceptos_ids), len(articulos_ids))
             
             for i in range(max_items):
-                # Obtener concepto o artículo
+                # Obtener concepto o artÃ­culo
                 concepto = None
                 articulo = None
                 descripcion = ''
@@ -7216,15 +7414,15 @@ def factura_crear_nueva(request):
                     concepto = ConceptoPago.objects.get(id=conceptos_ids[i])
                     descripcion = concepto.nombre
                     
-                    # VALIDAR: Mensualidad/Inscripción/Transporte solo para estudiantes reales
+                    # VALIDAR: Mensualidad/InscripciÃ³n/Transporte solo para estudiantes reales
                     if concepto.tipo in ['mensualidad', 'inscripcion', 'transporte']:
-                        # Obtener cliente genérico
+                        # Obtener cliente genÃ©rico
                         cliente_generico = obtener_o_crear_cliente_generico()
                         
-                        # Validar que no sea cliente genérico
+                        # Validar que no sea cliente genÃ©rico
                         if cliente_generico and estudiante_post.id == cliente_generico.id:
                             factura.delete()
-                            messages.error(request, f'El cliente genérico no puede tener {concepto.tipo}. Selecciona un estudiante real.')
+                            messages.error(request, f'El cliente genÃ©rico no puede tener {concepto.tipo}. Selecciona un estudiante real.')
                             return redirect('factura_crear_nueva')
                         
                         # Validar que el cliente tenga rol Estudiante
@@ -7233,14 +7431,14 @@ def factura_crear_nueva(request):
                             messages.error(request, f'Solo los estudiantes pueden tener {concepto.tipo}.')
                             return redirect('factura_crear_nueva')
                     
-                # O si es un artículo del inventario
+                # O si es un artÃ­culo del inventario
                 elif i < len(articulos_ids) and articulos_ids[i]:
                     articulo = Articulo.objects.get(id=articulos_ids[i])
                     descripcion = f"{articulo.nombre} (CB: {articulo.codigo_barras})"
                 else:
-                    continue  # Saltar si no hay ni concepto ni artículo
+                    continue  # Saltar si no hay ni concepto ni artÃ­culo
                 
-                # Procesar mes y año con validación
+                # Procesar mes y aÃ±o con validaciÃ³n
                 mes_valor = None
                 if i < len(meses) and meses[i] and meses[i].strip():
                     try:
@@ -7287,24 +7485,24 @@ def factura_crear_nueva(request):
                                 }
                             )
                             
-                            # Calcular mora para esta mensualidad si está vencida
+                            # Calcular mora para esta mensualidad si estÃ¡ vencida
                             if concepto.tipo == 'mensualidad' and estudiante_post.grupo_familiar:
                                 from datetime import date
                                 from calendar import monthrange
                                 
-                                # Obtener día de vencimiento del grupo familiar
+                                # Obtener dÃ­a de vencimiento del grupo familiar
                                 dia_vencimiento = estudiante_post.grupo_familiar.dia_vencimiento
                                 
                                 # Crear fecha de vencimiento de esta mensualidad
                                 try:
-                                    # Obtener el último día del mes si el día de vencimiento no existe
+                                    # Obtener el Ãºltimo dÃ­a del mes si el dÃ­a de vencimiento no existe
                                     ultimo_dia_mes = monthrange(anio_valor, mes_valor)[1]
                                     dia_venc_ajustado = min(dia_vencimiento, ultimo_dia_mes)
                                     fecha_venc_mensualidad = date(anio_valor, mes_valor, dia_venc_ajustado)
                                     
                                     hoy = date.today()
                                     
-                                    # Si la mensualidad está vencida, calcular mora
+                                    # Si la mensualidad estÃ¡ vencida, calcular mora
                                     if hoy > fecha_venc_mensualidad:
                                         porcentaje_mora = estudiante_post.get_porcentaje_mora()
                                         if porcentaje_mora > 0:
@@ -7327,7 +7525,7 @@ def factura_crear_nueva(request):
                 detalle = DetalleFactura.objects.create(
                     factura=factura,
                     concepto=concepto,
-                    articulo=articulo,  # Agregar el artículo aquí
+                    articulo=articulo,  # Agregar el artÃ­culo aquÃ­
                     mensualidad=mensualidad_obj,
                     descripcion=descripcion,
                     cantidad=cantidad_valor,
@@ -7337,7 +7535,7 @@ def factura_crear_nueva(request):
                     anio=anio_valor
                 )
                 
-                # Si es un artículo, descontar del inventario y registrar movimiento
+                # Si es un artÃ­culo, descontar del inventario y registrar movimiento
                 if articulo and articulo.tipo == 'producto':
                     try:
                         stock_anterior = articulo.stock_actual
@@ -7354,7 +7552,7 @@ def factura_crear_nueva(request):
                             factura=factura,
                             usuario=request.user
                         )
-                        print(f"DEBUG - Stock actualizado para {articulo.nombre}: {stock_anterior} → {articulo.stock_actual}")
+                        print(f"DEBUG - Stock actualizado para {articulo.nombre}: {stock_anterior} â {articulo.stock_actual}")
                     except ValueError as e:
                         # Si no hay stock suficiente, eliminar la factura y mostrar error
                         factura.delete()
@@ -7362,7 +7560,7 @@ def factura_crear_nueva(request):
                         return redirect('factura_crear_nueva')
                 
                 detalles_creados += 1
-                tipo_detalle = 'Artículo' if articulo else 'Concepto'
+                tipo_detalle = 'ArtÃ­culo' if articulo else 'Concepto'
                 nombre_detalle = articulo.nombre if articulo else concepto.nombre
                 print(f"DEBUG - Detalle #{i+1} creado: {tipo_detalle} - {nombre_detalle} - Mes: {mes_valor}/{anio_valor}")
             
@@ -7381,13 +7579,13 @@ def factura_crear_nueva(request):
                     }
                 )
                 
-                # Crear descripción detallada
+                # Crear descripciÃ³n detallada
                 porcentaje_mora = estudiante_post.get_porcentaje_mora()
                 descripcion_mora = f'Mora por Mensualidades Vencidas ({porcentaje_mora}%)'
                 if len(mensualidades_vencidas_info) > 0:
                     meses_texto = ', '.join([f"{info['mes']}/{info['anio']}" for info in mensualidades_vencidas_info[:3]])
                     if len(mensualidades_vencidas_info) > 3:
-                        meses_texto += f" y {len(mensualidades_vencidas_info) - 3} más"
+                        meses_texto += f" y {len(mensualidades_vencidas_info) - 3} mÃ¡s"
                     descripcion_mora += f' - Meses: {meses_texto}'
                 
                 # Agregar detalle de mora
@@ -7399,10 +7597,10 @@ def factura_crear_nueva(request):
                     precio_unitario=mora_acumulada,
                     descuento=0
                 )
-                print(f"DEBUG MORA - ✓ Mora agregada a factura: RD${mora_acumulada} (Detalle ID: {detalle_mora.id})")
+                print(f"DEBUG MORA - â Mora agregada a factura: RD${mora_acumulada} (Detalle ID: {detalle_mora.id})")
                 detalles_creados += 1
             elif estudiante_post.grupo_familiar:
-                # Si no hay mora pero el estudiante está en un grupo familiar, agregar mora en 0 para que se vea
+                # Si no hay mora pero el estudiante estÃ¡ en un grupo familiar, agregar mora en 0 para que se vea
                 concepto_mora, created = ConceptoPago.objects.get_or_create(
                     tipo='otro',
                     nombre='Mora por Pago Atrasado',
@@ -7417,15 +7615,15 @@ def factura_crear_nueva(request):
                 detalle_mora = DetalleFactura.objects.create(
                     factura=factura,
                     concepto=concepto_mora,
-                    descripcion='Mora - Sin cargo (pagos al día)',
+                    descripcion='Mora - Sin cargo (pagos al dÃ­a)',
                     cantidad=1,
                     precio_unitario=Decimal('0'),
                     descuento=0
                 )
-                print(f"DEBUG MORA - Mora en $0 agregada (estudiante al día)")
+                print(f"DEBUG MORA - Mora en $0 agregada (estudiante al dÃ­a)")
                 detalles_creados += 1
             
-            # Aplicar mora si la fecha de vencimiento ya pasó
+            # Aplicar mora si la fecha de vencimiento ya pasÃ³
             print(f"DEBUG MORA - fecha_vencimiento recibida: {fecha_vencimiento} (tipo: {type(fecha_vencimiento)})")
             if fecha_vencimiento:
                 from datetime import datetime, date
@@ -7437,9 +7635,9 @@ def factura_crear_nueva(request):
                         fecha_venc_date = fecha_vencimiento
                     
                     hoy = date.today()
-                    print(f"DEBUG MORA - Hoy: {hoy} | Vencimiento: {fecha_venc_date} | Está vencida: {hoy > fecha_venc_date}")
+                    print(f"DEBUG MORA - Hoy: {hoy} | Vencimiento: {fecha_venc_date} | EstÃ¡ vencida: {hoy > fecha_venc_date}")
                     
-                    # Verificar si está vencida
+                    # Verificar si estÃ¡ vencida
                     if hoy > fecha_venc_date:
                         # Calcular el subtotal actual (antes de mora)
                         subtotal_actual = sum(detalle.get_total() for detalle in factura.detalles.all())
@@ -7462,7 +7660,7 @@ def factura_crear_nueva(request):
                                 tipo='otro',
                                 nombre='Mora por Pago Atrasado',
                                 defaults={
-                                    'monto': 0,  # El monto varía según cada caso
+                                    'monto': 0,  # El monto varÃ­a segÃºn cada caso
                                     'descripcion': 'Recargo por pago fuera de fecha',
                                     'activo': True
                                 }
@@ -7477,18 +7675,18 @@ def factura_crear_nueva(request):
                                 precio_unitario=monto_mora,
                                 descuento=0
                             )
-                            print(f"DEBUG MORA - ✓ Mora aplicada exitosamente: {porcentaje_mora}% = RD${monto_mora} (Detalle ID: {detalle_mora.id})")
+                            print(f"DEBUG MORA - â Mora aplicada exitosamente: {porcentaje_mora}% = RD${monto_mora} (Detalle ID: {detalle_mora.id})")
                             detalles_creados += 1
                         else:
-                            print(f"DEBUG MORA - ✗ NO se aplica mora: porcentaje es 0%")
+                            print(f"DEBUG MORA - â NO se aplica mora: porcentaje es 0%")
                     else:
-                        print(f"DEBUG MORA - ✗ NO se aplica mora: la factura no está vencida")
+                        print(f"DEBUG MORA - â NO se aplica mora: la factura no estÃ¡ vencida")
                 except Exception as e:
-                    print(f"DEBUG MORA - ✗✗✗ ERROR al aplicar mora: {e}")
+                    print(f"DEBUG MORA - âââ ERROR al aplicar mora: {e}")
                     import traceback
                     traceback.print_exc()
             else:
-                print(f"DEBUG MORA - ✗ NO se aplica mora: no hay fecha_vencimiento")
+                print(f"DEBUG MORA - â NO se aplica mora: no hay fecha_vencimiento")
             
             # Recalcular totales de la factura
             factura.calcular_totales()
@@ -7503,7 +7701,7 @@ def factura_crear_nueva(request):
                     if not m:
                         continue
                     m.factura = factura
-                    # Si la factura quedó pagada, marcar la mensualidad como pagada
+                    # Si la factura quedÃ³ pagada, marcar la mensualidad como pagada
                     if factura.estado == 'pagada':
                         try:
                             m.marcar_pagada(factura)
@@ -7513,7 +7711,7 @@ def factura_crear_nueva(request):
                             m.factura = factura
                             m.save()
                     else:
-                        # Si hay algún abono, marcar parcial; si no, pendiente
+                        # Si hay algÃºn abono, marcar parcial; si no, pendiente
                         try:
                             if factura.monto_pagado and factura.monto_pagado > 0:
                                 m.estado = 'parcial'
@@ -7528,7 +7726,7 @@ def factura_crear_nueva(request):
             print(f"DEBUG - Total detalles creados: {detalles_creados}")
             print(f"DEBUG - Factura totales - Subtotal: {factura.subtotal}, Total: {factura.total}, Estado: {factura.estado}")
             
-            # Obtener o crear el estudiante "cliente" para cargar automáticamente
+            # Obtener o crear el estudiante "cliente" para cargar automÃ¡ticamente
             cliente_generico = obtener_o_crear_cliente_generico()
             
             if cliente_generico:
@@ -7536,7 +7734,7 @@ def factura_crear_nueva(request):
             else:
                 url_nueva_factura = '/facturas/nueva/'
             
-            # Construir respuesta HTML que abre el recibo e imprime automáticamente
+            # Construir respuesta HTML que abre el recibo e imprime automÃ¡ticamente
             from django.http import HttpResponse
             recibo_url = f"/facturas/{factura.id}/recibo/"
             
@@ -7592,8 +7790,8 @@ def factura_crear_nueva(request):
             </head>
             <body>
                 <div class="mensaje">
-                    <div class="icono">✓</div>
-                    <h2>¡Factura Creada Exitosamente!</h2>
+                    <div class="icono">â</div>
+                    <h2>Â¡Factura Creada Exitosamente!</h2>
                     <p>Factura: <strong>{factura.numero_factura}</strong></p>
                     <p>Total: <strong>RD${factura.total}</strong></p>
                     <div class="spinner"></div>
@@ -7638,12 +7836,12 @@ def factura_crear_nueva(request):
             'id': c.id,
             'nombre': c.nombre,  # Sin monto en el nombre
             'tipo': c.tipo,
-            'monto': float(c.monto) if c.tipo not in ['mensualidad', 'inscripcion'] else 0  # Para mensualidad/inscripción, monto viene de tarifa
+            'monto': float(c.monto) if c.tipo not in ['mensualidad', 'inscripcion'] else 0  # Para mensualidad/inscripciÃ³n, monto viene de tarifa
         }
         for c in conceptos
     ]
     
-    # Año actual
+    # AÃ±o actual
     import datetime
     anio_actual = datetime.datetime.now().year
     
@@ -7669,7 +7867,7 @@ def factura_crear_nueva(request):
 
 @login_required
 def buscar_articulo_barras(request):
-    """Buscar artículo por código de barras - API AJAX"""
+    """Buscar artÃ­culo por cÃ³digo de barras - API AJAX"""
     if request.user.rol not in ['Secretaria', 'Administrador']:
         return JsonResponse({'error': 'No autorizado'}, status=403)
     
@@ -7679,7 +7877,7 @@ def buscar_articulo_barras(request):
     codigo_barras = request.GET.get('codigo', '').strip()
     
     if not codigo_barras:
-        return JsonResponse({'error': 'Código vacío'}, status=400)
+        return JsonResponse({'error': 'CÃ³digo vacÃ­o'}, status=400)
     
     try:
         articulo = Articulo.objects.get(codigo_barras=codigo_barras, activo=True)
@@ -7703,7 +7901,7 @@ def buscar_articulo_barras(request):
     except Articulo.DoesNotExist:
         return JsonResponse({
             'success': False,
-            'error': f'Artículo con código "{codigo_barras}" no encontrado'
+            'error': f'ArtÃ­culo con cÃ³digo "{codigo_barras}" no encontrado'
         }, status=404)
     except Exception as e:
         return JsonResponse({
@@ -7714,7 +7912,7 @@ def buscar_articulo_barras(request):
 
 @login_required
 def buscar_articulo_nombre(request):
-    """Buscar artículos por nombre (AJAX)"""
+    """Buscar artÃ­culos por nombre (AJAX)"""
     if request.user.rol not in ['Secretaria', 'Administrador']:
         return JsonResponse({'error': 'No autorizado'}, status=403)
 
@@ -7781,16 +7979,16 @@ def tarifa_estudiante_api(request):
 
 @login_required
 def tarifas_list(request):
-    """Lista las tarifas por estudiante (CRUD admin) con búsqueda."""
+    """Lista las tarifas por estudiante (CRUD admin) con bÃºsqueda."""
     if request.user.rol not in ['Secretaria', 'Administrador']:
-        messages.error(request, 'No tienes permiso para acceder a esta página.')
+        messages.error(request, 'No tienes permiso para acceder a esta pÃ¡gina.')
         return redirect('plataform')
 
     # Agrupar tarifas por estudiante
     from collections import defaultdict
     from django.db.models import Q
     
-    # Obtener parámetros de búsqueda
+    # Obtener parÃ¡metros de bÃºsqueda
     search_query = request.GET.get('search', '').strip()
     tipo_tarifa = request.GET.get('tipo', '').strip()
     mostrar_sin_tarifas = request.GET.get('sin_tarifas', '').strip() == '1'
@@ -7798,7 +7996,7 @@ def tarifas_list(request):
     # Filtrar tarifas activas
     tarifas_qs = TarifaEstudiante.objects.select_related('estudiante', 'concepto').filter(activo=True)
     
-    # Aplicar búsqueda por nombre de estudiante
+    # Aplicar bÃºsqueda por nombre de estudiante
     if search_query:
         tarifas_qs = tarifas_qs.filter(
             Q(estudiante__first_name__icontains=search_query) |
@@ -7838,7 +8036,7 @@ def tarifas_list(request):
         id__in=estudiantes_con_tarifas_ids
     ).order_by('first_name', 'last_name')
     
-    # Si se solicita búsqueda de estudiantes sin tarifas
+    # Si se solicita bÃºsqueda de estudiantes sin tarifas
     if search_query and mostrar_sin_tarifas:
         estudiantes_sin_tarifas = estudiantes_sin_tarifas.filter(
             Q(first_name__icontains=search_query) |
@@ -7866,20 +8064,20 @@ def tarifas_list(request):
 @login_required
 def tarifa_create(request):
     if request.user.rol not in ['Secretaria', 'Administrador']:
-        messages.error(request, 'No tienes permiso para acceder a esta página.')
+        messages.error(request, 'No tienes permiso para acceder a esta pÃ¡gina.')
         return redirect('plataform')
 
     # Obtener return_to desde GET o POST
     return_to = request.GET.get('return_to') or request.POST.get('return_to')
     
     if request.method == 'POST':
-        # Si es Secretaria, validar código de seguridad
+        # Si es Secretaria, validar cÃ³digo de seguridad
         if request.user.rol == 'Secretaria':
             from .models import CodigoAnulacion
             codigo_ingresado = request.POST.get('codigo_seguridad', '').strip()
             
             if not CodigoAnulacion.validar_codigo(codigo_ingresado):
-                messages.error(request, 'Código de seguridad incorrecto.')
+                messages.error(request, 'CÃ³digo de seguridad incorrecto.')
                 form = TarifaEstudianteForm(request.POST)
                 return render(request, 'cobros/tarifa_form.html', {
                     'form': form,
@@ -7905,7 +8103,7 @@ def tarifa_create(request):
         else:
             form = TarifaEstudianteForm()
     
-    # Secretaria requiere código de seguridad
+    # Secretaria requiere cÃ³digo de seguridad
     requiere_codigo = (request.user.rol == 'Secretaria')
     
     return render(request, 'cobros/tarifa_form.html', {
@@ -7938,19 +8136,19 @@ def obtener_concepto_monto(request, concepto_id):
 @login_required
 def tarifa_edit(request, pk):
     if request.user.rol not in ['Secretaria', 'Administrador']:
-        messages.error(request, 'No tienes permiso para acceder a esta página.')
+        messages.error(request, 'No tienes permiso para acceder a esta pÃ¡gina.')
         return redirect('plataform')
 
     tarifa = get_object_or_404(TarifaEstudiante, pk=pk)
     
     if request.method == 'POST':
-        # Si es Secretaria, validar código de seguridad
+        # Si es Secretaria, validar cÃ³digo de seguridad
         if request.user.rol == 'Secretaria':
             from .models import CodigoAnulacion
             codigo_ingresado = request.POST.get('codigo_seguridad', '').strip()
             
             if not CodigoAnulacion.validar_codigo(codigo_ingresado):
-                messages.error(request, 'Código de seguridad incorrecto.')
+                messages.error(request, 'CÃ³digo de seguridad incorrecto.')
                 form = TarifaEstudianteForm(request.POST, instance=tarifa)
                 return render(request, 'cobros/tarifa_form.html', {
                     'form': form,
@@ -7968,7 +8166,7 @@ def tarifa_edit(request, pk):
     else:
         form = TarifaEstudianteForm(instance=tarifa)
     
-    # Secretaria requiere código de seguridad
+    # Secretaria requiere cÃ³digo de seguridad
     requiere_codigo = (request.user.rol == 'Secretaria')
     
     return render(request, 'cobros/tarifa_form.html', {
@@ -7982,7 +8180,7 @@ def tarifa_edit(request, pk):
 @login_required
 def tarifa_delete(request, pk):
     if request.user.rol not in ['Secretaria', 'Administrador']:
-        messages.error(request, 'No tienes permiso para acceder a esta página.')
+        messages.error(request, 'No tienes permiso para acceder a esta pÃ¡gina.')
         return redirect('plataform')
 
     tarifa = get_object_or_404(TarifaEstudiante, pk=pk)
@@ -7995,13 +8193,13 @@ def tarifa_delete(request, pk):
 
 @login_required
 def factura_crear(request, estudiante_id):
-    """Redirige a la vista unificada de creación de factura con estudiante pre-seleccionado"""
+    """Redirige a la vista unificada de creaciÃ³n de factura con estudiante pre-seleccionado"""
     return redirect(f'/facturas/nueva/?estudiante_id={estudiante_id}')
     
     # Obtener conceptos de pago activos
     conceptos = ConceptoPago.objects.filter(activo=True).order_by('tipo', 'nombre')
     
-    # Año actual
+    # AÃ±o actual
     import datetime
     anio_actual = datetime.datetime.now().year
     
@@ -8019,7 +8217,7 @@ def factura_crear(request, estudiante_id):
 def factura_detalle(request, factura_id):
     """Ver detalle de una factura"""
     if request.user.rol not in ['Secretaria', 'Administrador']:
-        messages.error(request, 'No tienes permiso para acceder a esta página.')
+        messages.error(request, 'No tienes permiso para acceder a esta pÃ¡gina.')
         return redirect('plataform')
     
     from .models import Factura
@@ -8037,7 +8235,7 @@ def factura_detalle(request, factura_id):
     logger.warning(f"DEBUG - Factura {factura.numero_factura} tiene {detalles_count} detalles")
     print(f"DEBUG - Factura {factura.numero_factura} tiene {detalles_count} detalles")
     
-    # Calcular información de mora
+    # Calcular informaciÃ³n de mora
     mora_info = factura.calcular_mora()
     tiene_mora_aplicada = False
     monto_mora_aplicado = 0
@@ -8074,17 +8272,17 @@ def factura_recibo_pos(request, factura_id):
         id=factura_id
     )
     
-    # Obtener información de la escuela desde settings o base de datos
-    # Puedes personalizar estos valores en tu archivo settings.py o crear un modelo de configuración
+    # Obtener informaciÃ³n de la escuela desde settings o base de datos
+    # Puedes personalizar estos valores en tu archivo settings.py o crear un modelo de configuraciÃ³n
     escuela_info = {
-        'nombre': getattr(settings, 'ESCUELA_NOMBRE', 'Centro Educativo San José'),
+        'nombre': getattr(settings, 'ESCUELA_NOMBRE', 'Centro Educativo San JosÃ©'),
         'rnc': getattr(settings, 'ESCUELA_RNC', '123-45678-9'),
         'telefono': getattr(settings, 'ESCUELA_TELEFONO', '(809) 555-1234'),
         'direccion': getattr(settings, 'ESCUELA_DIRECCION', 'Calle Principal #123, Santo Domingo'),
         'email': getattr(settings, 'ESCUELA_EMAIL', 'info@escuela.edu.do'),
     }
     
-    # Calcular cambio si pagó de más
+    # Calcular cambio si pagÃ³ de mÃ¡s
     cambio = max(0, float(factura.monto_pagado) - float(factura.total))
     
     context = {
@@ -8099,7 +8297,7 @@ def factura_recibo_pos(request, factura_id):
 def factura_registrar_pago(request, factura_id):
     """Registrar un pago/abono para una factura"""
     if request.user.rol not in ['Secretaria', 'Administrador']:
-        messages.error(request, 'No tienes permiso para acceder a esta página.')
+        messages.error(request, 'No tienes permiso para acceder a esta pÃ¡gina.')
         return redirect('plataform')
     
     from .models import Factura, PagoFactura
@@ -8114,7 +8312,7 @@ def factura_registrar_pago(request, factura_id):
             banco = request.POST.get('banco', '')
             observaciones = request.POST.get('observaciones', '')
             
-            # Validar que no se pague más del saldo pendiente
+            # Validar que no se pague mÃ¡s del saldo pendiente
             saldo_pendiente = factura.saldo_pendiente
             if monto > saldo_pendiente:
                 messages.error(request, f'El monto no puede ser mayor al saldo pendiente (RD${saldo_pendiente})')
@@ -8143,7 +8341,7 @@ def factura_registrar_pago(request, factura_id):
 def facturas_estudiante(request, estudiante_id):
     """Ver todas las facturas de un estudiante"""
     if request.user.rol not in ['Secretaria', 'Administrador']:
-        messages.error(request, 'No tienes permiso para acceder a esta página.')
+        messages.error(request, 'No tienes permiso para acceder a esta pÃ¡gina.')
         return redirect('plataform')
     
     from .models import Factura
@@ -8151,11 +8349,11 @@ def facturas_estudiante(request, estudiante_id):
     
     estudiante = get_object_or_404(CustomUser, id=estudiante_id, rol='Estudiante')
     
-    # Obtener año escolar activo
+    # Obtener aÃ±o escolar activo
     try:
         anho_escolar = AnhoEscolar.objects.get(activo=True)
     except AnhoEscolar.DoesNotExist:
-        messages.error(request, 'No hay un año escolar activo.')
+        messages.error(request, 'No hay un aÃ±o escolar activo.')
         return redirect('plataform')
     
     # Obtener facturas del estudiante
@@ -8164,7 +8362,7 @@ def facturas_estudiante(request, estudiante_id):
         anho_escolar=anho_escolar
     ).prefetch_related('detalles', 'pagos').order_by('-fecha_emision')
     
-    # Estadísticas (excluyendo facturas anuladas)
+    # EstadÃ­sticas (excluyendo facturas anuladas)
     facturas_validas = facturas.exclude(estado='anulada')
     total_facturas = facturas_validas.count()
     total_adeudado = sum(f.total for f in facturas_validas)
@@ -8179,7 +8377,7 @@ def facturas_estudiante(request, estudiante_id):
     import datetime
     anio_actual = datetime.datetime.now().year
     
-    # Obtener todas las mensualidades pagadas (facturas pagadas) del año actual
+    # Obtener todas las mensualidades pagadas (facturas pagadas) del aÃ±o actual
     detalles_pagados = DetalleFactura.objects.filter(
         factura__cliente=estudiante,
         factura__anho_escolar=anho_escolar,
@@ -8191,7 +8389,7 @@ def facturas_estudiante(request, estudiante_id):
     
     meses_pagados = list(detalles_pagados)
     
-    # Crear lista de meses del año con estado de pago
+    # Crear lista de meses del aÃ±o con estado de pago
     meses_nombres = [
         'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
         'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
@@ -8225,11 +8423,11 @@ def facturas_estudiante(request, estudiante_id):
 @login_required
 @user_passes_test(lambda u: u.rol == 'Administrador')
 def anular_facturas_confirmar(request):
-    """Vista para confirmar anulación de facturas con código de seguridad"""
+    """Vista para confirmar anulaciÃ³n de facturas con cÃ³digo de seguridad"""
     from .models import Factura, CodigoAnulacion
     from django.utils import timezone
     
-    # Obtener IDs de facturas a anular desde la sesión
+    # Obtener IDs de facturas a anular desde la sesiÃ³n
     facturas_ids = request.session.get('facturas_a_anular', [])
     
     if not facturas_ids:
@@ -8243,9 +8441,9 @@ def anular_facturas_confirmar(request):
         codigo_ingresado = request.POST.get('codigo_anulacion', '').strip().upper()
         motivo = request.POST.get('motivo_anulacion', '').strip()
         
-        # Validar código
+        # Validar cÃ³digo
         if not CodigoAnulacion.validar_codigo(codigo_ingresado):
-            messages.error(request, 'Código de anulación incorrecto.')
+            messages.error(request, 'CÃ³digo de anulaciÃ³n incorrecto.')
             context = {
                 'titulo': 'Anular Facturas',
                 'facturas': facturas,
@@ -8255,7 +8453,7 @@ def anular_facturas_confirmar(request):
         
         # Validar motivo
         if not motivo or len(motivo) < 10:
-            messages.error(request, 'Debe proporcionar un motivo de anulación (mínimo 10 caracteres).')
+            messages.error(request, 'Debe proporcionar un motivo de anulaciÃ³n (mÃ­nimo 10 caracteres).')
             context = {
                 'titulo': 'Anular Facturas',
                 'facturas': facturas,
@@ -8273,13 +8471,13 @@ def anular_facturas_confirmar(request):
             factura.save()
             facturas_anuladas += 1
         
-        # Limpiar sesión
+        # Limpiar sesiÃ³n
         del request.session['facturas_a_anular']
         
         messages.success(request, f'Se anularon {facturas_anuladas} factura(s) correctamente.')
         return redirect('facturas_list')
     
-    # Obtener código activo para mostrar (solo para administrador y director)
+    # Obtener cÃ³digo activo para mostrar (solo para administrador y director)
     codigo_activo = None
     if request.user.rol in ['Administrador', 'Director']:
         codigo_activo = CodigoAnulacion.obtener_codigo_actual()
@@ -8294,7 +8492,7 @@ def anular_facturas_confirmar(request):
 
 @login_required
 def factura_anular(request, factura_id):
-    """Vista para anular una factura individual con código de seguridad"""
+    """Vista para anular una factura individual con cÃ³digo de seguridad"""
     from .models import Factura, CodigoAnulacion
     from django.utils import timezone
     
@@ -8306,23 +8504,23 @@ def factura_anular(request, factura_id):
     # Obtener la factura
     factura = get_object_or_404(Factura, id=factura_id)
     
-    # Verificar que no esté ya anulada
+    # Verificar que no estÃ© ya anulada
     if factura.estado == 'anulada':
-        messages.warning(request, 'Esta factura ya está anulada.')
+        messages.warning(request, 'Esta factura ya estÃ¡ anulada.')
         return redirect('factura_detalle', factura_id=factura_id)
     
     if request.method == 'POST':
         codigo_ingresado = request.POST.get('codigo_anulacion', '').strip()
         motivo = request.POST.get('motivo_anulacion', '').strip()
         
-        # Validar código
+        # Validar cÃ³digo
         if not CodigoAnulacion.validar_codigo(codigo_ingresado):
-            messages.error(request, 'Código de anulación incorrecto.')
+            messages.error(request, 'CÃ³digo de anulaciÃ³n incorrecto.')
             return redirect('factura_detalle', factura_id=factura_id)
         
         # Validar motivo
         if not motivo or len(motivo) < 10:
-            messages.error(request, 'Debe proporcionar un motivo de anulación (mínimo 10 caracteres).')
+            messages.error(request, 'Debe proporcionar un motivo de anulaciÃ³n (mÃ­nimo 10 caracteres).')
             return redirect('factura_detalle', factura_id=factura_id)
         
         # Anular la factura
@@ -8335,23 +8533,23 @@ def factura_anular(request, factura_id):
         messages.success(request, f'Factura {factura.numero_factura} anulada correctamente.')
         return redirect('factura_detalle', factura_id=factura_id)
     
-    # Si es GET, redirigir al detalle de la factura (el modal se mostrará allí)
+    # Si es GET, redirigir al detalle de la factura (el modal se mostrarÃ¡ allÃ­)
     return redirect('factura_detalle', factura_id=factura_id)
 
 
 @login_required
 @user_passes_test(lambda u: u.rol == 'Administrador')
 def codigo_anulacion_ver(request):
-    """Vista para ver el código de anulación actual"""
+    """Vista para ver el cÃ³digo de anulaciÃ³n actual"""
     from .models import CodigoAnulacion
     
     codigo_activo = CodigoAnulacion.obtener_codigo_actual()
     
-    # Obtener historial de códigos (últimos 10)
+    # Obtener historial de cÃ³digos (Ãºltimos 10)
     historial = CodigoAnulacion.objects.all().order_by('-creado')[:10]
     
     context = {
-        'titulo': 'Código de Anulación de Facturas',
+        'titulo': 'CÃ³digo de AnulaciÃ³n de Facturas',
         'codigo_activo': codigo_activo,
         'historial': historial,
     }
@@ -8365,13 +8563,13 @@ def log_usuarios_eliminados(request):
     
     # Solo Administradores y Secretaria pueden ver este log
     if request.user.rol not in ['Administrador', 'Secretaria']:
-        messages.error(request, 'No tienes permiso para acceder a esta página.')
+        messages.error(request, 'No tienes permiso para acceder a esta pÃ¡gina.')
         return redirect('plataform')
     
-    # Filtrar logs de tipo ADMIN_ACTION relacionados con eliminación de usuarios
+    # Filtrar logs de tipo ADMIN_ACTION relacionados con eliminaciÃ³n de usuarios
     logs_eliminacion = SecurityLog.objects.filter(
         tipo_evento='ADMIN_ACTION',
-        descripcion__icontains='ELIMINACIÓN DE USUARIO'
+        descripcion__icontains='ELIMINACIÃN DE USUARIO'
     ).select_related('usuario').order_by('-fecha')[:100]
     
     context = {
@@ -8382,27 +8580,27 @@ def log_usuarios_eliminados(request):
 
 
 # ===========================
-# VISTAS DE CONCEPTOS DE PAGO (TARIFAS ESTÁNDAR)
+# VISTAS DE CONCEPTOS DE PAGO (TARIFAS ESTÃNDAR)
 # ===========================
 
 @login_required
 def conceptos_list(request):
-    """Vista para listar conceptos de pago (tarifas estándar) - Solo Administrador"""
+    """Vista para listar conceptos de pago (tarifas estÃ¡ndar) - Solo Administrador"""
     from .models import ConceptoPago
     
     if request.user.rol != 'Administrador':
-        messages.error(request, 'Solo el Administrador puede gestionar conceptos estándar.')
+        messages.error(request, 'Solo el Administrador puede gestionar conceptos estÃ¡ndar.')
         return redirect('tarifas_list')
     
     conceptos = ConceptoPago.objects.all().order_by('tipo', 'nombre')
     
-    # Verificar si hay conceptos estándar configurados
+    # Verificar si hay conceptos estÃ¡ndar configurados
     conceptos_estandar = conceptos.filter(es_estandar=True, activo=True)
     tiene_mensualidad_estandar = conceptos_estandar.filter(tipo='mensualidad').exists()
     tiene_inscripcion_estandar = conceptos_estandar.filter(tipo='inscripcion').exists()
     
     context = {
-        'titulo': 'Conceptos de Pago (Tarifas Estándar)',
+        'titulo': 'Conceptos de Pago (Tarifas EstÃ¡ndar)',
         'conceptos': conceptos,
         'tiene_mensualidad_estandar': tiene_mensualidad_estandar,
         'tiene_inscripcion_estandar': tiene_inscripcion_estandar,
@@ -8488,7 +8686,7 @@ def concepto_delete(request, pk):
             tarifas_count = TarifaEstudiante.objects.filter(concepto=concepto).count()
             facturas_count = DetalleFactura.objects.filter(concepto=concepto).count()
             
-            error_msg = f'No se puede eliminar el concepto "{nombre}" porque está siendo utilizado en '
+            error_msg = f'No se puede eliminar el concepto "{nombre}" porque estÃ¡ siendo utilizado en '
             partes = []
             if tarifas_count > 0:
                 partes.append(f'{tarifas_count} tarifa(s) de estudiante(s)')
@@ -8519,7 +8717,7 @@ def concepto_delete(request, pk):
 def inventario_lista_completa(request):
     """Lista completa de productos y servicios disponibles"""
     if request.user.rol not in ['Administrador', 'Director', 'Secretaria']:
-        messages.error(request, 'No tienes permiso para acceder a esta página.')
+        messages.error(request, 'No tienes permiso para acceder a esta pÃ¡gina.')
         return redirect('plataform')
     
     from .models import Articulo, ConceptoPago
@@ -8533,7 +8731,7 @@ def inventario_lista_completa(request):
     # Lista consolidada de items
     items = []
     
-    # Obtener artículos (productos)
+    # Obtener artÃ­culos (productos)
     articulos = Articulo.objects.select_related('categoria')
     if solo_activos:
         articulos = articulos.filter(activo=True)
@@ -8554,7 +8752,7 @@ def inventario_lista_completa(request):
                 'codigo': articulo.codigo_barras or 'N/A',
                 'nombre': articulo.nombre,
                 'descripcion': articulo.descripcion or '',
-                'categoria': articulo.categoria.nombre if articulo.categoria else 'Sin categoría',
+                'categoria': articulo.categoria.nombre if articulo.categoria else 'Sin categorÃ­a',
                 'precio': articulo.precio_venta,
                 'stock_actual': articulo.stock_actual,
                 'stock_minimo': articulo.stock_minimo,
@@ -8603,13 +8801,13 @@ def inventario_lista_completa(request):
     # Ordenar items por nombre
     items.sort(key=lambda x: x['nombre'])
     
-    # Paginación
+    # PaginaciÃ³n
     from django.core.paginator import Paginator
     paginator = Paginator(items, 50)
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
     
-    # Estadísticas
+    # EstadÃ­sticas
     total_productos = Articulo.objects.filter(activo=True).count()
     total_servicios = ConceptoPago.objects.filter(activo=True).count()
     
@@ -8634,12 +8832,12 @@ def inventario_lista_completa(request):
 def inventario_dashboard(request):
     """Dashboard del inventario"""
     if request.user.rol not in ['Administrador', 'Director', 'Secretaria']:
-        messages.error(request, 'No tienes permiso para acceder a esta página.')
+        messages.error(request, 'No tienes permiso para acceder a esta pÃ¡gina.')
         return redirect('plataform')
     
     from .models import Articulo, CategoriaArticulo, MovimientoInventario
     
-    # Estadísticas
+    # EstadÃ­sticas
     total_articulos = Articulo.objects.filter(activo=True).count()
     articulos_bajo_stock = Articulo.objects.filter(activo=True, stock_actual__lte=F('stock_minimo')).count()
     categorias_count = CategoriaArticulo.objects.filter(activa=True).count()
@@ -8649,19 +8847,19 @@ def inventario_dashboard(request):
         total=Sum(F('stock_actual') * F('precio_compra'))
     )['total'] or 0
     
-    # Últimos movimientos
+    # Ãltimos movimientos
     ultimos_movimientos = MovimientoInventario.objects.select_related(
         'articulo', 'usuario'
     ).order_by('-fecha')[:10]
     
-    # Artículos con bajo stock
+    # ArtÃ­culos con bajo stock
     articulos_criticos = Articulo.objects.filter(
         activo=True,
         stock_actual__lte=F('stock_minimo')
     ).order_by('stock_actual')[:10]
     
     context = {
-        'titulo': 'Gestión de Inventario',
+        'titulo': 'GestiÃ³n de Inventario',
         'total_articulos': total_articulos,
         'articulos_bajo_stock': articulos_bajo_stock,
         'categorias_count': categorias_count,
@@ -8674,9 +8872,9 @@ def inventario_dashboard(request):
 
 @login_required
 def articulos_list(request):
-    """Lista de artículos"""
+    """Lista de artÃ­culos"""
     if request.user.rol not in ['Administrador', 'Director', 'Secretaria']:
-        messages.error(request, 'No tienes permiso para acceder a esta página.')
+        messages.error(request, 'No tienes permiso para acceder a esta pÃ¡gina.')
         return redirect('plataform')
     
     from .models import Articulo, CategoriaArticulo
@@ -8708,17 +8906,17 @@ def articulos_list(request):
     
     articulos = articulos.order_by('nombre')
     
-    # Paginación
+    # PaginaciÃ³n
     from django.core.paginator import Paginator
     paginator = Paginator(articulos, 20)
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
     
-    # Categorías para filtro
+    # CategorÃ­as para filtro
     categorias = CategoriaArticulo.objects.filter(activa=True).order_by('nombre')
     
     context = {
-        'titulo': 'Artículos',
+        'titulo': 'ArtÃ­culos',
         'page_obj': page_obj,
         'search': search,
         'categoria_id': categoria_id,
@@ -8729,9 +8927,9 @@ def articulos_list(request):
     return render(request, 'inventario/articulos_list.html', context)
 @login_required
 def inventario_articulos_pdf(request):
-    """Genera PDF con la lista de todos los artículos/productos"""
+    """Genera PDF con la lista de todos los artÃ­culos/productos"""
     if request.user.rol not in ['Administrador', 'Director', 'Secretaria']:
-        messages.error(request, 'No tienes permiso para acceder a esta página.')
+        messages.error(request, 'No tienes permiso para acceder a esta pÃ¡gina.')
         return redirect('plataform')
     
     from .models import Articulo, CategoriaArticulo
@@ -8741,17 +8939,17 @@ def inventario_articulos_pdf(request):
     from django.utils import timezone
     import io
     
-    # Obtener todos los artículos activos
+    # Obtener todos los artÃ­culos activos
     articulos = Articulo.objects.select_related('categoria').filter(activo=True).order_by('categoria__nombre', 'nombre')
-    # Agrupar por categoría
+    # Agrupar por categorÃ­a
     categorias = {}
     for articulo in articulos:
-        cat_nombre = articulo.categoria.nombre if articulo.categoria else 'Sin categoría'
+        cat_nombre = articulo.categoria.nombre if articulo.categoria else 'Sin categorÃ­a'
         if cat_nombre not in categorias:
             categorias[cat_nombre] = []
         categorias[cat_nombre].append(articulo)
     
-    # Estadísticas
+    # EstadÃ­sticas
     total_articulos = articulos.count()
     total_categorias = CategoriaArticulo.objects.filter(activa=True).count()
     valor_total = sum(art.precio_venta * art.stock_actual for art in articulos)
@@ -8798,7 +8996,7 @@ def inventario_articulos_pdf(request):
 def inventario_servicios_pdf(request):
     """Genera PDF con la lista de todos los servicios/conceptos"""
     if request.user.rol not in ['Administrador', 'Director', 'Secretaria']:
-        messages.error(request, 'No tienes permiso para acceder a esta página.')
+        messages.error(request, 'No tienes permiso para acceder a esta pÃ¡gina.')
         return redirect('plataform')
     
     from .models import ConceptoPago
@@ -8819,7 +9017,7 @@ def inventario_servicios_pdf(request):
             tipos[tipo_display] = []
         tipos[tipo_display].append(concepto)
     
-    # Estadísticas
+    # EstadÃ­sticas
     total_conceptos = conceptos.count()
     conceptos_estandar = conceptos.filter(es_estandar=True).count()
     
@@ -8855,9 +9053,9 @@ def inventario_servicios_pdf(request):
 
 @login_required
 def articulo_eliminar(request, articulo_id):
-    """Eliminar artículo con código de seguridad"""
+    """Eliminar artÃ­culo con cÃ³digo de seguridad"""
     if request.user.rol not in ['Administrador', 'Director', 'Secretaria']:
-        messages.error(request, 'No tienes permiso para eliminar artículos.')
+        messages.error(request, 'No tienes permiso para eliminar artÃ­culos.')
         return redirect('articulos_list')
     
     from .models import Articulo, DetalleFactura, CodigoAnulacion
@@ -8865,29 +9063,29 @@ def articulo_eliminar(request, articulo_id):
     
     articulo = get_object_or_404(Articulo, id=articulo_id)
     
-    # Verificar si ya está inactivo
+    # Verificar si ya estÃ¡ inactivo
     if not articulo.activo:
-        messages.warning(request, 'Este artículo ya está inactivo.')
+        messages.warning(request, 'Este artÃ­culo ya estÃ¡ inactivo.')
         return redirect('articulo_detalle', articulo_id=articulo_id)
     
     if request.method == 'POST':
         codigo_ingresado = request.POST.get('codigo_anulacion', '').strip()
         motivo = request.POST.get('motivo_eliminacion', '').strip()
         
-        # Validar código de anulación
+        # Validar cÃ³digo de anulaciÃ³n
         if not CodigoAnulacion.validar_codigo(codigo_ingresado):
-            messages.error(request, 'Código de seguridad incorrecto.')
+            messages.error(request, 'CÃ³digo de seguridad incorrecto.')
             return redirect('articulo_detalle', articulo_id=articulo_id)
         
         # Validar motivo
         if not motivo or len(motivo) < 10:
-            messages.error(request, 'Debe proporcionar un motivo de eliminación (mínimo 10 caracteres).')
+            messages.error(request, 'Debe proporcionar un motivo de eliminaciÃ³n (mÃ­nimo 10 caracteres).')
             return redirect('articulo_detalle', articulo_id=articulo_id)
         
         nombre = articulo.nombre
         codigo = articulo.codigo_barras
         
-        # Verificar si el artículo ha sido usado en facturas
+        # Verificar si el artÃ­culo ha sido usado en facturas
         detalles_con_articulo = DetalleFactura.objects.filter(articulo=articulo).count()
         
         if detalles_con_articulo > 0:
@@ -8897,26 +9095,26 @@ def articulo_eliminar(request, articulo_id):
             
             messages.warning(
                 request, 
-                f'El artículo "{nombre}" ha sido usado en {detalles_con_articulo} factura(s), '
-                f'se marcó como inactivo. Motivo: {motivo}'
+                f'El artÃ­culo "{nombre}" ha sido usado en {detalles_con_articulo} factura(s), '
+                f'se marcÃ³ como inactivo. Motivo: {motivo}'
             )
         else:
             # Si no ha sido usado, se puede eliminar completamente
             articulo.delete()
-            messages.success(request, f'Artículo "{codigo} - {nombre}" eliminado exitosamente. Motivo: {motivo}')
+            messages.success(request, f'ArtÃ­culo "{codigo} - {nombre}" eliminado exitosamente. Motivo: {motivo}')
         
         return redirect('articulos_list')
     
-    # Si es GET, redirigir al detalle del artículo (el modal se mostrará allí)
+    # Si es GET, redirigir al detalle del artÃ­culo (el modal se mostrarÃ¡ allÃ­)
     return redirect('articulo_detalle', articulo_id=articulo_id)
 
 
 
 @login_required
 def articulo_crear(request):
-    """Crear nuevo artículo"""
+    """Crear nuevo artÃ­culo"""
     if request.user.rol not in ['Administrador', 'Director', 'Secretaria']:
-        messages.error(request, 'No tienes permiso para acceder a esta página.')
+        messages.error(request, 'No tienes permiso para acceder a esta pÃ¡gina.')
         return redirect('plataform')
     
     from .models import Articulo, CategoriaArticulo
@@ -8945,19 +9143,19 @@ def articulo_crear(request):
                 articulo.categoria_id = categoria_id
             
             articulo.save()
-            messages.success(request, f'Artículo {articulo.codigo_barras} creado exitosamente.')
+            messages.success(request, f'ArtÃ­culo {articulo.codigo_barras} creado exitosamente.')
             return redirect('articulos_list')
             
         except Exception as e:
             import traceback
             error_detail = traceback.format_exc()
-            print(f"ERROR al crear artículo: {error_detail}")
-            messages.error(request, f'Error al crear artículo: {str(e)}')
+            print(f"ERROR al crear artÃ­culo: {error_detail}")
+            messages.error(request, f'Error al crear artÃ­culo: {str(e)}')
     
     categorias = CategoriaArticulo.objects.filter(activa=True).order_by('nombre')
     
     context = {
-        'titulo': 'Nuevo Artículo',
+        'titulo': 'Nuevo ArtÃ­culo',
         'categorias': categorias,
     }
     return render(request, 'inventario/articulo_form.html', context)
@@ -8965,9 +9163,9 @@ def articulo_crear(request):
 
 @login_required
 def articulo_editar(request, articulo_id):
-    """Editar artículo"""
+    """Editar artÃ­culo"""
     if request.user.rol not in ['Administrador', 'Director', 'Secretaria']:
-        messages.error(request, 'No tienes permiso para acceder a esta página.')
+        messages.error(request, 'No tienes permiso para acceder a esta pÃ¡gina.')
         return redirect('plataform')
     
     from .models import Articulo, CategoriaArticulo
@@ -8998,16 +9196,16 @@ def articulo_editar(request, articulo_id):
                 articulo.categoria = None
             
             articulo.save()
-            messages.success(request, f'Artículo {articulo.codigo_barras} actualizado exitosamente.')
+            messages.success(request, f'ArtÃ­culo {articulo.codigo_barras} actualizado exitosamente.')
             return redirect('articulos_list')
             
         except Exception as e:
-            messages.error(request, f'Error al actualizar artículo: {str(e)}')
+            messages.error(request, f'Error al actualizar artÃ­culo: {str(e)}')
     
     categorias = CategoriaArticulo.objects.filter(activa=True).order_by('nombre')
     
     context = {
-        'titulo': 'Editar Artículo',
+        'titulo': 'Editar ArtÃ­culo',
         'articulo': articulo,
         'categorias': categorias,
     }
@@ -9016,22 +9214,22 @@ def articulo_editar(request, articulo_id):
 
 @login_required
 def articulo_detalle(request, articulo_id):
-    """Ver detalle del artículo"""
+    """Ver detalle del artÃ­culo"""
     if request.user.rol not in ['Administrador', 'Director', 'Secretaria']:
-        messages.error(request, 'No tienes permiso para acceder a esta página.')
+        messages.error(request, 'No tienes permiso para acceder a esta pÃ¡gina.')
         return redirect('plataform')
     
     from .models import Articulo, MovimientoInventario
     
     articulo = get_object_or_404(Articulo.objects.select_related('categoria', 'creado_por'), id=articulo_id)
     
-    # Últimos movimientos
+    # Ãltimos movimientos
     movimientos = MovimientoInventario.objects.filter(
         articulo=articulo
     ).select_related('usuario', 'factura').order_by('-fecha')[:20]
     
     context = {
-        'titulo': f'Artículo: {articulo.nombre}',
+        'titulo': f'ArtÃ­culo: {articulo.nombre}',
         'articulo': articulo,
         'movimientos': movimientos,
     }
@@ -9040,9 +9238,9 @@ def articulo_detalle(request, articulo_id):
 
 @login_required
 def categorias_list(request):
-    """Lista de categorías"""
+    """Lista de categorÃ­as"""
     if request.user.rol not in ['Administrador', 'Director', 'Secretaria']:
-        messages.error(request, 'No tienes permiso para acceder a esta página.')
+        messages.error(request, 'No tienes permiso para acceder a esta pÃ¡gina.')
         return redirect('plataform')
     
     from .models import CategoriaArticulo
@@ -9052,7 +9250,7 @@ def categorias_list(request):
     ).order_by('nombre')
     
     context = {
-        'titulo': 'Categorías de Artículos',
+        'titulo': 'CategorÃ­as de ArtÃ­culos',
         'categorias': categorias,
     }
     return render(request, 'inventario/categorias_list.html', context)
@@ -9060,17 +9258,17 @@ def categorias_list(request):
 
 @login_required
 def categoria_crear(request):
-    """Crear nueva categoría"""
+    """Crear nueva categorÃ­a"""
     if request.user.rol not in ['Administrador', 'Director', 'Secretaria']:
-        messages.error(request, 'No tienes permiso para realizar esta acción.')
+        messages.error(request, 'No tienes permiso para realizar esta acciÃ³n.')
         return redirect('categorias_list')
     
     from .models import CategoriaArticulo
     
     if request.method == 'POST':
         try:
-            # Si el checkbox no está marcado, request.POST.get('activa') será None
-            # Por defecto, una nueva categoría debe estar activa
+            # Si el checkbox no estÃ¡ marcado, request.POST.get('activa') serÃ¡ None
+            # Por defecto, una nueva categorÃ­a debe estar activa
             activa = request.POST.get('activa') == 'on' if 'activa' in request.POST else True
             
             categoria = CategoriaArticulo(
@@ -9079,23 +9277,23 @@ def categoria_crear(request):
                 activa=activa
             )
             categoria.save()
-            messages.success(request, f'Categoría "{categoria.nombre}" creada exitosamente.')
+            messages.success(request, f'CategorÃ­a "{categoria.nombre}" creada exitosamente.')
             return redirect('categorias_list')
             
         except Exception as e:
-            messages.error(request, f'Error al crear categoría: {str(e)}')
+            messages.error(request, f'Error al crear categorÃ­a: {str(e)}')
     
     context = {
-        'titulo': 'Nueva Categoría',
+        'titulo': 'Nueva CategorÃ­a',
     }
     return render(request, 'inventario/categoria_form.html', context)
 
 
 @login_required
 def categoria_editar(request, categoria_id):
-    """Editar categoría"""
+    """Editar categorÃ­a"""
     if request.user.rol not in ['Administrador', 'Director', 'Secretaria']:
-        messages.error(request, 'No tienes permiso para realizar esta acción.')
+        messages.error(request, 'No tienes permiso para realizar esta acciÃ³n.')
         return redirect('categorias_list')
     
     from .models import CategoriaArticulo
@@ -9108,14 +9306,14 @@ def categoria_editar(request, categoria_id):
             categoria.descripcion = request.POST.get('descripcion', '')
             categoria.activa = request.POST.get('activa') == 'on'
             categoria.save()
-            messages.success(request, f'Categoría "{categoria.nombre}" actualizada exitosamente.')
+            messages.success(request, f'CategorÃ­a "{categoria.nombre}" actualizada exitosamente.')
             return redirect('categorias_list')
             
         except Exception as e:
-            messages.error(request, f'Error al actualizar categoría: {str(e)}')
+            messages.error(request, f'Error al actualizar categorÃ­a: {str(e)}')
     
     context = {
-        'titulo': 'Editar Categoría',
+        'titulo': 'Editar CategorÃ­a',
         'categoria': categoria,
     }
     return render(request, 'inventario/categoria_form.html', context)
@@ -9123,9 +9321,9 @@ def categoria_editar(request, categoria_id):
 
 @login_required
 def categoria_eliminar(request, categoria_id):
-    """Eliminar categoría"""
+    """Eliminar categorÃ­a"""
     if request.user.rol not in ['Administrador']:
-        messages.error(request, 'No tienes permiso para realizar esta acción.')
+        messages.error(request, 'No tienes permiso para realizar esta acciÃ³n.')
         return redirect('categorias_list')
     
     from .models import CategoriaArticulo
@@ -9134,9 +9332,9 @@ def categoria_eliminar(request, categoria_id):
     
     if request.method == 'POST':
         nombre = categoria.nombre
-        # Los artículos quedarán sin categoría (FK permite null=True)
+        # Los artÃ­culos quedarÃ¡n sin categorÃ­a (FK permite null=True)
         categoria.delete()
-        messages.success(request, f'Categoría "{nombre}" eliminada exitosamente.')
+        messages.success(request, f'CategorÃ­a "{nombre}" eliminada exitosamente.')
         return redirect('categorias_list')
     
     return redirect('categorias_list')
@@ -9148,7 +9346,7 @@ def categoria_eliminar(request, categoria_id):
 def reportes_ventas(request):
     """Dashboard principal de reportes de ventas"""
     if request.user.rol not in ['Administrador', 'Secretaria', 'Director']:
-        messages.error(request, 'No tienes permiso para acceder a esta página.')
+        messages.error(request, 'No tienes permiso para acceder a esta pÃ¡gina.')
         return redirect('plataform')
     
     from .models import Factura, DetalleFactura, ConfiguracionEscuela
@@ -9158,14 +9356,14 @@ def reportes_ventas(request):
 
     config_escuela = ConfiguracionEscuela.get_configuracion()
     
-    # Obtener parámetros de filtro
+    # Obtener parÃ¡metros de filtro
     periodo = request.GET.get('periodo', 'dia')  # dia, semana, mes, anio, personalizado (por defecto: hoy)
     fecha_inicio = request.GET.get('fecha_inicio')
     fecha_fin = request.GET.get('fecha_fin')
     usuario_id = request.GET.get('usuario', '')  # Filtro por usuario
-    export_pdf = request.GET.get('export', '')  # Parámetro para exportar PDF
+    export_pdf = request.GET.get('export', '')  # ParÃ¡metro para exportar PDF
     
-    # Calcular rango de fechas según el período
+    # Calcular rango de fechas segÃºn el perÃ­odo
     hoy = timezone.localtime(timezone.now())
     
     if periodo == 'dia':
@@ -9184,7 +9382,7 @@ def reportes_ventas(request):
     elif periodo == 'anio':
         fecha_inicio = hoy.replace(month=1, day=1, hour=0, minute=0, second=0, microsecond=0)
         fecha_fin = hoy.replace(hour=23, minute=59, second=59, microsecond=999999)
-        titulo_periodo = f"Este Año - {fecha_inicio.year}"
+        titulo_periodo = f"Este AÃ±o - {fecha_inicio.year}"
     elif periodo == 'personalizado' and fecha_inicio and fecha_fin:
         fecha_inicio = timezone.make_aware(datetime.strptime(fecha_inicio, '%Y-%m-%d'))
         fecha_fin = timezone.make_aware(datetime.strptime(fecha_fin + ' 23:59:59', '%Y-%m-%d %H:%M:%S'))
@@ -9196,7 +9394,7 @@ def reportes_ventas(request):
         titulo_periodo = f"Este Mes - {fecha_inicio.strftime('%B %Y')}"
         periodo = 'mes'
     
-    # Filtrar facturas por período
+    # Filtrar facturas por perÃ­odo
     facturas = Factura.objects.filter(
         fecha_emision__gte=fecha_inicio,
         fecha_emision__lte=fecha_fin
@@ -9208,7 +9406,7 @@ def reportes_ventas(request):
         facturas = facturas.filter(creado_por=request.user)
         usuario_filtrado = request.user
     elif request.user.rol == 'Administrador' and usuario_id:
-        # Administrador puede filtrar por usuario específico
+        # Administrador puede filtrar por usuario especÃ­fico
         from .models import CustomUser
         try:
             usuario_filtrado = CustomUser.objects.get(id=usuario_id)
@@ -9219,7 +9417,7 @@ def reportes_ventas(request):
         # Administrador sin filtro ve todo
         usuario_filtrado = None
     
-    # Estadísticas generales
+    # EstadÃ­sticas generales
     total_ventas = facturas.aggregate(total=Sum('total'))['total'] or 0
     total_facturas = facturas.count()
     promedio_venta = facturas.aggregate(promedio=Avg('total'))['promedio'] or 0
@@ -9231,7 +9429,7 @@ def reportes_ventas(request):
     facturas_pagadas = facturas.filter(estado='pagada').count()
     facturas_parciales = facturas.filter(estado='parcial').count()
     
-    # Ventas por día (para gráfico)
+    # Ventas por dÃ­a (para grÃ¡fico)
     ventas_por_dia = facturas.extra(
         select={'dia': 'DATE(fecha_emision)'}
     ).values('dia').annotate(
@@ -9239,7 +9437,7 @@ def reportes_ventas(request):
         cantidad=Count('id')
     ).order_by('dia')
     
-    # Top artículos más vendidos
+    # Top artÃ­culos mÃ¡s vendidos
     from .models import Articulo
     from django.db.models import Case, When, Value
     
@@ -9255,7 +9453,7 @@ def reportes_ventas(request):
     elif request.user.rol == 'Administrador' and usuario_id and usuario_filtrado:
         detalles_query = detalles_query.filter(factura__creado_por=usuario_filtrado)
     
-    # Expresión para calcular ingresos con ITBIS (protegido contra división por cero)
+    # ExpresiÃ³n para calcular ingresos con ITBIS (protegido contra divisiÃ³n por cero)
     ingresos_con_itbis = ExpressionWrapper(
         Case(
             When(
@@ -9279,7 +9477,7 @@ def reportes_ventas(request):
         ingresos=Sum(ingresos_con_itbis)
     ).order_by('-total_vendido')[:10]
     
-    # TODOS los artículos vendidos (para detalle completo)
+    # TODOS los artÃ­culos vendidos (para detalle completo)
     todos_articulos = detalles_query.filter(
     ).exclude(
         articulo=None
@@ -9301,10 +9499,10 @@ def reportes_ventas(request):
         ingresos=Sum(ingresos_con_itbis)
     ).order_by('-ingresos')
     
-    # Combinar artículos y conceptos en una lista unificada
+    # Combinar artÃ­culos y conceptos en una lista unificada
     todos_items_vendidos = []
     
-    # Agregar artículos
+    # Agregar artÃ­culos
     for articulo in todos_articulos:
         todos_items_vendidos.append({
             'tipo': 'Producto',
@@ -9320,7 +9518,7 @@ def reportes_ventas(request):
         if tipo_concepto == 'mensualidad':
             tipo_label = 'Mensualidad'
         elif tipo_concepto == 'inscripcion':
-            tipo_label = 'Inscripción'
+            tipo_label = 'InscripciÃ³n'
         else:
             tipo_label = 'Servicio'
             
@@ -9335,7 +9533,7 @@ def reportes_ventas(request):
     # Ordenar por ingresos descendente
     todos_items_vendidos.sort(key=lambda x: x['ingresos'], reverse=True)
     
-    # Top conceptos más facturados
+    # Top conceptos mÃ¡s facturados
     from .models import ConceptoPago
     top_conceptos = detalles_query.filter(
     ).exclude(
@@ -9357,7 +9555,7 @@ def reportes_ventas(request):
         num_facturas=Count('id')
     ).order_by('-total_gastado')[:10]
     
-    # Comparación con período anterior
+    # ComparaciÃ³n con perÃ­odo anterior
     if periodo == 'dia':
         fecha_inicio_anterior = fecha_inicio - timedelta(days=1)
         fecha_fin_anterior = fecha_inicio - timedelta(seconds=1)
@@ -9379,7 +9577,7 @@ def reportes_ventas(request):
         fecha_emision__lte=fecha_fin_anterior
     ).exclude(estado='anulada')
     
-    # Aplicar el mismo filtro de usuario al período anterior
+    # Aplicar el mismo filtro de usuario al perÃ­odo anterior
     if request.user.rol == 'Secretaria':
         facturas_anterior = facturas_anterior.filter(creado_por=request.user)
     elif request.user.rol == 'Administrador' and usuario_id and usuario_filtrado:
@@ -9387,27 +9585,27 @@ def reportes_ventas(request):
     
     total_ventas_anterior = facturas_anterior.aggregate(total=Sum('total'))['total'] or 0
     
-    # Calcular variación porcentual
+    # Calcular variaciÃ³n porcentual
     if total_ventas_anterior > 0:
         variacion_porcentual = ((total_ventas - total_ventas_anterior) / total_ventas_anterior) * 100
     else:
         variacion_porcentual = 100 if total_ventas > 0 else 0
     
-    # NUEVAS MÉTRICAS AVANZADAS
+    # NUEVAS MÃTRICAS AVANZADAS
     
-    # Análisis de efectivo
+    # AnÃ¡lisis de efectivo
     total_cobrado = facturas.filter(estado='pagada').aggregate(total=Sum('monto_pagado'))['total'] or 0
     total_pendiente_cobro = facturas.filter(estado__in=['pendiente', 'parcial']).aggregate(
         pendiente=Sum(ExpressionWrapper(F('total') - F('monto_pagado'), output_field=DecimalField()))
     )['pendiente'] or 0
     
-    # Ventas por método de pago
+    # Ventas por mÃ©todo de pago
     ventas_por_metodo = facturas.filter(metodo_pago__isnull=False).values('metodo_pago').annotate(
         total=Sum('total'),
         cantidad=Count('id')
     ).order_by('-total')
     
-    # Análisis de productos vs servicios
+    # AnÃ¡lisis de productos vs servicios
     ingresos_productos_query = DetalleFactura.objects.filter(
         factura__fecha_emision__gte=fecha_inicio,
         factura__fecha_emision__lte=fecha_fin,
@@ -9456,7 +9654,7 @@ def reportes_ventas(request):
         )
     ).aggregate(total=Sum('ingreso_con_itbis'))['total'] or 0
     
-    # Ventas por hora del día (solo para día y semana)
+    # Ventas por hora del dÃ­a (solo para dÃ­a y semana)
     ventas_por_hora = None
     if periodo in ['dia', 'semana']:
         ventas_por_hora = facturas.extra(
@@ -9471,13 +9669,13 @@ def reportes_ventas(request):
         total_gastado=Sum('total')
     ).aggregate(promedio=Avg('total_gastado'))['promedio'] or 0
     
-    # Tasa de conversión (facturas pagadas vs total)
+    # Tasa de conversiÃ³n (facturas pagadas vs total)
     tasa_pago = (facturas_pagadas / total_facturas * 100) if total_facturas > 0 else 0
     
     # Porcentaje de pendiente
     pendiente_porcentaje = (total_pendiente_cobro / total_ventas * 100) if total_ventas > 0 else 0
     
-    # Análisis de descuentos
+    # AnÃ¡lisis de descuentos
     facturas_con_descuento = facturas.filter(descuento__gt=0).count()
     porcentaje_descuento_promedio = (total_descuentos / total_ventas * 100) if total_ventas > 0 else 0
     
@@ -9523,7 +9721,7 @@ def reportes_ventas(request):
     ingresos_mensualidades = mensualidades['total'] or 0
     cantidad_mensualidades = mensualidades['cantidad'] or 0
     
-    # Ventas por día de la semana
+    # Ventas por dÃ­a de la semana
     ventas_por_dia_semana = facturas.extra(
         select={'dia_semana': "EXTRACT(DOW FROM fecha_emision)"}
     ).values('dia_semana').annotate(
@@ -9531,8 +9729,8 @@ def reportes_ventas(request):
         cantidad=Count('id')
     ).order_by('dia_semana')
     
-    # Mapear días de la semana
-    dias_semana = {0: 'Domingo', 1: 'Lunes', 2: 'Martes', 3: 'Miércoles', 4: 'Jueves', 5: 'Viernes', 6: 'Sábado'}
+    # Mapear dÃ­as de la semana
+    dias_semana = {0: 'Domingo', 1: 'Lunes', 2: 'Martes', 3: 'MiÃ©rcoles', 4: 'Jueves', 5: 'Viernes', 6: 'SÃ¡bado'}
     for venta in ventas_por_dia_semana:
         venta['nombre_dia'] = dias_semana.get(venta['dia_semana'], 'Desconocido')
     
@@ -9563,15 +9761,15 @@ def reportes_ventas(request):
         'usuario_filtrado': usuario_filtrado,
         'usuarios_vendedores': usuarios_vendedores,
         
-        # Información de la escuela desde configuración
+        # InformaciÃ³n de la escuela desde configuraciÃ³n
         'escuela_nombre': config_escuela.nombre_escuela or getattr(settings, 'ESCUELA_NOMBRE', 'Escuela'),
         'escuela_rnc': config_escuela.rnc or getattr(settings, 'ESCUELA_RNC', ''),
         'escuela_telefono': config_escuela.telefono or getattr(settings, 'ESCUELA_TELEFONO', ''),
         'escuela_direccion': config_escuela.direccion or getattr(settings, 'ESCUELA_DIRECCION', ''),
         'escuela_email': config_escuela.email or getattr(settings, 'ESCUELA_EMAIL', ''),
-        'escuela_lema': config_escuela.lema or 'Excelencia Educativa y Formación Integral',
+        'escuela_lema': config_escuela.lema or 'Excelencia Educativa y FormaciÃ³n Integral',
         
-        # Estadísticas básicas
+        # EstadÃ­sticas bÃ¡sicas
         'total_ventas': total_ventas,
         'total_facturas': total_facturas,
         'promedio_venta': promedio_venta,
@@ -9583,7 +9781,7 @@ def reportes_ventas(request):
         'facturas_pagadas': facturas_pagadas,
         'facturas_parciales': facturas_parciales,
         
-        # Gráficos básicos
+        # GrÃ¡ficos bÃ¡sicos
         'ventas_por_dia': list(ventas_por_dia),
         'top_articulos': list(top_articulos),
         'todos_articulos': list(todos_articulos),
@@ -9591,11 +9789,11 @@ def reportes_ventas(request):
         'top_conceptos': list(top_conceptos),
         'top_estudiantes': list(top_estudiantes),
         
-        # Comparación
+        # ComparaciÃ³n
         'total_ventas_anterior': total_ventas_anterior,
         'variacion_porcentual': variacion_porcentual,
         
-        # NUEVAS MÉTRICAS
+        # NUEVAS MÃTRICAS
         'total_cobrado': total_cobrado,
         'total_pendiente_cobro': total_pendiente_cobro,
         'pendiente_porcentaje': pendiente_porcentaje,
@@ -9661,7 +9859,7 @@ def reportes_ventas(request):
 
 @login_required
 def lista_estudiantes_curso_info(request):
-    """Lista de estudiantes con solo información personal"""
+    """Lista de estudiantes con solo informaciÃ³n personal"""
     curso_id = request.GET.get('curso')
     if not curso_id:
         messages.error(request, 'Debe especificar un curso.')
@@ -9669,7 +9867,7 @@ def lista_estudiantes_curso_info(request):
     
     curso = get_object_or_404(Curso, id=curso_id)
     
-    # Obtener estudiantes únicos matriculados en el curso
+    # Obtener estudiantes Ãºnicos matriculados en el curso
     estudiantes = CustomUser.objects.filter(
         matriculas__materia__curso=curso,
         rol='Estudiante'
@@ -9697,7 +9895,7 @@ def lista_estudiantes_curso_promedios(request):
     # Obtener materias del curso
     materias = Materia.objects.filter(curso=curso).order_by('nombre')
     
-    # Obtener estudiantes con sus matrículas
+    # Obtener estudiantes con sus matrÃ­culas
     estudiantes_data = []
     estudiantes = CustomUser.objects.filter(
         matriculas__materia__curso=curso,
@@ -9705,7 +9903,7 @@ def lista_estudiantes_curso_promedios(request):
     ).distinct().order_by('first_name', 'last_name')
     
     for estudiante in estudiantes:
-        # Obtener matrículas del estudiante para las materias de este curso
+        # Obtener matrÃ­culas del estudiante para las materias de este curso
         matriculas_dict = {}
         matriculas = Matricula.objects.filter(
             estudiante=estudiante,
@@ -9735,7 +9933,7 @@ def lista_estudiantes_curso_promedios(request):
 
 @login_required
 def lista_estudiantes_curso_info_pdf(request):
-    """Genera PDF de la lista de estudiantes con información personal"""
+    """Genera PDF de la lista de estudiantes con informaciÃ³n personal"""
     curso_id = request.GET.get('curso')
     if not curso_id:
         messages.error(request, 'Debe especificar un curso.')
@@ -9743,7 +9941,7 @@ def lista_estudiantes_curso_info_pdf(request):
     
     curso = get_object_or_404(Curso, id=curso_id)
     
-    # Obtener estudiantes únicos matriculados en el curso
+    # Obtener estudiantes Ãºnicos matriculados en el curso
     estudiantes = CustomUser.objects.filter(
         matriculas__materia__curso=curso,
         rol='Estudiante'
@@ -9761,7 +9959,7 @@ def lista_estudiantes_curso_info_pdf(request):
     response = HttpResponse(content_type='application/pdf')
     response['Content-Disposition'] = f'inline; filename="lista_estudiantes_info_{curso.id}.pdf"'
     
-    # Función para resolver rutas de archivos estáticos
+    # FunciÃ³n para resolver rutas de archivos estÃ¡ticos
     def link_callback(uri, rel):
         import os
         if os.path.isfile(uri):
@@ -9799,7 +9997,7 @@ def lista_estudiantes_curso_promedios_pdf(request):
     # Obtener materias del curso
     materias = Materia.objects.filter(curso=curso).order_by('nombre')
     
-    # Obtener estudiantes con sus matrículas
+    # Obtener estudiantes con sus matrÃ­culas
     estudiantes_data = []
     estudiantes = CustomUser.objects.filter(
         matriculas__materia__curso=curso,
@@ -9837,7 +10035,7 @@ def lista_estudiantes_curso_promedios_pdf(request):
     response = HttpResponse(content_type='application/pdf')
     response['Content-Disposition'] = f'inline; filename="lista_promedios_{curso.id}.pdf"'
     
-    # Función para resolver rutas de archivos estáticos
+    # FunciÃ³n para resolver rutas de archivos estÃ¡ticos
     def link_callback(uri, rel):
         import os
         if os.path.isfile(uri):
@@ -9873,11 +10071,11 @@ from django.db.models import Q, Count
 @login_required
 def plan_cuentas_list(request):
     """
-    Vista para listar todas las cuentas contables con búsqueda y filtros
+    Vista para listar todas las cuentas contables con bÃºsqueda y filtros
     """
     # Verificar permisos
     if request.user.rol not in ['Administrador', 'Director', 'Secretaria']:
-        messages.error(request, 'No tienes permiso para acceder a esta página.')
+        messages.error(request, 'No tienes permiso para acceder a esta pÃ¡gina.')
         return redirect('plataform')
     
     # Obtener todas las cuentas
@@ -9892,7 +10090,7 @@ def plan_cuentas_list(request):
         activo = form.cleaned_data.get('activo')
         es_detalle = form.cleaned_data.get('es_detalle')
         
-        # Filtro de búsqueda
+        # Filtro de bÃºsqueda
         if busqueda:
             cuentas = cuentas.filter(
                 Q(codigo__icontains=busqueda) |
@@ -9916,10 +10114,10 @@ def plan_cuentas_list(request):
         elif es_detalle == 'false':
             cuentas = cuentas.filter(es_detalle=False)
     
-    # Ordenar por código
+    # Ordenar por cÃ³digo
     cuentas = cuentas.order_by('codigo')
     
-    # Calcular estadísticas
+    # Calcular estadÃ­sticas
     stats = {
         'total': PlanCuentas.objects.count(),
         'activas': PlanCuentas.objects.filter(activo=True).count(),
@@ -9950,7 +10148,7 @@ def plan_cuentas_crear(request):
     """
     # Verificar permisos
     if request.user.rol not in ['Administrador', 'Director']:
-        messages.error(request, 'No tienes permiso para acceder a esta página.')
+        messages.error(request, 'No tienes permiso para acceder a esta pÃ¡gina.')
         return redirect('plan_cuentas_list')
     
     if request.method == 'POST':
@@ -9980,7 +10178,7 @@ def plan_cuentas_editar(request, pk):
     """
     # Verificar permisos
     if request.user.rol not in ['Administrador', 'Director']:
-        messages.error(request, 'No tienes permiso para acceder a esta página.')
+        messages.error(request, 'No tienes permiso para acceder a esta pÃ¡gina.')
         return redirect('plan_cuentas_list')
     
     cuenta = get_object_or_404(PlanCuentas, pk=pk)
@@ -10026,7 +10224,7 @@ def plan_cuentas_detalle(request, pk):
     """
     # Verificar permisos
     if request.user.rol not in ['Administrador', 'Director', 'Secretaria']:
-        messages.error(request, 'No tienes permiso para acceder a esta página.')
+        messages.error(request, 'No tienes permiso para acceder a esta pÃ¡gina.')
         return redirect('plataform')
     
     cuenta = get_object_or_404(PlanCuentas, pk=pk)
@@ -10058,7 +10256,7 @@ def plan_cuentas_eliminar(request, pk):
     """
     # Verificar permisos
     if request.user.rol not in ['Administrador']:
-        messages.error(request, 'No tienes permiso para realizar esta acción.')
+        messages.error(request, 'No tienes permiso para realizar esta acciÃ³n.')
         return redirect('plan_cuentas_list')
     
     cuenta = get_object_or_404(PlanCuentas, pk=pk)
@@ -10106,14 +10304,14 @@ def plan_cuentas_toggle_activo(request, pk):
             'mensaje': f'Cuenta {"activada" if cuenta.activo else "desactivada"} exitosamente.'
         })
     
-    return JsonResponse({'error': 'Método no permitido'}, status=405)
+    return JsonResponse({'error': 'MÃ©todo no permitido'}, status=405)
 
 
 @login_required
 def plan_cuentas_obtener_subcuentas(request, pk):
     """
     API para obtener las subcuentas de una cuenta padre (AJAX)
-    Útil para actualizar dinámicamente formularios
+    Ãtil para actualizar dinÃ¡micamente formularios
     """
     if request.user.rol not in ['Administrador', 'Director', 'Secretaria']:
         return JsonResponse({'error': 'No autorizado'}, status=403)
@@ -10139,14 +10337,14 @@ def plan_cuentas_obtener_subcuentas(request, pk):
 @login_required
 def plan_cuentas_estructura_json(request):
     """
-    API para obtener la estructura completa del plan de cuentas en formato JSON jerárquico
-    Útil para visualizaciones tipo árbol
+    API para obtener la estructura completa del plan de cuentas en formato JSON jerÃ¡rquico
+    Ãtil para visualizaciones tipo Ã¡rbol
     """
     if request.user.rol not in ['Administrador', 'Director', 'Secretaria']:
         return JsonResponse({'error': 'No autorizado'}, status=403)
     
     def construir_arbol(cuenta_padre=None):
-        """Función recursiva para construir el árbol de cuentas"""
+        """FunciÃ³n recursiva para construir el Ã¡rbol de cuentas"""
         if cuenta_padre:
             cuentas = PlanCuentas.objects.filter(
                 cuenta_padre=cuenta_padre,
@@ -10193,11 +10391,11 @@ import json
 @login_required
 def asientos_list(request):
     """
-    Vista para listar todos los asientos contables con búsqueda y filtros
+    Vista para listar todos los asientos contables con bÃºsqueda y filtros
     """
     # Verificar permisos
     if request.user.rol not in ['Administrador', 'Director', 'Secretaria']:
-        messages.error(request, 'No tienes permiso para acceder a esta página.')
+        messages.error(request, 'No tienes permiso para acceder a esta pÃ¡gina.')
         return redirect('plataform')
     
     # Obtener todos los asientos
@@ -10232,7 +10430,7 @@ def asientos_list(request):
         if fecha_hasta:
             asientos = asientos.filter(fecha_asiento__lte=fecha_hasta)
     
-    # Calcular estadísticas
+    # Calcular estadÃ­sticas
     stats = {
         'total': AsientoContable.objects.count(),
         'borradores': AsientoContable.objects.filter(estado='BORRADOR').count(),
@@ -10262,14 +10460,14 @@ def asiento_crear(request):
     """
     # Verificar permisos
     if request.user.rol not in ['Administrador', 'Director']:
-        messages.error(request, 'No tienes permiso para acceder a esta página.')
+        messages.error(request, 'No tienes permiso para acceder a esta pÃ¡gina.')
         return redirect('asientos_list')
     
     if request.method == 'POST':
         # Procesar formulario del asiento
         form = AsientoContableForm(request.POST)
         
-        # Obtener datos de las líneas (JSON)
+        # Obtener datos de las lÃ­neas (JSON)
         lineas_json = request.POST.get('lineas_data', '[]')
         
         try:
@@ -10283,7 +10481,7 @@ def asiento_crear(request):
             asiento.creado_por = request.user
             asiento.save()
             
-            # Crear las líneas
+            # Crear las lÃ­neas
             total_debito = Decimal('0.00')
             total_credito = Decimal('0.00')
             
@@ -10307,7 +10505,7 @@ def asiento_crear(request):
                     total_credito += detalle.credito
                     
                 except Exception as e:
-                    messages.error(request, f'Error en línea {idx}: {str(e)}')
+                    messages.error(request, f'Error en lÃ­nea {idx}: {str(e)}')
                     asiento.delete()
                     return redirect('asiento_crear')
             
@@ -10323,7 +10521,7 @@ def asiento_crear(request):
             return redirect('asiento_detalle', pk=asiento.pk)
         else:
             if not lineas_data:
-                messages.error(request, 'Debe agregar al menos una línea al asiento.')
+                messages.error(request, 'Debe agregar al menos una lÃ­nea al asiento.')
     else:
         form = AsientoContableForm()
     
@@ -10349,7 +10547,7 @@ def asiento_detalle(request, pk):
     """
     # Verificar permisos
     if request.user.rol not in ['Administrador', 'Director', 'Secretaria']:
-        messages.error(request, 'No tienes permiso para acceder a esta página.')
+        messages.error(request, 'No tienes permiso para acceder a esta pÃ¡gina.')
         return redirect('plataform')
     
     asiento = get_object_or_404(AsientoContable, pk=pk)
@@ -10370,7 +10568,7 @@ def asiento_contabilizar(request, pk):
     """
     # Verificar permisos
     if request.user.rol not in ['Administrador', 'Director']:
-        messages.error(request, 'No tienes permiso para realizar esta acción.')
+        messages.error(request, 'No tienes permiso para realizar esta acciÃ³n.')
         return redirect('asiento_detalle', pk=pk)
     
     asiento = get_object_or_404(AsientoContable, pk=pk)
@@ -10388,7 +10586,7 @@ def asiento_contabilizar(request, pk):
         else:
             messages.error(
                 request,
-                'El asiento no puede ser contabilizado. Verifique que esté cuadrado y tenga líneas.'
+                'El asiento no puede ser contabilizado. Verifique que estÃ© cuadrado y tenga lÃ­neas.'
             )
         
         return redirect('asiento_detalle', pk=pk)
@@ -10407,7 +10605,7 @@ def asiento_anular(request, pk):
     """
     # Verificar permisos
     if request.user.rol not in ['Administrador']:
-        messages.error(request, 'No tienes permiso para realizar esta acción.')
+        messages.error(request, 'No tienes permiso para realizar esta acciÃ³n.')
         return redirect('asiento_detalle', pk=pk)
     
     asiento = get_object_or_404(AsientoContable, pk=pk)
@@ -10447,7 +10645,7 @@ def asiento_eliminar(request, pk):
     """
     # Verificar permisos
     if request.user.rol not in ['Administrador']:
-        messages.error(request, 'No tienes permiso para realizar esta acción.')
+        messages.error(request, 'No tienes permiso para realizar esta acciÃ³n.')
         return redirect('asiento_detalle', pk=pk)
     
     asiento = get_object_or_404(AsientoContable, pk=pk)
@@ -10476,7 +10674,7 @@ def asiento_imprimir(request, pk):
     """
     # Verificar permisos
     if request.user.rol not in ['Administrador', 'Director', 'Secretaria']:
-        messages.error(request, 'No tienes permiso para acceder a esta página.')
+        messages.error(request, 'No tienes permiso para acceder a esta pÃ¡gina.')
         return redirect('plataform')
     
     asiento = get_object_or_404(AsientoContable, pk=pk)
@@ -10502,10 +10700,10 @@ def contabilidad_dashboard(request):
     Dashboard principal de contabilidad con KPIs y resumen
     """
     if request.user.rol not in ['Administrador', 'Director', 'Secretaria']:
-        messages.error(request, 'No tienes permiso para acceder a esta página.')
+        messages.error(request, 'No tienes permiso para acceder a esta pÃ¡gina.')
         return redirect('plataform')
     
-    # Estadísticas generales
+    # EstadÃ­sticas generales
     stats = {
         'total_cuentas': PlanCuentas.objects.filter(activo=True).count(),
         'cuentas_detalle': PlanCuentas.objects.filter(es_detalle=True, activo=True).count(),
@@ -10523,7 +10721,7 @@ def contabilidad_dashboard(request):
         ).aggregate(total=Sum('saldo_actual'))['total'] or Decimal('0.00')
         totales_tipo[tipo] = total
     
-    # Últimos asientos
+    # Ãltimos asientos
     ultimos_asientos = AsientoContable.objects.all()[:10]
     
     # Cuentas con mayor movimiento
@@ -10547,10 +10745,10 @@ def contabilidad_dashboard(request):
 @login_required
 def libro_diario(request):
     """
-    Libro Diario - Registro cronológico de todos los asientos contables
+    Libro Diario - Registro cronolÃ³gico de todos los asientos contables
     """
     if request.user.rol not in ['Administrador', 'Director', 'Secretaria']:
-        messages.error(request, 'No tienes permiso para acceder a esta página.')
+        messages.error(request, 'No tienes permiso para acceder a esta pÃ¡gina.')
         return redirect('plataform')
     
     # Filtros
@@ -10596,7 +10794,7 @@ def libro_mayor(request):
     Libro Mayor - Movimientos agrupados por cuenta
     """
     if request.user.rol not in ['Administrador', 'Director', 'Secretaria']:
-        messages.error(request, 'No tienes permiso para acceder a esta página.')
+        messages.error(request, 'No tienes permiso para acceder a esta pÃ¡gina.')
         return redirect('plataform')
     
     # Filtros
@@ -10648,7 +10846,7 @@ def libro_mayor(request):
         cuentas_con_movimientos[cuenta_codigo]['total_debito'] += movimiento.debito
         cuentas_con_movimientos[cuenta_codigo]['total_credito'] += movimiento.credito
         
-        # Calcular saldo según naturaleza
+        # Calcular saldo segÃºn naturaleza
         if movimiento.cuenta.naturaleza == 'DEUDORA':
             cuentas_con_movimientos[cuenta_codigo]['saldo'] += movimiento.debito - movimiento.credito
         else:
@@ -10669,10 +10867,10 @@ def libro_mayor(request):
 @login_required
 def balance_comprobacion(request):
     """
-    Balance de Comprobación - Sumas y Saldos de todas las cuentas
+    Balance de ComprobaciÃ³n - Sumas y Saldos de todas las cuentas
     """
     if request.user.rol not in ['Administrador', 'Director', 'Secretaria']:
-        messages.error(request, 'No tienes permiso para acceder a esta página.')
+        messages.error(request, 'No tienes permiso para acceder a esta pÃ¡gina.')
         return redirect('plataform')
     
     # Filtros
@@ -10715,7 +10913,7 @@ def balance_comprobacion(request):
         debito = sumas['debito'] or Decimal('0.00')
         credito = sumas['credito'] or Decimal('0.00')
         
-        # Calcular saldo según naturaleza
+        # Calcular saldo segÃºn naturaleza
         if cuenta.naturaleza == 'DEUDORA':
             saldo = debito - credito
         else:
@@ -10756,7 +10954,7 @@ def estado_resultados(request):
     Estado de Resultados (P&L) - Ingresos vs Gastos
     """
     if request.user.rol not in ['Administrador', 'Director', 'Secretaria']:
-        messages.error(request, 'No tienes permiso para acceder a esta página.')
+        messages.error(request, 'No tienes permiso para acceder a esta pÃ¡gina.')
         return redirect('plataform')
     
     # Filtros
@@ -10843,10 +11041,10 @@ def estado_resultados(request):
 @login_required
 def balance_general(request):
     """
-    Balance General - Estado de Situación Financiera (Activos, Pasivos, Patrimonio)
+    Balance General - Estado de SituaciÃ³n Financiera (Activos, Pasivos, Patrimonio)
     """
     if request.user.rol not in ['Administrador', 'Director', 'Secretaria']:
-        messages.error(request, 'No tienes permiso para acceder a esta página.')
+        messages.error(request, 'No tienes permiso para acceder a esta pÃ¡gina.')
         return redirect('plataform')
     
     # Fecha de corte
@@ -10906,7 +11104,7 @@ def balance_general(request):
     pasivos_data, total_pasivos = calcular_saldos(pasivos, fecha_corte)
     patrimonio_data, total_patrimonio = calcular_saldos(patrimonio, fecha_corte)
     
-    # El patrimonio debe equilibrar la ecuación contable
+    # El patrimonio debe equilibrar la ecuaciÃ³n contable
     total_pasivo_patrimonio = total_pasivos + total_patrimonio
     
     context = {
@@ -10926,10 +11124,10 @@ def balance_general(request):
 @login_required
 def consulta_cuenta(request, pk):
     """
-    Consulta detallada de movimientos de una cuenta específica
+    Consulta detallada de movimientos de una cuenta especÃ­fica
     """
     if request.user.rol not in ['Administrador', 'Director', 'Secretaria']:
-        messages.error(request, 'No tienes permiso para acceder a esta página.')
+        messages.error(request, 'No tienes permiso para acceder a esta pÃ¡gina.')
         return redirect('plataform')
     
     cuenta = get_object_or_404(PlanCuentas, pk=pk)
@@ -10980,3 +11178,391 @@ def consulta_cuenta(request, pk):
     }
     
     return render(request, 'contabilidad/consulta_cuenta.html', context)
+
+
+# ============================================
+# REGISTRO PÚBLICO DE ESCUELAS (MULTI-TENANT)
+# ============================================
+
+def registrar_escuela(request):
+    """
+    Vista pública para que nuevas escuelas se registren en el sistema  
+    Crea un nuevo TENANT (schema PostgreSQL separado) con django-tenants
+    No requiere autenticación
+    ✅ SEGURIDAD: Rate limiting, CAPTCHA, email confirmation
+    """
+    # Si ya está autenticado, redirigir al dashboard
+    if request.user.is_authenticated:
+        return redirect('lista_anhos_escolares')
+    
+    # 🔒 SEGURIDAD: Obtener IP y user agent
+    ip_address = get_client_ip(request)
+    user_agent = request.META.get('HTTP_USER_AGENT', '')
+    
+    # 🔒 SEGURIDAD: Verificar rate limiting (máximo 3 intentos por hora desde una IP)
+    from .models import RegistroEscuelaAttempt
+    if RegistroEscuelaAttempt.is_ip_blocked(ip_address, max_attempts=10, block_hours=1):
+        messages.error(
+            request,
+            '⚠️ Demasiados intentos de registro desde tu IP. '
+            'Por favor, intenta nuevamente en una hora. '
+            'Esto es para prevenir el uso automatizado del sistema.'
+        )
+        return render(request, 'public/registro_escuela.html', {'ip_blocked': True})
+    
+    if request.method == 'POST':
+        try:
+            from django.db import connection
+            from .tenant_models import Client, Domain
+            
+            # 🔒 SEGURIDAD: Verificar CAPTCHA
+            recaptcha_response = request.POST.get('g-recaptcha-response')
+            if not recaptcha_response:
+                messages.error(request, '❌ Por favor, completa el CAPTCHA para verificar que eres humano.')
+                RegistroEscuelaAttempt.record_attempt(
+                    ip_address=ip_address,
+                    nombre_corto='',
+                    exitoso=False,
+                    razon_fallo='Captcha no completado',
+                    user_agent=user_agent
+                )
+                return render(request, 'public/registro_escuela.html')
+            
+            # Validar CAPTCHA con Google
+            import urllib.request
+            import urllib.parse
+            import json
+            
+            data = urllib.parse.urlencode({
+                'secret': settings.RECAPTCHA_PRIVATE_KEY,
+                'response': recaptcha_response,
+                'remoteip': ip_address
+            }).encode()
+            
+            req = urllib.request.Request('https://www.google.com/recaptcha/api/siteverify', data=data)
+            response = urllib.request.urlopen(req)
+            result = json.loads(response.read().decode())
+            
+            if not result.get('success'):
+                messages.error(request, '❌ Verificación CAPTCHA fallida. Por favor, intenta nuevamente.')
+                RegistroEscuelaAttempt.record_attempt(
+                    ip_address=ip_address,
+                    nombre_corto='',
+                    exitoso=False,
+                    razon_fallo='Verificación CAPTCHA fallida',
+                    user_agent=user_agent
+                )
+                return render(request, 'public/registro_escuela.html')
+            
+            # Datos de la escuela
+            nombre_escuela = request.POST.get('nombre_escuela')
+            nombre_corto = request.POST.get('nombre_corto').lower().strip()
+            email_escuela = request.POST.get('email_escuela')
+            telefono_escuela = request.POST.get('telefono_escuela', '')
+            direccion_escuela = request.POST.get('direccion_escuela', '')
+            plan = request.POST.get('plan', 'prueba')
+            max_usuarios = int(request.POST.get('max_usuarios', 50))
+            
+            # Datos del administrador
+            admin_nombre = request.POST.get('admin_nombre')
+            admin_email = request.POST.get('admin_email')
+            admin_password = request.POST.get('admin_password')
+            admin_password_confirm = request.POST.get('admin_password_confirm')
+            
+            # Validaciones
+            if admin_password != admin_password_confirm:
+                messages.error(request, 'Las contraseñas no coinciden.')
+                RegistroEscuelaAttempt.record_attempt(
+                    ip_address=ip_address,
+                    nombre_corto=nombre_corto,
+                    exitoso=False,
+                    razon_fallo='Contraseñas no coinciden',
+                    user_agent=user_agent
+                )
+                return render(request, 'public/registro_escuela.html')
+            
+            # Validar nombre corto (solo letras, números y guiones)
+            import re
+            if not re.match(r'^[a-z0-9-]+$', nombre_corto):
+                messages.error(
+                    request, 
+                    'El nombre corto solo puede contener letras minúsculas, números y guiones.'
+                )
+                RegistroEscuelaAttempt.record_attempt(
+                    ip_address=ip_address,
+                    nombre_corto=nombre_corto,
+                    exitoso=False,
+                    razon_fallo='Formato de nombre_corto inválido',
+                    user_agent=user_agent
+                )
+                return render(request, 'public/registro_escuela.html')
+            
+            # Verificar que el nombre corto no esté tomado (verifica Client con schema_name)
+            if Client.objects.filter(schema_name=nombre_corto).exists():
+                messages.error(
+                    request, 
+                    f'El subdominio "{nombre_corto}" ya está en uso. Por favor, elige otro.'
+                )
+                RegistroEscuelaAttempt.record_attempt(
+                    ip_address=ip_address,
+                    nombre_corto=nombre_corto,
+                    exitoso=False,
+                    razon_fallo='Nombre corto ya existe',
+                    user_agent=user_agent
+                )
+                return render(request, 'public/registro_escuela.html')
+            
+            # Verificar que no exista dominio con ese nombre
+            if Domain.objects.filter(domain=f'{nombre_corto}.localhost').exists():
+                messages.error(
+                    request, 
+                    f'El dominio "{nombre_corto}.localhost" ya está en uso.'
+                )
+                RegistroEscuelaAttempt.record_attempt(
+                    ip_address=ip_address,
+                    nombre_corto=nombre_corto,
+                    exitoso=False,
+                    razon_fallo='Dominio ya existe',
+                    user_agent=user_agent
+                )
+                return render(request, 'public/registro_escuela.html')
+            
+            # Calcular fecha de vencimiento (30 días para prueba)
+            fecha_venc = None
+            if plan in ['gratis', 'prueba']:
+                fecha_venc = timezone.now() + timedelta(days=30)
+            
+            # 🔒 1. Crear el TENANT (Client) - INACTIVO hasta confirmar email
+            tenant = Client(
+                schema_name=nombre_corto,  # Nombre del schema de PostgreSQL
+                nombre=nombre_escuela,
+                nombre_corto=nombre_corto,
+                email_contacto=email_escuela,
+                telefono=telefono_escuela,
+                direccion=direccion_escuela,
+                plan=plan if plan != 'gratis' else 'prueba',
+                max_usuarios=max_usuarios,
+                activo=False,  # 🔒 INACTIVO hasta activación por email
+                fecha_vencimiento=fecha_venc
+            )
+            
+            # 🔒 Generar token de activación
+            tenant.activation_token = uuid.uuid4()
+            tenant.save()  # Crea automáticamente el schema y ejecuta migraciones
+            
+            logger.info(f'Tenant creado (INACTIVO): {tenant.schema_name} - Esperando activación por email')
+            
+            # 2. Crear DOMINIOS para el tenant
+            # Dominio para desarrollo (localhost)
+            domain_local = Domain()
+            domain_local.domain = f'{nombre_corto}.localhost'
+            domain_local.tenant = tenant
+            domain_local.is_primary = True
+            domain_local.save()
+            
+            # Dominio para producción (si corresponde)
+            if not settings.DEBUG:
+                domain_prod = Domain()
+                domain_prod.domain = f'{nombre_corto}.escuelaenlinea.com'
+                domain_prod.tenant = tenant
+                domain_prod.is_primary = False
+                domain_prod.save()
+            
+            logger.info(f'Dominios creados: {domain_local.domain}')
+            
+            # 3. Crear usuario administrador DENTRO del schema del tenant
+            # IMPORTANTE: Cambiamos al schema del tenant para crear el usuario allí
+            connection.set_tenant(tenant)
+            
+            # Separar nombre y apellido del admin
+            nombre_partes = admin_nombre.split(' ', 1)
+            first_name = nombre_partes[0]
+            last_name = nombre_partes[1] if len(nombre_partes) > 1 else ''
+            
+            # Crear usuario administrador EN EL SCHEMA DEL TENANT
+            admin_user = CustomUser.objects.create_user(
+                email=admin_email,
+                password=admin_password,
+                first_name=first_name,
+                last_name=last_name,
+                rol='Administrador',
+                is_active=True,
+                is_staff=True
+            )
+            
+            logger.info(
+                f'Usuario admin creado en schema {tenant.schema_name}: {admin_user.email}'
+            )
+            
+            # Volver al schema público
+            from django_tenants.utils import get_public_schema_name
+            connection.set_schema_to_public()
+            
+            # 🔒 4. Enviar email de ACTIVACIÓN (no bienvenida)
+            try:
+                from django.core.mail import EmailMessage
+                
+                # Generar UID codificado para la URL
+                uid = urlsafe_base64_encode(force_bytes(tenant.pk))
+                
+                # Construir URL de activación
+                current_site = get_current_site(request)
+                activation_url = f"{request.scheme}://{current_site.domain}/activate-school/{uid}/{tenant.activation_token}/"
+                
+                url_acceso = f'http://{nombre_corto}.localhost:8000' if settings.DEBUG else f'https://{nombre_corto}.escuelaenlinea.com'
+                
+                subject = f'🎓 Activa tu escuela: {nombre_escuela}'
+                
+                html_message = f"""
+                <html>
+                <body style="font-family: Arial, sans-serif;">
+                    <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+                        <h2 style="color: #4e73df; border-bottom: 3px solid #1cc88a; padding-bottom: 10px;">
+                            ✅ Confirma tu Registro
+                        </h2>
+                        <p>Hola <strong>{admin_nombre}</strong>,</p>
+                        <p>Tu institución <strong>{nombre_escuela}</strong> ha sido registrada exitosamente, 
+                        pero necesitamos que confirmes tu dirección de correo electrónico.</p>
+                        
+                        <div style="background: #f8f9fc; padding: 20px; border-radius: 10px; margin: 20px 0; border-left: 5px solid #1cc88a;">
+                            <h3 style="color: #1cc88a; margin-top: 0;">📋 Datos de tu Escuela</h3>
+                            <p style="margin: 5px 0;"><strong>Nombre:</strong> {nombre_escuela}</p>
+                            <p style="margin: 5px 0;"><strong>Subdominio:</strong> {nombre_corto}</p>
+                            <p style="margin: 5px 0;"><strong>Plan:</strong> {plan.title()}</p>
+                            <p style="margin: 5px 0;"><strong>Usuarios:</strong> {max_usuarios}</p>
+                        </div>
+                        
+                        <div style="background: #fff3cd; padding: 15px; border-radius: 10px; margin: 20px 0; border-left: 5px solid #f6c23e;">
+                            <p style="margin: 0; color: #856404;">
+                                ⚠️ <strong>¡Acción Requerida!</strong><br>
+                                Haz clic en el botón de abajo para activar tu escuela. 
+                                Este enlace es válido por 24 horas.
+                            </p>
+                        </div>
+                        
+                        <div style="text-align: center; margin: 30px 0;">
+                            <a href="{activation_url}" 
+                               style="background: linear-gradient(180deg, #1cc88a 10%, #17a673 100%); 
+                                      color: white; 
+                                      padding: 15px 40px; 
+                                      text-decoration: none; 
+                                      border-radius: 5px; 
+                                      display: inline-block;
+                                      font-weight: bold;
+                                      font-size: 16px;
+                                      box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+                                🚀 Activar Mi Escuela
+                            </a>
+                        </div>
+                        
+                        <p style="color: #858796; font-size: 13px; margin-top: 30px;">
+                            <strong>¿Por qué este paso?</strong><br>
+                            La confirmación por email nos ayuda a prevenir registros fraudulentos y 
+                            asegura que puedas recibir notificaciones importantes sobre tu escuela.
+                        </p>
+                        
+                        <p style="color: #858796; font-size: 13px;">
+                            Si no creaste esta cuenta, puedes ignorar este mensaje.<br>
+                            El registro será eliminado automáticamente después de 24 horas sin activar.
+                        </p>
+                        
+                        <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #e3e6f0; color: #858796; font-size: 12px;">
+                            <p>Sistema Escolar Online - Gestión Educativa</p>
+                            <p>Si el botón no funciona, copia este enlace:<br>
+                            <a href="{activation_url}" style="color: #4e73df; word-break: break-all;">{activation_url}</a></p>
+                        </div>
+                    </div>
+                </body>
+                </html>
+                """
+                
+                email = EmailMessage(
+                    subject,
+                    html_message,
+                    settings.DEFAULT_FROM_EMAIL,
+                    [email_escuela],
+                )
+                email.content_subtype = 'html'
+                email.send(fail_silently=True)
+                
+                logger.info(f'Email de activación enviado a {email_escuela}')
+                
+            except Exception as e:
+                logger.error(f'Error enviando email de activación: {e}')
+            
+            # 🔒 5. Registrar intento EXITOSO
+            RegistroEscuelaAttempt.record_attempt(
+                ip_address=ip_address,
+                nombre_corto=nombre_corto,
+                exitoso=True,
+                razon_fallo='',
+                user_agent=user_agent
+            )
+            
+            # 🔒 6. Log de seguridad
+            try:
+                from .models import SecurityLog
+                SecurityLog.objects.create(
+                    tipo_evento='SCHOOL_REGISTERED',
+                    nivel='INFO',
+                    usuario_email=admin_email,
+                    ip_address=ip_address,
+                    user_agent=user_agent,
+                    descripcion=f'Nueva escuela registrada: {nombre_escuela} ({nombre_corto}). Esperando activación por email.',
+                    metadatos={
+                        'nombre_escuela': nombre_escuela,
+                        'nombre_corto': nombre_corto,
+                        'email_contacto': email_escuela,
+                        'plan': plan,
+                        'tenant_id': tenant.id
+                    }
+                )
+            except Exception as e:
+                logger.error(f'Error registrando SecurityLog: {e}')
+            
+            # Mensaje de éxito
+            messages.success(
+                request,
+                f'✅ ¡Registro exitoso! Hemos enviado un correo de confirmación a <strong>{email_escuela}</strong>. '
+                f'<br><br>📧 Por favor, revisa tu bandeja de entrada (y spam) y haz clic en el enlace de activación '
+                f'para completar el registro de tu escuela <strong>{nombre_escuela}</strong>. '
+                f'<br><br>⚠️ <strong>Importante:</strong> Tu escuela estará disponible después de verificar el email.'
+            )
+            
+            # Construir URL del subdominio de la escuela
+            url_escuela = f'http://{nombre_corto}.localhost:8000' if settings.DEBUG else f'https://{nombre_corto}.escuelaenlinea.com'
+            
+            # Redirigir al login del subdominio de la escuela recién creada
+            from django.http import HttpResponseRedirect
+            return HttpResponseRedirect(f'{url_escuela}/login/')
+            
+        except Exception as e:
+            logger.error(f'Error registrando escuela: {e}', exc_info=True)
+            
+            # 🔒 Registrar intento FALLIDO
+            RegistroEscuelaAttempt.record_attempt(
+                ip_address=ip_address,
+                nombre_corto=nombre_corto if 'nombre_corto' in locals() else '',
+                exitoso=False,
+                razon_fallo=f'Error del sistema: {str(e)[:200]}',
+                user_agent=user_agent
+            )
+            
+            messages.error(
+                request, 
+                f'Ocurrió un error al registrar la escuela. Por favor, intenta nuevamente. Error: {str(e)}'
+            )
+            return render(request, 'public/registro_escuela.html')
+    
+    # GET request - mostrar formulario
+    return render(request, 'public/registro_escuela.html')
+
+
+def home_public(request):
+    """
+    Página de inicio del dominio público (sin tenant)
+    Redirige al login
+    """
+    return redirect('login')
+
+

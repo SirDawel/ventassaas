@@ -1,0 +1,280 @@
+{% extends 'website/base.html' %}
+{% load static %}
+
+{% block title %}{{ titulo }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <!-- Encabezado -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h2><i class="fas fa-file-csv me-2 text-success"></i>{{ titulo }}</h2>
+                    <p class="text-muted">Importa múltiples usuarios a la vez usando archivos CSV</p>
+                </div>
+                <a href="{% url 'descargar_plantilla_csv' %}" class="btn btn-success">
+                    <i class="fas fa-download me-2"></i>Descargar Plantilla CSV
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Mensajes -->
+    {% if messages %}
+    <div class="row">
+        <div class="col-12">
+            {% for message in messages %}
+            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    <div class="row">
+        <!-- Columna Izquierda: Instrucciones -->
+        <div class="col-md-5">
+            <div class="card shadow mb-4">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0"><i class="fas fa-info-circle me-2"></i>Instrucciones</h5>
+                </div>
+                <div class="card-body">
+                    <h6 class="text-primary"><i class="fas fa-list-ol me-2"></i>Pasos para importar usuarios:</h6>
+                    <ol class="mb-4">
+                        <li class="mb-2">
+                            <strong>Descargar plantilla:</strong> Haz clic en el botón verde "Descargar Plantilla CSV" arriba
+                        </li>
+                        <li class="mb-2">
+                            <strong>Abrir con Excel o similar:</strong> Abre el archivo descargado con Microsoft Excel, Google Sheets o LibreOffice
+                        </li>
+                        <li class="mb-2">
+                            <strong>Rellenar datos:</strong> Completa la información de los usuarios siguiendo el formato de los ejemplos
+                        </li>
+                        <li class="mb-2">
+                            <strong>Guardar como CSV:</strong> Guarda el archivo como CSV (delimitado por comas)
+                        </li>
+                        <li class="mb-2">
+                            <strong>Subir aquí:</strong> Usa el formulario de la derecha para subir tu archivo
+                        </li>
+                    </ol>
+
+                    <hr>
+
+                    <h6 class="text-primary"><i class="fas fa-table me-2"></i>Columnas del CSV:</h6>
+                    <div class="table-responsive">
+                        <table class="table table-sm table-bordered">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Columna</th>
+                                    <th>Requerida</th>
+                                    <th>Descripción</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td><code>email</code></td>
+                                    <td><span class="badge bg-danger">Sí</span></td>
+                                    <td>Correo electrónico único</td>
+                                </tr>
+                                <tr>
+                                    <td><code>first_name</code></td>
+                                    <td><span class="badge bg-danger">Sí</span></td>
+                                    <td>Nombre(s)</td>
+                                </tr>
+                                <tr>
+                                    <td><code>last_name</code></td>
+                                    <td><span class="badge bg-danger">Sí</span></td>
+                                    <td>Apellido(s)</td>
+                                </tr>
+                                <tr>
+                                    <td><code>rol</code></td>
+                                    <td><span class="badge bg-danger">Sí</span></td>
+                                    <td>Ver roles válidos abajo</td>
+                                </tr>
+                                <tr>
+                                    <td><code>cedula</code></td>
+                                    <td><span class="badge bg-secondary">No</span></td>
+                                    <td>Cédula de identidad (11 dígitos)</td>
+                                </tr>
+                                <tr>
+                                    <td><code>fecha_nacimiento</code></td>
+                                    <td><span class="badge bg-secondary">No</span></td>
+                                    <td>Formato: YYYY-MM-DD o DD/MM/YYYY</td>
+                                </tr>
+                                <tr>
+                                    <td><code>genero</code></td>
+                                    <td><span class="badge bg-secondary">No</span></td>
+                                    <td>M, F o Otro</td>
+                                </tr>
+                                <tr>
+                                    <td><code>telefono</code></td>
+                                    <td><span class="badge bg-secondary">No</span></td>
+                                    <td>Teléfono de contacto</td>
+                                </tr>
+                                <tr>
+                                    <td><code>direccion</code></td>
+                                    <td><span class="badge bg-secondary">No</span></td>
+                                    <td>Dirección completa</td>
+                                </tr>
+                                <tr>
+                                    <td><code>grado</code></td>
+                                    <td><span class="badge bg-warning">Estudiantes</span></td>
+                                    <td>Ej: 5to, 1ero, etc.</td>
+                                </tr>
+                                <tr>
+                                    <td><code>seccion</code></td>
+                                    <td><span class="badge bg-warning">Estudiantes</span></td>
+                                    <td>Ej: A, B, C</td>
+                                </tr>
+                                <tr>
+                                    <td><code>especialidad</code></td>
+                                    <td><span class="badge bg-info">Profesores</span></td>
+                                    <td>Ej: Matemáticas, Historia</td>
+                                </tr>
+                                <tr>
+                                    <td><code>departamento</code></td>
+                                    <td><span class="badge bg-secondary">No</span></td>
+                                    <td>Departamento/área</td>
+                                </tr>
+                                <tr>
+                                    <td><code>cargo</code></td>
+                                    <td><span class="badge bg-secondary">No</span></td>
+                                    <td>Cargo administrativo</td>
+                                </tr>
+                                <tr>
+                                    <td><code>password</code></td>
+                                    <td><span class="badge bg-secondary">No</span></td>
+                                    <td>Si se omite, usa cédula o parte del email</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <hr>
+
+                    <h6 class="text-primary"><i class="fas fa-user-tag me-2"></i>Roles Válidos:</h6>
+                    <div class="row g-2 mb-3">
+                        <div class="col-6">
+                            <span class="badge bg-primary w-100">Estudiante</span>
+                        </div>
+                        <div class="col-6">
+                            <span class="badge bg-success w-100">Profesor</span>
+                        </div>
+                        <div class="col-6">
+                            <span class="badge bg-info w-100">Director</span>
+                        </div>
+                        <div class="col-6">
+                            <span class="badge bg-warning w-100">Secretaria</span>
+                        </div>
+                        <div class="col-6">
+                            <span class="badge bg-danger w-100">Administrador</span>
+                        </div>
+                        <div class="col-6">
+                            <span class="badge bg-dark w-100">Coordinador</span>
+                        </div>
+                        <div class="col-6">
+                            <span class="badge bg-secondary w-100">Bibliotecario</span>
+                        </div>
+                        <div class="col-6">
+                            <span class="badge bg-info w-100">Psicologo</span>
+                        </div>
+                    </div>
+
+                    <div class="alert alert-warning">
+                        <strong><i class="fas fa-exclamation-triangle me-2"></i>Importante:</strong>
+                        <ul class="mb-0">
+                            <li>Los emails y cédulas deben ser únicos</li>
+                            <li>Si un usuario ya existe, se omitirá y se reportará como error</li>
+                            <li>El archivo debe estar en formato CSV con codificación UTF-8</li>
+                            <li>Las fechas deben usar formato YYYY-MM-DD (Ej: 2010-05-15)</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Columna Derecha: Formulario de Subida -->
+        <div class="col-md-7">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="fas fa-upload me-2"></i>Subir Archivo CSV</h5>
+                </div>
+                <div class="card-body">
+                    <!-- Vista previa de archivo de ejemplo -->
+                    <div class="alert alert-info">
+                        <h6><i class="fas fa-file-alt me-2"></i>Ejemplo de archivo CSV válido:</h6>
+                        <pre class="mb-0 p-3 bg-light border rounded"><code>email,first_name,last_name,rol,cedula,fecha_nacimiento,genero,telefono,direccion,grado,seccion,especialidad,departamento,cargo,password
+estudiante@ejemplo.com,Juan,Pérez,Estudiante,00112345678,2010-05-15,M,809-555-1234,Calle Principal #123,5to,A,,,,mi_contraseña_123
+profesor@ejemplo.com,María,García,Profesor,40212345678,1985-03-20,F,809-555-5678,Av. Duarte #456,,,Matemáticas,Ciencias,,profesor123
+secretaria@ejemplo.com,Ana,Rodríguez,Secretaria,00312345678,1990-08-10,F,809-555-9012,Calle Secundaria #789,,,,Administración,Secretaria Académica,secret123</code></pre>
+                    </div>
+
+                    <!-- Formulario -->
+                    <form method="post" enctype="multipart/form-data">
+                        {% csrf_token %}
+                        
+                        <div class="mb-4">
+                            <label for="{{ form.archivo_csv.id_for_label }}" class="form-label">
+                                <strong>{{ form.archivo_csv.label }}</strong>
+                            </label>
+                            {{ form.archivo_csv }}
+                            {% if form.archivo_csv.errors %}
+                                <div class="text-danger mt-1">
+                                    {{ form.archivo_csv.errors }}
+                                </div>
+                            {% endif %}
+                            <small class="form-text text-muted d-block mt-2">
+                                <i class="fas fa-info-circle me-1"></i>{{ form.archivo_csv.help_text }}
+                            </small>
+                        </div>
+
+                        <div class="alert alert-primary">
+                            <h6><i class="fas fa-lightbulb me-2"></i>Consejos:</h6>
+                            <ul class="mb-0">
+                                <li>Asegúrate de que el archivo sea CSV (no Excel .xlsx)</li>
+                                <li>Verifica que los correos no estén duplicados</li>
+                                <li>Revisa que los roles estén escritos exactamente como se muestran</li>
+                                <li>Los campos opcionales pueden dejarse vacíos</li>
+                            </ul>
+                        </div>
+
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary btn-lg">
+                                <i class="fas fa-cloud-upload-alt me-2"></i>Importar Usuarios
+                            </button>
+                            <a href="{% url 'user_list' %}" class="btn btn-secondary">
+                                <i class="fas fa-arrow-left me-2"></i>Volver a Lista de Usuarios
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Información adicional -->
+            <div class="card shadow mt-4">
+                <div class="card-header bg-success text-white">
+                    <h6 class="mb-0"><i class="fas fa-check-circle me-2"></i>Después de Importar</h6>
+                </div>
+                <div class="card-body">
+                    <p class="mb-2"><strong>El sistema te informará sobre:</strong></p>
+                    <ul>
+                        <li>✅ Número de usuarios creados exitosamente</li>
+                        <li>⚠️ Errores encontrados (si los hay)</li>
+                        <li>📧 Los usuarios pueden iniciar sesión con su email y contraseña</li>
+                        <li>🔑 Si no especificaste contraseña, se usará su cédula o parte de su email</li>
+                    </ul>
+                    <div class="alert alert-info mb-0">
+                        <small>
+                            <i class="fas fa-info-circle me-1"></i>
+                            <strong>Nota:</strong> Los usuarios creados estarán activos inmediatamente y podrán acceder al sistema.
+                        </small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
