@@ -12,7 +12,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 sys.path.append(str(BASE_DIR))
 
 # Configurar Django
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'Escuela.settings')
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'VentasSys.settings')
 import django
 django.setup()
 

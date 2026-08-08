@@ -1,0 +1,1953 @@
+{% extends 'website/base.html' %}
+{% load l10n %}
+
+{% block title %}{{ titulo }}{% endblock %}
+
+{% block content %}
+<style>
+/* ===== ANIMACIONES ===== */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes pulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+}
+
+@keyframes slideIn {
+    from {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+@keyframes slideOut {
+    from {
+        transform: translateX(0);
+        opacity: 1;
+    }
+    to {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+}
+
+.animate-fade-in {
+    animation: fadeIn 0.6s ease-out forwards;
+    opacity: 0;
+}
+
+.animate-slide-down {
+    animation: slideDown 0.6s ease-out;
+}
+
+.icon-pulse {
+    animation: pulse 2s ease-in-out infinite;
+}
+
+/* ===== HEADER ===== */
+.dashboard-title {
+    font-weight: 700;
+    font-size: 1.5rem;
+    color: #2c3e50;
+    text-shadow: 1px 1px 3px rgba(0,0,0,0.1);
+}
+
+/* ===== BOTONES MODERNOS ===== */
+.btn-modern {
+    border-radius: 8px;
+    padding: 0.4rem 1rem;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    font-size: 0.9rem;
+}
+
+.btn-modern:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 20px rgba(0,0,0,0.2);
+}
+
+/* ===== BADGES MODERNOS ===== */
+.badge-modern {
+    padding: 0.3rem 0.8rem;
+    border-radius: 15px;
+    font-weight: 600;
+    font-size: 0.8rem;
+}
+
+.bg-gradient-success {
+    background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+}
+
+.bg-gradient-primary {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.badge-secondary-modern {
+    background: linear-gradient(135deg, #a8a8a8 0%, #7f7f7f 100%);
+    color: white;
+}
+
+.badge-info-modern {
+    background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+    color: white;
+}
+
+/* ===== ALERTAS MODERNAS ===== */
+.alert-modern {
+    border-radius: 8px;
+    border: none;
+    padding: 0.75rem 1rem;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    font-size: 0.9rem;
+}
+
+/* ===== TARJETA MODERNA ===== */
+.modern-card {
+    border-radius: 12px;
+    border: none;
+    overflow: hidden;
+}
+
+.card-header-modern {
+    padding: 1rem;
+    border: none;
+}
+
+.card-header-modern h5 {
+    font-size: 1rem;
+    font-weight: 600;
+}
+
+/* ===== INPUT DE BÚSQUEDA ===== */
+.search-input-wrapper {
+    position: relative;
+}
+
+.search-input {
+    padding-left: 40px;
+    border-radius: 8px;
+    border: 2px solid #e9ecef;
+    transition: all 0.3s ease;
+    font-size: 0.9rem;
+    padding-top: 0.5rem;
+    padding-bottom: 0.5rem;
+}
+
+.search-input:focus {
+    border-color: #667eea;
+    box-shadow: 0 2px 10px rgba(102, 126, 234, 0.2);
+    transform: scale(1.01);
+}
+
+.search-icon {
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #667eea;
+    font-size: 1rem;
+    z-index: 10;
+}
+
+/* ===== RESULTADOS DE BÚSQUEDA ===== */
+.results-header {
+    padding: 0.3rem 0;
+    border-bottom: 2px solid #e9ecef;
+}
+
+.resultado-item-modern {
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+    padding: 0.75rem;
+    margin-bottom: 0.4rem;
+    background: white;
+    border: 2px solid #f1f3f5;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.resultado-item-modern:hover {
+    background: linear-gradient(to right, #f8f9fa, #ffffff);
+    border-color: #667eea;
+    transform: translateX(5px);
+    box-shadow: 0 2px 10px rgba(102, 126, 234, 0.2);
+}
+
+.resultado-icon {
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    font-size: 1.1rem;
+}
+
+.resultado-info {
+    flex: 1;
+}
+
+.resultado-info strong {
+    display: block;
+    color: #2c3e50;
+    font-size: 0.95rem;
+    margin-bottom: 0.2rem;
+}
+
+.resultado-details {
+    display: flex;
+    gap: 0.4rem;
+    flex-wrap: wrap;
+}
+
+.resultado-action {
+    color: #667eea;
+    font-size: 1rem;
+    transition: transform 0.3s ease;
+}
+
+.resultado-item-modern:hover .resultado-action {
+    transform: translateX(5px);
+}
+
+/* ===== CLIENTE SELECCIONADO ===== */
+.client-selected-card {
+    background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+    color: white;
+    border-radius: 8px;
+}
+
+.client-info-badge {
+    font-size: 0.9rem;
+    display: flex;
+    align-items: center;
+    margin-bottom: 0.3rem;
+}
+
+.client-name {
+    font-size: 1rem;
+    font-weight: 700;
+    margin-left: 0.5rem;
+}
+
+.client-details {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    font-size: 0.75rem;
+}
+
+.client-detail-item {
+    display: inline-flex;
+    align-items: center;
+    background: rgba(255,255,255,0.2);
+    padding: 0.2rem 0.5rem;
+    border-radius: 12px;
+    backdrop-filter: blur(10px);
+}
+
+.client-detail-item code {
+    background: rgba(255,255,255,0.3);
+    padding: 0.1rem 0.3rem;
+    border-radius: 4px;
+    color: white;
+    font-size: 0.75rem;
+}
+</style>
+
+<div class="container-fluid mt-2">
+    <!-- Card Principal Compacta -->
+    <div class="card shadow-sm">
+        <div class="card-header bg-primary text-white py-2">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h5 class="mb-0">
+                        <i class="fas fa-cash-register me-2"></i>Nueva Factura
+                        <span class="badge bg-success ms-2" style="font-size: 0.75rem;">
+                            <i class="fas fa-calendar-alt me-1"></i>{{ anho_escolar.nombre }}
+                        </span>
+                    </h5>
+                </div>
+                <div>
+                    <a href="{% url 'cobros_dashboard' %}" class="btn btn-secondary btn-sm">
+                        <i class="fas fa-arrow-left me-1"></i>Salir
+                    </a>
+                </div>
+            </div>
+        </div>
+        <div class="card-body p-2">
+
+    <!-- Búsqueda y Cliente -->
+    <div class="row mb-2">
+        <div class="col-12">
+            <!-- Búsqueda de Estudiante -->
+            <div class="card shadow-sm mb-2">
+                <div class="card-header bg-info text-white py-1">
+                    <h6 class="m-0">
+                        <i class="fas fa-search me-1"></i>Búsqueda de Cliente
+                    </h6>
+                </div>
+                <div class="card-body p-2">
+                    <form method="get" id="buscarForm">
+                        <div class="row g-2 align-items-center">
+                            <div class="col-md-9">
+                                <div class="input-group input-group-sm">
+                                    <span class="input-group-text"><i class="fas fa-barcode"></i></span>
+                                    <input type="text" class="form-control" id="buscarInput" name="buscar"
+                                           placeholder="Escanea código o busca por nombre..." 
+                                           value="{{ buscar }}" autocomplete="off" autofocus>
+                                    <button type="submit" class="btn btn-primary" id="buscarBtn">
+                                        <i class="fas fa-search"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                    
+                    <!-- Resultados de búsqueda -->
+                    <div id="resultadosBusqueda" class="mt-2" style="max-height: 200px; overflow-y: auto;">
+                        {% if buscar and familias_encontradas %}
+                            <div class="results-header mb-2">
+                                <small class="text-success"><i class="fas fa-users me-1"></i>{{ familias_encontradas|length }} Familia(s) encontrada(s)</small>
+                            </div>
+                            {% for fam in familias_encontradas %}
+                            <div class="resultado-item-modern" onclick="window.location.href='{% url 'grupo_familiar_facturar' fam.id %}';" style="cursor: pointer; border-left: 4px solid #28a745;">
+                                <div class="resultado-icon" style="background: linear-gradient(135deg, #28a745, #20c997);">
+                                    <i class="fas fa-users"></i>
+                                </div>
+                                <div class="resultado-info">
+                                    <strong>👨‍👩‍👧 {{ fam.apellido_familia }}</strong>
+                                    <div class="resultado-details">
+                                        <span class="badge badge-modern badge-success-modern">
+                                            <i class="fas fa-barcode me-1"></i>{{ fam.codigo_familia }}
+                                        </span>
+                                        <span class="badge badge-modern badge-info-modern">
+                                            <i class="fas fa-user-graduate me-1"></i>{{ fam.num_estudiantes }} estudiante{{ fam.num_estudiantes|pluralize }}
+                                        </span>
+                                        {% if fam.descuento_general > 0 %}
+                                        <span class="badge badge-modern badge-warning-modern">
+                                            <i class="fas fa-percentage me-1"></i>{{ fam.descuento_general }}% desc.
+                                        </span>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                <div class="resultado-action">
+                                    <i class="fas fa-file-invoice-dollar"></i>
+                                </div>
+                            </div>
+                            {% endfor %}
+                            <hr class="my-2">
+                        {% endif %}
+                    
+                        {% if buscar and estudiantes_encontrados %}
+                            <div class="results-header mb-2">
+                                <small class="text-muted"><i class="fas fa-user-graduate me-1"></i>{{ estudiantes_encontrados|length }} Estudiante(s) encontrado(s)</small>
+                            </div>
+                            {% for est in estudiantes_encontrados %}
+                            <div class="resultado-item-modern" onclick="seleccionarEstudiante({{ est.id }})">
+                                <div class="resultado-icon">
+                                    <i class="fas fa-user-graduate"></i>
+                                </div>
+                                <div class="resultado-info">
+                                    <strong>{{ est.get_full_name }}</strong>
+                                    <div class="resultado-details">
+                                        <span class="badge badge-modern badge-secondary-modern">
+                                            <i class="fas fa-barcode me-1"></i>{{ est.codigo_barras|default:"Sin código" }}
+                                        </span>
+                                        <span class="badge badge-modern badge-info-modern">
+                                            <i class="fas fa-graduation-cap me-1"></i>{{ est.grado|default:"-" }}/{{ est.seccion|default:"-" }}
+                                        </span>
+                                    </div>
+                                </div>
+                                <div class="resultado-action">
+                                    <i class="fas fa-chevron-right"></i>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        {% elif buscar and not familias_encontradas %}
+                            <div class="alert alert-modern alert-warning mb-0">
+                                <i class="fas fa-exclamation-triangle me-2"></i>
+                                No se encontraron resultados para "{{ buscar }}"
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Cliente Seleccionado -->
+            <div class="card shadow-sm mb-2 {% if not estudiante %}d-none{% endif %}" id="clienteCard">
+                <div class="card-body p-2 client-selected-card">
+                    <div class="row align-items-center">
+                        <div class="col">
+                            <div class="client-info-badge">
+                                <i class="fas fa-user-check me-2"></i>
+                                <strong>Cliente:</strong> <span id="clienteNombre" class="client-name">{% if estudiante %}{{ estudiante.get_full_name }}{% endif %}</span>
+                            </div>
+                            <div class="client-details mt-2">
+                                <span class="client-detail-item">
+                                    <i class="fas fa-barcode me-1"></i>
+                                    <strong>Código:</strong> <code id="clienteCodigo">{% if estudiante %}{{ estudiante.codigo_barras|default:"-" }}{% endif %}</code>
+                                </span>
+                                <span class="client-detail-item">
+                                    <i class="fas fa-graduation-cap me-1"></i>
+                                    <strong>Grado:</strong> <span id="clienteGrado">{% if estudiante %}{{ estudiante.grado|default:"-" }}/{{ estudiante.seccion|default:"-" }}{% endif %}</span>
+                                </span>
+                                {% if estudiante %}
+                                <span class="client-detail-item">
+                                    <i class="fas fa-calendar-alt me-1"></i>
+                                    <strong>Día Vencimiento:</strong> <span class="badge bg-info">{{ estudiante.get_dia_vencimiento }}</span>
+                                    {% if estudiante.grupo_familiar %}
+                                    <small class="text-muted">(Grupo)</small>
+                                    {% else %}
+                                    <small class="text-muted">(Individual)</small>
+                                    {% endif %}
+                                </span>
+                                {% if estudiante.get_porcentaje_mora > 0 %}
+                                <span class="client-detail-item">
+                                    <i class="fas fa-exclamation-triangle me-1 text-warning"></i>
+                                    <strong>Mora:</strong> <span class="badge bg-warning text-dark">{{ estudiante.get_porcentaje_mora }}%</span>
+                                    {% if estudiante.grupo_familiar %}
+                                    <small class="text-muted">(Grupo)</small>
+                                    {% else %}
+                                    <small class="text-muted">(Individual)</small>
+                                    {% endif %}
+                                </span>
+                                {% endif %}
+                                {% endif %}
+                                {# ELIMINADO - Ya no mostramos estado de mensualidades #}
+                                {# <span id="estadoMensualidades" class="client-detail-item"></span> #}
+                            </div>
+                        </div>
+                        <div class="col-auto">
+                            <button type="button" class="btn btn-light btn-sm" onclick="limpiarCliente()">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Formulario de Factura -->
+    <form method="post" id="facturaForm">
+        {% csrf_token %}
+        <input type="hidden" name="estudiante_id_hidden" id="estudianteIdHiddenPost" value="{% if estudiante %}{{ estudiante.id }}{% endif %}">
+        <input type="hidden" name="monto_pagado" id="montoPagadoHidden" value="{% if monto_pagado_copiado is not None %}{{ monto_pagado_copiado|unlocalize }}{% else %}0{% endif %}">
+        <script>
+        // DEBUG: Valor de monto_pagado_copiado desde Django
+        console.log('[DEBUG Django] monto_pagado_copiado desde contexto:', '{{ monto_pagado_copiado|default:"None" }}');
+        
+        // Sincroniza el valor inicial de monto_pagado_copiado en el campo hidden al cargar la página
+        document.addEventListener('DOMContentLoaded', function() {
+            var dineroRecibido = document.getElementById('dineroRecibido');
+            var montoPagadoHidden = document.getElementById('montoPagadoHidden');
+            
+            console.log('[DEBUG JS] dineroRecibido element:', dineroRecibido);
+            console.log('[DEBUG JS] dineroRecibido.value inicial:', dineroRecibido ? dineroRecibido.value : 'elemento no encontrado');
+            console.log('[DEBUG JS] montoPagadoHidden.value inicial:', montoPagadoHidden ? montoPagadoHidden.value : 'elemento no encontrado');
+            
+            if (dineroRecibido && montoPagadoHidden) {
+                // Si hay un valor en el hidden, aplicarlo al input visible
+                if (montoPagadoHidden.value && montoPagadoHidden.value !== '0') {
+                    dineroRecibido.value = montoPagadoHidden.value;
+                    console.log('[DEBUG JS] Valor aplicado desde hidden a dineroRecibido:', dineroRecibido.value);
+                } else if (dineroRecibido.value) {
+                    // Si el input visible tiene valor, sincronizarlo al hidden
+                    montoPagadoHidden.value = dineroRecibido.value;
+                    console.log('[DEBUG JS] Valor sincronizado desde dineroRecibido a hidden:', montoPagadoHidden.value);
+                }
+                
+                // Calcular el cambio inicial si hay monto
+                if (dineroRecibido.value && dineroRecibido.value !== '0') {
+                    calcularCambio();
+                }
+                
+                console.log('[DEBUG JS] Valores finales - dineroRecibido:', dineroRecibido.value, 'montoPagadoHidden:', montoPagadoHidden.value);
+            }
+        });
+        </script>
+        <input type="hidden" name="confirmar_credito" id="confirmarCredito" value="0">
+
+        <div class="row">
+            <!-- Panel Izquierdo: Conceptos -->
+            <div class="col-lg-8">
+
+                <!-- Agregar Concepto Rápido -->
+                <div class="card shadow-sm mb-2">
+                    <div class="card-header bg-primary text-white py-1">
+                        <h6 class="mb-0"><i class="fas fa-plus-circle me-1"></i>Agregar Concepto</h6>
+                    </div>
+                    <div class="card-body p-2">
+                        <!-- Campo de Código de Barras -->
+                        <div class="row g-2 mb-2">
+                            <div class="col-md-6">
+                                <div class="input-group input-group-sm">
+                                    <span class="input-group-text bg-warning"><i class="fas fa-barcode"></i></span>
+                                    <input type="text" class="form-control" id="codigoBarrasInput" 
+                                           placeholder="Código de barras..." autocomplete="off">
+                                    <button type="button" class="btn btn-warning btn-sm" onclick="buscarPorCodigoBarras()">
+                                        <i class="fas fa-search"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="input-group input-group-sm">
+                                    <span class="input-group-text bg-info"><i class="fas fa-search"></i></span>
+                                    <input type="text" class="form-control" id="buscarNombreInput"
+                                           placeholder="Buscar por nombre..." autocomplete="off">
+                                    <button type="button" class="btn btn-info btn-sm" onclick="buscarPorNombre()">
+                                        <i class="fas fa-search"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="col-12">
+                                <div id="resultadosArticulos" style="max-height: 150px; overflow-y: auto;"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Lista de Conceptos -->
+                <div class="card shadow-sm">
+                    <div class="card-header bg-light py-1">
+                        <h6 class="mb-0"><i class="fas fa-list me-1"></i>Conceptos en Factura</h6>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="table-responsive" style="max-height: 350px; overflow-y: auto;">
+                            <table class="table table-hover table-sm mb-0">
+                                <thead class="table-light sticky-top">
+                                    <tr>
+                                        <th class="py-1">Concepto</th>
+                                        <th class="text-center py-1">Cant.</th>
+                                        <th class="text-end py-1">Precio</th>
+                                        <th class="text-center py-1">Mes/Año</th>
+                                        <th class="text-end py-1">Total</th>
+                                        <th class="py-1"></th>
+                                    </tr>
+                                </thead>
+                                <tbody id="conceptosBody">
+                                    <tr id="emptyRow">
+                                        <td colspan="6" class="text-center text-muted py-3">
+                                            <i class="fas fa-shopping-cart mb-1"></i><br>
+                                            <small>No hay conceptos agregados</small>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Panel Derecho: Resumen y Total -->
+            <div class="col-lg-4">
+                <!-- Totales -->
+                <div class="card shadow-sm sticky-top" style="top: 10px;">
+                    <div class="card-header bg-dark text-white py-1">
+                        <h6 class="mb-0"><i class="fas fa-calculator me-1"></i>Resumen</h6>
+                    </div>
+                    <div class="card-body p-2">
+                        <div class="mb-2">
+                            <label class="form-label small mb-1">Método de Pago</label>
+                            <select class="form-select form-select-sm" name="metodo_pago" id="metodo_pago">
+                                <option value="efectivo" selected>💵 Efectivo</option>
+                                <option value="tarjeta">💳 Tarjeta de Crédito/Débito</option>
+                                <option value="transferencia">🏦 Transferencia Bancaria</option>
+                                <option value="cheque">📝 Cheque</option>
+                                <option value="mixto">🔀 Pago Mixto</option>
+                            </select>
+                        </div>
+                        
+                        <div class="mb-2">
+                            <label class="form-label small mb-1">Referencia</label>
+                            <input type="text" class="form-control form-control-sm" name="referencia_pago" id="referencia_pago" 
+                                   placeholder="No. transacción...">
+                        </div>
+                        
+                        <div class="mb-2">
+                            <label class="form-label small mb-1">Fecha Vencimiento</label>
+                            <input type="date" class="form-control form-control-sm" name="fecha_vencimiento">
+                        </div>
+                        
+                        <div class="mb-2">
+                            <label class="form-label small mb-1">Descuento (RD$)</label>
+                            <input type="number" class="form-control form-control-sm" id="descuento_factura" name="descuento_factura" 
+                                   value="{% if factura_origen %}{{ factura_origen.descuento|floatformat:2 }}{% else %}0{% endif %}" 
+                                   step="0.01" min="0" onchange="calcularTotales()">
+                        </div>
+                        
+                        <div class="mb-2">
+                            <label class="form-label small mb-1">Observaciones</label>
+                            <textarea class="form-control form-control-sm" name="observaciones" rows="2"></textarea>
+                        </div>
+                        
+                        <hr class="my-2">
+                        
+                        <!-- Totales -->
+                        <div class="d-flex justify-content-between mb-1 small">
+                            <span>Subtotal:</span>
+                            <strong id="subtotalDisplay">RD$0.00</strong>
+                        </div>
+                        <div class="d-flex justify-content-between mb-1 small">
+                            <span>Descuento:</span>
+                            <strong id="descuentoDisplay">RD$0.00</strong>
+                        </div>
+                        <div class="d-flex justify-content-between mb-1 small" id="moraRow" style="display: none;">
+                            <span class="text-warning">
+                                <i class="fas fa-exclamation-triangle me-1"></i>Mora:
+                            </span>
+                            <strong class="text-warning" id="moraDisplay">RD$0.00</strong>
+                        </div>
+                        <div class="d-flex justify-content-between mb-1 small">
+                            <span>ITBIS (18%):</span>
+                            <strong id="itbisDisplay" class="text-info">RD$0.00</strong>
+                        </div>
+                        <input type="hidden" name="impuesto" id="impuesto" value="0">
+                        <hr class="my-2">
+                        <div class="d-flex justify-content-between mb-2">
+                            <h5 class="mb-0">TOTAL:</h5>
+                            <h5 class="mb-0 text-primary" id="totalDisplay">RD$0.00</h5>
+                        </div>
+                        
+                        <hr class="my-2">
+                        
+                        <!-- Cálculo de Cambio -->
+                        <div class="card bg-light mb-2">
+                            <div class="card-body p-2">
+                                <h6 class="mb-2">
+                                    <i class="fas fa-money-bill-wave me-1"></i>Cálculo de Cambio
+                                </h6>
+                                
+                                <div class="mb-2">
+                                    <label for="dineroRecibido" class="form-label">
+                                        <strong>Dinero Recibido (RD$)</strong>
+                                    </label>
+                                    
+                                    <!-- DEBUG: Mostrar valor recibido desde Django -->
+                                    {% if monto_pagado_copiado is not None %}
+                                    <div class="alert alert-info alert-sm mb-2" style="font-size: 0.85rem; padding: 0.5rem;">
+                                        <strong>🔍:</strong> Monto Pagado = {{ monto_pagado_copiado }}
+                                    </div>
+                                    
+                                    {% endif %}
+                                    
+                                    <input type="number" class="form-control" 
+                                        id="dineroRecibido" step="0.01" min="0" 
+                                        placeholder="0.00" oninput="calcularCambio()"
+                                        value="{% if monto_pagado_copiado is not None %}{{ monto_pagado_copiado|unlocalize }}{% else %}0{% endif %}"
+                                        data-monto-original="{{ monto_pagado_copiado|unlocalize|default:'0' }}">
+                                    
+                                    <script>
+                                    // Forzar el valor inmediatamente después de crear el input
+                                    (function() {
+                                        var input = document.getElementById('dineroRecibido');
+                                        var montoOriginal = input.getAttribute('data-monto-original');
+                                        console.log('[DEBUG INLINE] Input encontrado:', input);
+                                        console.log('[DEBUG INLINE] data-monto-original:', montoOriginal);
+                                        console.log('[DEBUG INLINE] value actual:', input.value);
+                                        
+                                        if (montoOriginal && montoOriginal !== '0') {
+                                            input.value = montoOriginal;
+                                            console.log('[DEBUG INLINE] Valor forzado a:', input.value);
+                                        }
+                                    })();
+                                    </script>
+                                    
+                                    
+                                    {% if es_cliente_generico %}
+                                    <div class="alert alert-warning mt-1 mb-0 py-1 small" role="alert">
+                                        <i class="fas fa-exclamation-triangle"></i>
+                                        Cliente genérico NO puede tener crédito.
+                                    </div>
+                                    {% endif %}
+                                    
+                                    <!-- Botones de acceso rápido -->
+                                    <div class="btn-group btn-group-sm mt-1 w-100" role="group">
+                                        <button type="button" class="btn btn-outline-secondary" onclick="setDineroRecibido(100)">
+                                            100
+                                        </button>
+                                        <button type="button" class="btn btn-outline-secondary" onclick="setDineroRecibido(200)">
+                                            200
+                                        </button>
+                                        <button type="button" class="btn btn-outline-secondary" onclick="setDineroRecibido(500)">
+                                            500
+                                        </button>
+                                        <button type="button" class="btn btn-outline-secondary" onclick="setDineroRecibido(1000)">
+                                            1000
+                                        </button>
+                                        <button type="button" class="btn btn-outline-secondary" onclick="setDineroRecibido(2000)">
+                                            2000
+                                        </button>
+                                        <button type="button" class="btn btn-outline-primary" onclick="setDineroExacto()">
+                                            Exacto
+                                        </button>
+                                    </div>
+                                </div>
+                                
+                                <div class="d-flex justify-content-between align-items-center p-2 bg-white rounded">
+                                    <strong>CAMBIO:</strong>
+                                    <h5 class="mb-0 text-success" id="cambioDisplay">RD$0.00</h5>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <button type="button" class="btn btn-primary w-100 mb-1" onclick="enviarFactura()">
+                            <i class="fas fa-check-circle me-1"></i>Crear Factura
+                        </button>
+                        <button type="button" class="btn btn-danger w-100" onclick="limpiarTodo()">
+                            <i class="fas fa-trash me-1"></i>Limpiar
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </form>
+        </div>
+    </div>
+</div>
+
+<script>
+// Conceptos pasados desde Django de forma segura
+const conceptos = {{ conceptos_json|safe|default:"[]" }};
+const mesesPagados = {{ meses_pagados|safe|default:"[]" }};
+const tarifaServer = {{ tarifa_json|default:'null'|safe }};
+const anioActual = {{ anio_actual|default:'2026' }};
+const esClienteGenerico = {{ es_cliente_generico|default:'false'|lower }};
+
+{% if estudiante and estudiante.grupo_familiar %}
+const descuentoGrupoFamiliar = {{ estudiante.grupo_familiar.descuento_general|unlocalize|default:'0' }};
+console.log('Descuento del grupo familiar:', descuentoGrupoFamiliar, '%');
+{% elif estudiante %}
+const descuentoGrupoFamiliar = {{ estudiante.descuento_individual|unlocalize|default:'0' }};
+console.log('Descuento individual del estudiante:', descuentoGrupoFamiliar, '%');
+{% else %}
+const descuentoGrupoFamiliar = 0;
+{% endif %}
+
+console.log('Conceptos cargados:', conceptos);
+console.log('Total conceptos:', conceptos.length);
+console.log('Meses ya pagados:', mesesPagados);
+console.log('Es cliente genérico:', esClienteGenerico);
+
+let rowCounter = 0;
+
+// ELIMINADAS - Ya no usamos mensualidades/inscripciones
+// let mensualidadesAgregadas = new Set(); 
+// let inscripcionAgregada = false;
+
+// FUNCIÓN DE DIAGNÓSTICO - Para ver qué inputs hay en el formulario
+window.diagnosticarFormulario = function() {
+    console.log('\n=== DIAGNÓSTICO DEL FORMULARIO ===');
+    const form = document.getElementById('facturaForm');
+    if (!form) {
+        console.error('Form no encontrado!');
+        return;
+    }
+    
+    // Ver todos los inputs hidden con nombre que contiene []
+    const inputsArrays = form.querySelectorAll('input[name*="[]"]');
+    console.log('Total inputs con arrays []:', inputsArrays.length);
+    
+    // Agrupar por nombre
+    const porNombre = {};
+    inputsArrays.forEach(input => {
+        const nombre = input.name;
+        if (!porNombre[nombre]) {
+            porNombre[nombre] = [];
+        }
+        porNombre[nombre].push(input.value);
+    });
+    
+    console.log('Inputs agrupados:');
+    Object.keys(porNombre).forEach(nombre => {
+        console.log(`  ${nombre}: [${porNombre[nombre].join(', ')}] (${porNombre[nombre].length} elementos)`);
+    });
+    
+    // Ver el tbody y sus filas
+    const tbody = document.getElementById('conceptosBody');
+    if (tbody) {
+        const rows = tbody.querySelectorAll('tr:not(#emptyRow)');
+        console.log(`\nFilas en tabla: ${rows.length}`);
+        rows.forEach((row, idx) => {
+            const inputs = row.querySelectorAll('input[type="hidden"]');
+            console.log(`  Fila ${idx + 1}: ${inputs.length} inputs`);
+        });
+    }
+    console.log('=================================\n');
+};
+
+// Llamar diagnóstico al cargar
+console.log('Para diagnosticar el formulario, escribe: diagnosticarFormulario()');
+
+/* ELIMINADAS - Ya no usamos mensualidades/inscripciones
+// FUNCIÓN PARA ACTUALIZAR OPCIONES DE MESES SEGÚN MESES PAGADOS
+function actualizarOpcionesMeses() {
+    // Esta función actualizaba el estado de los meses pagados
+    // Ya no es necesaria porque eliminamos conceptos de estudiante
+}
+*/
+
+// Actualizar opciones al cambiar el año
+document.addEventListener('DOMContentLoaded', function() {
+    /* ELIMINADO - Ya no usamos meses/años
+    const anioInput = document.getElementById('anioInput');
+    if (anioInput) {
+        anioInput.addEventListener('change', actualizarOpcionesMeses);
+        {% if estudiante %}
+        actualizarOpcionesMeses();
+        mostrarEstadoMensualidades();
+        {% endif %}
+    }
+    */
+    
+    // PREVENIR SUBMIT DEL FORMULARIO AL PRESIONAR ENTER EN CAMPOS DE BÚSQUEDA
+    const codigoBarrasInput = document.getElementById('codigoBarrasInput');
+    const buscarNombreInput = document.getElementById('buscarNombreInput');
+    
+    if (codigoBarrasInput) {
+        codigoBarrasInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                buscarPorCodigoBarras();
+            }
+        });
+        
+        // Enfocar automáticamente al cargar si hay cliente seleccionado
+        {% if estudiante %}
+        setTimeout(() => codigoBarrasInput.focus(), 500);
+        {% endif %}
+    }
+    
+    if (buscarNombreInput) {
+        buscarNombreInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                buscarPorNombre();
+            }
+        });
+    }
+    
+    // Deshabilitar mensualidades, inscripciones y transporte para cliente genérico
+    if (esClienteGenerico) {
+        const conceptoSelect = document.getElementById('conceptoSelect');
+        if (conceptoSelect) {
+            Array.from(conceptoSelect.options).forEach(option => {
+                const tipo = option.getAttribute('data-tipo');
+                if (tipo === 'mensualidad' || tipo === 'inscripcion' || tipo === 'transporte') {
+                    option.disabled = true;
+                    option.style.color = '#ccc';
+                    option.text = option.text + ' (No disponible para cliente genérico)';
+                }
+            });
+        }
+    }
+});
+
+/* ELIMINADA - Ya no usamos mensualidades/inscripciones
+// FUNCIÓN PARA MOSTRAR ESTADO DE MENSUALIDADES (PAGADAS VS PENDIENTES)
+function mostrarEstadoMensualidades() {
+    // Esta función mostraba el estado de pagos mensuales
+    // Ya no es necesaria porque eliminamos conceptos de estudiante
+}
+*/
+
+// FUNCIÓN PARA HABILITAR/DESHABILITAR CAMPOS DE MES SEGÚN EL TIPO DE CONCEPTO
+/* ELIMINADA - Ya no usamos mensualidades/inscripciones
+function toggleCamposMes() {
+    // Esta función habilitaba/deshabilitaba campos de mes para mensualidades
+    // Ya no es necesaria porque eliminamos conceptos de estudiante
+}
+*/
+
+// FUNCIÓN PARA AGREGAR LA TARIFA DEL ESTUDIANTE MANUALMENTE
+function agregarTarifaEstudiante() {
+    console.log('=== agregarTarifaEstudiante() llamada ===');
+    
+    if (!tarifaServer) {
+        alert('No hay tarifa configurada para este estudiante');
+        return;
+    }
+    
+    const anioInput = document.getElementById('anioInput');
+    const anio = anioInput ? anioInput.value : new Date().getFullYear();
+    let agregados = [];
+    
+    // Agregar mensualidad si existe
+    if (tarifaServer.mensualidad) {
+        const mens = tarifaServer.mensualidad;
+        const mesActual = new Date().getMonth() + 1;
+        const claveMes = `${mesActual}-${anio}`;
+        
+        // Calcular descuento si el estudiante está en un grupo familiar
+        const montoMensualidad = parseFloat(mens.monto || 0);
+        const descuentoMensualidad = descuentoGrupoFamiliar > 0 
+            ? (montoMensualidad * descuentoGrupoFamiliar / 100) 
+            : 0;
+        
+        console.log(`DEBUG DESCUENTO - Mensualidad monto: RD$${montoMensualidad}, Descuento %: ${descuentoGrupoFamiliar}%, Descuento RD$: ${descuentoMensualidad.toFixed(2)}`);
+        
+        // Verificar si ya está pagado o agregado
+        if (mesesPagados.includes(claveMes)) {
+            alert(`El mes actual (${mesActual}/${anio}) ya está pagado.`);
+        } else if (mensualidadesAgregadas.has(claveMes)) {
+            alert(`La mensualidad de ${mesActual}/${anio} ya fue agregada.`);
+        } else {
+            agregarConceptoALista(
+                mens.concepto_id || '', 
+                mens.concepto_nombre || 'Mensualidad', 
+                1, 
+                montoMensualidad, 
+                descuentoMensualidad, 
+                mesActual.toString(), 
+                anio
+            );
+            mensualidadesAgregadas.add(claveMes);
+            agregados.push('Mensualidad');
+        }
+    }
+    
+    // Agregar inscripción si existe
+    if (tarifaServer.inscripcion && !inscripcionAgregada) {
+        const insc = tarifaServer.inscripcion;
+        
+        // Calcular descuento si el estudiante está en un grupo familiar
+        const montoInscripcion = parseFloat(insc.monto || 0);
+        const descuentoInscripcion = descuentoGrupoFamiliar > 0 
+            ? (montoInscripcion * descuentoGrupoFamiliar / 100) 
+            : 0;
+        
+        console.log(`DEBUG DESCUENTO - Inscripción monto: RD$${montoInscripcion}, Descuento %: ${descuentoGrupoFamiliar}%, Descuento RD$: ${descuentoInscripcion.toFixed(2)}`);
+        
+        agregarConceptoALista(
+            insc.concepto_id || '', 
+            insc.concepto_nombre || 'Inscripción', 
+            1, 
+            montoInscripcion, 
+            descuentoInscripcion, 
+            '', 
+            ''
+        );
+        inscripcionAgregada = true;
+        agregados.push('Inscripción');
+    }
+    
+    // Agregar transporte si existe
+    if (tarifaServer.transporte) {
+        const trans = tarifaServer.transporte;
+        
+        // Calcular descuento si el estudiante está en un grupo familiar
+        const montoTransporte = parseFloat(trans.monto || 0);
+        const descuentoTransporte = descuentoGrupoFamiliar > 0 
+            ? (montoTransporte * descuentoGrupoFamiliar / 100) 
+            : 0;
+        
+        console.log(`DEBUG DESCUENTO - Transporte monto: RD$${montoTransporte}, Descuento %: ${descuentoGrupoFamiliar}%, Descuento RD$: ${descuentoTransporte.toFixed(2)}`);
+        
+        const nombreCompleto = trans.observaciones 
+            ? `${trans.concepto_nombre} (${trans.observaciones})` 
+            : trans.concepto_nombre || 'Transporte';
+        
+        agregarConceptoALista(
+            trans.concepto_id || '', 
+            nombreCompleto, 
+            1, 
+            montoTransporte, 
+            descuentoTransporte, 
+            '', 
+            ''
+        );
+        agregados.push('Transporte');
+    }
+    
+    if (agregados.length > 0) {
+        mostrarNotificacion(`Agregado: ${agregados.join(', ')}`, 'success');
+    } else {
+        alert('No hay tarifas disponibles para agregar o ya fueron agregadas');
+    }
+}
+
+
+// Seleccionar estudiante
+function seleccionarEstudiante(id) {
+    window.location.href = '?estudiante_id=' + id;
+}
+
+// Limpiar cliente
+function limpiarCliente() {
+    window.location.href = '{% url "factura_crear_nueva" %}';
+}
+
+// Agregar concepto rápido (estilo POS)
+function agregarConceptoRapido() {
+    console.log('=== agregarConceptoRapido() llamada ===');
+    
+    const select = document.getElementById('conceptoSelect');
+    if (!select) {
+        console.error('ERROR: Select element not found');
+        return;
+    }
+    
+    const conceptoId = select.value;
+    console.log('Concepto ID seleccionado:', conceptoId);
+    
+    if (!conceptoId || conceptoId === '') {
+        alert('Por favor selecciona un concepto');
+        console.log('ERROR: No hay concepto seleccionado');
+        select.focus();
+        return;
+    }
+    
+    const selectedOption = select.options[select.selectedIndex];
+    if (!selectedOption) {
+        console.error('ERROR: No se pudo obtener la opción seleccionada');
+        return;
+    }
+    
+    const conceptoNombre = selectedOption.text;
+    let precio = parseFloat(selectedOption.getAttribute('data-monto'));
+    const tipo = selectedOption.getAttribute('data-tipo');
+    
+    const cantidad = parseFloat(document.getElementById('cantidadInput').value) || 1;
+    
+    console.log('Concepto seleccionado:', {conceptoId, conceptoNombre, precio, tipo, cantidad});
+    
+    // Agregar concepto a la lista (sin descuentos de grupo, solo conceptos simples)
+    agregarConceptoALista(conceptoId, conceptoNombre, cantidad, precio, 0, '', '');
+    
+    // Resetear campos
+    select.value = '';
+    document.getElementById('cantidadInput').value = 1;
+    select.focus();
+    
+    console.log('=== Concepto agregado exitosamente ===');
+}
+
+// ========== FUNCIONES PARA CÓDIGO DE BARRAS ==========
+
+// Buscar artículo por código de barras
+async function buscarPorCodigoBarras() {
+    const input = document.getElementById('codigoBarrasInput');
+    const codigo = input.value.trim();
+    
+    if (!codigo) {
+        alert('Por favor ingresa un código de barras');
+        input.focus();
+        return;
+    }
+    
+    console.log('Buscando artículo con código:', codigo);
+    
+    try {
+        const response = await fetch(`{% url 'buscar_articulo_barras' %}?codigo=${encodeURIComponent(codigo)}`);
+        const data = await response.json();
+        
+        if (data.success && data.articulo) {
+            console.log('Artículo encontrado:', data.articulo);
+            
+            // Verificar stock para productos
+            if (data.articulo.tipo === 'producto' && data.articulo.stock_actual <= 0) {
+                if (!confirm(`El artículo "${data.articulo.nombre}" no tiene stock disponible (${data.articulo.stock_actual}). ¿Deseas agregarlo de todas formas?`)) {
+                    input.value = '';
+                    input.focus();
+                    return;
+                }
+            }
+            
+            // Agregar artículo a la factura automáticamente
+            agregarArticuloALista(data.articulo);
+            
+            // Limpiar y enfocar para siguiente escaneo
+            input.value = '';
+            input.focus();
+            
+            // Mostrar notificación de éxito
+            mostrarNotificacion(`✓ ${data.articulo.nombre} agregado (RD$${data.articulo.precio_venta})`, 'success');
+            
+        } else {
+            console.error('Artículo no encontrado:', data.error);
+            alert(`❌ ${data.error || 'Artículo no encontrado'}`);
+            input.select();
+        }
+        
+    } catch (error) {
+        console.error('Error al buscar artículo:', error);
+        alert('Error al buscar el artículo. Verifica tu conexión.');
+        input.select();
+    }
+}
+
+// Buscar artículos por nombre (AJAX con debounce)
+let buscarNombreTimeout = null;
+async function buscarPorNombre(forceQuery) {
+    const input = document.getElementById('buscarNombreInput');
+    const q = (forceQuery !== undefined && forceQuery !== null) ? forceQuery : input.value.trim();
+
+    if (buscarNombreTimeout) {
+        clearTimeout(buscarNombreTimeout);
+    }
+
+    // Debounce 300ms
+    buscarNombreTimeout = setTimeout(async () => {
+        if (!q) {
+            document.getElementById('resultadosArticulos').innerHTML = '';
+            return;
+        }
+
+        try {
+            const url = `{% url 'buscar_articulo_nombre' %}?q=${encodeURIComponent(q)}`;
+            const resp = await fetch(url);
+            const data = await resp.json();
+            const container = document.getElementById('resultadosArticulos');
+            container.innerHTML = '';
+
+            if (data.success && Array.isArray(data.results) && data.results.length > 0) {
+                data.results.forEach(art => {
+                    const el = document.createElement('div');
+                    el.className = 'card p-2 mb-1';
+                    el.style.cursor = 'pointer';
+                    el.innerHTML = `<strong>${art.nombre}</strong> <small class="text-muted">RD$${parseFloat(art.precio_venta).toFixed(2)} - ${art.tipo}</small><br><small class="text-muted">${art.codigo_barras || ''}</small>`;
+                    el.onclick = () => {
+                        agregarArticuloALista(art);
+                        container.innerHTML = '';
+                        input.value = '';
+                        input.focus();
+                    };
+                    container.appendChild(el);
+                });
+            } else {
+                container.innerHTML = '<div class="text-muted">No se encontraron artículos.</div>';
+            }
+        } catch (err) {
+            console.error('Error buscarPorNombre:', err);
+            document.getElementById('resultadosArticulos').innerHTML = '<div class="text-danger">Error al buscar artículos.</div>';
+        }
+    }, 300);
+}
+
+// Agregar artículo del inventario a la lista
+function agregarArticuloALista(articulo) {
+    console.log('Agregando artículo a lista:', articulo);
+    
+    const tbody = document.getElementById('conceptosBody');
+    
+    // Ocultar mensaje vacío
+    const emptyRow = document.getElementById('emptyRow');
+    if (emptyRow) {
+        emptyRow.style.display = 'none';
+    }
+    
+    // VERIFICAR SI EL ARTÍCULO YA EXISTE EN LA FACTURA
+    const filasExistentes = tbody.querySelectorAll('tr:not(#emptyRow)');
+    for (let fila of filasExistentes) {
+        const articuloIdInput = fila.querySelector('input[name="articulo_id[]"]');
+        if (articuloIdInput && articuloIdInput.value == articulo.id) {
+            // Artículo ya existe, incrementar cantidad
+            console.log('Artículo ya existe, incrementando cantidad');
+            
+            const cantidadHidden = fila.querySelector('input[name="cantidad[]"]');
+            const cantidadInput = fila.querySelector('input[type="number"]');
+            
+            if (cantidadHidden && cantidadInput) {
+                const cantidadActual = parseInt(cantidadHidden.value) || 0;
+                const nuevaCantidad = cantidadActual + 1;
+                
+                // Verificar stock si es producto
+                if (articulo.tipo === 'producto' && nuevaCantidad > articulo.stock_actual) {
+                    alert(`❌ Stock insuficiente. Disponible: ${articulo.stock_actual}`);
+                    return;
+                }
+                
+                cantidadHidden.value = nuevaCantidad;
+                cantidadInput.value = nuevaCantidad;
+                
+                // Obtener rowId de esta fila
+                const rowId = fila.id.replace('row-', '');
+                actualizarCantidadFila(parseInt(rowId), nuevaCantidad, articulo.precio_venta);
+                
+                // Resaltar fila brevemente
+                fila.style.backgroundColor = '#d4edda';
+                setTimeout(() => {
+                    fila.style.backgroundColor = '';
+                }, 500);
+            }
+            return; // Salir de la función
+        }
+    }
+    
+    // Si no existe, crear nueva fila
+    const row = document.createElement('tr');
+    row.id = `row-${rowCounter}`;
+    
+    const cantidad = 1; // Siempre 1 al escanear, puede editarse después
+    const precio = articulo.precio_venta;
+    const descuento = 0;
+    const total = cantidad * precio;
+    
+    // Para artículos, usamos un concepto_id especial negativo (para diferenciar de conceptos normales)
+    // O podemos crear un hidden con el articulo_id
+    row.innerHTML = `
+        <td class="py-3">
+            <strong>${articulo.nombre}</strong>
+            ${articulo.aplica_itbis ? '<span class="badge bg-warning ms-2" title="Aplica ITBIS del 18%">+ITBIS</span>' : ''}
+            <br><small class="text-muted">
+                <i class="fas fa-barcode"></i> ${articulo.codigo_barras}
+                ${articulo.tipo === 'producto' ? ` | Stock: ${articulo.stock_actual}` : ' | Servicio'}
+            </small>
+            <input type="hidden" name="concepto_id[]" value="">
+            <input type="hidden" name="articulo_id[]" value="${articulo.id}">
+            <input type="hidden" name="cantidad[]" value="${cantidad}">
+            <input type="hidden" name="precio[]" value="${precio}">
+            <input type="hidden" name="descuento[]" value="${descuento}">
+            <input type="hidden" name="mes[]" value="">
+            <input type="hidden" name="anio[]" value="">
+            <input type="hidden" class="stock-actual" value="${articulo.stock_actual}">
+            <input type="hidden" class="tipo-articulo" value="${articulo.tipo}">
+            <input type="hidden" class="aplica-itbis" value="${articulo.aplica_itbis}">
+        </td>
+        <td class="text-center py-3">
+            <input type="number" class="form-control form-control-sm text-center cantidad-input" 
+                   value="${cantidad}" min="1" max="${articulo.tipo === 'producto' ? articulo.stock_actual : 999}"
+                   onchange="actualizarCantidadFila(${rowCounter}, this.value, ${precio})"
+                   oninput="validarStock(this, ${rowCounter})"
+                   style="width: 80px;">
+        </td>
+        <td class="text-end py-3">RD$${precio.toFixed(2)}</td>
+        <td class="text-center py-3">
+            <span class="badge bg-info">${articulo.tipo === 'producto' ? 'Producto' : 'Servicio'}</span>
+        </td>
+        <td class="text-end py-3"><strong class="total-row" id="total-${rowCounter}">RD$${total.toFixed(2)}</strong></td>
+        <td class="text-center py-3">
+            <button type="button" class="btn btn-sm btn-danger" onclick="eliminarConcepto(${rowCounter})">
+                <i class="fas fa-trash"></i>
+            </button>
+        </td>
+    `;
+    
+    tbody.appendChild(row);
+    rowCounter++;
+    
+    calcularTotales();
+}
+
+// Actualizar cantidad de una fila (cuando se cambia el input de cantidad)
+function actualizarCantidadFila(rowId, cantidad, precio) {
+    cantidad = parseInt(cantidad) || 1;
+    
+    // Validar stock antes de actualizar
+    const row = document.getElementById(`row-${rowId}`);
+    if (row) {
+        const stockActual = parseInt(row.querySelector('.stock-actual')?.value) || 999;
+        const tipoArticulo = row.querySelector('.tipo-articulo')?.value;
+        
+        // Si es producto, validar stock
+        if (tipoArticulo === 'producto' && cantidad > stockActual) {
+            alert(`❌ Stock insuficiente. Disponible: ${stockActual} unidades`);
+            
+            // Restaurar cantidad anterior
+            const cantidadInput = row.querySelector('.cantidad-input');
+            const cantidadHidden = row.querySelector('input[name="cantidad[]"]');
+            if (cantidadInput && cantidadHidden) {
+                cantidadInput.value = cantidadHidden.value;
+            }
+            return;
+        }
+    }
+    
+    const total = cantidad * precio;
+    
+    // Actualizar el valor del hidden
+    if (row) {
+        const cantidadInput = row.querySelector('input[name="cantidad[]"]');
+        if (cantidadInput) {
+            cantidadInput.value = cantidad;
+        }
+        
+        // Actualizar el total de la fila
+        const totalCell = document.getElementById(`total-${rowId}`);
+        if (totalCell) {
+            totalCell.textContent = `RD$${total.toFixed(2)}`;
+        }
+    }
+    
+    calcularTotales();
+}
+
+// Validar stock en tiempo real mientras se escribe
+function validarStock(input, rowId) {
+    const cantidad = parseInt(input.value) || 0;
+    const row = document.getElementById(`row-${rowId}`);
+    
+    if (row) {
+        const stockActual = parseInt(row.querySelector('.stock-actual')?.value) || 999;
+        const tipoArticulo = row.querySelector('.tipo-articulo')?.value;
+        
+        // Si es producto y excede el stock, marcar en rojo
+        if (tipoArticulo === 'producto' && cantidad > stockActual) {
+            input.style.borderColor = '#dc3545';
+            input.style.backgroundColor = '#f8d7da';
+        } else {
+            input.style.borderColor = '';
+            input.style.backgroundColor = '';
+        }
+    }
+}
+
+// Mostrar notificación temporal
+function mostrarNotificacion(mensaje, tipo = 'success') {
+    const colors = {
+        success: '#28a745',
+        error: '#dc3545',
+        warning: '#ffc107'
+    };
+    
+    const notif = document.createElement('div');
+    notif.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        background: ${colors[tipo]};
+        color: white;
+        padding: 15px 20px;
+        border-radius: 5px;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+        z-index: 9999;
+        font-weight: bold;
+        animation: slideIn 0.3s;
+    `;
+    notif.textContent = mensaje;
+    
+    document.body.appendChild(notif);
+    
+    setTimeout(() => {
+        notif.style.animation = 'slideOut 0.3s';
+        setTimeout(() => notif.remove(), 300);
+    }, 2000);
+}
+
+// ========== FIN FUNCIONES CÓDIGO DE BARRAS ==========
+
+function agregarConceptoALista(conceptoId, nombre, cantidad, precio, descuento, mes, anio) {
+    console.log('agregarConceptoALista llamada con:', {conceptoId, nombre, cantidad, precio, descuento, mes, anio});
+    
+    const tbody = document.getElementById('conceptosBody');
+    console.log('tbody encontrado:', tbody);
+    
+    // Ocultar mensaje vacío
+    const emptyRow = document.getElementById('emptyRow');
+    if (emptyRow) {
+        emptyRow.style.display = 'none';
+        console.log('Mensaje vacío ocultado');
+    }
+    
+    const row = document.createElement('tr');
+    row.id = `row-${rowCounter}`;
+    
+    const total = (cantidad * precio) - descuento;
+    const mesTexto = mes ? getMesNombre(mes) + '/' + anio : '-';
+    
+    console.log('Creando fila con total:', total, 'mesTexto:', mesTexto);
+    
+    row.innerHTML = `
+        <td class="py-3">
+            <strong>${nombre}</strong>
+            <input type="hidden" name="concepto_id[]" value="${conceptoId}">
+            <input type="hidden" name="articulo_id[]" value="">
+            <input type="hidden" name="cantidad[]" value="${cantidad}">
+            <input type="hidden" name="precio[]" value="${precio}">
+            <input type="hidden" name="descuento[]" value="${descuento}">
+            <input type="hidden" name="mes[]" value="${mes}">
+            <input type="hidden" name="anio[]" value="${anio}">
+            <input type="hidden" class="aplica-itbis" value="false">
+        </td>
+        <td class="text-center py-3">${cantidad}</td>
+        <td class="text-end py-3">RD$${precio.toFixed(2)}</td>
+        <td class="text-center py-3">${mesTexto}</td>
+        <td class="text-end py-3"><strong class="total-row">RD$${total.toFixed(2)}</strong></td>
+        <td class="text-center py-3">
+            <button type="button" class="btn btn-sm btn-danger" onclick="eliminarConcepto(${rowCounter})">
+                <i class="fas fa-trash"></i>
+            </button>
+        </td>
+    `;
+    
+    tbody.appendChild(row);
+    console.log('Fila agregada al tbody, rowCounter:', rowCounter);
+    rowCounter++;
+    
+    calcularTotales();
+    console.log('Totales recalculados');
+}
+
+function eliminarConcepto(rowId) {
+    const row = document.getElementById(`row-${rowId}`);
+    if (row) {
+        // Obtener información del concepto antes de eliminarlo
+        const mesInput = row.querySelector('input[name="mes[]"]');
+        const anioInput = row.querySelector('input[name="anio[]"]');
+        const conceptoIdInput = row.querySelector('input[name="concepto_id[]"]');
+        
+        // Si tiene mes/año, liberar esa mensualidad
+        if (mesInput && anioInput && mesInput.value && anioInput.value) {
+            const claveMes = `${mesInput.value}-${anioInput.value}`;
+            mensualidadesAgregadas.delete(claveMes);
+            console.log(`Mensualidad ${claveMes} liberada`);
+        }
+        
+        // Si es inscripción, liberar flag
+        if (conceptoIdInput) {
+            const conceptoId = conceptoIdInput.value;
+            const concepto = conceptos.find(c => c.id == conceptoId);
+            if (concepto && concepto.tipo === 'inscripcion') {
+                inscripcionAgregada = false;
+                console.log('Inscripción liberada');
+            }
+        }
+        
+        row.remove();
+        calcularTotales();
+        
+        // Mostrar mensaje vacío si no hay conceptos
+        const tbody = document.getElementById('conceptosBody');
+        const hasConceptos = tbody.querySelector('input[name="concepto_id[]"]');
+        if (!hasConceptos) {
+            const emptyRow = document.getElementById('emptyRow');
+            if (emptyRow) emptyRow.style.display = '';
+        }
+    }
+}
+
+function calcularTotales() {
+    let subtotal = 0;
+    let subtotalConItbis = 0; // Subtotal de items que aplican ITBIS
+    let subtotalMensualidadesVencidas = 0; // Para calcular mora
+    
+    const hoy = new Date();
+    const diaHoy = hoy.getDate();
+    const mesHoy = hoy.getMonth() + 1; // JavaScript months are 0-indexed
+    const anioHoy = hoy.getFullYear();
+    
+    {% if estudiante %}
+    const diaVencimiento = {{ estudiante.get_dia_vencimiento|default:'null' }};
+    const porcentajeMora = {{ estudiante.get_porcentaje_mora|unlocalize|default:'0' }};
+    {% if estudiante.grupo_familiar %}
+    console.log(`DEBUG MORA JS - Configuración desde GRUPO FAMILIAR: Día vencimiento=${diaVencimiento}, Porcentaje mora=${porcentajeMora}%, Hoy=${diaHoy}/${mesHoy}/${anioHoy}`);
+    {% else %}
+    console.log(`DEBUG MORA JS - Configuración INDIVIDUAL: Día vencimiento=${diaVencimiento}, Porcentaje mora=${porcentajeMora}%, Hoy=${diaHoy}/${mesHoy}/${anioHoy}`);
+    {% endif %}
+    {% else %}
+    const diaVencimiento = 10;
+    const porcentajeMora = 0;
+    console.log('DEBUG MORA JS - Sin estudiante seleccionado');
+    {% endif %}
+    
+    console.log(`DEBUG MORA JS - Buscando filas con class .total-row...`);
+    const filasConTotal = document.querySelectorAll('.total-row');
+    console.log(`DEBUG MORA JS - Encontradas ${filasConTotal.length} filas`);
+    
+    document.querySelectorAll('.total-row').forEach((element, index) => {
+        const value = parseFloat(element.textContent.replace('RD$', '').replace(',', '')) || 0;
+        subtotal += value;
+        
+        console.log(`DEBUG MORA JS - Fila ${index + 1}: Valor RD$${value}`);
+        
+        // Verificar si este elemento aplica ITBIS
+        const row = element.closest('tr');
+        if (row) {
+            const aplicaItbis = row.querySelector('.aplica-itbis');
+            if (aplicaItbis && aplicaItbis.value === 'true') {
+                subtotalConItbis += value;
+            }
+            
+            // Verificar si es mensualidad y está vencida - USAR CAMPOS HIDDEN
+            const mesInput = row.querySelector('input[name="mes[]"]');
+            const anioInput = row.querySelector('input[name="anio[]"]');
+            
+            console.log(`DEBUG MORA JS - Fila ${index + 1}: mesInput=${mesInput ? mesInput.value : 'null'}, anioInput=${anioInput ? anioInput.value : 'null'}`);
+            
+            if (mesInput && anioInput && mesInput.value && anioInput.value) {
+                const mesMensualidad = parseInt(mesInput.value);
+                const anioMensualidad = parseInt(anioInput.value);
+                
+                console.log(`DEBUG MORA JS - Fila ${index + 1}: Analizando mensualidad ${mesMensualidad}/${anioMensualidad}`);
+                console.log(`DEBUG MORA JS - Fila ${index + 1}: porcentajeMora=${porcentajeMora}`);
+                
+                if (porcentajeMora > 0) {
+                    // Determinar si está vencida
+                    let estaVencida = false;
+                    let razon = '';
+                    
+                    if (anioMensualidad < anioHoy) {
+                        estaVencida = true;
+                        razon = `año ${anioMensualidad} < ${anioHoy}`;
+                    } else if (anioMensualidad === anioHoy && mesMensualidad < mesHoy) {
+                        estaVencida = true;
+                        razon = `mismo año, mes ${mesMensualidad} < ${mesHoy}`;
+                    } else if (anioMensualidad === anioHoy && mesMensualidad === mesHoy && diaHoy > diaVencimiento) {
+                        estaVencida = true;
+                        razon = `mismo mes, día ${diaHoy} > ${diaVencimiento}`;
+                    } else {
+                        razon = 'no vencida';
+                    }
+                    
+                    console.log(`DEBUG MORA JS - Fila ${index + 1}: ${mesMensualidad}/${anioMensualidad} - ${estaVencida ? '✓ VENCIDA' : '✗ NO VENCIDA'} (${razon})`);
+                    
+                    if (estaVencida) {
+                        console.log(`DEBUG MORA JS - Fila ${index + 1}: ✓✓✓ AGREGANDO RD$${value} a subtotal vencido`);
+                        subtotalMensualidadesVencidas += value;
+                    }
+                } else {
+                    console.log(`DEBUG MORA JS - Fila ${index + 1}: Porcentaje mora es 0%, no se calcula mora`);
+                }
+            } else {
+                console.log(`DEBUG MORA JS - Fila ${index + 1}: No tiene mes/anio o están vacíos`);
+            }
+        }
+    });
+    
+    const descuentoFactura = parseFloat(document.getElementById('descuento_factura').value) || 0;
+    
+    // Calcular mora sobre mensualidades vencidas
+    let mora = 0;
+    if (subtotalMensualidadesVencidas > 0 && porcentajeMora > 0) {
+        mora = (subtotalMensualidadesVencidas * porcentajeMora) / 100;
+        console.log(`DEBUG MORA JS - Subtotal vencido: RD$${subtotalMensualidadesVencidas.toFixed(2)}, Porcentaje: ${porcentajeMora}%, Mora calculada: RD$${mora.toFixed(2)}`);
+        document.getElementById('moraRow').style.display = 'flex';
+        document.getElementById('moraDisplay').textContent = `RD$${mora.toFixed(2)}`;
+    } else {
+        console.log(`DEBUG MORA JS - Sin mora. Subtotal vencido: ${subtotalMensualidadesVencidas}, Porcentaje: ${porcentajeMora}%`);
+        document.getElementById('moraRow').style.display = 'none';
+    }
+    
+    // Calcular ITBIS del 18% sobre items que aplican
+    const itbis = subtotalConItbis * 0.18;
+    
+    // Total = Subtotal - Descuento + Mora + ITBIS
+    const total = Math.max(0, subtotal - descuentoFactura + mora + itbis);
+    
+    document.getElementById('subtotalDisplay').textContent = `RD$${subtotal.toFixed(2)}`;
+    document.getElementById('descuentoDisplay').textContent = `RD$${descuentoFactura.toFixed(2)}`;
+    document.getElementById('itbisDisplay').textContent = `RD$${itbis.toFixed(2)}`;
+    document.getElementById('totalDisplay').textContent = `RD$${total.toFixed(2)}`;
+    
+    // Actualizar campo hidden del impuesto
+    document.getElementById('impuesto').value = itbis.toFixed(2);
+    
+    // Recalcular cambio si hay dinero recibido
+    calcularCambio();
+}
+
+// Calcular cambio
+function calcularCambio() {
+    const totalText = document.getElementById('totalDisplay').textContent;
+    const total = parseFloat(totalText.replace('RD$', '').replace(',', '')) || 0;
+    
+    const dineroRecibido = parseFloat(document.getElementById('dineroRecibido').value) || 0;
+    const cambio = Math.max(0, dineroRecibido - total);
+    
+    const cambioDisplay = document.getElementById('cambioDisplay');
+    cambioDisplay.textContent = `RD$${cambio.toFixed(2)}`;
+    
+    // Cambiar color según si falta dinero o hay cambio
+    if (dineroRecibido < total && dineroRecibido > 0) {
+        cambioDisplay.classList.remove('text-success');
+        cambioDisplay.classList.add('text-danger');
+    } else {
+        cambioDisplay.classList.remove('text-danger');
+        cambioDisplay.classList.add('text-success');
+    }
+    
+    // CORREGIDO: El monto pagado es el menor entre lo recibido y el total
+    // Si pagó completo: guarda el total de la factura
+    // Si pagó parcial: guarda solo lo que dio
+    const montoCobrado = Math.min(dineroRecibido, total);
+    document.getElementById('montoPagadoHidden').value = montoCobrado.toFixed(2);
+}
+
+// Botones de acceso rápido para dinero recibido
+function setDineroRecibido(monto) {
+    const dineroRecibidoEl = document.getElementById('dineroRecibido');
+    dineroRecibidoEl.value = monto.toFixed(2);
+    calcularCambio();
+    dineroRecibidoEl.focus();
+}
+
+function setDineroExacto() {
+    const totalText = document.getElementById('totalDisplay').textContent;
+    const total = parseFloat(totalText.replace('RD$', '').replace(',', '')) || 0;
+    const dineroRecibidoEl = document.getElementById('dineroRecibido');
+    dineroRecibidoEl.value = total.toFixed(2);
+    calcularCambio();
+    dineroRecibidoEl.focus();
+}
+
+function getMesNombre(mes) {
+    const meses = ['', 'Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+    return meses[parseInt(mes)] || '';
+}
+
+function enviarFactura() {
+    // Validar que haya un cliente seleccionado
+    const estudianteId = document.getElementById('estudianteIdHiddenPost').value;
+    if (!estudianteId) {
+        alert('Debes seleccionar un cliente antes de crear la factura.');
+        return false;
+    }
+    
+    // Validar que haya al menos un concepto agregado
+    const tbody = document.getElementById('conceptosBody');
+    const filas = tbody.querySelectorAll('tr:not(#emptyRow)');
+    if (filas.length === 0) {
+        alert('Debes agregar al menos un artículo o concepto a la factura.');
+        return false;
+    }
+    
+    // ============================================
+    // VALIDACIÓN DE CRÉDITO
+    // ============================================
+    const montoPagadoEl = document.getElementById('montoPagadoHidden');
+    const montoPagado = montoPagadoEl ? parseFloat(montoPagadoEl.value) || 0 : 0;
+    const totalDisplay = document.getElementById('totalDisplay');
+    
+    if (totalDisplay) {
+        const textoTotal = totalDisplay.textContent || totalDisplay.innerText || '';
+        const totalMonto = parseFloat(textoTotal.replace(/[^\d.]/g, '')) || 0;
+        
+        // Si el monto pagado es menor que el total (es una venta a crédito)
+        if (montoPagado < totalMonto && montoPagado >= 0) {
+            // Verificar si el cliente tiene nombre "Cliente" (no puede comprar a crédito)
+            const clienteNombreEl = document.getElementById('clienteNombre');
+            const clienteNombreCompleto = clienteNombreEl ? (clienteNombreEl.textContent || clienteNombreEl.innerText || '').trim() : '';
+            const primerNombre = clienteNombreCompleto.split(' ')[0].trim();
+            
+            if (primerNombre === 'Cliente') {
+                alert(
+                    '❌ ERROR: CLIENTE GENÉRICO NO PUEDE COMPRAR A CRÉDITO\n\n' +
+                    'Los clientes con nombre "Cliente" solo pueden realizar compras pagadas en su totalidad.\n\n' +
+                    'Para ventas a crédito, debe:\n' +
+                    '1. Crear un cliente real con nombre y apellidos completos\n' +
+                    '2. O ingresar el monto total de la factura como pago\n\n' +
+                    `Total: RD$${totalMonto.toLocaleString('es-DO', {minimumFractionDigits: 2, maximumFractionDigits: 2})}\n` +
+                    `Monto ingresado: RD$${montoPagado.toLocaleString('es-DO', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`
+                );
+                // Enfocar el campo de pago
+                const dineroRecibidoInput = document.getElementById('dineroRecibido');
+                if (dineroRecibidoInput) {
+                    dineroRecibidoInput.focus();
+                    dineroRecibidoInput.select();
+                }
+                return false;
+            }
+            
+            const saldo = totalMonto - montoPagado;
+            const saldoFormateado = saldo.toLocaleString('es-DO', {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+            });
+            const totalFormateado = totalMonto.toLocaleString('es-DO', {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+            });
+            const pagadoFormateado = montoPagado.toLocaleString('es-DO', {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+            });
+            
+            // Mostrar alerta de confirmación si es a crédito
+            const confirmacion = confirm(
+                '⚠️ ADVERTENCIA: VENTA A CRÉDITO\n\n' +
+                'Esta venta quedará registrada con saldo pendiente:\n\n' +
+                `Total de la factura: RD$${totalFormateado}\n` +
+                `Monto pagado: RD$${pagadoFormateado}\n` +
+                `Saldo pendiente: RD$${saldoFormateado}\n\n` +
+                '¿Deseas continuar y guardar esta factura a crédito?'
+            );
+            
+            if (!confirmacion) {
+                // Usuario canceló, dar foco al campo de pago
+                const dineroRecibidoInput = document.getElementById('dineroRecibido');
+                if (dineroRecibidoInput) {
+                    dineroRecibidoInput.focus();
+                    dineroRecibidoInput.select();
+                }
+                return false;
+            }
+        }
+    }
+    
+    // Enviar el formulario
+    console.log('Enviando factura...');
+    document.getElementById('facturaForm').submit();
+}
+
+function limpiarTodo() {
+    if (confirm('¿Estás seguro de limpiar toda la factura?')) {
+        const tbody = document.getElementById('conceptosBody');
+        tbody.innerHTML = `
+            <tr id="emptyRow">
+                <td colspan="6" class="text-center text-muted py-4">
+                    <i class="fas fa-shopping-cart fa-2x mb-2"></i><br>
+                    No hay conceptos agregados
+                </td>
+            </tr>
+        `;
+        rowCounter = 0;
+        // Limpiar registros de mensualidades e inscripciones agregadas
+        mensualidadesAgregadas.clear();
+        inscripcionAgregada = false;
+        calcularTotales();
+        document.getElementById('conceptoSelect').focus();
+    }
+}
+
+// Validación del formulario
+// Validaciones y binding de eventos (robustos)
+(function() {
+    // Submit del formulario
+    const facturaFormEl = document.getElementById('facturaForm');
+    if (facturaFormEl) {
+        facturaFormEl.addEventListener('submit', function(e) {
+            // Recalcular totales y cambio antes de enviar
+            calcularTotales();
+            calcularCambio();
+            
+            const estudianteEl = document.getElementById('estudianteIdHiddenPost');
+            const estudianteId = estudianteEl ? estudianteEl.value : '';
+            if (!estudianteId) {
+                e.preventDefault();
+                alert('Debes seleccionar un estudiante primero');
+                const buscarInput = document.getElementById('buscarInput');
+                if (buscarInput) buscarInput.focus();
+                return false;
+            }
+
+            const tbody = document.getElementById('conceptosBody');
+            const hasConceptos = tbody ? tbody.querySelector('input[name="concepto_id[]"]') : null;
+            if (!hasConceptos) {
+                e.preventDefault();
+                alert('Debes agregar al menos un concepto a la factura');
+                const conceptoSelect = document.getElementById('conceptoSelect');
+                if (conceptoSelect) conceptoSelect.focus();
+                return false;
+            }
+
+            // VALIDACIÓN ESPECIAL: Cliente genérico NO puede tener facturas a crédito
+            const montoPagadoEl = document.getElementById('montoPagadoHidden');
+            const montoPagado = montoPagadoEl ? parseFloat(montoPagadoEl.value) || 0 : 0;
+            
+            if (esClienteGenerico && montoPagado === 0) {
+                e.preventDefault();
+                alert(
+                    '❌ ERROR: CLIENTE GENÉRICO SIN PAGO\n\n' +
+                    'El cliente genérico NO puede tener facturas a crédito.\n\n' +
+                    'Debes:\n' +
+                    '1. Ingresar el pago completo, o\n' +
+                    '2. Seleccionar un estudiante específico\n\n' +
+                    'Por favor, ingresa el monto recibido o cambia de cliente.'
+                );
+                
+                // Enfocar el campo de dinero recibido
+                const dineroRecibidoInput = document.getElementById('dineroRecibido');
+                if (dineroRecibidoInput) {
+                    dineroRecibidoInput.focus();
+                    dineroRecibidoInput.select();
+                }
+                return false;
+            }
+
+            // NUEVA VALIDACIÓN: Advertir si no hay monto pagado (factura a crédito)
+            const confirmarCreditoEl = document.getElementById('confirmarCredito');
+            const yaConfirmado = confirmarCreditoEl && confirmarCreditoEl.value === '1';
+            
+            // Si no hay pago y no está confirmado, mostrar diálogo de confirmación
+            if (montoPagado === 0 && !yaConfirmado) {
+                e.preventDefault();
+                
+                // Obtener el total de la factura del elemento correcto
+                const totalDisplay = document.getElementById('totalDisplay');
+                let totalMonto = '0.00';
+                if (totalDisplay) {
+                    // Extraer el número del texto (ej: "RD$1,500.00" -> "1500.00")
+                    const textoTotal = totalDisplay.textContent || totalDisplay.innerText || '';
+                    totalMonto = textoTotal.replace(/[^\d.]/g, ''); // Eliminar todo excepto dígitos y punto
+                    if (!totalMonto || totalMonto === '') totalMonto = '0.00';
+                }
+                
+                // Formatear el monto para mostrarlo
+                const totalFormateado = parseFloat(totalMonto).toLocaleString('es-DO', {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2
+                });
+                
+                const confirmacion = confirm(
+                    '⚠️ ADVERTENCIA: FACTURA A CRÉDITO\n\n' +
+                    'No has ingresado ningún pago para esta factura.\n' +
+                    'Total de la factura: RD$' + totalFormateado + '\n' +
+                    'Monto pagado: RD$0.00\n\n' +
+                    'La factura quedará registrada como "PENDIENTE" (a crédito).\n\n' +
+                    '¿Deseas continuar y guardar esta factura a crédito?'
+                );
+                
+                if (confirmacion) {
+                    // Usuario confirmó, agregar campo de confirmación y reenviar
+                    if (confirmarCreditoEl) {
+                        confirmarCreditoEl.value = '1';
+                    } else {
+                        const inputConfirmar = document.createElement('input');
+                        inputConfirmar.type = 'hidden';
+                        inputConfirmar.name = 'confirmar_credito';
+                        inputConfirmar.id = 'confirmarCredito';
+                        inputConfirmar.value = '1';
+                        facturaFormEl.appendChild(inputConfirmar);
+                    }
+                    // Reenviar el formulario
+                    facturaFormEl.submit();
+                } else {
+                    // Usuario canceló, dar foco al campo de pago
+                    const montoPagadoInput = document.getElementById('monto_pagado');
+                    if (montoPagadoInput) {
+                        montoPagadoInput.focus();
+                        montoPagadoInput.select();
+                    }
+                }
+                return false;
+            }
+            
+            // DEBUG: Mostrar todos los inputs que se van a enviar
+            console.log('=== DATOS QUE SE ENVIARÁN ===');
+            const formData = new FormData(facturaFormEl);
+            
+            // Mostrar arrays
+            const conceptosIds = formData.getAll('concepto_id[]');
+            const cantidades = formData.getAll('cantidad[]');
+            const precios = formData.getAll('precio[]');
+            const descuentos = formData.getAll('descuento[]');
+            const meses = formData.getAll('mes[]');
+            const anios = formData.getAll('anio[]');
+            
+            console.log('concepto_id[]:', conceptosIds, '(Total:', conceptosIds.length, ')');
+            console.log('cantidad[]:', cantidades, '(Total:', cantidades.length, ')');
+            console.log('precio[]:', precios, '(Total:', precios.length, ')');
+            console.log('descuento[]:', descuentos, '(Total:', descuentos.length, ')');
+            console.log('mes[]:', meses, '(Total:', meses.length, ')');
+            console.log('anio[]:', anios, '(Total:', anios.length, ')');
+            console.log('===========================');
+        });
+    }
+
+    // Atajos y comportamiento del select de conceptos
+    const conceptoSelectEl = document.getElementById('conceptoSelect');
+    if (conceptoSelectEl) {
+        conceptoSelectEl.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                agregarConceptoRapido();
+            }
+        });
+
+        conceptoSelectEl.addEventListener('change', function() {
+            const selectedOption = this.options[this.selectedIndex];
+            const tipo = selectedOption ? selectedOption.getAttribute('data-tipo') : null;
+            if (tipo === 'mensualidad') {
+                const mesActual = new Date().getMonth() + 1;
+                const mesInput = document.getElementById('mesInput');
+                if (mesInput) mesInput.value = mesActual;
+            }
+        });
+    }
+
+    // Escuchar descuento general
+    const descuentoEl = document.getElementById('descuento_factura');
+    if (descuentoEl) descuentoEl.addEventListener('input', calcularTotales);
+
+    // Auto-focus inicial
+    const conceptoFocus = document.getElementById('conceptoSelect');
+    const buscarFocus = document.getElementById('buscarInput');
+    {% if estudiante %}
+    if (conceptoFocus) conceptoFocus.focus();
+    {% else %}
+    if (buscarFocus) buscarFocus.focus();
+    {% endif %}
+
+})();
+</script>
+
+{% if detalles_json %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    try {
+        const detalles = JSON.parse('{{ detalles_json|escapejs }}');
+        if (Array.isArray(detalles) && detalles.length > 0) {
+            detalles.forEach(det => {
+                if (det.articulo_id) {
+                    const articulo = {
+                        id: det.articulo_id,
+                        nombre: det.nombre,
+                        codigo_barras: det.codigo_barras || '',
+                        precio_venta: det.precio,
+                        stock_actual: det.stock_actual || 999,
+                        tipo: det.tipo_articulo || 'producto',
+                        aplica_itbis: det.aplica_itbis
+                    };
+                    agregarArticuloALista(articulo);
+                } else if (det.concepto_id) {
+                    agregarConceptoALista(
+                        det.concepto_id,
+                        det.nombre,
+                        det.cantidad,
+                        det.precio,
+                        det.descuento,
+                        det.mes || '',
+                        det.anio || ''
+                    );
+                }
+            });
+            calcularTotales();
+        }
+    } catch (e) {
+        console.error('Error inicializando detalles desde factura de origen', e);
+    }
+});
+</script>
+{% endif %}
+
+<style>
+.resultado-item:hover {
+    background-color: #f8f9fa;
+}
+.sticky-top {
+    position: sticky;
+    top: 20px;
+    z-index: 100;
+}
+</style>
+{% endblock %}

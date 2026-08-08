@@ -7,7 +7,7 @@ Ejecutar con: python scripts/recalcular_facturas.py
 import os
 import django
 
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'Escuela.settings')
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'VentasSys.settings')
 django.setup()
 
 from escuelaweb.models import Factura, DetalleFactura

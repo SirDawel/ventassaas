@@ -13,11 +13,11 @@ timeout /t 2 /nobreak >nul
 
 echo.
 echo Limpiando cache...
-if exist "escuelaweb\__pycache__" (
-    rd /s /q "escuelaweb\__pycache__"
+if exist "ventasweb\__pycache__" (
+    rd /s /q "ventasweb\__pycache__"
 )
-if exist "Escuela\__pycache__" (
-    rd /s /q "Escuela\__pycache__"
+if exist "VentasSys\__pycache__" (
+    rd /s /q "VentasSys\__pycache__"
 )
 
 echo.

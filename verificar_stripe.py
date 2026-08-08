@@ -4,7 +4,7 @@ Script para verificar la configuración de Stripe
 import os
 import django
 
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'Escuela.settings')
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'VentasSys.settings')
 django.setup()
 
 from django.conf import settings

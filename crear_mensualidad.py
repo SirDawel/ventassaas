@@ -1,4 +1,4 @@
-from escuelaweb.models import Articulo
+from ventasweb.models import Articulo
 from decimal import Decimal
 
 # Verificar si existe

@@ -1,0 +1,211 @@
+{% extends 'website/base.html' %}
+{% load static %}
+
+{% block title %}Planes Disponibles - {{ block.super }}{% endblock %}
+
+{% block content %}
+<div class="container my-5">
+    <div class="row mb-3">
+        <div class="col-12">
+            <a href="{% url 'suscripcion_dashboard' %}" class="btn btn-outline-secondary btn-sm">
+                <i class="fas fa-arrow-left"></i> Volver al Dashboard
+            </a>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-12 text-center mb-5">
+            <h2 class="text-dark">
+                <i class="fas fa-shopping-cart"></i> Planes de Suscripción
+            </h2>
+            <p class="lead text-muted">Elige el plan que mejor se adapte a las necesidades de tu empresa</p>
+            {% if suscripcion_actual %}
+            <div class="alert alert-info d-inline-block">
+                <i class="fas fa-info-circle"></i> Plan actual: <strong>{{ suscripcion_actual.plan.nombre }}</strong>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="row row-cols-1 row-cols-md-2 row-cols-lg-4 g-4 mb-4">
+        {% for plan in planes %}
+        <div class="col">
+            <div class="card h-100 shadow-sm {% if suscripcion_actual and suscripcion_actual.plan.id == plan.id %}border-primary border-3{% endif %}" style="border-radius: 15px; overflow: hidden;">
+                
+                <!-- Ribbon para plan actual -->
+                {% if suscripcion_actual and suscripcion_actual.plan.id == plan.id %}
+                <div class="ribbon-wrapper">
+                    <div class="ribbon bg-primary">Plan Actual</div>
+                </div>
+                {% endif %}
+                
+                <!-- Header del plan -->
+                <div class="card-header text-white text-center py-4" style="background: linear-gradient(135deg, 
+                    {% if plan.tipo == 'BASICO' %}#4CAF50, #45a049
+                    {% elif plan.tipo == 'ESTANDAR' %}#2196F3, #1976D2
+                    {% elif plan.tipo == 'PROFESIONAL' %}#9C27B0, #7B1FA2
+                    {% elif plan.tipo == 'EMPRESARIAL' %}#FF9800, #F57C00
+                    {% endif %});">
+                    <h3 class="mb-0">{{ plan.nombre }}</h3>
+                    <div class="mt-3">
+                        <span class="h2">${{ plan.precio_mensual }}</span>
+                        <span class="text-white-50">/mes</span>
+                    </div>
+                    <div class="mt-2 text-white-50 small">
+                        o ${{ plan.precio_anual }}/año <span class="badge bg-light text-dark">Ahorra 2 meses</span>
+                    </div>
+                </div>
+                
+                <!-- Descripción -->
+                <div class="card-body d-flex flex-column">
+                    <p class="text-muted small mb-3">{{ plan.descripcion }}</p>
+                    
+                    <!-- Límites -->
+                    <div class="mb-3 border-bottom pb-3">
+                        <div class="d-flex justify-content-between mb-2">
+                            <span class="text-muted"><i class="fas fa-users"></i> Usuarios:</span>
+                            <strong>{% if plan.max_usuarios >= 999999 %}Ilimitados{% else %}{{ plan.max_usuarios }}{% endif %}</strong>
+                        </div>
+                        <div class="d-flex justify-content-between">
+                            <span class="text-muted"><i class="fas fa-graduation-cap"></i> Estudiantes:</span>
+                            <strong>{% if plan.max_estudiantes >= 999999 %}Ilimitados{% else %}{{ plan.max_estudiantes }}{% endif %}</strong>
+                        </div>
+                    </div>
+                    
+                    <!-- Características -->
+                    <ul class="list-unstyled mb-4 flex-grow-1">
+                        <li class="mb-2">
+                            <i class="fas fa-{% if plan.permite_reportes_avanzados %}check text-success{% else %}times text-danger{% endif %} me-2"></i>
+                            Reportes Avanzados
+                        </li>
+                        <li class="mb-2">
+                            <i class="fas fa-{% if plan.permite_integracion_api %}check text-success{% else %}times text-danger{% endif %} me-2"></i>
+                            Integración API
+                        </li>
+                        <li class="mb-2">
+                            <i class="fas fa-{% if plan.permite_multiples_sedes %}check text-success{% else %}times text-danger{% endif %} me-2"></i>
+                            Múltiples Sedes
+                        </li>
+                        <li class="mb-2">
+                            <i class="fas fa-{% if plan.soporte_prioritario %}check text-success{% else %}times text-danger{% endif %} me-2"></i>
+                            Soporte Prioritario
+                        </li>
+                    </ul>
+                    
+                    <!-- Botón de acción -->
+                    <div class="mt-auto">
+                        {% if suscripcion_actual and suscripcion_actual.plan.id == plan.id %}
+                            <button class="btn btn-outline-primary w-100" disabled>
+                                <i class="fas fa-check"></i> Tu Plan Actual
+                            </button>
+                        {% else %}
+                            {% if suscripcion_actual and suscripcion_actual.estado == 'ACTIVA' %}
+                                <!-- Si ya tiene una suscripción activa, solo cambiar plan -->
+                                <form method="post" action="{% url 'cambiar_plan' plan.id %}">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn btn-primary w-100" 
+                                            onclick="return confirm('¿Estás seguro de que deseas cambiar a {{ plan.nombre }}?');">
+                                        <i class="fas fa-exchange-alt"></i> Cambiar a este Plan
+                                    </button>
+                                </form>
+                            {% else %}
+                                <!-- Si no tiene suscripción activa o está en trial, ir a checkout -->
+                                <a href="{% url 'checkout_suscripcion' plan.id %}?periodo=MENSUAL" class="btn btn-success w-100">
+                                    <i class="fas fa-credit-card"></i> Activar Ahora
+                                </a>
+                                <a href="{% url 'checkout_suscripcion' plan.id %}?periodo=ANUAL" class="btn btn-outline-success w-100 mt-2">
+                                    <i class="fas fa-calendar-check"></i> Pagar Anual (Ahorra 2 meses)
+                                </a>
+                            {% endif %}
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    
+    <!-- Información adicional -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <h5 class="card-title"><i class="fas fa-info-circle text-info"></i> Información Importante</h5>
+                    <div class="row">
+                        <div class="col-md-4">
+                            <h6><i class="fas fa-clock"></i> Trial de 30 días</h6>
+                            <p class="text-muted small">Todos los planes incluyen 30 días de prueba gratuita sin necesidad de tarjeta de crédito.</p>
+                        </div>
+                        <div class="col-md-4">
+                            <h6><i class="fas fa-sync-alt"></i> Cambios de Plan</h6>
+                            <p class="text-muted small">Puedes cambiar de plan en cualquier momento. Los cambios se aplicarán en el próximo período de facturación.</p>
+                        </div>
+                        <div class="col-md-4">
+                            <h6><i class="fas fa-shield-alt"></i> Pago Seguro</h6>
+                            <p class="text-muted small">Todos los pagos son procesados de forma segura mediante Stripe con encriptación de nivel bancario.</p>
+                        </div>
+                    </div>
+                    <div class="text-center mt-3">
+                        <a href="{% url 'suscripcion_dashboard' %}" class="btn btn-outline-secondary">
+                            <i class="fas fa-arrow-left"></i> Volver al Dashboard
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .ribbon-wrapper {
+        position: absolute;
+        top: 10px;
+        right: -5px;
+        z-index: 1;
+    }
+    
+    .ribbon {
+        padding: 5px 15px;
+        position: relative;
+        background: #0d6efd;
+        color: white;
+        font-size: 0.8em;
+        font-weight: bold;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+    }
+    
+    .ribbon:before {
+        content: '';
+        position: absolute;
+        bottom: -5px;
+        right: 0;
+        width: 0;
+        height: 0;
+        border-right: 5px solid #0a58ca;
+        border-bottom: 5px solid transparent;
+    }
+    
+    .card {
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+    
+    .card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 20px rgba(0,0,0,0.15) !important;
+    }
+    
+    .card-header {
+        border-bottom: none;
+    }
+    
+    .btn {
+        border-radius: 25px;
+        padding: 10px 20px;
+        font-weight: 500;
+        transition: all 0.3s ease;
+    }
+    
+    .btn:hover {
+        transform: scale(1.05);
+    }
+</style>
+{% endblock %}

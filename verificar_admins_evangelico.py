@@ -3,12 +3,12 @@
 import os
 import django
 
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'Escuela.settings')
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'VentasSys.settings')
 django.setup()
 
 from django.db import connection
 from django_tenants.utils import get_tenant_model
-from escuelaweb.models import CustomUser
+from ventasweb.models import CustomUser
 
 # Obtener tenant evangelico
 Client = get_tenant_model()

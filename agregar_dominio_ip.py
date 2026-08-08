@@ -4,10 +4,10 @@ Agregar dominio 127.0.0.1 al tenant público
 import os
 import django
 
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'Escuela.settings')
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'VentasSys.settings')
 django.setup()
 
-from escuelaweb.tenant_models import Client, Domain
+from ventasweb.tenant_models import Client, Domain
 
 # Obtener tenant público
 public_tenant = Client.objects.get(schema_name='public')

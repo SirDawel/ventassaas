@@ -1,0 +1,245 @@
+{% extends "website/base.html" %}
+{% load static %}
+
+{% block title %}{{ titulo }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white">
+                    <h3 class="mb-0"><i class="fas fa-building"></i> {{ titulo }}</h3>
+                </div>
+                <div class="card-body">
+                    {% if messages %}
+                        {% for message in messages %}
+                            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                                {{ message }}
+                                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+
+                    <form method="post" enctype="multipart/form-data">
+                        {% csrf_token %}
+                        
+                        <!-- Información Básica -->
+                        <div class="card mb-3">
+                            <div class="card-header bg-light">
+                                <h5 class="mb-0"><i class="fas fa-info-circle"></i> Información Básica</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label for="nombre_escuela" class="form-label"><strong>Nombre de la Empresa *</strong></label>
+                                        <input type="text" class="form-control" id="nombre_escuela" name="nombre_escuela" 
+                                               value="{{ config.nombre_escuela }}" required>
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label for="rnc" class="form-label"><strong>RNC</strong></label>
+                                        <input type="text" class="form-control" id="rnc" name="rnc" 
+                                               value="{{ config.rnc|default:'' }}">
+                                    </div>
+                                </div>
+                                
+                                <div class="row">
+                                    <div class="col-md-12 mb-3">
+                                        <label for="direccion" class="form-label"><strong>Dirección</strong></label>
+                                        <textarea class="form-control" id="direccion" name="direccion" 
+                                                  rows="2">{{ config.direccion|default:'' }}</textarea>
+                                    </div>
+                                </div>
+                                
+                                <div class="row">
+                                    <div class="col-md-4 mb-3">
+                                        <label for="telefono" class="form-label"><strong>Teléfono</strong></label>
+                                        <input type="text" class="form-control" id="telefono" name="telefono" 
+                                               value="{{ config.telefono|default:'' }}">
+                                    </div>
+                                    <div class="col-md-4 mb-3">
+                                        <label for="email" class="form-label"><strong>Correo Electrónico</strong></label>
+                                        <input type="email" class="form-control" id="email" name="email" 
+                                               value="{{ config.email|default:'' }}">
+                                    </div>
+                                    <div class="col-md-4 mb-3">
+                                        <label for="sitio_web" class="form-label"><strong>Sitio Web</strong></label>
+                                        <input type="url" class="form-control" id="sitio_web" name="sitio_web" 
+                                               value="{{ config.sitio_web|default:'' }}" placeholder="https://...">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Información Institucional -->
+                        <div class="card mb-3">
+                            <div class="card-header bg-light">
+                                <h5 class="mb-0"><i class="fas fa-building"></i> Información Institucional</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-12 mb-3">
+                                        <label for="lema" class="form-label"><strong>Lema Institucional</strong></label>
+                                        <input type="text" class="form-control" id="lema" name="lema" 
+                                               value="{{ config.lema|default:'' }}">
+                                    </div>
+                                </div>
+                                
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label for="mision" class="form-label"><strong>Misión</strong></label>
+                                        <textarea class="form-control" id="mision" name="mision" 
+                                                  rows="4">{{ config.mision|default:'' }}</textarea>
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label for="vision" class="form-label"><strong>Visión</strong></label>
+                                        <textarea class="form-control" id="vision" name="vision" 
+                                                  rows="4">{{ config.vision|default:'' }}</textarea>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Datos Administrativos -->
+                        <div class="card mb-3">
+                            <div class="card-header bg-light">
+                                <h5 class="mb-0"><i class="fas fa-clipboard-list"></i> Datos Administrativos</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label for="director_nombre" class="form-label"><strong>Nombre del Director(a)</strong></label>
+                                        <input type="text" class="form-control" id="director_nombre" name="director_nombre" 
+                                               value="{{ config.director_nombre|default:'' }}">
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label for="codigo_centro" class="form-label"><strong>Código del Centro</strong></label>
+                                        <input type="text" class="form-control" id="codigo_centro" name="codigo_centro" 
+                                               value="{{ config.codigo_centro|default:'' }}">
+                                    </div>
+                                </div>
+                                
+                                <div class="row">
+                                    <div class="col-md-4 mb-3">
+                                        <label for="distrito_educativo" class="form-label"><strong>Distrito Educativo</strong></label>
+                                        <input type="text" class="form-control" id="distrito_educativo" name="distrito_educativo" 
+                                               value="{{ config.distrito_educativo|default:'' }}">
+                                    </div>
+                                    <div class="col-md-4 mb-3">
+                                        <label for="regional_educativa" class="form-label"><strong>Regional Educativa</strong></label>
+                                        <input type="text" class="form-control" id="regional_educativa" name="regional_educativa" 
+                                               value="{{ config.regional_educativa|default:'' }}">
+                                    </div>
+                                    <div class="col-md-4 mb-3">
+                                        <label for="anho_fundacion" class="form-label"><strong>Año de Fundación</strong></label>
+                                        <input type="number" class="form-control" id="anho_fundacion" name="anho_fundacion" 
+                                               value="{{ config.anho_fundacion|default:'' }}" min="1800" max="2100">
+                                    </div>
+                                </div>
+                                
+                                <div class="row">
+                                    <div class="col-md-4 mb-3">
+                                        <label for="nivel_educativo" class="form-label"><strong>Nivel Educativo</strong></label>
+                                        <input type="text" class="form-control" id="nivel_educativo" name="nivel_educativo" 
+                                               value="{{ config.nivel_educativo|default:'' }}" placeholder="Ej: Básica, Media">
+                                    </div>
+                                    <div class="col-md-4 mb-3">
+                                        <label for="modalidad" class="form-label"><strong>Modalidad</strong></label>
+                                        <input type="text" class="form-control" id="modalidad" name="modalidad" 
+                                               value="{{ config.modalidad|default:'' }}" placeholder="Ej: General, Técnico">
+                                    </div>
+                                    <div class="col-md-4 mb-3">
+                                        <label for="horario_atencion" class="form-label"><strong>Horario de Atención</strong></label>
+                                        <input type="text" class="form-control" id="horario_atencion" name="horario_atencion" 
+                                               value="{{ config.horario_atencion|default:'' }}" placeholder="Lunes a Viernes 8:00 AM - 4:00 PM">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Imágenes y Archivos -->
+                        <div class="card mb-3">
+                            <div class="card-header bg-light">
+                                <h5 class="mb-0"><i class="fas fa-image"></i> Logo y Firmas</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label for="logo" class="form-label"><strong>Logo de la Empresa</strong></label>
+                                        {% if config.logo %}
+                                            <div class="mb-2">
+                                                <img src="{{ config.logo.url }}" alt="Logo" class="img-thumbnail" style="max-height: 150px;">
+                                                <div class="form-check mt-2">
+                                                    <input class="form-check-input" type="checkbox" id="eliminar_logo" name="eliminar_logo">
+                                                    <label class="form-check-label text-danger" for="eliminar_logo">
+                                                        Eliminar logo actual
+                                                    </label>
+                                                </div>
+                                            </div>
+                                        {% endif %}
+                                        <input type="file" class="form-control" id="logo" name="logo" accept="image/*">
+                                        <small class="form-text text-muted">Tamaño recomendado: 200x200px</small>
+                                    </div>
+                                    
+                                    <div class="col-md-6 mb-3">
+                                        <label for="director_firma" class="form-label"><strong>Firma del Gerente General</strong></label>
+                                        {% if config.director_firma %}
+                                            <div class="mb-2">
+                                                <img src="{{ config.director_firma.url }}" alt="Firma" class="img-thumbnail" style="max-height: 100px;">
+                                                <div class="form-check mt-2">
+                                                    <input class="form-check-input" type="checkbox" id="eliminar_firma" name="eliminar_firma">
+                                                    <label class="form-check-label text-danger" for="eliminar_firma">
+                                                        Eliminar firma actual
+                                                    </label>
+                                                </div>
+                                            </div>
+                                        {% endif %}
+                                        <input type="file" class="form-control" id="director_firma" name="director_firma" accept="image/*">
+                                        <small class="form-text text-muted">Preferiblemente con fondo transparente</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Configuración de Reportes -->
+                        <div class="card mb-3">
+                            <div class="card-header bg-light">
+                                <h5 class="mb-0"><i class="fas fa-file-pdf"></i> Configuración de Reportes</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-12 mb-3">
+                                        <label for="pie_pagina_reportes" class="form-label"><strong>Pie de Página para Reportes</strong></label>
+                                        <textarea class="form-control" id="pie_pagina_reportes" name="pie_pagina_reportes" 
+                                                  rows="2">{{ config.pie_pagina_reportes|default:'' }}</textarea>
+                                        <small class="form-text text-muted">Texto que aparecerá al pie de los reportes oficiales</small>
+                                    </div>
+                                </div>
+                                
+                                <div class="row">
+                                    <div class="col-md-12 mb-3">
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" id="mostrar_logo_reportes" 
+                                                   name="mostrar_logo_reportes" {% if config.mostrar_logo_reportes %}checked{% endif %}>
+                                            <label class="form-check-label" for="mostrar_logo_reportes">
+                                                <strong>Mostrar logo en los reportes</strong>
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Botones de acción -->
+                        <div class="text-end">
+                            <button type="submit" class="btn btn-primary btn-lg">
+                                <i class="fas fa-save"></i> Guardar Configuración
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

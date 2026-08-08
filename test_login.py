@@ -5,11 +5,11 @@ import sys
 # Add the project directory to the Python path
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'Escuela.settings')
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'VentasSys.settings')
 django.setup()
 
 from django.contrib.auth import authenticate
-from escuelaweb.models import CustomUser
+from ventasweb.models import CustomUser
 
 print("=" * 70)
 print("PRUEBA DE AUTENTICACIÓN")

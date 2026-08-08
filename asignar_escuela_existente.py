@@ -7,11 +7,11 @@ import os
 import django
 
 # Configurar Django
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'Escuela.settings')
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'VentasSys.settings')
 django.setup()
 
-from escuelaweb.models_escuela import Escuela
-from escuelaweb.models import (
+from ventasweb.models_escuela import Escuela
+from ventasweb.models import (
     CustomUser, AnhoEscolar, Estudiante, Profesor, Curso, Materia,
     GrupoFamiliar, ConceptoPago, Pago, Factura,
     # Nuevos modelos agregados

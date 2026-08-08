@@ -4,12 +4,12 @@ Script para probar el filtrado automático por escuela (Multi-Tenant)
 import os
 import django
 
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'Escuela.settings')
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'VentasSys.settings')
 django.setup()
 
-from escuelaweb.models_escuela import Escuela
-from escuelaweb.models import Curso, Materia, CustomUser
-from escuelaweb import tenant_context
+from ventasweb.models_escuela import Escuela
+from ventasweb.models import Curso, Materia, CustomUser
+from ventasweb import tenant_context
 
 print("="*70)
 print("PRUEBA DE FILTRADO MULTI-TENANT")

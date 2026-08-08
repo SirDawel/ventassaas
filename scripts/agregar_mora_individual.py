@@ -4,10 +4,10 @@ Script para agregar campo dia_vencimiento_individual a estudiantes existentes
 import os
 import django
 
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'Escuela.settings')
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'VentasSys.settings')
 django.setup()
 
-from escuelaweb.models import CustomUser
+from ventasweb.models import CustomUser
 
 # Actualizar todos los estudiantes para que tengan día de vencimiento individual por defecto
 estudiantes = CustomUser.objects.filter(rol='Estudiante')

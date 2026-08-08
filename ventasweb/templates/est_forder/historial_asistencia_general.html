@@ -1,0 +1,218 @@
+{% extends 'website/base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <a href="{% url 'ponchar_asistencia' %}" class="btn btn-success me-2">
+                <i class="fas fa-barcode"></i> Ponchar
+            </a>
+            <a href="{% url 'pasar_lista_personal' %}" class="btn btn-primary me-2">
+                <i class="fas fa-clipboard-check"></i> Pasar Lista
+            </a>
+            <a href="{% url 'generar_codigos_barras' %}" class="btn btn-warning">
+                <i class="fas fa-qrcode"></i> Códigos de Barras
+            </a>
+        </div>
+    </div>
+
+    <!-- Título -->
+    <div class="card shadow mb-4">
+        <div class="card-header bg-primary text-white">
+            <div class="d-flex justify-content-between align-items-center">
+                <h4 class="mb-0">
+                    <i class="fas fa-chart-pie me-2"></i>Estadísticas de Asistencia Personal
+                </h4>
+                <span class="badge bg-success fs-6">
+                    <i class="fas fa-calendar-alt"></i> {{ anho_escolar.nombre }}
+                </span>
+            </div>
+        </div>
+        <div class="card-body">
+            <!-- Filtros -->
+            <form method="GET" class="row g-3 mb-4">
+                <div class="col-md-5">
+                    <label class="form-label"><i class="fas fa-calendar-alt"></i> Mes</label>
+                    <select name="mes" class="form-select">
+                        <option value="1" {% if mes == 1 %}selected{% endif %}>Enero</option>
+                        <option value="2" {% if mes == 2 %}selected{% endif %}>Febrero</option>
+                        <option value="3" {% if mes == 3 %}selected{% endif %}>Marzo</option>
+                        <option value="4" {% if mes == 4 %}selected{% endif %}>Abril</option>
+                        <option value="5" {% if mes == 5 %}selected{% endif %}>Mayo</option>
+                        <option value="6" {% if mes == 6 %}selected{% endif %}>Junio</option>
+                        <option value="7" {% if mes == 7 %}selected{% endif %}>Julio</option>
+                        <option value="8" {% if mes == 8 %}selected{% endif %}>Agosto</option>
+                        <option value="9" {% if mes == 9 %}selected{% endif %}>Septiembre</option>
+                        <option value="10" {% if mes == 10 %}selected{% endif %}>Octubre</option>
+                        <option value="11" {% if mes == 11 %}selected{% endif %}>Noviembre</option>
+                        <option value="12" {% if mes == 12 %}selected{% endif %}>Diciembre</option>
+                    </select>
+                </div>
+                <div class="col-md-5">
+                    <label class="form-label"><i class="fas fa-calendar"></i> Año</label>
+                    <select name="anho" class="form-select">
+                        {% for a in anhos_disponibles %}
+                        <option value="{{ a }}" {% if a == anho %}selected{% endif %}>{{ a }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-2 d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="fas fa-search"></i> Buscar
+                    </button>
+                </div>
+            </form>
+
+            <h5 class="text-center mb-4">{{ nombre_mes }} {{ anho }}</h5>
+        </div>
+    </div>
+
+    <!-- Resumen General -->
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <div class="card text-white bg-primary shadow">
+                <div class="card-body text-center">
+                    <h3 class="mb-0">{{ personal_total }}</h3>
+                    <p class="mb-0">Personal Total del Sistema de Ventas</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Estadísticas por Rol -->
+    <div class="card shadow mb-4">
+        <div class="card-header bg-success text-white">
+            <h5 class="mb-0">
+                <i class="fas fa-users"></i> Estadísticas por Rol - {{ nombre_mes }}
+            </h5>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Rol</th>
+                            <th>Total Personal</th>
+                            <th>Masculino</th>
+                            <th>Femenino</th>
+                            <th>Registros Mes</th>
+                            <th>Presentes</th>
+                            <th>% Asistencia</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for rol in roles_stats %}
+                        <tr>
+                            <td><strong>{{ rol.rol }}</strong></td>
+                            <td>{{ rol.total }}</td>
+                            <td><span class="badge bg-info">{{ rol.masculino }}</span></td>
+                            <td><span class="badge bg-warning">{{ rol.femenino }}</span></td>
+                            <td>{{ rol.asistencias }}</td>
+                            <td><span class="badge bg-success">{{ rol.presentes }}</span></td>
+                            <td>
+                                <div class="progress" style="height: 25px;">
+                                    <div class="progress-bar 
+                                        {% if rol.porcentaje >= 90 %}bg-success
+                                        {% elif rol.porcentaje >= 75 %}bg-warning
+                                        {% else %}bg-danger{% endif %}" 
+                                        role="progressbar" 
+                                        style="width: {{ rol.porcentaje }}%">
+                                        {{ rol.porcentaje }}%
+                                    </div>
+                                </div>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="7" class="text-center text-muted">
+                                No hay datos disponibles
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Gráfico de Asistencia del Mes (Personal) -->
+    <div class="card shadow mb-4">
+        <div class="card-header bg-primary text-white">
+            <h5 class="mb-0">
+                <i class="fas fa-chart-line"></i> Registro Diario de Asistencia - {{ nombre_mes }}
+            </h5>
+        </div>
+        <div class="card-body">
+            {% if asistencias_personal_mes %}
+            <div class="table-responsive">
+                <table class="table table-sm">
+                    <thead>
+                        <tr>
+                            <th>Fecha</th>
+                            <th>Total</th>
+                            <th>Presentes</th>
+                            <th>Ausentes</th>
+                            <th>Tardanzas</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for dia in asistencias_personal_mes %}
+                        <tr>
+                            <td>{{ dia.fecha|date:"d/m/Y" }}</td>
+                            <td>{{ dia.total }}</td>
+                            <td><span class="badge bg-success">{{ dia.presentes }}</span></td>
+                            <td><span class="badge bg-danger">{{ dia.ausentes }}</span></td>
+                            <td><span class="badge bg-warning">{{ dia.tardanzas }}</span></td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <p class="text-muted text-center">Sin registros de personal para este mes</p>
+            {% endif %}
+        </div>
+    </div>
+
+
+
+    <!-- Detalles de una fecha específica -->
+    {% if detalles_fecha %}
+    <div class="card shadow mb-4">
+        <div class="card-header bg-info text-white">
+            <h5 class="mb-0">
+                <i class="fas fa-calendar-day"></i> Detalles del {{ detalles_fecha.fecha|date:"d/m/Y" }}
+            </h5>
+        </div>
+        <div class="card-body">
+            <h6>Personal por Rol</h6>
+            <div class="table-responsive">
+                <table class="table table-sm">
+                    <thead>
+                        <tr>
+                            <th>Rol</th>
+                            <th>Total</th>
+                            <th>Presentes</th>
+                            <th>Masculino</th>
+                            <th>Femenino</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for rol in detalles_fecha.roles %}
+                        <tr>
+                            <td><strong>{{ rol.rol }}</strong></td>
+                            <td>{{ rol.total }}</td>
+                            <td><span class="badge bg-success">{{ rol.presentes }}</span></td>
+                            <td><span class="badge bg-info">{{ rol.masculino }}</span></td>
+                            <td><span class="badge bg-warning">{{ rol.femenino }}</span></td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

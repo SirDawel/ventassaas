@@ -2,10 +2,10 @@ import os
 import django
 
 # Configurar Django
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'Escuela.settings')
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'VentasSys.settings')
 django.setup()
 
-from escuelaweb.models import CustomUser
+from ventasweb.models import CustomUser
 
 # Actualizar usuarios sin email
 usuarios_sin_email = CustomUser.objects.filter(email__isnull=True) | CustomUser.objects.filter(email='')

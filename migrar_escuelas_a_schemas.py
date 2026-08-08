@@ -6,12 +6,12 @@ import sys
 import django
 
 # Setup Django
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'Escuela.settings')
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'VentasSys.settings')
 django.setup()
 
 from django.db import connection
-from escuelaweb.tenant_models import Client, Domain
-from escuelaweb.models import (
+from ventasweb.tenant_models import Client, Domain
+from ventasweb.models import (
     CustomUser, AnhoEscolar, Estudiante, Profesor, Curso, Materia,
     GrupoFamiliar, ConceptoPago, Pago, Factura, Matricula, StudentGroup,
     Asistencia, AsistenciaPersonal, TarifaEstudiante, DetalleFactura,
@@ -27,7 +27,7 @@ def obtener_escuelas_existentes():
         cursor.execute("""
             SELECT id, nombre, nombre_corto, email_contacto, telefono, direccion,
                    logo, color_primario, color_secundario, fecha_creacion, activo
-            FROM escuelaweb_escuela
+            FROM ventasweb_escuela
         """)
         columns = [col[0] for col in cursor.description]
         return [dict(zip(columns, row)) for row in cursor.fetchall()]

@@ -5,7 +5,7 @@ en los grupos familiares existentes.
 import os
 import django
 
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'Escuela.settings')
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'VentasSys.settings')
 django.setup()
 
 from escuelaweb.models import GrupoFamiliar, CustomUser

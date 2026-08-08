@@ -8,10 +8,10 @@ import django
 
 # Configurar Django
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'Escuela.settings')
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'VentasSys.settings')
 django.setup()
 
-from escuelaweb.models import Factura, DetalleFactura, CustomUser, AnhoEscolar
+from ventasweb.models import Factura, DetalleFactura, CustomUser, AnhoEscolar
 from django.db.models import Count
 
 # Obtener año escolar activo

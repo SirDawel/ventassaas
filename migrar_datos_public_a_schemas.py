@@ -6,11 +6,11 @@ import os
 import sys
 import django
 
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'Escuela.settings')
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'VentasSys.settings')
 django.setup()
 
 from django.db import connection
-from escuelaweb.tenant_models import Client
+from ventasweb.tenant_models import Client
 
 # Mapeo de escuela_id a nombre_corto de tenant
 ESCUELA_TO_TENANT = {}
@@ -21,7 +21,7 @@ def obtener_mapeo_escuelas():
     
     with connection.cursor() as cursor:
         # Obtener escuelas de la tabla antigua en public schema
-        cursor.execute("SELECT id, nombre_corto FROM escuelaweb_escuela")
+        cursor.execute("SELECT id, nombre_corto FROM ventasweb_escuela")
         for escuela_id, nombre_corto in cursor.fetchall():
             ESCUELA_TO_TENANT[escuela_id] = nombre_corto
     
@@ -100,39 +100,39 @@ def migrar_escuela(escuela_id, nombre_corto):
     
     # Tablas a migrar (en orden para respetar FKs)
     tablas = [
-        ('escuelaweb_customuser', 'Usuarios'),
-        ('escuelaweb_anhoescolar', 'Años Escolares'),
-        ('escuelaweb_profesor', 'Profesores'),
-        ('escuelaweb_estudiante', 'Estudiantes'),
-        ('escuelaweb_curso', 'Cursos'),
-        ('escuelaweb_materia', 'Materias'),
-        ('escuelaweb_grupofamiliar', 'Grupos Familiares'),
-        ('escuelaweb_tutor', 'Tutores'),
-        ('escuelaweb_persona', 'Personas'),
-        ('escuelaweb_conceptopago', 'Conceptos de Pago'),
-        ('escuelaweb_matricula', 'Matrículas'),
-        ('escuelaweb_pago', 'Pagos'),
-        ('escuelaweb_factura', 'Facturas'),
-        ('escuelaweb_mensualidad', 'Mensualidades'),
-        ('escuelaweb_detallefactura', 'Detalles de Factura'),
-        ('escuelaweb_pagofactura', 'Pagos de Factura'),
-        ('escuelaweb_tarifaestudiante', 'Tarifas de Estudiante'),
-        ('escuelaweb_studentgroup', 'Grupos de Estudiantes'),
-        ('escuelaweb_asistencia', 'Asistencias'),
-        ('escuelaweb_asistenciapersonal', 'Asistencias Personal'),
-        ('escuelaweb_codigoanulacion', 'Códigos de Anulación'),
-        ('escuelaweb_categoriaarticulo', 'Categorías de Artículo'),
-        ('escuelaweb_articulo', 'Artículos'),
-        ('escuelaweb_movimientoinventario', 'Movimientos de Inventario'),
-        ('escuelaweb_plancuentas', 'Plan de Cuentas'),
-        ('escuelaweb_asientocontable', 'Asientos Contables'),
-        ('escuelaweb_detalleasiento', 'Detalles de Asiento'),
-        ('escuelaweb_listacotejo', 'Listas de Cotejo'),
-        ('escuelaweb_evaluaciondiagnostica', 'Evaluaciones Diagnósticas'),
-        ('escuelaweb_rubrica', 'Rúbricas'),
-        ('escuelaweb_configuracionescuela', 'Configuración de Escuela'),
-        ('escuelaweb_transaccionpos', 'Transacciones POS'),
-        ('escuelaweb_terminalestudiante', 'Terminales de Estudiante'),
+        ('ventasweb_customuser', 'Usuarios'),
+        ('ventasweb_anhoescolar', 'Años Escolares'),
+        ('ventasweb_profesor', 'Profesores'),
+        ('ventasweb_estudiante', 'Estudiantes'),
+        ('ventasweb_curso', 'Cursos'),
+        ('ventasweb_materia', 'Materias'),
+        ('ventasweb_grupofamiliar', 'Grupos Familiares'),
+        ('ventasweb_tutor', 'Tutores'),
+        ('ventasweb_persona', 'Personas'),
+        ('ventasweb_conceptopago', 'Conceptos de Pago'),
+        ('ventasweb_matricula', 'Matrículas'),
+        ('ventasweb_pago', 'Pagos'),
+        ('ventasweb_factura', 'Facturas'),
+        ('ventasweb_mensualidad', 'Mensualidades'),
+        ('ventasweb_detallefactura', 'Detalles de Factura'),
+        ('ventasweb_pagofactura', 'Pagos de Factura'),
+        ('ventasweb_tarifaestudiante', 'Tarifas de Estudiante'),
+        ('ventasweb_studentgroup', 'Grupos de Estudiantes'),
+        ('ventasweb_asistencia', 'Asistencias'),
+        ('ventasweb_asistenciapersonal', 'Asistencias Personal'),
+        ('ventasweb_codigoanulacion', 'Códigos de Anulación'),
+        ('ventasweb_categoriaarticulo', 'Categorías de Artículo'),
+        ('ventasweb_articulo', 'Artículos'),
+        ('ventasweb_movimientoinventario', 'Movimientos de Inventario'),
+        ('ventasweb_plancuentas', 'Plan de Cuentas'),
+        ('ventasweb_asientocontable', 'Asientos Contables'),
+        ('ventasweb_detalleasiento', 'Detalles de Asiento'),
+        ('ventasweb_listacotejo', 'Listas de Cotejo'),
+        ('ventasweb_evaluaciondiagnostica', 'Evaluaciones Diagnósticas'),
+        ('ventasweb_rubrica', 'Rúbricas'),
+        ('ventasweb_configuracionescuela', 'Configuración de Escuela'),
+        ('ventasweb_transaccionpos', 'Transacciones POS'),
+        ('ventasweb_terminalestudiante', 'Terminales de Estudiante'),
     ]
     
     total_migrado = 0
@@ -162,7 +162,7 @@ def main():
         obtener_mapeo_escuelas()
     except Exception as e:
         print(f"❌ Error obteniendo escuelas: {e}")
-        print("La tabla escuelaweb_escuela no existe en public schema")
+        print("La tabla ventasweb_escuela no existe en public schema")
         return
     
     if not ESCUELA_TO_TENANT:
@@ -194,3 +194,4 @@ def main():
 
 if __name__ == '__main__':
     main()
+

@@ -5,10 +5,10 @@ Este tenant siempre debe existir
 import os
 import django
 
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'Escuela.settings')
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'VentasSys.settings')
 django.setup()
 
-from escuelaweb.tenant_models import Client, Domain
+from ventasweb.tenant_models import Client, Domain
 
 # Crear o actualizar tenant público
 public_tenant, created = Client.objects.get_or_create(

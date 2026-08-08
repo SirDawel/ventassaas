@@ -2,7 +2,7 @@
 import os
 import django
 
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'Escuela.settings')
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'VentasSys.settings')
 django.setup()
 
 from django.db import connection
@@ -10,7 +10,7 @@ from django.db import connection
 with connection.cursor() as cursor:
     # Actualizar artículos con codigo_barras NULL, copiando el valor de codigo
     cursor.execute("""
-        UPDATE escuelaweb_articulo 
+        UPDATE ventasweb_articulo 
         SET codigo_barras = codigo 
         WHERE codigo_barras IS NULL
     """)
@@ -18,7 +18,7 @@ with connection.cursor() as cursor:
     print(f"Artículos actualizados: {cursor.rowcount}")
     
     # Verificar
-    cursor.execute("SELECT id, codigo, codigo_barras, nombre FROM escuelaweb_articulo")
+    cursor.execute("SELECT id, codigo, codigo_barras, nombre FROM ventasweb_articulo")
     rows = cursor.fetchall()
     
     print("\nArtículos después de actualizar:")
@@ -26,3 +26,4 @@ with connection.cursor() as cursor:
     for row in rows:
         id_art, codigo, codigo_barras, nombre = row
         print(f"ID: {id_art}, Codigo: '{codigo}', CB: '{codigo_barras}', Nombre: {nombre}")
+
