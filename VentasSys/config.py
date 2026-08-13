@@ -2,14 +2,11 @@ import os
 from dotenv import load_dotenv
 from pathlib import Path
 
-load_dotenv()
-
 # Obtener el directorio base del proyecto
 BASE_DIR = Path(__file__).resolve().parent.parent
-import os
-from dotenv import load_dotenv
 
-load_dotenv()
+# Cargar variables de entorno con codificación UTF-8
+load_dotenv(os.path.join(BASE_DIR, '.env'), encoding='utf-8')
 
 DATABASES = {
     'default': {

@@ -1,0 +1,100 @@
+# ============================================================================
+# REQUIREMENTS PARA PRODUCCIÓN - Django 5.1 + django-tenants 4.0
+# Sistema de Ventas Multitenant
+# Python 3.13+, PostgreSQL 16+, Ubuntu 24.04 LTS
+# ============================================================================
+
+# Django Core
+Django==5.1.4
+django-tenants==3.12.0
+
+# Base de datos
+psycopg[binary]==3.3.4  # PostgreSQL adapter (psycopg3 - más moderno que psycopg2)
+psycopg2-binary==2.9.12  # Compatibilidad con código legacy
+
+# Servidor de aplicación
+gunicorn==23.0.0
+whitenoise==6.12.0  # Servir archivos estáticos eficientemente
+
+# Tareas asíncronas
+celery==5.6.3
+redis==7.4.0
+django-celery-beat==2.9.0
+django-celery-results==2.6.0
+
+# Pagos y suscripciones
+stripe==15.1.0
+
+# Utilidades
+python-dotenv==1.0.1  # Variables de entorno
+Pillow==11.0.0  # Procesamiento de imágenes (actualizar de 9.5.0)
+
+# Seguridad y validación
+django-recaptcha==4.1.0  # Protección contra bots
+cryptography==43.0.3  # Encriptación
+
+# Monitoreo y logging (opcional pero recomendado)
+sentry-sdk==2.18.0  # Monitoreo de errores en producción
+django-debug-toolbar==4.4.6  # Solo para staging, remover en producción
+
+# Testing (opcional)
+pytest==8.3.3
+pytest-django==4.9.0
+coverage==7.6.7
+
+# Formateo y linting (desarrollo)
+black==24.10.0
+flake8==7.1.1
+isort==5.13.2
+
+# ============================================================================
+# NOTAS DE INSTALACIÓN
+# ============================================================================
+# 
+# 1. Crear virtualenv:
+#    python3.13 -m venv venv
+#    source venv/bin/activate  # Linux/Mac
+#    venv\Scripts\activate  # Windows
+# 
+# 2. Instalar dependencias:
+#    pip install --upgrade pip
+#    pip install -r requirements_produccion.txt
+# 
+# 3. Para desarrollo local, también instalar:
+#    pip install django-extensions ipython
+# 
+# 4. Verificar instalación:
+#    python -c "import django; print(django.get_version())"
+#    python -c "import django_tenants; print(django_tenants.__version__)"
+# 
+# ============================================================================
+# CAMBIOS IMPORTANTES VS VERSIÓN ANTERIOR
+# ============================================================================
+# 
+# - Django 4.2.17 → 5.1.4 (salto mayor, revisar breaking changes)
+# - django-tenants 3.6.1 → 3.12.0 (última versión compatible con Django 5.x)
+# - psycopg2 → psycopg3 (API moderna, async support)
+# - gunicorn 21.2.0 → 23.0.0
+# - celery 5.3.4 → 5.6.3
+# - redis 5.0.1 → 7.4.0
+# - stripe 8.0.0 → 15.1.0 (API changes importantes, revisar documentación)
+# 
+# ============================================================================
+# BREAKING CHANGES A REVISAR
+# ============================================================================
+# 
+# Django 5.1:
+# - Cambios en formularios (field groups)
+# - Algunas deprecaciones removidas de Django 4.x
+# - Cambios menores en admin
+# 
+# psycopg3:
+# - Sintaxis ligeramente diferente a psycopg2
+# - En settings.py cambiar ENGINE a 'django.db.backends.postgresql'
+# - Mejor soporte para tipos nativos de PostgreSQL
+# 
+# Stripe 11.x:
+# - Algunos nombres de API cambiaron
+# - Revisar webhooks y eventos
+# 
+# ============================================================================

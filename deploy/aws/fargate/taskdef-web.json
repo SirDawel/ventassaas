@@ -1,0 +1,46 @@
+{
+  "family": "ventas-web",
+  "networkMode": "awsvpc",
+  "requiresCompatibilities": ["FARGATE"],
+  "cpu": "1024",
+  "memory": "2048",
+  "executionRoleArn": "arn:aws:iam::123456789012:role/ecsTaskExecutionRole",
+  "taskRoleArn": "arn:aws:iam::123456789012:role/ecsTaskRoleVentas",
+  "containerDefinitions": [
+    {
+      "name": "ventas-web",
+      "image": "123456789012.dkr.ecr.us-east-1.amazonaws.com/ventas-app:latest",
+      "essential": true,
+      "portMappings": [
+        {
+          "containerPort": 8000,
+          "protocol": "tcp"
+        }
+      ],
+      "command": ["web"],
+      "environment": [
+        { "name": "PORT", "value": "8000" },
+        { "name": "RUN_MIGRATIONS", "value": "0" },
+        { "name": "RUN_COLLECTSTATIC", "value": "1" },
+        { "name": "WAIT_FOR_DB", "value": "1" }
+      ],
+      "secrets": [
+        { "name": "SECRET_KEY", "valueFrom": "arn:aws:ssm:us-east-1:123456789012:parameter/ventas/SECRET_KEY" },
+        { "name": "DB_NAME", "valueFrom": "arn:aws:ssm:us-east-1:123456789012:parameter/ventas/DB_NAME" },
+        { "name": "DB_USER", "valueFrom": "arn:aws:ssm:us-east-1:123456789012:parameter/ventas/DB_USER" },
+        { "name": "DB_PASSWORD", "valueFrom": "arn:aws:ssm:us-east-1:123456789012:parameter/ventas/DB_PASSWORD" },
+        { "name": "DB_HOST", "valueFrom": "arn:aws:ssm:us-east-1:123456789012:parameter/ventas/DB_HOST" },
+        { "name": "DB_PORT", "valueFrom": "arn:aws:ssm:us-east-1:123456789012:parameter/ventas/DB_PORT" },
+        { "name": "CELERY_BROKER_URL", "valueFrom": "arn:aws:ssm:us-east-1:123456789012:parameter/ventas/CELERY_BROKER_URL" }
+      ],
+      "logConfiguration": {
+        "logDriver": "awslogs",
+        "options": {
+          "awslogs-group": "/ecs/ventas-web",
+          "awslogs-region": "us-east-1",
+          "awslogs-stream-prefix": "ecs"
+        }
+      }
+    }
+  ]
+}

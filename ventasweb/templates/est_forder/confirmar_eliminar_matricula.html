@@ -19,7 +19,7 @@ Confirmar EliminaciÃ³n de MatrÃ­cula
                     </div>
 
                     <div class="mb-4">
-                        <h3 class="h5">InformaciÃ³n de la MatrÃ­cula</h3>
+                        <h3 class="h5">Información de la MatrÃ­cula</h3>
                         <p class="mb-1"><strong>Estudiante:</strong> {{ matricula.estudiante.get_full_name }}</p>
                         <p class="mb-1"><strong>Materia:</strong> {{ matricula.materia.nombre }}</p>
                         <p class="mb-0"><strong>Curso:</strong> {{ matricula.materia.curso.nombre }} - {{ matricula.materia.curso.anho_escolar.nombre }}</p>
@@ -39,7 +39,7 @@ Confirmar EliminaciÃ³n de MatrÃ­cula
                     <form method="post">
                         {% csrf_token %}
                         <div class="mb-3">
-                            <label for="password" class="form-label">Ingrese su contraseÃ±a para confirmar</label>
+                            <label for="password" class="form-label">Ingrese su contraseña para confirmar</label>
                             <input type="password" class="form-control" id="password" name="password" required>
                         </div>
 

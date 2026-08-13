@@ -93,7 +93,7 @@ class Migration(migrations.Migration):
         ),
         migrations.AlterModelOptions(
             name='anhoescolar',
-            options={'ordering': ['-fecha_inicio'], 'verbose_name': 'AÃ±o Escolar', 'verbose_name_plural': 'AÃ±os Escolares'},
+            options={'ordering': ['-fecha_inicio'], 'verbose_name': 'Año Escolar', 'verbose_name_plural': 'Años Escolares'},
         ),
         migrations.AlterModelOptions(
             name='articulo',
@@ -113,11 +113,11 @@ class Migration(migrations.Migration):
         ),
         migrations.AlterModelOptions(
             name='codigoanulacion',
-            options={'ordering': ['-anio', '-mes'], 'verbose_name': 'CÃ³digo de AnulaciÃ³n', 'verbose_name_plural': 'CÃ³digos de AnulaciÃ³n'},
+            options={'ordering': ['-anio', '-mes'], 'verbose_name': 'Código de AnulaciÃ³n', 'verbose_name_plural': 'Códigos de AnulaciÃ³n'},
         ),
         migrations.AlterModelOptions(
             name='configuracionescuela',
-            options={'verbose_name': 'ConfiguraciÃ³n de la Escuela', 'verbose_name_plural': 'ConfiguraciÃ³n de la Escuela'},
+            options={'verbose_name': 'Configuración de la Escuela', 'verbose_name_plural': 'Configuración de la Escuela'},
         ),
         migrations.AlterModelOptions(
             name='criteriorubrica',
@@ -125,15 +125,15 @@ class Migration(migrations.Migration):
         ),
         migrations.AlterModelOptions(
             name='evaluaciondiagnostica',
-            options={'ordering': ['-fecha_creacion'], 'verbose_name': 'EvaluaciÃ³n DiagnÃ³stica', 'verbose_name_plural': 'Evaluaciones DiagnÃ³sticas'},
+            options={'ordering': ['-fecha_creacion'], 'verbose_name': 'Evaluación DiagnÃ³stica', 'verbose_name_plural': 'Evaluaciones DiagnÃ³sticas'},
         ),
         migrations.AlterModelOptions(
             name='evaluacionlistacotejo',
-            options={'ordering': ['-fecha_evaluacion'], 'verbose_name': 'EvaluaciÃ³n con Lista de Cotejo', 'verbose_name_plural': 'Evaluaciones con Listas de Cotejo'},
+            options={'ordering': ['-fecha_evaluacion'], 'verbose_name': 'Evaluación con Lista de Cotejo', 'verbose_name_plural': 'Evaluaciones con Listas de Cotejo'},
         ),
         migrations.AlterModelOptions(
             name='evaluacionrubrica',
-            options={'ordering': ['-fecha_evaluacion'], 'verbose_name': 'EvaluaciÃ³n con RÃºbrica', 'verbose_name_plural': 'Evaluaciones con RÃºbrica'},
+            options={'ordering': ['-fecha_evaluacion'], 'verbose_name': 'Evaluación con RÃºbrica', 'verbose_name_plural': 'Evaluaciones con RÃºbrica'},
         ),
         migrations.AlterModelOptions(
             name='niveldesempeno',
@@ -141,11 +141,11 @@ class Migration(migrations.Migration):
         ),
         migrations.AlterModelOptions(
             name='resultadoevaluaciondiagnostica',
-            options={'ordering': ['estudiante__first_name', 'estudiante__last_name'], 'verbose_name': 'Resultado de EvaluaciÃ³n DiagnÃ³stica', 'verbose_name_plural': 'Resultados de Evaluaciones DiagnÃ³sticas'},
+            options={'ordering': ['estudiante__first_name', 'estudiante__last_name'], 'verbose_name': 'Resultado de Evaluación DiagnÃ³stica', 'verbose_name_plural': 'Resultados de Evaluaciones DiagnÃ³sticas'},
         ),
         migrations.AlterModelOptions(
             name='resumenevaluacioncotejo',
-            options={'ordering': ['estudiante__first_name', 'estudiante__last_name'], 'verbose_name': 'Resumen de EvaluaciÃ³n de Cotejo', 'verbose_name_plural': 'ResÃºmenes de Evaluaciones de Cotejo'},
+            options={'ordering': ['estudiante__first_name', 'estudiante__last_name'], 'verbose_name': 'Resumen de Evaluación de Cotejo', 'verbose_name_plural': 'ResÃºmenes de Evaluaciones de Cotejo'},
         ),
         migrations.AlterModelOptions(
             name='rubrica',
@@ -190,12 +190,12 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='articulo',
             name='codigo_barras',
-            field=models.CharField(blank=True, default='', help_text='CÃ³digo de barras para lector Ã³ptico', max_length=100, unique=True),
+            field=models.CharField(blank=True, default='', help_text='Código de barras para lector Ã³ptico', max_length=100, unique=True),
         ),
         migrations.AlterField(
             model_name='asientocontable',
             name='concepto',
-            field=models.TextField(help_text='DescripciÃ³n general del asiento contable', verbose_name='Concepto/DescripciÃ³n'),
+            field=models.TextField(help_text='Descripción general del asiento contable', verbose_name='Concepto/Descripción'),
         ),
         migrations.AlterField(
             model_name='asientocontable',
@@ -210,12 +210,12 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='asientocontable',
             name='numero_asiento',
-            field=models.CharField(db_index=True, help_text='NÃºmero Ãºnico del asiento (ej: ASI-2026-001)', max_length=20, unique=True, verbose_name='NÃºmero de Asiento'),
+            field=models.CharField(db_index=True, help_text='Número Ãºnico del asiento (ej: ASI-2026-001)', max_length=20, unique=True, verbose_name='Número de Asiento'),
         ),
         migrations.AlterField(
             model_name='asientocontable',
             name='referencia',
-            field=models.CharField(blank=True, help_text='Referencia externa (nÃºmero de factura, recibo, etc.)', max_length=100, null=True, verbose_name='Referencia'),
+            field=models.CharField(blank=True, help_text='Referencia externa (número de factura, recibo, etc.)', max_length=100, null=True, verbose_name='Referencia'),
         ),
         migrations.AlterField(
             model_name='asientocontable',
@@ -225,12 +225,12 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='asientocontable',
             name='total_credito',
-            field=models.DecimalField(decimal_places=2, default=0.0, help_text='Suma total de los crÃ©ditos', max_digits=15, verbose_name='Total CrÃ©dito'),
+            field=models.DecimalField(decimal_places=2, default=0.0, help_text='Suma total de los créditos', max_digits=15, verbose_name='Total CrÃ©dito'),
         ),
         migrations.AlterField(
             model_name='asientocontable',
             name='total_debito',
-            field=models.DecimalField(decimal_places=2, default=0.0, help_text='Suma total de los dÃ©bitos', max_digits=15, verbose_name='Total DÃ©bito'),
+            field=models.DecimalField(decimal_places=2, default=0.0, help_text='Suma total de los débitos', max_digits=15, verbose_name='Total DÃ©bito'),
         ),
         migrations.AlterField(
             model_name='asistenciapersonal',
@@ -240,7 +240,7 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='calificacioncotejo',
             name='evaluacion',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='calificaciones', to='ventasweb.evaluacionlistacotejo', verbose_name='EvaluaciÃ³n'),
+            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='calificaciones', to='ventasweb.evaluacionlistacotejo', verbose_name='Evaluación'),
         ),
         migrations.AlterField(
             model_name='calificacioncotejo',
@@ -255,12 +255,12 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='calificacioncotejo',
             name='valor',
-            field=models.DecimalField(blank=True, decimal_places=2, help_text='Valor segÃºn el tipo de criterio', max_digits=6, null=True, verbose_name='Valor Obtenido'),
+            field=models.DecimalField(blank=True, decimal_places=2, help_text='Valor según el tipo de criterio', max_digits=6, null=True, verbose_name='Valor Obtenido'),
         ),
         migrations.AlterField(
             model_name='calificacioncriterio',
             name='evaluacion',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='calificaciones', to='ventasweb.evaluacionrubrica', verbose_name='EvaluaciÃ³n'),
+            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='calificaciones', to='ventasweb.evaluacionrubrica', verbose_name='Evaluación'),
         ),
         migrations.AlterField(
             model_name='calificacioncriterio',
@@ -275,7 +275,7 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='conceptopago',
             name='es_estandar',
-            field=models.BooleanField(default=False, help_text='Se asignarÃ¡ automÃ¡ticamente a nuevos estudiantes', verbose_name='Tarifa EstÃ¡ndar'),
+            field=models.BooleanField(default=False, help_text='Se asignarÃ¡ automáticamente a nuevos estudiantes', verbose_name='Tarifa EstÃ¡ndar'),
         ),
         migrations.AlterField(
             model_name='conceptopago',
@@ -285,12 +285,12 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='configuracionescuela',
             name='anho_fundacion',
-            field=models.IntegerField(blank=True, help_text='AÃ±o en que fue fundada la instituciÃ³n', null=True, verbose_name='AÃ±o de FundaciÃ³n'),
+            field=models.IntegerField(blank=True, help_text='Año en que fue fundada la instituciÃ³n', null=True, verbose_name='Año de FundaciÃ³n'),
         ),
         migrations.AlterField(
             model_name='configuracionescuela',
             name='codigo_centro',
-            field=models.CharField(blank=True, help_text='CÃ³digo oficial asignado por el MINERD u otra autoridad', max_length=50, null=True, verbose_name='CÃ³digo del Centro'),
+            field=models.CharField(blank=True, help_text='Código oficial asignado por el MINERD u otra autoridad', max_length=50, null=True, verbose_name='Código del Centro'),
         ),
         migrations.AlterField(
             model_name='configuracionescuela',
@@ -325,7 +325,7 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='configuracionescuela',
             name='logo',
-            field=models.ImageField(blank=True, help_text='Logo oficial de la instituciÃ³n (tamaÃ±o recomendado: 200x200px)', null=True, upload_to='escuela/logos/', verbose_name='Logo'),
+            field=models.ImageField(blank=True, help_text='Logo oficial de la instituciÃ³n (tamaño recomendado: 200x200px)', null=True, upload_to='escuela/logos/', verbose_name='Logo'),
         ),
         migrations.AlterField(
             model_name='configuracionescuela',
@@ -335,12 +335,12 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='configuracionescuela',
             name='modalidad',
-            field=models.CharField(blank=True, help_text='Ej: General, TÃ©cnico-Profesional, Artes', max_length=100, null=True, verbose_name='Modalidad'),
+            field=models.CharField(blank=True, help_text='Ej: General, Técnico-Profesional, Artes', max_length=100, null=True, verbose_name='Modalidad'),
         ),
         migrations.AlterField(
             model_name='configuracionescuela',
             name='nivel_educativo',
-            field=models.CharField(blank=True, help_text='Ej: Inicial, BÃ¡sica, Media, TÃ©cnico-Profesional', max_length=100, null=True, verbose_name='Nivel Educativo'),
+            field=models.CharField(blank=True, help_text='Ej: Inicial, BÃ¡sica, Media, Técnico-Profesional', max_length=100, null=True, verbose_name='Nivel Educativo'),
         ),
         migrations.AlterField(
             model_name='configuracionescuela',
@@ -370,12 +370,12 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='criteriolistacotejo',
             name='descripcion',
-            field=models.CharField(help_text='Ej: Completo las actividades en clase', max_length=300, verbose_name='DescripciÃ³n del Criterio'),
+            field=models.CharField(help_text='Ej: Completo las actividades en clase', max_length=300, verbose_name='Descripción del Criterio'),
         ),
         migrations.AlterField(
             model_name='criteriolistacotejo',
             name='orden',
-            field=models.PositiveIntegerField(default=0, help_text='Orden de apariciÃ³n en la lista (menor nÃºmero = primero)', verbose_name='Orden'),
+            field=models.PositiveIntegerField(default=0, help_text='Orden de apariciÃ³n en la lista (menor número = primero)', verbose_name='Orden'),
         ),
         migrations.AlterField(
             model_name='criteriolistacotejo',
@@ -385,12 +385,12 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='criteriolistacotejo',
             name='tipo_criterio',
-            field=models.CharField(choices=[('binario', 'Binario (âœ“/âœ— - SÃ\xad/No)'), ('numerico', 'NumÃ©rico (0-10)'), ('escala_5', 'Escala 1-5'), ('escala_3', 'Escala 1-3'), ('porcentaje', 'Porcentaje (0-100%)')], default='binario', max_length=15, verbose_name='Tipo de Criterio'),
+            field=models.CharField(choices=[('binario', 'Binario (✓œ“/✓œ— - SÃ\xad/No)'), ('numerico', 'NumÃ©rico (0-10)'), ('escala_5', 'Escala 1-5'), ('escala_3', 'Escala 1-3'), ('porcentaje', 'Porcentaje (0-100%)')], default='binario', max_length=15, verbose_name='Tipo de Criterio'),
         ),
         migrations.AlterField(
             model_name='criteriorubrica',
             name='descripcion',
-            field=models.TextField(blank=True, help_text='DescripciÃ³n detallada de quÃ© se evaluarÃ¡ en este criterio', null=True, verbose_name='DescripciÃ³n'),
+            field=models.TextField(blank=True, help_text='Descripción detallada de qué se evaluarÃ¡ en este criterio', null=True, verbose_name='Descripción'),
         ),
         migrations.AlterField(
             model_name='criteriorubrica',
@@ -405,7 +405,7 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='criteriorubrica',
             name='ponderacion',
-            field=models.DecimalField(decimal_places=2, default=20.0, help_text='Peso del criterio en la evaluaciÃ³n final (ej: 20.00%)', max_digits=5, verbose_name='PonderaciÃ³n (%)'),
+            field=models.DecimalField(decimal_places=2, default=20.0, help_text='Peso del criterio en la evaluación final (ej: 20.00%)', max_digits=5, verbose_name='PonderaciÃ³n (%)'),
         ),
         migrations.AlterField(
             model_name='criteriorubrica',
@@ -415,27 +415,27 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='customuser',
             name='codigo_barras',
-            field=models.CharField(blank=True, help_text='CÃ³digo de barras para ponchar asistencia', max_length=50, null=True, unique=True),
+            field=models.CharField(blank=True, help_text='Código de barras para ponchar asistencia', max_length=50, null=True, unique=True),
         ),
         migrations.AlterField(
             model_name='customuser',
             name='descuento_individual',
-            field=models.DecimalField(decimal_places=2, default=0, help_text='Porcentaje de descuento para este estudiante (solo si no estÃ¡ en un grupo familiar)', max_digits=5, validators=[django.core.validators.MinValueValidator(0), django.core.validators.MaxValueValidator(100)], verbose_name='Descuento Individual (%)'),
+            field=models.DecimalField(decimal_places=2, default=0, help_text='Porcentaje de descuento para este estudiante (solo si no está en un grupo familiar)', max_digits=5, validators=[django.core.validators.MinValueValidator(0), django.core.validators.MaxValueValidator(100)], verbose_name='Descuento Individual (%)'),
         ),
         migrations.AlterField(
             model_name='customuser',
             name='dia_vencimiento_individual',
-            field=models.IntegerField(default=10, help_text='DÃ\xada del mes para vencimiento de pago (solo si no estÃ¡ en un grupo familiar)', validators=[django.core.validators.MinValueValidator(1), django.core.validators.MaxValueValidator(31)], verbose_name='DÃ\xada de Vencimiento Individual'),
+            field=models.IntegerField(default=10, help_text='DÃ\xada del mes para vencimiento de pago (solo si no está en un grupo familiar)', validators=[django.core.validators.MinValueValidator(1), django.core.validators.MaxValueValidator(31)], verbose_name='DÃ\xada de Vencimiento Individual'),
         ),
         migrations.AlterField(
             model_name='customuser',
             name='email',
-            field=models.EmailField(max_length=254, unique=True, verbose_name='Correo electrÃ³nico'),
+            field=models.EmailField(max_length=254, unique=True, verbose_name='Correo electrónico'),
         ),
         migrations.AlterField(
             model_name='customuser',
             name='porcentaje_mora_individual',
-            field=models.DecimalField(decimal_places=2, default=0, help_text='Porcentaje de mora para este estudiante (solo si no estÃ¡ en un grupo familiar)', max_digits=5, verbose_name='Porcentaje de Mora Individual (%)'),
+            field=models.DecimalField(decimal_places=2, default=0, help_text='Porcentaje de mora para este estudiante (solo si no está en un grupo familiar)', max_digits=5, verbose_name='Porcentaje de Mora Individual (%)'),
         ),
         migrations.AlterField(
             model_name='customuser',
@@ -445,22 +445,22 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='detalleasiento',
             name='credito',
-            field=models.DecimalField(decimal_places=2, default=0.0, help_text='Monto del crÃ©dito', max_digits=15, verbose_name='CrÃ©dito'),
+            field=models.DecimalField(decimal_places=2, default=0.0, help_text='Monto del crédito', max_digits=15, verbose_name='CrÃ©dito'),
         ),
         migrations.AlterField(
             model_name='detalleasiento',
             name='debito',
-            field=models.DecimalField(decimal_places=2, default=0.0, help_text='Monto del dÃ©bito', max_digits=15, verbose_name='DÃ©bito'),
+            field=models.DecimalField(decimal_places=2, default=0.0, help_text='Monto del débito', max_digits=15, verbose_name='DÃ©bito'),
         ),
         migrations.AlterField(
             model_name='detalleasiento',
             name='descripcion',
-            field=models.CharField(help_text='DescripciÃ³n especÃ\xadfica de este movimiento', max_length=255, verbose_name='DescripciÃ³n'),
+            field=models.CharField(help_text='Descripción especÃ\xadfica de este movimiento', max_length=255, verbose_name='Descripción'),
         ),
         migrations.AlterField(
             model_name='detalleasiento',
             name='linea',
-            field=models.IntegerField(default=1, help_text='NÃºmero de lÃ\xadnea dentro del asiento', verbose_name='LÃ\xadnea'),
+            field=models.IntegerField(default=1, help_text='Número de lÃ\xadnea dentro del asiento', verbose_name='LÃ\xadnea'),
         ),
         migrations.AlterField(
             model_name='detallefactura',
@@ -470,12 +470,12 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='detallefactura',
             name='descripcion',
-            field=models.CharField(help_text='DescripciÃ³n del concepto', max_length=255),
+            field=models.CharField(help_text='Descripción del concepto', max_length=255),
         ),
         migrations.AlterField(
             model_name='detallefactura',
             name='mes',
-            field=models.IntegerField(blank=True, help_text='Mes del aÃ±o (1-12)', null=True),
+            field=models.IntegerField(blank=True, help_text='Mes del año (1-12)', null=True),
         ),
         migrations.AlterField(
             model_name='evaluaciondiagnostica',
@@ -510,17 +510,17 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='evaluaciondiagnostica',
             name='observaciones',
-            field=models.TextField(blank=True, help_text='Anotaciones adicionales sobre la evaluaciÃ³n', null=True, verbose_name='Observaciones/Notas'),
+            field=models.TextField(blank=True, help_text='Anotaciones adicionales sobre la evaluación', null=True, verbose_name='Observaciones/Notas'),
         ),
         migrations.AlterField(
             model_name='evaluaciondiagnostica',
             name='periodo',
-            field=models.CharField(choices=[('inicio_anho', 'Inicio de AÃ±o Escolar'), ('inicio_periodo_1', 'Inicio Primer PerÃ\xadodo'), ('inicio_periodo_2', 'Inicio Segundo PerÃ\xadodo'), ('inicio_periodo_3', 'Inicio Tercer PerÃ\xadodo'), ('inicio_periodo_4', 'Inicio Cuarto PerÃ\xadodo'), ('inicio_unidad', 'Inicio de Unidad DidÃ¡ctica')], max_length=20, verbose_name='PerÃ\xadodo de AplicaciÃ³n'),
+            field=models.CharField(choices=[('inicio_anho', 'Inicio de Año Escolar'), ('inicio_periodo_1', 'Inicio Primer PerÃ\xadodo'), ('inicio_periodo_2', 'Inicio Segundo PerÃ\xadodo'), ('inicio_periodo_3', 'Inicio Tercer PerÃ\xadodo'), ('inicio_periodo_4', 'Inicio Cuarto PerÃ\xadodo'), ('inicio_unidad', 'Inicio de Unidad DidÃ¡ctica')], max_length=20, verbose_name='PerÃ\xadodo de AplicaciÃ³n'),
         ),
         migrations.AlterField(
             model_name='evaluacionlistacotejo',
             name='descripcion',
-            field=models.TextField(blank=True, null=True, verbose_name='DescripciÃ³n'),
+            field=models.TextField(blank=True, null=True, verbose_name='Descripción'),
         ),
         migrations.AlterField(
             model_name='evaluacionlistacotejo',
@@ -530,7 +530,7 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='evaluacionlistacotejo',
             name='fecha_evaluacion',
-            field=models.DateField(verbose_name='Fecha de EvaluaciÃ³n'),
+            field=models.DateField(verbose_name='Fecha de Evaluación'),
         ),
         migrations.AlterField(
             model_name='evaluacionlistacotejo',
@@ -550,17 +550,17 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='evaluacionlistacotejo',
             name='incluir_en_promedio',
-            field=models.BooleanField(default=False, help_text='Si esta evaluaciÃ³n debe sumarse al promedio de la materia', verbose_name='Incluir en Promedio Final'),
+            field=models.BooleanField(default=False, help_text='Si esta evaluación debe sumarse al promedio de la materia', verbose_name='Incluir en Promedio Final'),
         ),
         migrations.AlterField(
             model_name='evaluacionlistacotejo',
             name='nombre',
-            field=models.CharField(help_text='Ej: EvaluaciÃ³n de participaciÃ³n - Marzo 2026', max_length=200, verbose_name='Nombre de la EvaluaciÃ³n'),
+            field=models.CharField(help_text='Ej: Evaluación de participaciÃ³n - Marzo 2026', max_length=200, verbose_name='Nombre de la Evaluación'),
         ),
         migrations.AlterField(
             model_name='evaluacionrubrica',
             name='descripcion',
-            field=models.TextField(blank=True, help_text='Detalles de la actividad evaluada', null=True, verbose_name='DescripciÃ³n'),
+            field=models.TextField(blank=True, help_text='Detalles de la actividad evaluada', null=True, verbose_name='Descripción'),
         ),
         migrations.AlterField(
             model_name='evaluacionrubrica',
@@ -570,7 +570,7 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='evaluacionrubrica',
             name='fecha_evaluacion',
-            field=models.DateField(verbose_name='Fecha de EvaluaciÃ³n'),
+            field=models.DateField(verbose_name='Fecha de Evaluación'),
         ),
         migrations.AlterField(
             model_name='evaluacionrubrica',
@@ -585,7 +585,7 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='evaluacionrubrica',
             name='titulo',
-            field=models.CharField(help_text='Nombre descriptivo de la evaluaciÃ³n (ej: Proyecto Final, ExposiciÃ³n Oral)', max_length=200, verbose_name='TÃ\xadtulo de la EvaluaciÃ³n'),
+            field=models.CharField(help_text='Nombre descriptivo de la evaluación (ej: Proyecto Final, ExposiciÃ³n Oral)', max_length=200, verbose_name='TÃ\xadtulo de la Evaluación'),
         ),
         migrations.AlterField(
             model_name='factura',
@@ -595,12 +595,12 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='grupofamiliar',
             name='activo',
-            field=models.BooleanField(default=True, help_text='Indica si el grupo familiar estÃ¡ activo', verbose_name='Activo'),
+            field=models.BooleanField(default=True, help_text='Indica si el grupo familiar está activo', verbose_name='Activo'),
         ),
         migrations.AlterField(
             model_name='grupofamiliar',
             name='codigo_familia',
-            field=models.CharField(db_index=True, help_text='CÃ³digo Ãºnico para identificar la familia (ej: FAM001, GONZALEZ2024)', max_length=50, unique=True, verbose_name='CÃ³digo de Familia'),
+            field=models.CharField(db_index=True, help_text='Código Ãºnico para identificar la familia (ej: FAM001, GONZALEZ2024)', max_length=50, unique=True, verbose_name='Código de Familia'),
         ),
         migrations.AlterField(
             model_name='grupofamiliar',
@@ -610,12 +610,12 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='grupofamiliar',
             name='notas',
-            field=models.TextField(blank=True, help_text='InformaciÃ³n adicional sobre la familia', null=True, verbose_name='Notas'),
+            field=models.TextField(blank=True, help_text='Información adicional sobre la familia', null=True, verbose_name='Notas'),
         ),
         migrations.AlterField(
             model_name='grupofamiliar',
             name='porcentaje_mora',
-            field=models.DecimalField(decimal_places=2, default=0, help_text='Porcentaje de recargo aplicado cuando el pago estÃ¡ vencido', max_digits=5, verbose_name='Porcentaje de Mora (%)'),
+            field=models.DecimalField(decimal_places=2, default=0, help_text='Porcentaje de recargo aplicado cuando el pago está vencido', max_digits=5, verbose_name='Porcentaje de Mora (%)'),
         ),
         migrations.AlterField(
             model_name='grupofamiliar',
@@ -655,12 +655,12 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='listacotejo',
             name='descripcion',
-            field=models.TextField(blank=True, help_text='DescripciÃ³n detallada del propÃ³sito de esta lista', null=True, verbose_name='DescripciÃ³n'),
+            field=models.TextField(blank=True, help_text='Descripción detallada del propÃ³sito de esta lista', null=True, verbose_name='Descripción'),
         ),
         migrations.AlterField(
             model_name='listacotejo',
             name='es_plantilla',
-            field=models.BooleanField(default=True, help_text='Si es True, esta lista puede ser utilizada mÃºltiples veces', verbose_name='Es Plantilla Reutilizable'),
+            field=models.BooleanField(default=True, help_text='Si es True, esta lista puede ser utilizada múltiples veces', verbose_name='Es Plantilla Reutilizable'),
         ),
         migrations.AlterField(
             model_name='listacotejo',
@@ -690,7 +690,7 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='listacotejo',
             name='tipo_evaluacion',
-            field=models.CharField(choices=[('actividad', 'Actividad EspecÃ\xadfica'), ('proceso', 'EvaluaciÃ³n de Proceso'), ('proyecto', 'Proyecto'), ('comportamiento', 'EvaluaciÃ³n de Comportamiento'), ('cuaderno', 'EvaluaciÃ³n de Cuaderno'), ('participacion', 'ParticipaciÃ³n'), ('otro', 'Otro')], default='actividad', max_length=20, verbose_name='Tipo de EvaluaciÃ³n'),
+            field=models.CharField(choices=[('actividad', 'Actividad EspecÃ\xadfica'), ('proceso', 'Evaluación de Proceso'), ('proyecto', 'Proyecto'), ('comportamiento', 'Evaluación de Comportamiento'), ('cuaderno', 'Evaluación de Cuaderno'), ('participacion', 'ParticipaciÃ³n'), ('otro', 'Otro')], default='actividad', max_length=20, verbose_name='Tipo de Evaluación'),
         ),
         migrations.AlterField(
             model_name='loginattempt',
@@ -705,17 +705,17 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='materia',
             name='categoria',
-            field=models.CharField(choices=[('periodo', 'Por PerÃ\xadodos'), ('modular', 'Modular')], default='periodo', help_text='Por PerÃ\xadodos: calificaciones por perÃ\xadodo (P1, P2, P3). Modular: evaluaciÃ³n continua.', max_length=20, verbose_name='CategorÃ\xada de EvaluaciÃ³n'),
+            field=models.CharField(choices=[('periodo', 'Por PerÃ\xadodos'), ('modular', 'Modular')], default='periodo', help_text='Por PerÃ\xadodos: calificaciones por perÃ\xadodo (P1, P2, P3). Modular: evaluación continua.', max_length=20, verbose_name='CategorÃ\xada de Evaluación'),
         ),
         migrations.AlterField(
             model_name='materia',
             name='miercoles',
-            field=models.BooleanField(default=False, verbose_name='MiÃ©rcoles'),
+            field=models.BooleanField(default=False, verbose_name='Miércoles'),
         ),
         migrations.AlterField(
             model_name='materia',
             name='ra_configuracion',
-            field=models.JSONField(blank=True, help_text='ConfiguraciÃ³n de RA: cantidad y valores en % (solo modular)', null=True),
+            field=models.JSONField(blank=True, help_text='Configuración de RA: cantidad y valores en % (solo modular)', null=True),
         ),
         migrations.AlterField(
             model_name='mensualidad',
@@ -730,7 +730,7 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='niveldesempeno',
             name='descriptor',
-            field=models.TextField(help_text='DescripciÃ³n detallada de lo que caracteriza este nivel de desempeÃ±o', verbose_name='Descriptor'),
+            field=models.TextField(help_text='Descripción detallada de lo que caracteriza este nivel de desempeÃ±o', verbose_name='Descriptor'),
         ),
         migrations.AlterField(
             model_name='niveldesempeno',
@@ -745,12 +745,12 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='pago',
             name='mes',
-            field=models.IntegerField(blank=True, help_text='Mes del aÃ±o (1-12)', null=True, validators=[django.core.validators.MinValueValidator(1), django.core.validators.MaxValueValidator(12)]),
+            field=models.IntegerField(blank=True, help_text='Mes del año (1-12)', null=True, validators=[django.core.validators.MinValueValidator(1), django.core.validators.MaxValueValidator(12)]),
         ),
         migrations.AlterField(
             model_name='pago',
             name='referencia',
-            field=models.CharField(blank=True, help_text='NÃºmero de referencia/transacciÃ³n', max_length=100, null=True),
+            field=models.CharField(blank=True, help_text='Número de referencia/transacción', max_length=100, null=True),
         ),
         migrations.AlterField(
             model_name='pagofactura',
@@ -760,17 +760,17 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='pagofactura',
             name='referencia',
-            field=models.CharField(blank=True, help_text='NÃºmero de referencia/transacciÃ³n/cheque', max_length=100, null=True),
+            field=models.CharField(blank=True, help_text='Número de referencia/transacción/cheque', max_length=100, null=True),
         ),
         migrations.AlterField(
             model_name='plancuentas',
             name='activo',
-            field=models.BooleanField(default=True, help_text='Indica si la cuenta estÃ¡ activa para uso', verbose_name='Activo'),
+            field=models.BooleanField(default=True, help_text='Indica si la cuenta está activa para uso', verbose_name='Activo'),
         ),
         migrations.AlterField(
             model_name='plancuentas',
             name='codigo',
-            field=models.CharField(db_index=True, help_text='CÃ³digo Ãºnico de la cuenta (ej: 1.1.01.001)', max_length=20, unique=True, verbose_name='CÃ³digo de Cuenta'),
+            field=models.CharField(db_index=True, help_text='Código Ãºnico de la cuenta (ej: 1.1.01.001)', max_length=20, unique=True, verbose_name='Código de Cuenta'),
         ),
         migrations.AlterField(
             model_name='plancuentas',
@@ -780,7 +780,7 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='plancuentas',
             name='descripcion',
-            field=models.TextField(blank=True, help_text='DescripciÃ³n detallada del uso de esta cuenta', null=True, verbose_name='DescripciÃ³n'),
+            field=models.TextField(blank=True, help_text='Descripción detallada del uso de esta cuenta', null=True, verbose_name='Descripción'),
         ),
         migrations.AlterField(
             model_name='plancuentas',
@@ -815,12 +815,12 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='resultadoevaluaciondiagnostica',
             name='evaluacion',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='resultados', to='ventasweb.evaluaciondiagnostica', verbose_name='EvaluaciÃ³n DiagnÃ³stica'),
+            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='resultados', to='ventasweb.evaluaciondiagnostica', verbose_name='Evaluación DiagnÃ³stica'),
         ),
         migrations.AlterField(
             model_name='resultadoevaluaciondiagnostica',
             name='fecha_evaluacion',
-            field=models.DateTimeField(auto_now_add=True, verbose_name='Fecha de EvaluaciÃ³n'),
+            field=models.DateTimeField(auto_now_add=True, verbose_name='Fecha de Evaluación'),
         ),
         migrations.AlterField(
             model_name='resultadoevaluaciondiagnostica',
@@ -835,7 +835,7 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='resultadoevaluaciondiagnostica',
             name='puntaje_total',
-            field=models.DecimalField(blank=True, decimal_places=2, help_text='Puntaje total de la evaluaciÃ³n (opcional)', max_digits=5, null=True, verbose_name='Puntaje Total'),
+            field=models.DecimalField(blank=True, decimal_places=2, help_text='Puntaje total de la evaluación (opcional)', max_digits=5, null=True, verbose_name='Puntaje Total'),
         ),
         migrations.AlterField(
             model_name='resultadoevaluaciondiagnostica',
@@ -845,12 +845,12 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='resumenevaluacioncotejo',
             name='esta_completo',
-            field=models.BooleanField(default=False, verbose_name='EvaluaciÃ³n Completa'),
+            field=models.BooleanField(default=False, verbose_name='Evaluación Completa'),
         ),
         migrations.AlterField(
             model_name='resumenevaluacioncotejo',
             name='evaluacion',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='resumenes', to='ventasweb.evaluacionlistacotejo', verbose_name='EvaluaciÃ³n'),
+            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='resumenes', to='ventasweb.evaluacionlistacotejo', verbose_name='Evaluación'),
         ),
         migrations.AlterField(
             model_name='resumenevaluacioncotejo',
@@ -865,12 +865,12 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='rubrica',
             name='activa',
-            field=models.BooleanField(default=True, help_text='Indica si la rÃºbrica estÃ¡ activa para usar', verbose_name='Activa'),
+            field=models.BooleanField(default=True, help_text='Indica si la rÃºbrica está activa para usar', verbose_name='Activa'),
         ),
         migrations.AlterField(
             model_name='rubrica',
             name='descripcion',
-            field=models.TextField(blank=True, help_text='DescripciÃ³n general de la rÃºbrica', null=True, verbose_name='DescripciÃ³n'),
+            field=models.TextField(blank=True, help_text='Descripción general de la rÃºbrica', null=True, verbose_name='Descripción'),
         ),
         migrations.AlterField(
             model_name='rubrica',
@@ -890,7 +890,7 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='rubrica',
             name='nombre',
-            field=models.CharField(help_text='Ej: EvaluaciÃ³n de Proyecto de Ciencias', max_length=255, verbose_name='Nombre de la RÃºbrica'),
+            field=models.CharField(help_text='Ej: Evaluación de Proyecto de Ciencias', max_length=255, verbose_name='Nombre de la RÃºbrica'),
         ),
         migrations.AlterField(
             model_name='rubrica',
@@ -900,7 +900,7 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='securityalert',
             name='descripcion',
-            field=models.TextField(verbose_name='DescripciÃ³n'),
+            field=models.TextField(verbose_name='Descripción'),
         ),
         migrations.AlterField(
             model_name='securityalert',
@@ -930,7 +930,7 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='securityalert',
             name='tipo_alerta',
-            field=models.CharField(choices=[('BRUTE_FORCE', 'Intento de Fuerza Bruta'), ('MULTIPLE_FAILED_LOGIN', 'MÃºltiples Intentos Fallidos'), ('SUSPICIOUS_IP', 'IP Sospechosa'), ('UNUSUAL_LOCATION', 'UbicaciÃ³n Inusual'), ('UNUSUAL_TIME', 'Hora Inusual'), ('ACCOUNT_COMPROMISE', 'Posible Cuenta Comprometida'), ('DATA_BREACH', 'Posible FiltraciÃ³n de Datos'), ('PRIVILEGE_ESCALATION', 'Escalada de Privilegios'), ('UNAUTHORIZED_ACCESS', 'Acceso No Autorizado'), ('OTHER', 'Otro')], max_length=30, verbose_name='Tipo de Alerta'),
+            field=models.CharField(choices=[('BRUTE_FORCE', 'Intento de Fuerza Bruta'), ('MULTIPLE_FAILED_LOGIN', 'Múltiples Intentos Fallidos'), ('SUSPICIOUS_IP', 'IP Sospechosa'), ('UNUSUAL_LOCATION', 'UbicaciÃ³n Inusual'), ('UNUSUAL_TIME', 'Hora Inusual'), ('ACCOUNT_COMPROMISE', 'Posible Cuenta Comprometida'), ('DATA_BREACH', 'Posible FiltraciÃ³n de Datos'), ('PRIVILEGE_ESCALATION', 'Escalada de Privilegios'), ('UNAUTHORIZED_ACCESS', 'Acceso No Autorizado'), ('OTHER', 'Otro')], max_length=30, verbose_name='Tipo de Alerta'),
         ),
         migrations.AlterField(
             model_name='securityalert',
@@ -940,7 +940,7 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='securitylog',
             name='descripcion',
-            field=models.TextField(verbose_name='DescripciÃ³n'),
+            field=models.TextField(verbose_name='Descripción'),
         ),
         migrations.AlterField(
             model_name='securitylog',
@@ -950,12 +950,12 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='securitylog',
             name='nivel_severidad',
-            field=models.CharField(choices=[('INFO', 'InformaciÃ³n'), ('WARNING', 'Advertencia'), ('ERROR', 'Error'), ('CRITICAL', 'CrÃ\xadtico')], default='INFO', max_length=20, verbose_name='Nivel de severidad'),
+            field=models.CharField(choices=[('INFO', 'Información'), ('WARNING', 'Advertencia'), ('ERROR', 'Error'), ('CRITICAL', 'CrÃ\xadtico')], default='INFO', max_length=20, verbose_name='Nivel de severidad'),
         ),
         migrations.AlterField(
             model_name='securitylog',
             name='tipo_evento',
-            field=models.CharField(choices=[('LOGIN', 'Login exitoso'), ('LOGOUT', 'Logout'), ('LOGIN_FAILED', 'Login fallido'), ('PASSWORD_CHANGE', 'Cambio de contraseÃ±a'), ('PASSWORD_RESET', 'Reseteo de contraseÃ±a'), ('ACCOUNT_LOCKED', 'Cuenta bloqueada'), ('ACCOUNT_UNLOCKED', 'Cuenta desbloqueada'), ('PERMISSION_DENIED', 'Permiso denegado'), ('PROFILE_UPDATE', 'ActualizaciÃ³n de perfil'), ('SESSION_EXPIRED', 'SesiÃ³n expirada'), ('2FA_ENABLED', '2FA habilitado'), ('2FA_DISABLED', '2FA deshabilitado'), ('SUSPICIOUS_ACTIVITY', 'Actividad sospechosa'), ('DATA_EXPORT', 'ExportaciÃ³n de datos'), ('ADMIN_ACTION', 'AcciÃ³n administrativa')], max_length=50, verbose_name='Tipo de evento'),
+            field=models.CharField(choices=[('LOGIN', 'Login exitoso'), ('LOGOUT', 'Logout'), ('LOGIN_FAILED', 'Login fallido'), ('PASSWORD_CHANGE', 'Cambio de contraseña'), ('PASSWORD_RESET', 'Reseteo de contraseña'), ('ACCOUNT_LOCKED', 'Cuenta bloqueada'), ('ACCOUNT_UNLOCKED', 'Cuenta desbloqueada'), ('PERMISSION_DENIED', 'Permiso denegado'), ('PROFILE_UPDATE', 'ActualizaciÃ³n de perfil'), ('SESSION_EXPIRED', 'SesiÃ³n expirada'), ('2FA_ENABLED', '2FA habilitado'), ('2FA_DISABLED', '2FA deshabilitado'), ('SUSPICIOUS_ACTIVITY', 'Actividad sospechosa'), ('DATA_EXPORT', 'ExportaciÃ³n de datos'), ('ADMIN_ACTION', 'AcciÃ³n administrativa')], max_length=50, verbose_name='Tipo de evento'),
         ),
         migrations.AlterField(
             model_name='tarifaestudiante',
@@ -1064,7 +1064,7 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='twofactorauth',
             name='backup_codes',
-            field=models.JSONField(blank=True, default=list, verbose_name='CÃ³digos de respaldo'),
+            field=models.JSONField(blank=True, default=list, verbose_name='Códigos de respaldo'),
         ),
         migrations.AlterField(
             model_name='twofactorauth',
@@ -1094,7 +1094,7 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='usersession',
             name='session_key',
-            field=models.CharField(max_length=40, unique=True, verbose_name='Clave de sesiÃ³n'),
+            field=models.CharField(max_length=40, unique=True, verbose_name='Clave de sesión'),
         ),
         migrations.AddField(
             model_name='suscripcion',

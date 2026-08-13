@@ -148,6 +148,41 @@
     position: relative;
 }
 
+/* ===== ANIMACIÓN FLECHITA COLLAPSE ===== */
+#resumenChevron {
+    transition: transform 0.3s ease;
+}
+
+/* ===== CAMPO DE BÚSQUEDA UNIFICADO ===== */
+#busquedaUnificadaInput {
+    border: 2px solid #4e73df;
+    transition: all 0.3s ease;
+    font-weight: 500;
+}
+
+#busquedaUnificadaInput:focus {
+    border-color: #2e59d9;
+    box-shadow: 0 0 0 0.2rem rgba(78, 115, 223, 0.25);
+    transform: scale(1.01);
+}
+
+#busquedaUnificadaInput::placeholder {
+    font-weight: 400;
+    color: #a8b3c5;
+}
+
+.input-group .btn-primary {
+    background: linear-gradient(135deg, #4e73df 0%, #224abe 100%);
+    border: none;
+    font-weight: 600;
+    transition: all 0.3s ease;
+}
+
+.input-group .btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(78, 115, 223, 0.4);
+}
+
 .search-input {
     padding-left: 40px;
     border-radius: 8px;
@@ -306,151 +341,133 @@
         </div>
         <div class="card-body p-2">
 
-    <!-- Búsqueda y Cliente -->
+    <!-- Búsqueda y Cliente en un solo frame -->
     <div class="row mb-2">
         <div class="col-12">
-            <!-- Búsqueda de Estudiante -->
             <div class="card shadow-sm mb-2">
                 <div class="card-header bg-info text-white py-1">
                     <h6 class="m-0">
-                        <i class="fas fa-search me-1"></i>Búsqueda de Cliente
+                        <i class="fas fa-search me-1"></i>Búsqueda y Datos del Cliente
                     </h6>
                 </div>
                 <div class="card-body p-2">
-                    <form method="get" id="buscarForm">
-                        <div class="row g-2 align-items-center">
-                            <div class="col-md-9">
-                                <div class="input-group input-group-sm">
-                                    <span class="input-group-text"><i class="fas fa-barcode"></i></span>
-                                    <input type="text" class="form-control" id="buscarInput" name="buscar"
-                                           placeholder="Escanea código o busca por nombre..." 
-                                           value="{{ buscar }}" autocomplete="off" autofocus>
-                                    <button type="submit" class="btn btn-primary" id="buscarBtn">
-                                        <i class="fas fa-search"></i>
-                                    </button>
+                    <div class="row g-2">
+                        <!-- Columna Izquierda: Búsqueda -->
+                        <div class="col-md-6">
+                            <div class="border-end pe-2">
+                                
+                                <form method="get" id="buscarForm">
+                                    <div class="input-group input-group-sm mb-2">
+                                        <span class="input-group-text"><i class="fas fa-barcode"></i></span>
+                                        <input type="text" class="form-control" id="buscarInput" name="buscar"
+                                               placeholder="Escanea código o busca por nombre..." 
+                                               value="{{ buscar }}" autocomplete="off" autofocus>
+                                        <button type="submit" class="btn btn-primary" id="buscarBtn">
+                                            <i class="fas fa-search"></i>
+                                        </button>
+                                    </div>
+                                </form>
+                                
+                                <!-- Resultados de búsqueda -->
+                                <div id="resultadosBusqueda" class="mt-2" style="max-height: 300px; overflow-y: auto;">
+                                    {% if buscar and familias_encontradas %}
+                                        <div class="results-header mb-2">
+                                            <small class="text-success"><i class="fas fa-users me-1"></i>{{ familias_encontradas|length }} Familia(s) encontrada(s)</small>
+                                        </div>
+                                        {% for fam in familias_encontradas %}
+                                        <div class="resultado-item-modern" onclick="window.location.href='{% url 'grupo_familiar_facturar' fam.id %}';" style="cursor: pointer; border-left: 4px solid #28a745;">
+                                            <div class="resultado-icon" style="background: linear-gradient(135deg, #28a745, #20c997);">
+                                                <i class="fas fa-users"></i>
+                                            </div>
+                                            <div class="resultado-info">
+                                                <strong>👨‍👩‍👧 {{ fam.apellido_familia }}</strong>
+                                                <div class="resultado-details">
+                                                    <span class="badge badge-modern badge-success-modern">
+                                                        <i class="fas fa-barcode me-1"></i>{{ fam.codigo_familia }}
+                                                    </span>
+                                                    <span class="badge badge-modern badge-info-modern">
+                                                        <i class="fas fa-user-graduate me-1"></i>{{ fam.num_estudiantes }} estudiante{{ fam.num_estudiantes|pluralize }}
+                                                    </span>
+                                                    {% if fam.descuento_general > 0 %}
+                                                    <span class="badge badge-modern badge-warning-modern">
+                                                        <i class="fas fa-percentage me-1"></i>{{ fam.descuento_general }}% desc.
+                                                    </span>
+                                                    {% endif %}
+                                                </div>
+                                            </div>
+                                            <div class="resultado-action">
+                                                <i class="fas fa-file-invoice-dollar"></i>
+                                            </div>
+                                        </div>
+                                        {% endfor %}
+                                        <hr class="my-2">
+                                    {% endif %}
+                                
+                                    {% if buscar and estudiantes_encontrados %}
+                                        <div class="results-header mb-2">
+                                            <small class="text-muted"><i class="fas fa-user-graduate me-1"></i>{{ estudiantes_encontrados|length }} Estudiante(s) encontrado(s)</small>
+                                        </div>
+                                        {% for est in estudiantes_encontrados %}
+                                        <div class="resultado-item-modern" onclick="seleccionarEstudiante({{ est.id }})">
+                                            <div class="resultado-icon">
+                                                <i class="fas fa-user-graduate"></i>
+                                            </div>
+                                            <div class="resultado-info">
+                                                <strong>{{ est.get_full_name }}</strong>
+                                                <div class="resultado-details">
+                                                    <span class="badge badge-modern badge-secondary-modern">
+                                                        <i class="fas fa-barcode me-1"></i>{{ est.codigo_barras|default:"Sin código" }}
+                                                    </span>
+                                                    <span class="badge badge-modern badge-info-modern">
+                                                        <i class="fas fa-graduation-cap me-1"></i>{{ est.grado|default:"-" }}/{{ est.seccion|default:"-" }}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                            <div class="resultado-action">
+                                                <i class="fas fa-chevron-right"></i>
+                                            </div>
+                                        </div>
+                                        {% endfor %}
+                                    {% elif buscar and not familias_encontradas %}
+                                        <div class="alert alert-modern alert-warning mb-0">
+                                            <i class="fas fa-exclamation-triangle me-2"></i>
+                                            No se encontraron resultados para "{{ buscar }}"
+                                        </div>
+                                    {% endif %}
                                 </div>
                             </div>
                         </div>
-                    </form>
-                    
-                    <!-- Resultados de búsqueda -->
-                    <div id="resultadosBusqueda" class="mt-2" style="max-height: 200px; overflow-y: auto;">
-                        {% if buscar and familias_encontradas %}
-                            <div class="results-header mb-2">
-                                <small class="text-success"><i class="fas fa-users me-1"></i>{{ familias_encontradas|length }} Familia(s) encontrada(s)</small>
-                            </div>
-                            {% for fam in familias_encontradas %}
-                            <div class="resultado-item-modern" onclick="window.location.href='{% url 'grupo_familiar_facturar' fam.id %}';" style="cursor: pointer; border-left: 4px solid #28a745;">
-                                <div class="resultado-icon" style="background: linear-gradient(135deg, #28a745, #20c997);">
-                                    <i class="fas fa-users"></i>
-                                </div>
-                                <div class="resultado-info">
-                                    <strong>👨‍👩‍👧 {{ fam.apellido_familia }}</strong>
-                                    <div class="resultado-details">
-                                        <span class="badge badge-modern badge-success-modern">
-                                            <i class="fas fa-barcode me-1"></i>{{ fam.codigo_familia }}
-                                        </span>
-                                        <span class="badge badge-modern badge-info-modern">
-                                            <i class="fas fa-user-graduate me-1"></i>{{ fam.num_estudiantes }} estudiante{{ fam.num_estudiantes|pluralize }}
-                                        </span>
-                                        {% if fam.descuento_general > 0 %}
-                                        <span class="badge badge-modern badge-warning-modern">
-                                            <i class="fas fa-percentage me-1"></i>{{ fam.descuento_general }}% desc.
-                                        </span>
-                                        {% endif %}
-                                    </div>
-                                </div>
-                                <div class="resultado-action">
-                                    <i class="fas fa-file-invoice-dollar"></i>
-                                </div>
-                            </div>
-                            {% endfor %}
-                            <hr class="my-2">
-                        {% endif %}
-                    
-                        {% if buscar and estudiantes_encontrados %}
-                            <div class="results-header mb-2">
-                                <small class="text-muted"><i class="fas fa-user-graduate me-1"></i>{{ estudiantes_encontrados|length }} Estudiante(s) encontrado(s)</small>
-                            </div>
-                            {% for est in estudiantes_encontrados %}
-                            <div class="resultado-item-modern" onclick="seleccionarEstudiante({{ est.id }})">
-                                <div class="resultado-icon">
-                                    <i class="fas fa-user-graduate"></i>
-                                </div>
-                                <div class="resultado-info">
-                                    <strong>{{ est.get_full_name }}</strong>
-                                    <div class="resultado-details">
-                                        <span class="badge badge-modern badge-secondary-modern">
-                                            <i class="fas fa-barcode me-1"></i>{{ est.codigo_barras|default:"Sin código" }}
-                                        </span>
-                                        <span class="badge badge-modern badge-info-modern">
-                                            <i class="fas fa-graduation-cap me-1"></i>{{ est.grado|default:"-" }}/{{ est.seccion|default:"-" }}
-                                        </span>
-                                    </div>
-                                </div>
-                                <div class="resultado-action">
-                                    <i class="fas fa-chevron-right"></i>
-                                </div>
-                            </div>
-                            {% endfor %}
-                        {% elif buscar and not familias_encontradas %}
-                            <div class="alert alert-modern alert-warning mb-0">
-                                <i class="fas fa-exclamation-triangle me-2"></i>
-                                No se encontraron resultados para "{{ buscar }}"
-                            </div>
-                        {% endif %}
-                    </div>
-                </div>
-            </div>
 
-            <!-- Cliente Seleccionado -->
-            <div class="card shadow-sm mb-2 {% if not estudiante %}d-none{% endif %}" id="clienteCard">
-                <div class="card-body p-2 client-selected-card">
-                    <div class="row align-items-center">
-                        <div class="col">
-                            <div class="client-info-badge">
-                                <i class="fas fa-user-check me-2"></i>
-                                <strong>Cliente:</strong> <span id="clienteNombre" class="client-name">{% if estudiante %}{{ estudiante.get_full_name }}{% endif %}</span>
+                        <!-- Columna Derecha: Cliente Seleccionado -->
+                        <div class="col-md-6">
+                            <div class="ps-2">
+                                
+                                
+                                <!-- Cliente Seleccionado -->
+                                <div class="{% if not estudiante %}d-none{% endif %}" id="clienteCard">
+                                    <div class="client-selected-card p-3">
+                                        <div class="d-flex align-items-start justify-content-between mb-2">
+                                            <div class="client-info-badge flex-grow-1">
+                                                <i class="fas fa-user-check me-1"></i> <span id="clienteNombre" class="client-name">{% if estudiante %}{{ estudiante.get_full_name }} {% endif %}</span> 
+                                                <i class="fas fa-barcode me-1"></i><strong>Código:</strong> <code id="clienteCodigo">{% if estudiante %}{{ estudiante.codigo_barras|default:"-" }}{% endif %}</code>
+                                            
+                                            </div>
+
+                                            <button type="button" class="btn btn-light btn-sm ms-2" onclick="limpiarCliente()">
+                                                <i class="fas fa-times"></i>
+                                            </button>
+                                        </div>
+                                        
+                                    </div>
+                                </div>
+                                
+                                <!-- Mensaje cuando no hay cliente seleccionado -->
+                                <div class="{% if estudiante %}d-none{% endif %} text-center py-2" id="noClienteMsg">
+                                    <i class="fas fa-user-slash fa-2x text-muted mb-2"></i>
+                                    <small class="text-muted">No hay cliente seleccionado, </small>
+                                    <small class="text-muted">Escanea o busca un cliente para continuar</small>
+                                </div>
                             </div>
-                            <div class="client-details mt-2">
-                                <span class="client-detail-item">
-                                    <i class="fas fa-barcode me-1"></i>
-                                    <strong>Código:</strong> <code id="clienteCodigo">{% if estudiante %}{{ estudiante.codigo_barras|default:"-" }}{% endif %}</code>
-                                </span>
-                                <span class="client-detail-item">
-                                    <i class="fas fa-graduation-cap me-1"></i>
-                                    <strong>Grado:</strong> <span id="clienteGrado">{% if estudiante %}{{ estudiante.grado|default:"-" }}/{{ estudiante.seccion|default:"-" }}{% endif %}</span>
-                                </span>
-                                {% if estudiante %}
-                                <span class="client-detail-item">
-                                    <i class="fas fa-calendar-alt me-1"></i>
-                                    <strong>Día Vencimiento:</strong> <span class="badge bg-info">{{ estudiante.get_dia_vencimiento }}</span>
-                                    {% if estudiante.grupo_familiar %}
-                                    <small class="text-muted">(Grupo)</small>
-                                    {% else %}
-                                    <small class="text-muted">(Individual)</small>
-                                    {% endif %}
-                                </span>
-                                {% if estudiante.get_porcentaje_mora > 0 %}
-                                <span class="client-detail-item">
-                                    <i class="fas fa-exclamation-triangle me-1 text-warning"></i>
-                                    <strong>Mora:</strong> <span class="badge bg-warning text-dark">{{ estudiante.get_porcentaje_mora }}%</span>
-                                    {% if estudiante.grupo_familiar %}
-                                    <small class="text-muted">(Grupo)</small>
-                                    {% else %}
-                                    <small class="text-muted">(Individual)</small>
-                                    {% endif %}
-                                </span>
-                                {% endif %}
-                                {% endif %}
-                                {# ELIMINADO - Ya no mostramos estado de mensualidades #}
-                                {# <span id="estadoMensualidades" class="client-detail-item"></span> #}
-                            </div>
-                        </div>
-                        <div class="col-auto">
-                            <button type="button" class="btn btn-light btn-sm" onclick="limpiarCliente()">
-                                <i class="fas fa-times"></i>
-                            </button>
                         </div>
                     </div>
                 </div>
@@ -508,30 +525,33 @@
                         <h6 class="mb-0"><i class="fas fa-plus-circle me-1"></i>Agregar Concepto</h6>
                     </div>
                     <div class="card-body p-2">
-                        <!-- Campo de Código de Barras -->
+                        <!-- Campo de Búsqueda Unificado -->
                         <div class="row g-2 mb-2">
-                            <div class="col-md-6">
+                            <div class="col-12">
                                 <div class="input-group input-group-sm">
-                                    <span class="input-group-text bg-warning"><i class="fas fa-barcode"></i></span>
-                                    <input type="text" class="form-control" id="codigoBarrasInput" 
-                                           placeholder="Código de barras..." autocomplete="off">
-                                    <button type="button" class="btn btn-warning btn-sm" onclick="buscarPorCodigoBarras()">
+                                    <span class="input-group-text bg-primary text-white">
                                         <i class="fas fa-search"></i>
+                                    </span>
+                                    <input type="text" 
+                                           class="form-control form-control-lg" 
+                                           id="busquedaUnificadaInput" 
+                                           placeholder="🔍 Buscar por código de barras, nombre o descripción..." 
+                                           autocomplete="off"
+                                           style="font-size: 1rem; padding: 0.6rem;">
+                                    <button type="button" 
+                                            class="btn btn-primary btn-sm px-3" 
+                                            onclick="busquedaUnificada()"
+                                            title="Buscar (Enter)">
+                                        <i class="fas fa-search me-1"></i>Buscar
                                     </button>
                                 </div>
-                            </div>
-                            <div class="col-md-6">
-                                <div class="input-group input-group-sm">
-                                    <span class="input-group-text bg-info"><i class="fas fa-search"></i></span>
-                                    <input type="text" class="form-control" id="buscarNombreInput"
-                                           placeholder="Buscar por nombre..." autocomplete="off">
-                                    <button type="button" class="btn btn-info btn-sm" onclick="buscarPorNombre()">
-                                        <i class="fas fa-search"></i>
-                                    </button>
-                                </div>
+                                <small class="text-muted d-block mt-1">
+                                    <i class="fas fa-info-circle"></i> 
+                                    Escribe código de barras o nombre del producto. Compatible con lector de códigos.
+                                </small>
                             </div>
                             <div class="col-12">
-                                <div id="resultadosArticulos" style="max-height: 150px; overflow-y: auto;"></div>
+                                <div id="resultadosArticulos" style="max-height: 200px; overflow-y: auto;"></div>
                             </div>
                         </div>
                     </div>
@@ -573,47 +593,52 @@
             <div class="col-lg-4">
                 <!-- Totales -->
                 <div class="card shadow-sm sticky-top" style="top: 10px;">
-                    <div class="card-header bg-dark text-white py-1">
-                        <h6 class="mb-0"><i class="fas fa-calculator me-1"></i>Resumen</h6>
+                    <div class="card-header bg-dark text-white py-1" style="cursor: pointer;" data-bs-toggle="collapse" data-bs-target="#resumenCollapse" aria-expanded="true" aria-controls="resumenCollapse">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <h6 class="mb-0"><i class="fas fa-calculator me-1"></i>Resumen, método de pago, etc.</h6>
+                            <i class="fas fa-chevron-down" id="resumenChevron"></i>
+                        </div>
                     </div>
-                    <div class="card-body p-2">
-                        <div class="mb-2">
-                            <label class="form-label small mb-1">Método de Pago</label>
-                            <select class="form-select form-select-sm" name="metodo_pago" id="metodo_pago">
-                                <option value="efectivo" selected>💵 Efectivo</option>
-                                <option value="tarjeta">💳 Tarjeta de Crédito/Débito</option>
-                                <option value="transferencia">🏦 Transferencia Bancaria</option>
-                                <option value="cheque">📝 Cheque</option>
-                                <option value="mixto">🔀 Pago Mixto</option>
-                            </select>
+                    <div class="collapse show" id="resumenCollapse">
+                        <div class="card-body p-2">
+                            <div class="mb-2">
+                                <label class="form-label small mb-1">Método de Pago</label>
+                                <select class="form-select form-select-sm" name="metodo_pago" id="metodo_pago">
+                                    <option value="efectivo" selected>💵 Efectivo</option>
+                                    <option value="tarjeta">💳 Tarjeta de Crédito/Débito</option>
+                                    <option value="transferencia">🏦 Transferencia Bancaria</option>
+                                    <option value="cheque">📝 Cheque</option>
+                                    <option value="mixto">🔀 Pago Mixto</option>
+                                </select>
+                            </div>
+                            
+                            <div class="mb-2">
+                                <label class="form-label small mb-1">Referencia</label>
+                                <input type="text" class="form-control form-control-sm" name="referencia_pago" id="referencia_pago" 
+                                       placeholder="No. transacción...">
+                            </div>
+                            
+                            <div class="mb-2">
+                                <label class="form-label small mb-1">Fecha Vencimiento</label>
+                                <input type="date" class="form-control form-control-sm" name="fecha_vencimiento">
+                            </div>
+                            
+                            <div class="mb-2">
+                                <label class="form-label small mb-1">Descuento (RD$)</label>
+                                <input type="number" class="form-control form-control-sm" id="descuento_factura" name="descuento_factura" 
+                                       value="{% if factura_origen %}{{ factura_origen.descuento|floatformat:2 }}{% else %}0{% endif %}" 
+                                       step="0.01" min="0" onchange="calcularTotales()">
+                            </div>
+                            
+                            <div class="mb-2">
+                                <label class="form-label small mb-1">Observaciones</label>
+                                <textarea class="form-control form-control-sm" name="observaciones" rows="2"></textarea>
+                            </div>
                         </div>
-                        
-                        <div class="mb-2">
-                            <label class="form-label small mb-1">Referencia</label>
-                            <input type="text" class="form-control form-control-sm" name="referencia_pago" id="referencia_pago" 
-                                   placeholder="No. transacción...">
-                        </div>
-                        
-                        <div class="mb-2">
-                            <label class="form-label small mb-1">Fecha Vencimiento</label>
-                            <input type="date" class="form-control form-control-sm" name="fecha_vencimiento">
-                        </div>
-                        
-                        <div class="mb-2">
-                            <label class="form-label small mb-1">Descuento (RD$)</label>
-                            <input type="number" class="form-control form-control-sm" id="descuento_factura" name="descuento_factura" 
-                                   value="{% if factura_origen %}{{ factura_origen.descuento|floatformat:2 }}{% else %}0{% endif %}" 
-                                   step="0.01" min="0" onchange="calcularTotales()">
-                        </div>
-                        
-                        <div class="mb-2">
-                            <label class="form-label small mb-1">Observaciones</label>
-                            <textarea class="form-control form-control-sm" name="observaciones" rows="2"></textarea>
-                        </div>
-                        
-                        <hr class="my-2">
-                        
-                        <!-- Totales -->
+                    </div>
+                    
+                    <!-- Totales - Siempre visible -->
+                    <div class="card-body p-2 border-top">
                         <div class="d-flex justify-content-between mb-1 small">
                             <span>Subtotal:</span>
                             <strong id="subtotalDisplay">RD$0.00</strong>
@@ -819,6 +844,33 @@ function actualizarOpcionesMeses() {
 
 // Actualizar opciones al cambiar el año
 document.addEventListener('DOMContentLoaded', function() {
+    // Animar flechita del collapse de Resumen
+    const resumenCollapse = document.getElementById('resumenCollapse');
+    const resumenChevron = document.getElementById('resumenChevron');
+    
+    if (resumenCollapse && resumenChevron) {
+        resumenCollapse.addEventListener('show.bs.collapse', function () {
+            resumenChevron.style.transform = 'rotate(180deg)';
+        });
+        
+        resumenCollapse.addEventListener('hide.bs.collapse', function () {
+            resumenChevron.style.transform = 'rotate(0deg)';
+        });
+    }
+    
+    // Manejar visibilidad del mensaje "No hay cliente seleccionado"
+    const clienteCard = document.getElementById('clienteCard');
+    const noClienteMsg = document.getElementById('noClienteMsg');
+    
+    if (clienteCard && noClienteMsg) {
+        // Si clienteCard está visible, ocultar mensaje
+        if (!clienteCard.classList.contains('d-none')) {
+            noClienteMsg.classList.add('d-none');
+        } else {
+            noClienteMsg.classList.remove('d-none');
+        }
+    }
+    
     /* ELIMINADO - Ya no usamos meses/años
     const anioInput = document.getElementById('anioInput');
     if (anioInput) {
@@ -1052,7 +1104,219 @@ function agregarConceptoRapido() {
     console.log('=== Concepto agregado exitosamente ===');
 }
 
-// ========== FUNCIONES PARA CÓDIGO DE BARRAS ==========
+// ========== BÚSQUEDA UNIFICADA INTELIGENTE ==========
+
+let busquedaTimeout = null;
+
+// Función principal de búsqueda unificada
+async function busquedaUnificada(forceSearch = false) {
+    const input = document.getElementById('busquedaUnificadaInput');
+    const query = input.value.trim();
+    
+    if (!query && !forceSearch) {
+        document.getElementById('resultadosArticulos').innerHTML = '';
+        return;
+    }
+    
+    if (!query) {
+        mostrarNotificacion('Por favor ingresa un código o nombre de producto', 'warning');
+        input.focus();
+        return;
+    }
+    
+    // Detectar tipo de búsqueda: si es solo números, buscar por código de barras
+    const esSoloNumeros = /^\d+$/.test(query);
+    
+    if (esSoloNumeros) {
+        // Búsqueda por código de barras (directa, sin debounce)
+        await buscarPorCodigoBarrasUnificado(query);
+    } else {
+        // Búsqueda por nombre (con debounce para búsqueda en tiempo real)
+        await buscarPorNombreUnificado(query);
+    }
+}
+
+// Búsqueda por código de barras (cuando es solo números)
+async function buscarPorCodigoBarrasUnificado(codigo) {
+    const input = document.getElementById('busquedaUnificadaInput');
+    
+    console.log('🔍 Búsqueda por código de barras:', codigo);
+    
+    try {
+        const response = await fetch(`{% url 'buscar_articulo_barras' %}?codigo=${encodeURIComponent(codigo)}`);
+        const data = await response.json();
+        
+        if (data.success && data.articulo) {
+            console.log('✓ Artículo encontrado:', data.articulo);
+            
+            // Verificar stock para productos
+            if (data.articulo.tipo === 'producto' && data.articulo.stock_actual <= 0) {
+                if (!confirm(`El artículo "${data.articulo.nombre}" no tiene stock disponible (${data.articulo.stock_actual}). ¿Deseas agregarlo de todas formas?`)) {
+                    input.value = '';
+                    input.focus();
+                    return;
+                }
+            }
+            
+            // Agregar artículo a la factura automáticamente
+            agregarArticuloALista(data.articulo);
+            
+            // Limpiar y enfocar para siguiente escaneo
+            input.value = '';
+            input.focus();
+            
+            // Limpiar resultados
+            document.getElementById('resultadosArticulos').innerHTML = '';
+            
+            // Mostrar notificación de éxito
+            mostrarNotificacion(`✓ ${data.articulo.nombre} agregado (RD$${data.articulo.precio_venta})`, 'success');
+            
+        } else {
+            // No encontrado por código, intentar búsqueda por nombre
+            console.log('⚠ No encontrado por código, buscando por nombre...');
+            await buscarPorNombreUnificado(codigo);
+        }
+        
+    } catch (error) {
+        console.error('❌ Error al buscar artículo:', error);
+        mostrarNotificacion('Error al buscar el artículo. Verifica tu conexión.', 'danger');
+        input.select();
+    }
+}
+
+// Búsqueda por nombre (cuando contiene texto)
+async function buscarPorNombreUnificado(query) {
+    const input = document.getElementById('busquedaUnificadaInput');
+    const container = document.getElementById('resultadosArticulos');
+    
+    console.log('🔍 Búsqueda por nombre/descripción:', query);
+    
+    // Limpiar timeout anterior
+    if (busquedaTimeout) {
+        clearTimeout(busquedaTimeout);
+    }
+    
+    // Debounce 300ms para búsqueda en tiempo real
+    busquedaTimeout = setTimeout(async () => {
+        if (!query) {
+            container.innerHTML = '';
+            return;
+        }
+        
+        // Mostrar indicador de carga
+        container.innerHTML = '<div class="text-center text-muted py-2"><i class="fas fa-spinner fa-spin"></i> Buscando...</div>';
+        
+        try {
+            const url = `{% url 'buscar_articulo_nombre' %}?q=${encodeURIComponent(query)}`;
+            const resp = await fetch(url);
+            const data = await resp.json();
+            
+            container.innerHTML = '';
+            
+            if (data.success && Array.isArray(data.results) && data.results.length > 0) {
+                // Mostrar contador de resultados
+                const contador = document.createElement('div');
+                contador.className = 'alert alert-info py-1 px-2 mb-2 small';
+                contador.innerHTML = `<i class="fas fa-check-circle"></i> ${data.results.length} producto(s) encontrado(s)`;
+                container.appendChild(contador);
+                
+                // Mostrar resultados
+                data.results.forEach(art => {
+                    const el = document.createElement('div');
+                    el.className = 'card p-2 mb-1 border-primary';
+                    el.style.cursor = 'pointer';
+                    el.style.transition = 'all 0.2s';
+                    
+                    // Indicador de stock
+                    let stockBadge = '';
+                    if (art.tipo === 'producto') {
+                        if (art.stock_actual > 10) {
+                            stockBadge = '<span class="badge bg-success ms-2">Stock: ' + art.stock_actual + '</span>';
+                        } else if (art.stock_actual > 0) {
+                            stockBadge = '<span class="badge bg-warning ms-2">Stock: ' + art.stock_actual + '</span>';
+                        } else {
+                            stockBadge = '<span class="badge bg-danger ms-2">Sin stock</span>';
+                        }
+                    }
+                    
+                    el.innerHTML = `
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <strong>${art.nombre}</strong> ${stockBadge}
+                                <br><small class="text-muted">
+                                    <i class="fas fa-barcode"></i> ${art.codigo_barras || 'Sin código'} 
+                                    | <i class="fas fa-tag"></i> ${art.tipo}
+                                </small>
+                            </div>
+                            <div class="text-end">
+                                <strong class="text-primary">RD$${parseFloat(art.precio_venta).toFixed(2)}</strong>
+                            </div>
+                        </div>
+                    `;
+                    
+                    // Efecto hover
+                    el.onmouseenter = () => {
+                        el.style.transform = 'scale(1.02)';
+                        el.style.boxShadow = '0 4px 8px rgba(0,0,0,0.15)';
+                    };
+                    el.onmouseleave = () => {
+                        el.style.transform = 'scale(1)';
+                        el.style.boxShadow = '';
+                    };
+                    
+                    el.onclick = () => {
+                        agregarArticuloALista(art);
+                        container.innerHTML = '';
+                        input.value = '';
+                        input.focus();
+                        mostrarNotificacion(`✓ ${art.nombre} agregado`, 'success');
+                    };
+                    
+                    container.appendChild(el);
+                });
+            } else {
+                container.innerHTML = `
+                    <div class="alert alert-warning py-2 mb-0">
+                        <i class="fas fa-exclamation-triangle"></i> 
+                        No se encontraron productos con: "<strong>${query}</strong>"
+                    </div>
+                `;
+            }
+        } catch (err) {
+            console.error('❌ Error buscarPorNombre:', err);
+            container.innerHTML = '<div class="alert alert-danger py-2 mb-0"><i class="fas fa-times-circle"></i> Error al buscar artículos.</div>';
+        }
+    }, 300);
+}
+
+// Event listener para Enter en el campo de búsqueda
+document.addEventListener('DOMContentLoaded', function() {
+    const input = document.getElementById('busquedaUnificadaInput');
+    if (input) {
+        // Búsqueda al presionar Enter
+        input.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                busquedaUnificada(true);
+            }
+        });
+        
+        // Búsqueda en tiempo real mientras escribe
+        input.addEventListener('input', function() {
+            const query = this.value.trim();
+            if (query.length >= 2) {
+                busquedaUnificada();
+            } else if (query.length === 0) {
+                document.getElementById('resultadosArticulos').innerHTML = '';
+            }
+        });
+        
+        // Enfocar el campo al cargar la página
+        input.focus();
+    }
+});
+
+// ========== FUNCIONES PARA CÓDIGO DE BARRAS (LEGACY - Mantener por compatibilidad) ==========
 
 // Buscar artículo por código de barras
 async function buscarPorCodigoBarras() {

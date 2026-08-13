@@ -13,13 +13,20 @@ https://docs.djangoproject.com/en/5.1/ref/settings/
 
 import os
 from pathlib import Path
+
+# IMPORTANTE: Fix de encoding para Windows - DEBE IR ANTES de cualquier otra cosa
+try:
+    from . import encoding_fix
+except ImportError:
+    pass
+
 from dotenv import load_dotenv
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-# Cargar variables de entorno desde .env
-load_dotenv(os.path.join(BASE_DIR, '.env'))
+# Cargar variables de entorno desde .env con codificación UTF-8 explícita
+load_dotenv(os.path.join(BASE_DIR, '.env'), encoding='utf-8')
 
 
 def get_env_list(name, default=''):
@@ -207,7 +214,10 @@ DATABASES = {
         'PORT': os.getenv('DB_PORT', '5432'),
         'OPTIONS': {
             'client_encoding': 'UTF8',
+            'connect_timeout': 10,
+            'options': '-c client_encoding=UTF8',
         },
+        'CONN_MAX_AGE': 0,  # No reutilizar conexiones para evitar problemas de encoding
     }
 }
 

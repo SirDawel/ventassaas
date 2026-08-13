@@ -248,7 +248,20 @@ class UserRegistrationForm(forms.ModelForm):
         }
 
     def __init__(self, *args, **kwargs):
+        # Extraer usuario_actual antes de llamar a super().__init__
+        usuario_actual = kwargs.pop('usuario_actual', None)
+        
         super().__init__(*args, **kwargs)
+        
+        # Guardar usuario_actual para usarlo en clean()
+        self.usuario_actual = usuario_actual
+        
+        # Si el usuario actual es Secretaria, solo puede crear Clientes
+        if usuario_actual and usuario_actual.rol == 'Secretaria':
+            self.fields['rol'].choices = (("Cliente", "Cliente"),)
+            self.fields['rol'].initial = "Cliente"
+            self.fields['rol'].widget.choices = (("Cliente", "Cliente"),)
+            self.fields['rol'].help_text = "La secretaria solo puede crear usuarios con rol Cliente"
         
         # Hacer campos opcionales según sea necesario
         self.fields['email'].required = False
@@ -264,6 +277,11 @@ class UserRegistrationForm(forms.ModelForm):
 
     def clean(self):
         cleaned = super().clean()
+        
+        # Forzar rol a Cliente si el usuario actual es Secretaria
+        if hasattr(self, 'usuario_actual') and self.usuario_actual and self.usuario_actual.rol == 'Secretaria':
+            cleaned['rol'] = 'Cliente'
+        
         rol = cleaned.get("rol")
 
         # Validaciones según el rol
@@ -443,9 +461,22 @@ class UserUpdateForm(forms.ModelForm):
         }
 
     def __init__(self, *args, **kwargs):
+        # Extraer usuario_actual antes de llamar a super().__init__
+        usuario_actual = kwargs.pop('usuario_actual', None)
+        
         super().__init__(*args, **kwargs)
 
         user = self.instance  # OBJETO DEL USUARIO A EDITAR
+
+        # Guardar usuario_actual para usarlo en clean()
+        self.usuario_actual = usuario_actual
+
+        # Si el usuario actual es Secretaria, solo puede crear/editar Clientes
+        if usuario_actual and usuario_actual.rol == 'Secretaria':
+            self.fields['rol'].choices = (("Cliente", "Cliente"),)
+            self.fields['rol'].initial = "Cliente"
+            self.fields['rol'].widget.choices = (("Cliente", "Cliente"),)
+            self.fields['rol'].help_text = "La secretaria solo puede editar usuarios con rol Cliente"
 
         # Bootstrap para todos los campos
         for name, field in self.fields.items():
@@ -471,6 +502,13 @@ class UserUpdateForm(forms.ModelForm):
             self.fields['tipo_cliente'].initial = user.tipo_cliente
 
     def clean(self):
+        cleaned = super().clean()
+        
+        # Forzar rol a Cliente si el usuario actual es Secretaria
+        if hasattr(self, 'usuario_actual') and self.usuario_actual and self.usuario_actual.rol == 'Secretaria':
+            cleaned['rol'] = 'Cliente'
+        
+        return cleaned
         cleaned = super().clean()
         return cleaned
 

@@ -4,13 +4,13 @@
     <h1 class="text-center">Lista de Personas</h1>
     <p class="text-center">AquÃ­ puedes ver la lista de personas registradas.</p>
 
-    <!-- Selector para cambiar el nÃºmero de elementos por pÃ¡gina -->
+    <!-- Selector para cambiar el número de elementos por página -->
     <form method="GET" class="mb-3">
         <label for="items">Mostrar:</label>
         <select name="items" id="items" class="form-select d-inline-block w-auto" onchange="this.form.submit()">
             <option value="50" {% if page_obj.paginator.per_page == 50 %}selected{% endif %}>50</option>
             <option value="100" {% if page_obj.paginator.per_page == 100 %}selected{% endif %}>100</option>
-        </select> elementos por pÃ¡gina.
+        </select> elementos por página.
     </form>
 
     <table class="table table-striped table-bordered">

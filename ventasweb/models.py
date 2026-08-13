@@ -13,13 +13,13 @@ from .tenant_models import Client, Domain
 
 class CustomUserManager(BaseUserManager):
     """
-    Manager para CustomUser - con django-tenants el filtrado es automÃ¡tico por schema
+    Manager para CustomUser - con django-tenants el filtrado es automático por schema
     """
     
     def create_user(self, email, password=None, **extra_fields):
 
         if not email:
-            raise ValueError("El correo electrÃ³nico es obligatorio")
+            raise ValueError("El correo electrónico es obligatorio")
             
         email = self.normalize_email(email)
         
@@ -62,19 +62,19 @@ import uuid
 import os
 
 def user_profile_picture_path(instance, filename):
-    """Define la ruta donde se guardarÃ¡n las imÃ¡genes de perfil."""
+    """Define la ruta donde se guardarán las imágenes de perfil."""
     return os.path.join("uploads/profile_pictures/", f"user_{instance.id}_{filename}")
 
 class CustomUser(AbstractBaseUser, PermissionsMixin):
-    # Campos bÃ¡sicos de autenticaciÃ³n
-    email = models.EmailField(unique=True, verbose_name="Correo electrÃ³nico")
+    # Campos básicos de autenticación
+    email = models.EmailField(unique=True, verbose_name="Correo electrónico")
     password = models.CharField(max_length=128)
     is_active = models.BooleanField(default=True)
     is_staff = models.BooleanField(default=False)
     is_superuser = models.BooleanField(default=False)
     date_joined = models.DateTimeField(auto_now_add=True)
     
-    # InformaciÃ³n personal
+    # Información personal
     first_name = models.CharField(max_length=30)
     last_name = models.CharField(max_length=30)
     fecha_nacimiento = models.DateField(null=True, blank=True)
@@ -88,7 +88,7 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
     telefono = models.CharField(max_length=15, null=True, blank=True)
     cedula = models.CharField(max_length=11, unique=True, null=True, blank=True)
     codigo_barras = models.CharField(max_length=50, unique=True, null=True, blank=True, 
-                                     help_text='CÃ³digo de barras para ponchar asistencia')
+                                     help_text='Código de barras para ponchar asistencia')
     activation_token = models.CharField(max_length=100, blank=True, null=True)
 
     
@@ -190,7 +190,7 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
     departamento = models.CharField(max_length=100, null=True, blank=True)
     cargo = models.CharField(max_length=100, null=True, blank=True)
     
-    # InformaciÃ³n de contacto de emergencia
+    # Información de contacto de emergencia
     contacto_emergencia_nombre = models.CharField(max_length=100, null=True, blank=True)
     contacto_emergencia_telefono = models.CharField(max_length=15, null=True, blank=True)
     contacto_emergencia_parentesco = models.CharField(max_length=50, null=True, blank=True)
@@ -218,7 +218,7 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
     
     # Multi-Tenant: Empresa a la que pertenece
     
-    # Multi-Tenant Manager con filtrado automÃ¡tico
+    # Multi-Tenant Manager con filtrado automático
     objects = CustomUserManager()
 
     USERNAME_FIELD = "email"
@@ -270,7 +270,7 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
             return None  # o '--' si quieres mostrar directamente en el template
         today = date.today()
         edad = today.year - self.fecha_nacimiento.year
-        # restar 1 si no ha cumplido aÃ±os este aÃ±o
+        # restar 1 si no ha cumplido años este año
         if (today.month, today.day) < (self.fecha_nacimiento.month, self.fecha_nacimiento.day):
             edad -= 1
         return edad
@@ -324,7 +324,7 @@ class Persona(models.Model):  # Renombrado desde "Estudiante"
 
 # ==============================
 
-#   AÃ±o Escolar Modelo
+#   Año Escolar Modelo
 
 # ==============================
 
@@ -343,8 +343,8 @@ class AnhoEscolar(models.Model):
     fecha_actualizacion = models.DateTimeField(auto_now=True)
 
     class Meta:
-        verbose_name = 'AÃ±o Escolar'
-        verbose_name_plural = 'AÃ±os Escolares'
+        verbose_name = 'Año Escolar'
+        verbose_name_plural = 'Años Escolares'
         ordering = ['-fecha_inicio']
 
     def __str__(self):
@@ -352,14 +352,14 @@ class AnhoEscolar(models.Model):
 
     def save(self, *args, **kwargs):
         if self.activo:
-            # Desactivar otros aÃ±os escolares activos
+            # Desactivar otros años escolares activos
             AnhoEscolar.objects.filter(activo=True).exclude(pk=self.pk).update(activo=False)
         super().save(*args, **kwargs)
 
 
 class Mensualidad(models.Model):
     """Registro de cargos mensuales por estudiante (mensualidades).
-    Se crea una entrada por (estudiante, aÃ±o escolar, mes) y puede vincularse a una factura cuando se cobra.
+    Se crea una entrada por (estudiante, año escolar, mes) y puede vincularse a una factura cuando se cobra.
     """
     ESTADO_CHOICES = [
         ('pendiente', 'Pendiente'),
@@ -470,7 +470,7 @@ class Curso(models.Model):
 
 class Materia(models.Model):
     CATEGORIA_CHOICES = [
-        ('periodo', 'Por PerÃ­odos'),
+        ('periodo', 'Por Períodos'),
         ('modular', 'Modular'),
     ]
     
@@ -486,23 +486,23 @@ class Materia(models.Model):
         max_length=20, 
         choices=CATEGORIA_CHOICES, 
         default='periodo',
-        verbose_name='CategorÃ­a de EvaluaciÃ³n',
-        help_text='Por PerÃ­odos: calificaciones por perÃ­odo (P1, P2, P3). Modular: evaluaciÃ³n continua.'
+        verbose_name='Categoría de Evaluación',
+        help_text='Por Períodos: calificaciones por período (P1, P2, P3). Modular: evaluación continua.'
     )
     curso = models.ForeignKey(Curso, on_delete=models.CASCADE, related_name='materias')
     profesor = models.ForeignKey(CustomUser, on_delete=models.SET_NULL, null=True, related_name='materias_impartidas')
     estudiantes = models.ManyToManyField(CustomUser, through='Matricula', related_name='materias_inscritas')
     
-    # DÃ­as en que se imparte la materia
+    # Días en que se imparte la materia
     lunes = models.BooleanField(default=False, verbose_name='Lunes')
     martes = models.BooleanField(default=False, verbose_name='Martes')
-    miercoles = models.BooleanField(default=False, verbose_name='MiÃ©rcoles')
+    miercoles = models.BooleanField(default=False, verbose_name='Miércoles')
     jueves = models.BooleanField(default=False, verbose_name='Jueves')
     viernes = models.BooleanField(default=False, verbose_name='Viernes')
     
-    # ConfiguraciÃ³n de Resultados de Aprendizaje (RA) para materias modulares
+    # Configuración de Resultados de Aprendizaje (RA) para materias modulares
     # Ejemplo: {"cantidad": 7, "valores": [15, 15, 15, 15, 10, 15, 15]} (suma debe ser 100)
-    ra_configuracion = models.JSONField(null=True, blank=True, help_text="ConfiguraciÃ³n de RA: cantidad y valores en % (solo modular)")
+    ra_configuracion = models.JSONField(null=True, blank=True, help_text="Configuración de RA: cantidad y valores en % (solo modular)")
 
     fecha_creacion = models.DateTimeField(auto_now_add=True)
     fecha_actualizacion = models.DateTimeField(auto_now=True)
@@ -514,17 +514,17 @@ class Materia(models.Model):
         return f"{self.nombre} ({self.codigo})"
     
     def dias_semana(self):
-        """Retorna una lista de dÃ­as en que se imparte la materia"""
+        """Retorna una lista de días en que se imparte la materia"""
         dias = []
         if self.lunes: dias.append('Lunes')
         if self.martes: dias.append('Martes')
-        if self.miercoles: dias.append('MiÃ©rcoles')
+        if self.miercoles: dias.append('Miércoles')
         if self.jueves: dias.append('Jueves')
         if self.viernes: dias.append('Viernes')
         return dias
     
     def se_imparte_hoy(self):
-        """Verifica si la materia se imparte hoy segÃºn el dÃ­a de la semana"""
+        """Verifica si la materia se imparte hoy según el día de la semana"""
         from django.utils import timezone
         dia_semana = timezone.now().weekday()  # 0=Lunes, 1=Martes, ..., 4=Viernes
         dias_map = {
@@ -618,10 +618,10 @@ class Matricula(models.Model):
 
 
     # ------------------------
-    # FunciÃ³n interna con redondeo correcto
+    # Función interna con redondeo correcto
     # ------------------------
     def _to_float_safe(self, valor):
-        """Convierte un valor a float de forma segura, retorna None si no es vÃ¡lido"""
+        """Convierte un valor a float de forma segura, retorna None si no es válido"""
         if valor is None:
             return None
         try:
@@ -630,7 +630,7 @@ class Matricula(models.Model):
             return None
     
     def _calc_promedio(self, notas):
-        """Calcula el promedio de una lista de notas usando redondeo matemÃ¡tico estÃ¡ndar"""
+        """Calcula el promedio de una lista de notas usando redondeo matemático estándar"""
         from .utils_notas import redondear_promedio
         return redondear_promedio(notas)
 
@@ -639,7 +639,7 @@ class Matricula(models.Model):
     # ------------------------
     @property
     def prom_comunicativa(self):
-        # Usar recuperaciÃ³n por perÃ­odo si la nota es menor a 70
+        # Usar recuperación por período si la nota es menor a 70
         p1_val = self._to_float_safe(self.com_p1)
         rp1_val = self._to_float_safe(self.com_rp1)
         p1 = rp1_val if (p1_val is not None and p1_val < 70 and rp1_val is not None) else p1_val
@@ -660,7 +660,7 @@ class Matricula(models.Model):
 
     @property
     def prom_logico(self):
-        # Usar recuperaciÃ³n por perÃ­odo si la nota es menor a 70
+        # Usar recuperación por período si la nota es menor a 70
         p1_val = self._to_float_safe(self.log_p1)
         rp1_val = self._to_float_safe(self.log_rp1)
         p1 = rp1_val if (p1_val is not None and p1_val < 70 and rp1_val is not None) else p1_val
@@ -681,7 +681,7 @@ class Matricula(models.Model):
 
     @property
     def prom_cientifica(self):
-        # Usar recuperaciÃ³n por perÃ­odo si la nota es menor a 70
+        # Usar recuperación por período si la nota es menor a 70
         p1_val = self._to_float_safe(self.cie_p1)
         rp1_val = self._to_float_safe(self.cie_rp1)
         p1 = rp1_val if (p1_val is not None and p1_val < 70 and rp1_val is not None) else p1_val
@@ -702,7 +702,7 @@ class Matricula(models.Model):
 
     @property
     def prom_etica(self):
-        # Usar recuperaciÃ³n por perÃ­odo si la nota es menor a 70
+        # Usar recuperación por período si la nota es menor a 70
         p1_val = self._to_float_safe(self.eti_p1)
         rp1_val = self._to_float_safe(self.eti_rp1)
         p1 = rp1_val if (p1_val is not None and p1_val < 70 and rp1_val is not None) else p1_val
@@ -834,7 +834,7 @@ class Matricula(models.Model):
     @property
     def tipo_calificacion(self):
         """
-        Retorna el tipo de calificaciÃ³n que se estÃ¡ usando para la nota final.
+        Retorna el tipo de calificaciÃ³n que se está usando para la nota final.
         """
         if self.ex_esp is not None:
             return "Examen Especial"
@@ -873,8 +873,8 @@ class Matricula(models.Model):
                     raise ValidationError(f"El {campo.upper()} debe estar entre 0 y 10. Valor actual: {valor}")
 
     def save(self, *args, **kwargs):
-        """Sobrescribir save para ejecutar validaciÃ³n solo cuando sea necesario"""
-        # Permitir skip de validaciÃ³n para cÃ¡lculos automÃ¡ticos
+        """Sobrescribir save para ejecutar validación solo cuando sea necesario"""
+        # Permitir skip de validación para cÃ¡lculos automáticos
         skip_validation = kwargs.pop('skip_validation', False)
         
         if not skip_validation:
@@ -891,7 +891,7 @@ class Matricula(models.Model):
         ]
 
 
-# Signal para actualizar grado y secciÃ³n del estudiante cuando se crea/actualiza una matrÃ­cula
+# Signal para actualizar grado y sección del estudiante cuando se crea/actualiza una matrÃ­cula
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 
@@ -1025,7 +1025,7 @@ class AsistenciaPersonal(models.Model):
 # ===========================
 
 class ConceptoPago(models.Model):
-    """Conceptos de pago: mensualidades, servicios, artÃ­culos, etc."""
+    """Conceptos de pago: mensualidades, servicios, artículos, etc."""
     TIPO_CHOICES = [
         ('mensualidad', 'Mensualidad'),
         ('inscripcion', 'InscripciÃ³n'),
@@ -1043,7 +1043,7 @@ class ConceptoPago(models.Model):
     descripcion = models.TextField(blank=True, null=True)
     activo = models.BooleanField(default=True)
     es_estandar = models.BooleanField(default=False, verbose_name="Tarifa EstÃ¡ndar", 
-                                       help_text="Se asignarÃ¡ automÃ¡ticamente a nuevos estudiantes")
+                                       help_text="Se asignarÃ¡ automáticamente a nuevos estudiantes")
     fecha_creacion = models.DateTimeField(auto_now_add=True)
     
     class Meta:
@@ -1085,7 +1085,7 @@ class Pago(models.Model):
     concepto = models.ForeignKey(ConceptoPago, on_delete=models.PROTECT, related_name='pagos')
     anho_escolar = models.ForeignKey(AnhoEscolar, on_delete=models.CASCADE, related_name='pagos')
     
-    # InformaciÃ³n del pago
+    # Información del pago
     monto_total = models.DecimalField(max_digits=10, decimal_places=2)
     monto_pagado = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     estado = models.CharField(max_length=20, choices=ESTADO_CHOICES, default='pendiente')
@@ -1098,15 +1098,15 @@ class Pago(models.Model):
     
     # Para mensualidades
     from django.core.validators import MinValueValidator, MaxValueValidator
-    mes = models.IntegerField(blank=True, null=True, help_text="Mes del aÃ±o (1-12)", validators=[MinValueValidator(1), MaxValueValidator(12)])
+    mes = models.IntegerField(blank=True, null=True, help_text="Mes del año (1-12)", validators=[MinValueValidator(1), MaxValueValidator(12)])
     anio = models.IntegerField(blank=True, null=True)
     
-    # InformaciÃ³n adicional
+    # Información adicional
     observaciones = models.TextField(blank=True, null=True)
     recibo_numero = models.CharField(max_length=50, unique=True, blank=True, null=True)
-    referencia = models.CharField(max_length=100, blank=True, null=True, help_text="NÃºmero de referencia/transacciÃ³n")
+    referencia = models.CharField(max_length=100, blank=True, null=True, help_text="Número de referencia/transacción")
     
-    # AuditorÃ­a
+    # Auditoría
     registrado_por = models.ForeignKey(
         CustomUser, 
         on_delete=models.SET_NULL, 
@@ -1138,17 +1138,17 @@ class Pago(models.Model):
         return max(0, self.monto_total - self.monto_pagado)
     
     def esta_pagado(self):
-        """Verifica si el pago estÃ¡ completado"""
+        """Verifica si el pago está completado"""
         return self.monto_pagado >= self.monto_total
     
     def save(self, *args, **kwargs):
-        # Actualizar estado segÃºn montos
+        # Actualizar estado según montos
         if self.monto_pagado >= self.monto_total:
             self.estado = 'pagado'
         elif self.monto_pagado > 0:
             self.estado = 'parcial'
         
-        # Generar nÃºmero de recibo si no existe
+        # Generar número de recibo si no existe
         if not self.recibo_numero and self.estado == 'pagado':
             from datetime import datetime
             timestamp = datetime.now().strftime('%Y%m%d%H%M%S')
@@ -1195,13 +1195,13 @@ class TarifaEstudiante(models.Model):
         help_text='Ej: Transporte zona cercana, Transporte zona lejana'
     )
     
-    # DÃ­a de vencimiento para cÃ¡lculo de mora (si null, usa el del grupo familiar)
+    # Día de vencimiento para cÃ¡lculo de mora (si null, usa el del grupo familiar)
     dia_vencimiento = models.IntegerField(
         default=None,
         null=True,
         blank=True,
         validators=[MinValueValidator(1), MaxValueValidator(31)],
-        help_text='DÃ­a del mes para vencimiento de pago (1-31). Si no se especifica, usa el del grupo familiar.'
+        help_text='Día del mes para vencimiento de pago (1-31). Si no se especifica, usa el del grupo familiar.'
     )
 
     class Meta:
@@ -1215,7 +1215,7 @@ class TarifaEstudiante(models.Model):
         return f"{self.estudiante.get_full_name()} - {self.concepto.nombre} - RD${self.monto}{obs}"
     
     def get_dia_vencimiento(self):
-        """Obtiene el dÃ­a de vencimiento, usa el del estudiante si estÃ¡ definido, sino el del grupo familiar."""
+        """Obtiene el día de vencimiento, usa el del estudiante si está definido, sino el del grupo familiar."""
         if self.dia_vencimiento:
             return self.dia_vencimiento
         if self.estudiante.grupo_familiar:
@@ -1286,15 +1286,15 @@ class Factura(models.Model):
     total = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     monto_pagado = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     
-    # Estado y mÃ©todo de pago
+    # Estado y método de pago
     estado = models.CharField(max_length=20, choices=ESTADO_CHOICES, default='pendiente', db_index=True)
     metodo_pago = models.CharField(max_length=20, choices=METODO_PAGO_CHOICES, blank=True, null=True)
     
-    # InformaciÃ³n adicional
+    # Información adicional
     observaciones = models.TextField(blank=True, null=True)
     notas_internas = models.TextField(blank=True, null=True)
     
-    # AuditorÃ­a
+    # Auditoría
     creado_por = models.ForeignKey(
         CustomUser, 
         on_delete=models.SET_NULL, 
@@ -1335,11 +1335,11 @@ class Factura(models.Model):
         return max(0, self.total - self.monto_pagado)
     
     def esta_pagada(self):
-        """Verifica si la factura estÃ¡ completamente pagada"""
+        """Verifica si la factura está completamente pagada"""
         return self.monto_pagado >= self.total
     
     def esta_vencida(self):
-        """Verifica si la factura estÃ¡ vencida"""
+        """Verifica si la factura está vencida"""
         if not self.fecha_vencimiento:
             return False
         from datetime import date
@@ -1347,7 +1347,7 @@ class Factura(models.Model):
     
     def calcular_mora(self):
         """
-        Calcula el monto de mora si la factura estÃ¡ vencida.
+        Calcula el monto de mora si la factura está vencida.
         Retorna un diccionario con el monto y el porcentaje aplicado.
         """
         if not self.esta_vencida():
@@ -1375,7 +1375,7 @@ class Factura(models.Model):
         # NO guardar aquÃ­ para evitar recursiÃ³n, el guardado debe hacerse desde donde se llama
         
     def actualizar_estado(self):
-        """Actualiza el estado de la factura segÃºn el monto pagado"""
+        """Actualiza el estado de la factura según el monto pagado"""
         if self.estado == 'anulada':
             return
         
@@ -1439,17 +1439,17 @@ class DetalleFactura(models.Model):
                                   related_name='detalles_factura',
                                   help_text='ArtÃ­culo del inventario (si aplica)')
     
-    # InformaciÃ³n del item
-    descripcion = models.CharField(max_length=255, help_text="DescripciÃ³n del concepto")
+    # Información del item
+    descripcion = models.CharField(max_length=255, help_text="Descripción del concepto")
     cantidad = models.DecimalField(max_digits=10, decimal_places=2, default=1)
     precio_unitario = models.DecimalField(max_digits=10, decimal_places=2)
     descuento = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     
     # Para mensualidades
-    mes = models.IntegerField(blank=True, null=True, help_text="Mes del aÃ±o (1-12)")
+    mes = models.IntegerField(blank=True, null=True, help_text="Mes del año (1-12)")
     anio = models.IntegerField(blank=True, null=True)
     
-    # InformaciÃ³n adicional
+    # Información adicional
     observaciones = models.TextField(blank=True, null=True)
     
     class Meta:
@@ -1470,7 +1470,7 @@ class DetalleFactura(models.Model):
         return self.get_subtotal() - self.descuento
     
     def save(self, *args, **kwargs):
-        # Si estÃ¡ vinculada a una Mensualidad, sincronizar mes/anio y validar
+        # Si está vinculada a una Mensualidad, sincronizar mes/anio y validar
         if self.mensualidad:
             try:
                 m = self.mensualidad
@@ -1478,7 +1478,7 @@ class DetalleFactura(models.Model):
                 if self.mes is not None and self.anio is not None:
                     if int(self.mes) != int(m.mes) or int(self.anio) != int(m.anio):
                         from django.core.exceptions import ValidationError
-                        raise ValidationError('El mes/aÃ±o del detalle no coincide con la Mensualidad vinculada.')
+                        raise ValidationError('El mes/año del detalle no coincide con la Mensualidad vinculada.')
                 # Copiar valores desde Mensualidad
                 self.mes = m.mes
                 self.anio = m.anio
@@ -1486,7 +1486,7 @@ class DetalleFactura(models.Model):
                 # No interrumpir el guardado por errores en la sincronizaciÃ³n; permitir que se loguee posteriormente
                 pass
 
-        # Usar descripciÃ³n del concepto o artÃ­culo si no se proporciona
+        # Usar descripción del concepto o artÃ­culo si no se proporciona
         if not self.descripcion:
             if self.concepto:
                 self.descripcion = self.concepto.nombre
@@ -1519,7 +1519,7 @@ class PagoFactura(models.Model):
     
     factura = models.ForeignKey(Factura, on_delete=models.CASCADE, related_name='pagos')
     
-    # InformaciÃ³n del pago
+    # Información del pago
     monto = models.DecimalField(max_digits=10, decimal_places=2)
     metodo_pago = models.CharField(max_length=20, choices=METODO_PAGO_CHOICES)
     fecha_pago = models.DateTimeField(auto_now_add=True)
@@ -1529,13 +1529,13 @@ class PagoFactura(models.Model):
         max_length=100, 
         blank=True, 
         null=True, 
-        help_text="NÃºmero de referencia/transacciÃ³n/cheque"
+        help_text="Número de referencia/transacción/cheque"
     )
     banco = models.CharField(max_length=100, blank=True, null=True)
     numero_recibo = models.CharField(max_length=50, unique=True, blank=True, null=True)
     observaciones = models.TextField(blank=True, null=True)
     
-    # AuditorÃ­a
+    # Auditoría
     registrado_por = models.ForeignKey(
         CustomUser, 
         on_delete=models.SET_NULL, 
@@ -1556,7 +1556,7 @@ class PagoFactura(models.Model):
         return f"Pago {self.numero_recibo or self.id} - {self.factura.numero_factura} - RD${self.monto}"
     
     def save(self, *args, **kwargs):
-        # Generar nÃºmero de recibo si no existe
+        # Generar número de recibo si no existe
         if not self.numero_recibo:
             from datetime import datetime
             timestamp = datetime.now().strftime('%Y%m%d%H%M%S')
@@ -1594,7 +1594,7 @@ class PagoFactura(models.Model):
 
 
 class CodigoAnulacion(models.Model):
-    """CÃ³digo de seguridad mensual para anular facturas"""
+    """Código de seguridad mensual para anular facturas"""
     # Multi-Tenant: Escuela
     
     mes = models.IntegerField()  # 1-12
@@ -1603,8 +1603,8 @@ class CodigoAnulacion(models.Model):
     creado = models.DateTimeField(auto_now_add=True)
     
     class Meta:
-        verbose_name = "CÃ³digo de AnulaciÃ³n"
-        verbose_name_plural = "CÃ³digos de AnulaciÃ³n"
+        verbose_name = "Código de AnulaciÃ³n"
+        verbose_name_plural = "Códigos de AnulaciÃ³n"
         unique_together = ['mes', 'anio']
         ordering = ['-anio', '-mes']
     
@@ -1612,20 +1612,20 @@ class CodigoAnulacion(models.Model):
         from datetime import date
         try:
             mes_nombre = date(self.anio, self.mes, 1).strftime('%B %Y')
-            return f"CÃ³digo {mes_nombre}: {self.codigo}"
+            return f"Código {mes_nombre}: {self.codigo}"
         except:
-            return f"CÃ³digo {self.mes}/{self.anio}: {self.codigo}"
+            return f"Código {self.mes}/{self.anio}: {self.codigo}"
     
     @staticmethod
     def generar_codigo():
-        """Genera un cÃ³digo aleatorio de 8 caracteres (letras y nÃºmeros)"""
+        """Genera un código aleatorio de 8 caracteres (letras y números)"""
         import random
         import string
         return ''.join(random.choices(string.ascii_uppercase + string.digits, k=8))
     
     @staticmethod
     def obtener_codigo_actual():
-        """Obtiene o crea el cÃ³digo del mes actual"""
+        """Obtiene o crea el código del mes actual"""
         from datetime import date
         hoy = date.today()
         codigo, created = CodigoAnulacion.objects.get_or_create(
@@ -1637,13 +1637,13 @@ class CodigoAnulacion(models.Model):
     
     @staticmethod
     def validar_codigo(codigo_ingresado):
-        """Valida si el cÃ³digo ingresado es correcto para el mes actual"""
+        """Valida si el código ingresado es correcto para el mes actual"""
         codigo_actual = CodigoAnulacion.obtener_codigo_actual()
         return codigo_ingresado.upper().strip() == codigo_actual.codigo.upper().strip()
 
 
 class CategoriaArticulo(models.Model):
-    """CategorÃ­as para organizar artÃ­culos del inventario"""
+    """Categorías para organizar artículos del inventario"""
     # Multi-Tenant: Escuela
     
     nombre = models.CharField(max_length=100, unique=True)
@@ -1653,8 +1653,8 @@ class CategoriaArticulo(models.Model):
     actualizado = models.DateTimeField(auto_now=True)
     
     class Meta:
-        verbose_name = "CategorÃ­a de ArtÃ­culo"
-        verbose_name_plural = "CategorÃ­as de ArtÃ­culos"
+        verbose_name = "Categoría de ArtÃ­culo"
+        verbose_name_plural = "Categorías de Artículos"
         ordering = ['nombre']
     
     def __str__(self):
@@ -1662,7 +1662,7 @@ class CategoriaArticulo(models.Model):
 
 
 class Articulo(models.Model):
-    """ArtÃ­culos del inventario para usar en facturas"""
+    """Artículos del inventario para usar en facturas"""
     TIPO_CHOICES = [
         ('producto', 'Producto'),
         ('servicio', 'Servicio'),
@@ -1671,7 +1671,7 @@ class Articulo(models.Model):
     # Multi-Tenant: Escuela
     
     codigo_barras = models.CharField(max_length=100, unique=True, blank=True, default='',
-                                      help_text='CÃ³digo de barras para lector Ã³ptico')
+                                      help_text='Código de barras para lector Ã³ptico')
     nombre = models.CharField(max_length=200)
     descripcion = models.TextField(blank=True, null=True)
     categoria = models.ForeignKey(CategoriaArticulo, on_delete=models.SET_NULL, 
@@ -1703,7 +1703,7 @@ class Articulo(models.Model):
     
     class Meta:
         verbose_name = "ArtÃ­culo"
-        verbose_name_plural = "ArtÃ­culos"
+        verbose_name_plural = "Artículos"
         ordering = ['nombre']
         indexes = [
             models.Index(fields=['codigo_barras']),
@@ -1715,7 +1715,7 @@ class Articulo(models.Model):
         return f"{self.codigo_barras} - {self.nombre}"
     
     def save(self, *args, **kwargs):
-        # Generar cÃ³digo de barras automÃ¡tico si no existe
+        # Generar código de barras automático si no existe
         if not self.codigo_barras:
             from datetime import datetime
             import random
@@ -1726,7 +1726,7 @@ class Articulo(models.Model):
     
     @property
     def stock_bajo(self):
-        """Indica si el stock estÃ¡ por debajo del mÃ­nimo"""
+        """Indica si el stock está por debajo del mÃ­nimo"""
         return self.stock_actual <= self.stock_minimo
     
     @property
@@ -2426,8 +2426,8 @@ class PlanCuentas(models.Model):
         max_length=20,
         unique=True,
         db_index=True,
-        verbose_name="CÃ³digo de Cuenta",
-        help_text="CÃ³digo Ãºnico de la cuenta (ej: 1.1.01.001)"
+        verbose_name="Código de Cuenta",
+        help_text="Código Ãºnico de la cuenta (ej: 1.1.01.001)"
     )
     nombre = models.CharField(
         max_length=200,
@@ -2437,8 +2437,8 @@ class PlanCuentas(models.Model):
     descripcion = models.TextField(
         blank=True,
         null=True,
-        verbose_name="DescripciÃ³n",
-        help_text="DescripciÃ³n detallada del uso de esta cuenta"
+        verbose_name="Descripción",
+        help_text="Descripción detallada del uso de esta cuenta"
     )
     
     tipo_cuenta = models.CharField(
@@ -2480,7 +2480,7 @@ class PlanCuentas(models.Model):
     activo = models.BooleanField(
         default=True,
         verbose_name="Activo",
-        help_text="Indica si la cuenta estÃ¡ activa para uso"
+        help_text="Indica si la cuenta está activa para uso"
     )
     
     # Campos de control
@@ -2489,7 +2489,7 @@ class PlanCuentas(models.Model):
         decimal_places=2,
         default=0.00,
         verbose_name="Saldo Inicial",
-        help_text="Saldo inicial de la cuenta al inicio del perÃ­odo contable"
+        help_text="Saldo inicial de la cuenta al inicio del período contable"
     )
     
     saldo_actual = models.DecimalField(
@@ -2500,7 +2500,7 @@ class PlanCuentas(models.Model):
         help_text="Saldo actual de la cuenta"
     )
     
-    # Campos de auditorÃ­a
+    # Campos de auditoría
     fecha_creacion = models.DateTimeField(auto_now_add=True)
     fecha_modificacion = models.DateTimeField(auto_now=True)
     creado_por = models.ForeignKey(
@@ -2547,11 +2547,11 @@ class PlanCuentas(models.Model):
         return f"{self.codigo} - {self.nombre}"
     
     def save(self, *args, **kwargs):
-        """Override save para calcular el nivel automÃ¡ticamente basado en el cÃ³digo"""
-        # Calcular nivel basado en los puntos en el cÃ³digo
+        """Override save para calcular el nivel automáticamente basado en el código"""
+        # Calcular nivel basado en los puntos en el código
         self.nivel = self.codigo.count('.') + 1
         
-        # Establecer naturaleza por defecto segÃºn tipo de cuenta
+        # Establecer naturaleza por defecto según tipo de cuenta
         if not self.naturaleza:
             if self.tipo_cuenta in ['ACTIVO', 'GASTO', 'COSTO']:
                 self.naturaleza = 'DEUDORA'
@@ -2561,7 +2561,7 @@ class PlanCuentas(models.Model):
         super().save(*args, **kwargs)
     
     def get_codigo_completo(self):
-        """Retorna el cÃ³digo completo con padding para ordenamiento"""
+        """Retorna el código completo con padding para ordenamiento"""
         return self.codigo.ljust(20, '0')
     
     def get_saldo_formateado(self):
@@ -2591,7 +2591,7 @@ class PlanCuentas(models.Model):
         from django.db.models import Sum
         from decimal import Decimal
         
-        # Obtener suma de dÃ©bitos y crÃ©ditos
+        # Obtener suma de débitos y créditos
         total_debito = self.movimientos_debito.aggregate(
             total=Sum('monto')
         )['total'] or Decimal('0.00')
@@ -2600,7 +2600,7 @@ class PlanCuentas(models.Model):
             total=Sum('monto')
         )['total'] or Decimal('0.00')
         
-        # Calcular saldo segÃºn naturaleza
+        # Calcular saldo según naturaleza
         if self.naturaleza == 'DEUDORA':
             saldo = self.saldo_inicial + total_debito - total_credito
         else:
@@ -2613,7 +2613,7 @@ class AsientoContable(models.Model):
     """
     Asiento Contable - Registro de transacciones contables
     Representa la cabecera de un asiento contable que agrupa varios movimientos
-    bajo el principio de partida doble (dÃ©bitos = crÃ©ditos)
+    bajo el principio de partida doble (débitos = créditos)
     """
     
     TIPO_ASIENTO_CHOICES = [
@@ -2638,8 +2638,8 @@ class AsientoContable(models.Model):
         max_length=20,
         unique=True,
         db_index=True,
-        verbose_name="NÃºmero de Asiento",
-        help_text="NÃºmero Ãºnico del asiento (ej: ASI-2026-001)"
+        verbose_name="Número de Asiento",
+        help_text="Número Ãºnico del asiento (ej: ASI-2026-001)"
     )
     
     fecha_asiento = models.DateField(
@@ -2657,8 +2657,8 @@ class AsientoContable(models.Model):
     )
     
     concepto = models.TextField(
-        verbose_name="Concepto/DescripciÃ³n",
-        help_text="DescripciÃ³n general del asiento contable"
+        verbose_name="Concepto/Descripción",
+        help_text="Descripción general del asiento contable"
     )
     
     referencia = models.CharField(
@@ -2666,7 +2666,7 @@ class AsientoContable(models.Model):
         blank=True,
         null=True,
         verbose_name="Referencia",
-        help_text="Referencia externa (nÃºmero de factura, recibo, etc.)"
+        help_text="Referencia externa (número de factura, recibo, etc.)"
     )
     
     estado = models.CharField(
@@ -2683,7 +2683,7 @@ class AsientoContable(models.Model):
         decimal_places=2,
         default=0.00,
         verbose_name="Total DÃ©bito",
-        help_text="Suma total de los dÃ©bitos"
+        help_text="Suma total de los débitos"
     )
     
     total_credito = models.DecimalField(
@@ -2691,10 +2691,10 @@ class AsientoContable(models.Model):
         decimal_places=2,
         default=0.00,
         verbose_name="Total CrÃ©dito",
-        help_text="Suma total de los crÃ©ditos"
+        help_text="Suma total de los créditos"
     )
     
-    # Campos de auditorÃ­a
+    # Campos de auditoría
     fecha_creacion = models.DateTimeField(auto_now_add=True)
     fecha_modificacion = models.DateTimeField(auto_now=True)
     fecha_contabilizacion = models.DateTimeField(
@@ -2768,7 +2768,7 @@ class AsientoContable(models.Model):
         return f"{self.numero_asiento} - {self.concepto[:50]}"
     
     def esta_cuadrado(self):
-        """Verifica si el asiento estÃ¡ cuadrado (dÃ©bito = crÃ©dito)"""
+        """Verifica si el asiento está cuadrado (débito = crédito)"""
         return self.total_debito == self.total_credito
     
     def puede_contabilizarse(self):
@@ -2789,7 +2789,7 @@ class AsientoContable(models.Model):
         return self.estado == 'BORRADOR'
     
     def calcular_totales(self):
-        """Calcula los totales de dÃ©bito y crÃ©dito del asiento"""
+        """Calcula los totales de débito y crédito del asiento"""
         from django.db.models import Sum
         from decimal import Decimal
         
@@ -2850,7 +2850,7 @@ class AsientoContable(models.Model):
         self.save()
     
     def get_diferencia(self):
-        """Retorna la diferencia entre dÃ©bito y crÃ©dito"""
+        """Retorna la diferencia entre débito y crédito"""
         return self.total_debito - self.total_credito
     
     def get_estado_badge_class(self):
@@ -2866,7 +2866,7 @@ class AsientoContable(models.Model):
 class DetalleAsiento(models.Model):
     """
     Detalle del Asiento Contable - Movimiento individual de una cuenta
-    Cada lÃ­nea representa un dÃ©bito o crÃ©dito en una cuenta especÃ­fica
+    Cada lÃ­nea representa un débito o crédito en una cuenta especÃ­fica
     """
     
     # Multi-Tenant: Escuela
@@ -2883,7 +2883,7 @@ class DetalleAsiento(models.Model):
     linea = models.IntegerField(
         default=1,
         verbose_name="LÃ­nea",
-        help_text="NÃºmero de lÃ­nea dentro del asiento"
+        help_text="Número de lÃ­nea dentro del asiento"
     )
     
     cuenta = models.ForeignKey(
@@ -2896,8 +2896,8 @@ class DetalleAsiento(models.Model):
     
     descripcion = models.CharField(
         max_length=255,
-        verbose_name="DescripciÃ³n",
-        help_text="DescripciÃ³n especÃ­fica de este movimiento"
+        verbose_name="Descripción",
+        help_text="Descripción especÃ­fica de este movimiento"
     )
     
     debito = models.DecimalField(
@@ -2905,7 +2905,7 @@ class DetalleAsiento(models.Model):
         decimal_places=2,
         default=0.00,
         verbose_name="DÃ©bito",
-        help_text="Monto del dÃ©bito"
+        help_text="Monto del débito"
     )
     
     credito = models.DecimalField(
@@ -2913,7 +2913,7 @@ class DetalleAsiento(models.Model):
         decimal_places=2,
         default=0.00,
         verbose_name="CrÃ©dito",
-        help_text="Monto del crÃ©dito"
+        help_text="Monto del crédito"
     )
     
     # Campos opcionales para trazabilidad
@@ -2960,13 +2960,13 @@ class DetalleAsiento(models.Model):
         """Validaciones del modelo"""
         from django.core.exceptions import ValidationError
         
-        # No puede tener dÃ©bito y crÃ©dito al mismo tiempo
+        # No puede tener débito y crédito al mismo tiempo
         if self.debito > 0 and self.credito > 0:
-            raise ValidationError('Una lÃ­nea no puede tener dÃ©bito y crÃ©dito simultÃ¡neamente')
+            raise ValidationError('Una lÃ­nea no puede tener débito y crédito simultÃ¡neamente')
         
-        # Debe tener dÃ©bito o crÃ©dito (no ambos en cero)
+        # Debe tener débito o crédito (no ambos en cero)
         if self.debito == 0 and self.credito == 0:
-            raise ValidationError('Debe especificar un monto en dÃ©bito o crÃ©dito')
+            raise ValidationError('Debe especificar un monto en débito o crédito')
         
         # Verificar que la cuenta sea de detalle
         if not self.cuenta.es_detalle:
@@ -2974,7 +2974,7 @@ class DetalleAsiento(models.Model):
         
         # Verificar que la cuenta estÃ© activa
         if not self.cuenta.activo:
-            raise ValidationError('La cuenta no estÃ¡ activa')
+            raise ValidationError('La cuenta no está activa')
         
         # Verificar requerimientos especiales de la cuenta
         if self.cuenta.requiere_centro_costo and not self.centro_costo:
@@ -2993,14 +2993,14 @@ class DetalleAsiento(models.Model):
         self.asiento.save()
     
     def get_monto_formateado(self):
-        """Retorna el monto formateado segÃºn sea dÃ©bito o crÃ©dito"""
+        """Retorna el monto formateado según sea débito o crédito"""
         if self.debito > 0:
             return f"${self.debito:,.2f} (D)"
         else:
             return f"${self.credito:,.2f} (C)"
     
     def get_tipo_movimiento(self):
-        """Retorna el tipo de movimiento (dÃ©bito o crÃ©dito)"""
+        """Retorna el tipo de movimiento (débito o crédito)"""
         return 'DEBITO' if self.debito > 0 else 'CREDITO'
 
 
@@ -3011,7 +3011,7 @@ class DetalleAsiento(models.Model):
 class LoginAttempt(models.Model):
     """
     Registra intentos de login exitosos y fallidos
-    Permite implementar bloqueo de cuenta tras mÃºltiples intentos fallidos
+    Permite implementar bloqueo de cuenta tras múltiples intentos fallidos
     """
     email = models.EmailField(verbose_name="Email del intento")
     ip_address = models.GenericIPAddressField(verbose_name="DirecciÃ³n IP")
@@ -3061,7 +3061,7 @@ class LoginAttempt(models.Model):
     @classmethod
     def is_blocked(cls, email, max_attempts=5, block_minutes=15):
         """
-        Verifica si una cuenta estÃ¡ bloqueada por demasiados intentos fallidos
+        Verifica si una cuenta está bloqueada por demasiados intentos fallidos
         """
         failed_attempts = cls.get_recent_failed_attempts(email, block_minutes)
         return failed_attempts >= max_attempts
@@ -3110,7 +3110,7 @@ class RegistroEscuelaAttempt(models.Model):
     @classmethod
     def get_recent_attempts_by_ip(cls, ip_address, hours=1):
         """
-        Obtiene intentos de registro de una IP en las Ãºltimas N horas
+        Obtiene intentos de registro de una IP en las últimas N horas
         """
         from django.utils import timezone
         from datetime import timedelta
@@ -3123,7 +3123,7 @@ class RegistroEscuelaAttempt(models.Model):
     @classmethod
     def is_ip_blocked(cls, ip_address, max_attempts=3, block_hours=1):
         """
-        Verifica si una IP estÃ¡ bloqueada por exceder intentos permitidos
+        Verifica si una IP está bloqueada por exceder intentos permitidos
         """
         attempts = cls.get_recent_attempts_by_ip(ip_address, block_hours)
         return attempts >= max_attempts
@@ -3144,14 +3144,14 @@ class RegistroEscuelaAttempt(models.Model):
 
 class SecurityLog(models.Model):
     """
-    Registro de auditorÃ­a de eventos de seguridad importantes
+    Registro de auditoría de eventos de seguridad importantes
     """
     TIPO_EVENTO_CHOICES = [
         ('LOGIN', 'Login exitoso'),
         ('LOGOUT', 'Logout'),
         ('LOGIN_FAILED', 'Login fallido'),
-        ('PASSWORD_CHANGE', 'Cambio de contraseÃ±a'),
-        ('PASSWORD_RESET', 'Reseteo de contraseÃ±a'),
+        ('PASSWORD_CHANGE', 'Cambio de contraseña'),
+        ('PASSWORD_RESET', 'Reseteo de contraseña'),
         ('ACCOUNT_LOCKED', 'Cuenta bloqueada'),
         ('ACCOUNT_UNLOCKED', 'Cuenta desbloqueada'),
         ('PERMISSION_DENIED', 'Permiso denegado'),
@@ -3165,7 +3165,7 @@ class SecurityLog(models.Model):
     ]
     
     NIVEL_SEVERIDAD_CHOICES = [
-        ('INFO', 'InformaciÃ³n'),
+        ('INFO', 'Información'),
         ('WARNING', 'Advertencia'),
         ('ERROR', 'Error'),
         ('CRITICAL', 'CrÃ­tico'),
@@ -3184,13 +3184,13 @@ class SecurityLog(models.Model):
                                     verbose_name="Tipo de evento")
     nivel_severidad = models.CharField(max_length=20, choices=NIVEL_SEVERIDAD_CHOICES,
                                        default='INFO', verbose_name="Nivel de severidad")
-    descripcion = models.TextField(verbose_name="DescripciÃ³n")
+    descripcion = models.TextField(verbose_name="Descripción")
     ip_address = models.GenericIPAddressField(null=True, blank=True, 
                                               verbose_name="DirecciÃ³n IP")
     user_agent = models.TextField(blank=True, verbose_name="User Agent")
     fecha = models.DateTimeField(auto_now_add=True, verbose_name="Fecha")
     
-    # InformaciÃ³n adicional en JSON
+    # Información adicional en JSON
     metadata = models.JSONField(default=dict, blank=True, 
                                verbose_name="Metadata adicional")
     
@@ -3229,7 +3229,7 @@ class SecurityLog(models.Model):
 
 class UserSession(models.Model):
     """
-    Rastrea sesiones activas de usuarios para auditorÃ­a y control
+    Rastrea sesiones activas de usuarios para auditoría y control
     """
     usuario = models.ForeignKey(
         CustomUser,
@@ -3238,7 +3238,7 @@ class UserSession(models.Model):
         verbose_name="Usuario"
     )
     session_key = models.CharField(max_length=40, unique=True, 
-                                   verbose_name="Clave de sesiÃ³n")
+                                   verbose_name="Clave de sesión")
     ip_address = models.GenericIPAddressField(verbose_name="DirecciÃ³n IP")
     user_agent = models.TextField(verbose_name="User Agent")
     fecha_inicio = models.DateTimeField(auto_now_add=True, 
@@ -3263,7 +3263,7 @@ class UserSession(models.Model):
         return f"{self.usuario.email} - {self.ip_address} ({self.fecha_inicio.strftime('%Y-%m-%d %H:%M:%S')})"
     
     def cerrar_sesion(self):
-        """Marca la sesiÃ³n como inactiva"""
+        """Marca la sesión como inactiva"""
         self.activa = False
         self.fecha_cierre = timezone.now()
         self.save()
@@ -3282,7 +3282,7 @@ class UserSession(models.Model):
 
 class TwoFactorAuth(models.Model):
     """
-    Modelo para autenticaciÃ³n de dos factores (2FA)
+    Modelo para autenticación de dos factores (2FA)
     """
     usuario = models.OneToOneField(
         CustomUser,
@@ -3294,7 +3294,7 @@ class TwoFactorAuth(models.Model):
     secret_key = models.CharField(max_length=32, blank=True, 
                                   verbose_name="Clave secreta TOTP")
     backup_codes = models.JSONField(default=list, blank=True,
-                                   verbose_name="CÃ³digos de respaldo")
+                                   verbose_name="Códigos de respaldo")
     fecha_habilitacion = models.DateTimeField(null=True, blank=True,
                                               verbose_name="Fecha de habilitaciÃ³n")
     ultimo_uso = models.DateTimeField(null=True, blank=True,
@@ -3316,7 +3316,7 @@ class TwoFactorAuth(models.Model):
         if not self.secret_key:
             self.secret_key = pyotp.random_base32()
         
-        # Generar cÃ³digos de respaldo
+        # Generar códigos de respaldo
         self.backup_codes = [secrets.token_hex(4).upper() for _ in range(10)]
         self.habilitado = True
         self.fecha_habilitacion = timezone.now()
@@ -3342,7 +3342,7 @@ class TwoFactorAuth(models.Model):
             self.save()
             return True
         
-        # Verificar cÃ³digo de respaldo
+        # Verificar código de respaldo
         if token.upper() in self.backup_codes:
             self.backup_codes.remove(token.upper())
             self.ultimo_uso = timezone.now()
@@ -3352,7 +3352,7 @@ class TwoFactorAuth(models.Model):
         return False
     
     def get_qr_code_url(self):
-        """Genera URL para cÃ³digo QR de Google Authenticator"""
+        """Genera URL para código QR de Google Authenticator"""
         import pyotp
         totp = pyotp.TOTP(self.secret_key)
         return totp.provisioning_uri(
@@ -3368,14 +3368,14 @@ class TwoFactorAuth(models.Model):
 class ListaCotejo(models.Model):
     """
     Plantilla de lista de cotejo que puede ser reutilizada.
-    Define los parÃ¡metros generales de la evaluaciÃ³n.
+    Define los parámetros generales de la evaluación.
     """
     TIPO_EVALUACION_CHOICES = [
         ('actividad', 'Actividad EspecÃ­fica'),
-        ('proceso', 'EvaluaciÃ³n de Proceso'),
+        ('proceso', 'Evaluación de Proceso'),
         ('proyecto', 'Proyecto'),
-        ('comportamiento', 'EvaluaciÃ³n de Comportamiento'),
-        ('cuaderno', 'EvaluaciÃ³n de Cuaderno'),
+        ('comportamiento', 'Evaluación de Comportamiento'),
+        ('cuaderno', 'Evaluación de Cuaderno'),
         ('participacion', 'ParticipaciÃ³n'),
         ('otro', 'Otro'),
     ]
@@ -3393,15 +3393,15 @@ class ListaCotejo(models.Model):
     descripcion = models.TextField(
         blank=True,
         null=True,
-        verbose_name="DescripciÃ³n",
-        help_text="DescripciÃ³n detallada del propÃ³sito de esta lista"
+        verbose_name="Descripción",
+        help_text="Descripción detallada del propÃ³sito de esta lista"
     )
     
     tipo_evaluacion = models.CharField(
         max_length=20,
         choices=TIPO_EVALUACION_CHOICES,
         default='actividad',
-        verbose_name="Tipo de EvaluaciÃ³n"
+        verbose_name="Tipo de Evaluación"
     )
     
     materia = models.ForeignKey(
@@ -3432,7 +3432,7 @@ class ListaCotejo(models.Model):
     es_plantilla = models.BooleanField(
         default=True,
         verbose_name="Es Plantilla Reutilizable",
-        help_text="Si es True, esta lista puede ser utilizada mÃºltiples veces"
+        help_text="Si es True, esta lista puede ser utilizada múltiples veces"
     )
     
     activa = models.BooleanField(
@@ -3466,7 +3466,7 @@ class ListaCotejo(models.Model):
         return f"{self.nombre} ({self.get_tipo_evaluacion_display()})"
     
     def total_criterios(self):
-        """Retorna el nÃºmero total de criterios"""
+        """Retorna el número total de criterios"""
         return self.criterios.count()
     
     def validar_puntajes(self):
@@ -3481,7 +3481,7 @@ class CriterioListaCotejo(models.Model):
     Puede ser de tipo binario (check), numÃ©rico o escala.
     """
     TIPO_CRITERIO_CHOICES = [
-        ('binario', 'Binario (âœ“/âœ— - SÃ­/No)'),
+        ('binario', 'Binario (✓œ“/✓œ— - SÃ­/No)'),
         ('numerico', 'NumÃ©rico (0-10)'),
         ('escala_5', 'Escala 1-5'),
         ('escala_3', 'Escala 1-3'),
@@ -3497,7 +3497,7 @@ class CriterioListaCotejo(models.Model):
     
     descripcion = models.CharField(
         max_length=300,
-        verbose_name="DescripciÃ³n del Criterio",
+        verbose_name="Descripción del Criterio",
         help_text="Ej: Completo las actividades en clase"
     )
     
@@ -3519,7 +3519,7 @@ class CriterioListaCotejo(models.Model):
     orden = models.PositiveIntegerField(
         default=0,
         verbose_name="Orden",
-        help_text="Orden de apariciÃ³n en la lista (menor nÃºmero = primero)"
+        help_text="Orden de apariciÃ³n en la lista (menor número = primero)"
     )
     
     es_obligatorio = models.BooleanField(
@@ -3543,7 +3543,7 @@ class CriterioListaCotejo(models.Model):
         return f"{self.descripcion} ({self.get_tipo_criterio_display()})"
     
     def valor_maximo(self):
-        """Retorna el valor mÃ¡ximo segÃºn el tipo de criterio"""
+        """Retorna el valor mÃ¡ximo según el tipo de criterio"""
         tipos_valores = {
             'binario': 1,
             'numerico': 10,
@@ -3557,7 +3557,7 @@ class CriterioListaCotejo(models.Model):
 class EvaluacionListaCotejo(models.Model):
     """
     AplicaciÃ³n de una lista de cotejo a un grupo especÃ­fico de estudiantes.
-    Representa una evaluaciÃ³n concreta en una fecha determinada.
+    Representa una evaluación concreta en una fecha determinada.
     """
     ESTADO_CHOICES = [
         ('borrador', 'Borrador'),
@@ -3589,18 +3589,18 @@ class EvaluacionListaCotejo(models.Model):
     
     nombre = models.CharField(
         max_length=200,
-        verbose_name="Nombre de la EvaluaciÃ³n",
-        help_text="Ej: EvaluaciÃ³n de participaciÃ³n - Marzo 2026"
+        verbose_name="Nombre de la Evaluación",
+        help_text="Ej: Evaluación de participaciÃ³n - Marzo 2026"
     )
     
     descripcion = models.TextField(
         blank=True,
         null=True,
-        verbose_name="DescripciÃ³n"
+        verbose_name="Descripción"
     )
     
     fecha_evaluacion = models.DateField(
-        verbose_name="Fecha de EvaluaciÃ³n"
+        verbose_name="Fecha de Evaluación"
     )
     
     fecha_limite = models.DateField(
@@ -3626,7 +3626,7 @@ class EvaluacionListaCotejo(models.Model):
     incluir_en_promedio = models.BooleanField(
         default=False,
         verbose_name="Incluir en Promedio Final",
-        help_text="Si esta evaluaciÃ³n debe sumarse al promedio de la materia"
+        help_text="Si esta evaluación debe sumarse al promedio de la materia"
     )
     
     peso_en_promedio = models.DecimalField(
@@ -3660,7 +3660,7 @@ class EvaluacionListaCotejo(models.Model):
     )
     
     class Meta:
-        verbose_name = "EvaluaciÃ³n con Lista de Cotejo"
+        verbose_name = "Evaluación con Lista de Cotejo"
         verbose_name_plural = "Evaluaciones con Listas de Cotejo"
         ordering = ['-fecha_evaluacion']
     
@@ -3668,7 +3668,7 @@ class EvaluacionListaCotejo(models.Model):
         return f"{self.nombre} - {self.curso.nombre}"
     
     def total_estudiantes(self):
-        """Retorna el nÃºmero total de estudiantes en el curso para esta materia"""
+        """Retorna el número total de estudiantes en el curso para esta materia"""
         # Obtener estudiantes matriculados en la materia
         # La materia ya pertenece a un curso especÃ­fico
         return Matricula.objects.filter(
@@ -3676,7 +3676,7 @@ class EvaluacionListaCotejo(models.Model):
         ).values('estudiante').distinct().count()
     
     def estudiantes_evaluados(self):
-        """Retorna el nÃºmero de estudiantes con calificaciones completas"""
+        """Retorna el número de estudiantes con calificaciones completas"""
         total_criterios = self.lista_cotejo.criterios.filter(activo=True).count()
         if total_criterios == 0:
             return 0
@@ -3694,7 +3694,7 @@ class EvaluacionListaCotejo(models.Model):
         return estudiantes_completos
     
     def porcentaje_completado(self):
-        """Retorna el porcentaje de evaluaciÃ³n completada"""
+        """Retorna el porcentaje de evaluación completada"""
         total = self.total_estudiantes()
         if total == 0:
             return 0
@@ -3702,7 +3702,7 @@ class EvaluacionListaCotejo(models.Model):
         return round((evaluados / total) * 100, 2)
     
     def publicar(self):
-        """Publica la evaluaciÃ³n y la hace visible para estudiantes"""
+        """Publica la evaluación y la hace visible para estudiantes"""
         self.estado = 'publicada'
         self.fecha_publicacion = timezone.now()
         self.save()
@@ -3717,7 +3717,7 @@ class CalificacionCotejo(models.Model):
         EvaluacionListaCotejo,
         on_delete=models.CASCADE,
         related_name='calificaciones',
-        verbose_name="EvaluaciÃ³n"
+        verbose_name="Evaluación"
     )
     
     estudiante = models.ForeignKey(
@@ -3740,7 +3740,7 @@ class CalificacionCotejo(models.Model):
         null=True,
         blank=True,
         verbose_name="Valor Obtenido",
-        help_text="Valor segÃºn el tipo de criterio"
+        help_text="Valor según el tipo de criterio"
     )
     
     cumple = models.BooleanField(
@@ -3804,14 +3804,14 @@ class CalificacionCotejo(models.Model):
 
 class ResumenEvaluacionCotejo(models.Model):
     """
-    Resumen consolidado de la evaluaciÃ³n de un estudiante.
-    Se calcula automÃ¡ticamente basado en las calificaciones individuales.
+    Resumen consolidado de la evaluación de un estudiante.
+    Se calcula automáticamente basado en las calificaciones individuales.
     """
     evaluacion = models.ForeignKey(
         EvaluacionListaCotejo,
         on_delete=models.CASCADE,
         related_name='resumenes',
-        verbose_name="EvaluaciÃ³n"
+        verbose_name="Evaluación"
     )
     
     estudiante = models.ForeignKey(
@@ -3854,7 +3854,7 @@ class ResumenEvaluacionCotejo(models.Model):
     
     esta_completo = models.BooleanField(
         default=False,
-        verbose_name="EvaluaciÃ³n Completa"
+        verbose_name="Evaluación Completa"
     )
     
     fecha_calculo = models.DateTimeField(
@@ -3869,7 +3869,7 @@ class ResumenEvaluacionCotejo(models.Model):
     )
     
     class Meta:
-        verbose_name = "Resumen de EvaluaciÃ³n de Cotejo"
+        verbose_name = "Resumen de Evaluación de Cotejo"
         verbose_name_plural = "ResÃºmenes de Evaluaciones de Cotejo"
         unique_together = ['evaluacion', 'estudiante']
         ordering = ['estudiante__first_name', 'estudiante__last_name']
@@ -3878,7 +3878,7 @@ class ResumenEvaluacionCotejo(models.Model):
         return f"{self.estudiante.get_full_name()} - {self.puntaje_obtenido}/{self.puntaje_maximo}"
     
     def calcular_puntaje(self):
-        """Calcula el puntaje total del estudiante en esta evaluaciÃ³n"""
+        """Calcula el puntaje total del estudiante en esta evaluación"""
         calificaciones = CalificacionCotejo.objects.filter(
             evaluacion=self.evaluacion,
             estudiante=self.estudiante
@@ -3909,15 +3909,15 @@ class ResumenEvaluacionCotejo(models.Model):
 
 class EvaluacionDiagnostica(models.Model):
     """
-    EvaluaciÃ³n diagnÃ³stica para identificar conocimientos previos y nivel inicial del estudiante.
+    Evaluación diagnÃ³stica para identificar conocimientos previos y nivel inicial del estudiante.
     Conforme al sistema educativo de la RepÃºblica Dominicana.
     """
     PERIODO_CHOICES = [
-        ('inicio_anho', 'Inicio de AÃ±o Escolar'),
-        ('inicio_periodo_1', 'Inicio Primer PerÃ­odo'),
-        ('inicio_periodo_2', 'Inicio Segundo PerÃ­odo'),
-        ('inicio_periodo_3', 'Inicio Tercer PerÃ­odo'),
-        ('inicio_periodo_4', 'Inicio Cuarto PerÃ­odo'),
+        ('inicio_anho', 'Inicio de Año Escolar'),
+        ('inicio_periodo_1', 'Inicio Primer Período'),
+        ('inicio_periodo_2', 'Inicio Segundo Período'),
+        ('inicio_periodo_3', 'Inicio Tercer Período'),
+        ('inicio_periodo_4', 'Inicio Cuarto Período'),
         ('inicio_unidad', 'Inicio de Unidad DidÃ¡ctica'),
     ]
     
@@ -3943,7 +3943,7 @@ class EvaluacionDiagnostica(models.Model):
     periodo = models.CharField(
         max_length=20,
         choices=PERIODO_CHOICES,
-        verbose_name="PerÃ­odo de AplicaciÃ³n"
+        verbose_name="Período de AplicaciÃ³n"
     )
     
     competencia = models.CharField(
@@ -3978,7 +3978,7 @@ class EvaluacionDiagnostica(models.Model):
         blank=True,
         null=True,
         verbose_name="Observaciones/Notas",
-        help_text="Anotaciones adicionales sobre la evaluaciÃ³n"
+        help_text="Anotaciones adicionales sobre la evaluación"
     )
     
     creado_por = models.ForeignKey(
@@ -3999,7 +3999,7 @@ class EvaluacionDiagnostica(models.Model):
     )
     
     class Meta:
-        verbose_name = "EvaluaciÃ³n DiagnÃ³stica"
+        verbose_name = "Evaluación DiagnÃ³stica"
         verbose_name_plural = "Evaluaciones DiagnÃ³sticas"
         ordering = ['-fecha_creacion']
     
@@ -4011,15 +4011,15 @@ class EvaluacionDiagnostica(models.Model):
         return self.materia.curso
     
     def total_estudiantes(self):
-        """Retorna el nÃºmero total de estudiantes en el curso para esta materia"""
+        """Retorna el número total de estudiantes en el curso para esta materia"""
         return Matricula.objects.filter(materia=self.materia).values('estudiante').distinct().count()
     
     def estudiantes_evaluados(self):
-        """Retorna el nÃºmero de estudiantes evaluados"""
+        """Retorna el número de estudiantes evaluados"""
         return self.resultados.values('estudiante').distinct().count()
     
     def porcentaje_completado(self):
-        """Retorna el porcentaje de evaluaciÃ³n completada"""
+        """Retorna el porcentaje de evaluación completada"""
         total = self.total_estudiantes()
         if total == 0:
             return 0
@@ -4029,7 +4029,7 @@ class EvaluacionDiagnostica(models.Model):
 
 class ResultadoEvaluacionDiagnostica(models.Model):
     """
-    Resultado individual de un estudiante en una evaluaciÃ³n diagnÃ³stica.
+    Resultado individual de un estudiante en una evaluación diagnÃ³stica.
     Registra el nivel de logro y observaciones especÃ­ficas.
     """
     NIVEL_LOGRO_CHOICES = [
@@ -4043,7 +4043,7 @@ class ResultadoEvaluacionDiagnostica(models.Model):
         EvaluacionDiagnostica,
         on_delete=models.CASCADE,
         related_name='resultados',
-        verbose_name="EvaluaciÃ³n DiagnÃ³stica"
+        verbose_name="Evaluación DiagnÃ³stica"
     )
     
     estudiante = models.ForeignKey(
@@ -4074,7 +4074,7 @@ class ResultadoEvaluacionDiagnostica(models.Model):
         null=True,
         blank=True,
         verbose_name="Puntaje Total",
-        help_text="Puntaje total de la evaluaciÃ³n (opcional)"
+        help_text="Puntaje total de la evaluación (opcional)"
     )
     
     fortalezas = models.TextField(
@@ -4106,7 +4106,7 @@ class ResultadoEvaluacionDiagnostica(models.Model):
     
     fecha_evaluacion = models.DateTimeField(
         auto_now_add=True,
-        verbose_name="Fecha de EvaluaciÃ³n"
+        verbose_name="Fecha de Evaluación"
     )
     
     fecha_modificacion = models.DateTimeField(
@@ -4123,7 +4123,7 @@ class ResultadoEvaluacionDiagnostica(models.Model):
     )
     
     class Meta:
-        verbose_name = "Resultado de EvaluaciÃ³n DiagnÃ³stica"
+        verbose_name = "Resultado de Evaluación DiagnÃ³stica"
         verbose_name_plural = "Resultados de Evaluaciones DiagnÃ³sticas"
         unique_together = ['evaluacion', 'estudiante']
         ordering = ['estudiante__first_name', 'estudiante__last_name']
@@ -4143,7 +4143,7 @@ class ResultadoEvaluacionDiagnostica(models.Model):
 
 class Rubrica(models.Model):
     """
-    RÃºbrica de evaluaciÃ³n: matriz de valoraciÃ³n con criterios y niveles de desempeÃ±o.
+    RÃºbrica de evaluación: matriz de valoraciÃ³n con criterios y niveles de desempeÃ±o.
     Instrumento para evaluar competencias de forma objetiva y sistemÃ¡tica.
     """
     TIPO_ACTIVIDAD_CHOICES = [
@@ -4174,7 +4174,7 @@ class Rubrica(models.Model):
     nombre = models.CharField(
         max_length=255,
         verbose_name="Nombre de la RÃºbrica",
-        help_text="Ej: EvaluaciÃ³n de Proyecto de Ciencias"
+        help_text="Ej: Evaluación de Proyecto de Ciencias"
     )
     
     tipo_actividad = models.CharField(
@@ -4187,8 +4187,8 @@ class Rubrica(models.Model):
     descripcion = models.TextField(
         blank=True,
         null=True,
-        verbose_name="DescripciÃ³n",
-        help_text="DescripciÃ³n general de la rÃºbrica"
+        verbose_name="Descripción",
+        help_text="Descripción general de la rÃºbrica"
     )
     
     creado_por = models.ForeignKey(
@@ -4211,7 +4211,7 @@ class Rubrica(models.Model):
     activa = models.BooleanField(
         default=True,
         verbose_name="Activa",
-        help_text="Indica si la rÃºbrica estÃ¡ activa para usar"
+        help_text="Indica si la rÃºbrica está activa para usar"
     )
     
     class Meta:
@@ -4225,7 +4225,7 @@ class Rubrica(models.Model):
         return f"{self.nombre} (GenÃ©rica)"
     
     def total_criterios(self):
-        """Retorna el nÃºmero total de criterios"""
+        """Retorna el número total de criterios"""
         return self.criterios.count()
     
     def total_ponderacion(self):
@@ -4252,7 +4252,7 @@ class Rubrica(models.Model):
 
 class CriterioRubrica(models.Model):
     """
-    Criterio de evaluaciÃ³n dentro de una rÃºbrica.
+    Criterio de evaluación dentro de una rÃºbrica.
     Define un aspecto especÃ­fico a evaluar.
     """
     rubrica = models.ForeignKey(
@@ -4271,8 +4271,8 @@ class CriterioRubrica(models.Model):
     descripcion = models.TextField(
         blank=True,
         null=True,
-        verbose_name="DescripciÃ³n",
-        help_text="DescripciÃ³n detallada de quÃ© se evaluarÃ¡ en este criterio"
+        verbose_name="Descripción",
+        help_text="Descripción detallada de qué se evaluarÃ¡ en este criterio"
     )
     
     ponderacion = models.DecimalField(
@@ -4280,7 +4280,7 @@ class CriterioRubrica(models.Model):
         decimal_places=2,
         default=20.0,
         verbose_name="PonderaciÃ³n (%)",
-        help_text="Peso del criterio en la evaluaciÃ³n final (ej: 20.00%)"
+        help_text="Peso del criterio en la evaluación final (ej: 20.00%)"
     )
     
     orden = models.IntegerField(
@@ -4334,7 +4334,7 @@ class NivelDesempeno(models.Model):
     
     descriptor = models.TextField(
         verbose_name="Descriptor",
-        help_text="DescripciÃ³n detallada de lo que caracteriza este nivel de desempeÃ±o"
+        help_text="Descripción detallada de lo que caracteriza este nivel de desempeÃ±o"
     )
     
     class Meta:
@@ -4349,8 +4349,8 @@ class NivelDesempeno(models.Model):
 
 class EvaluacionRubrica(models.Model):
     """
-    EvaluaciÃ³n aplicada a estudiantes usando una rÃºbrica
-    Permite calificar desempeÃ±o en actividades/proyectos segÃºn criterios establecidos
+    Evaluación aplicada a estudiantes usando una rÃºbrica
+    Permite calificar desempeÃ±o en actividades/proyectos según criterios establecidos
     """
     rubrica = models.ForeignKey(
         Rubrica,
@@ -4375,25 +4375,25 @@ class EvaluacionRubrica(models.Model):
     
     titulo = models.CharField(
         max_length=200,
-        verbose_name="TÃ­tulo de la EvaluaciÃ³n",
-        help_text="Nombre descriptivo de la evaluaciÃ³n (ej: Proyecto Final, ExposiciÃ³n Oral)"
+        verbose_name="Título de la Evaluación",
+        help_text="Nombre descriptivo de la evaluación (ej: Proyecto Final, ExposiciÃ³n Oral)"
     )
     
     descripcion = models.TextField(
         blank=True,
         null=True,
-        verbose_name="DescripciÃ³n",
+        verbose_name="Descripción",
         help_text="Detalles de la actividad evaluada"
     )
     
     fecha_evaluacion = models.DateField(
-        verbose_name="Fecha de EvaluaciÃ³n"
+        verbose_name="Fecha de Evaluación"
     )
     
     periodo = models.CharField(
         max_length=50,
-        verbose_name="PerÃ­odo",
-        help_text="Ej: Primer PerÃ­odo, Segundo PerÃ­odo"
+        verbose_name="Período",
+        help_text="Ej: Primer Período, Segundo Período"
     )
     
     creada_por = models.ForeignKey(
@@ -4415,7 +4415,7 @@ class EvaluacionRubrica(models.Model):
     )
     
     class Meta:
-        verbose_name = "EvaluaciÃ³n con RÃºbrica"
+        verbose_name = "Evaluación con RÃºbrica"
         verbose_name_plural = "Evaluaciones con RÃºbrica"
         ordering = ['-fecha_evaluacion']
     
@@ -4453,7 +4453,7 @@ class CalificacionCriterio(models.Model):
         EvaluacionRubrica,
         on_delete=models.CASCADE,
         related_name='calificaciones',
-        verbose_name="EvaluaciÃ³n"
+        verbose_name="Evaluación"
     )
     
     estudiante = models.ForeignKey(
@@ -4519,7 +4519,7 @@ class CalificacionCriterio(models.Model):
 
 class ConfiguracionEscuela(models.Model):
     """
-    ConfiguraciÃ³n general de la escuela/colegio
+    Configuración general de la escuela/colegio
     Solo debe existir un registro en esta tabla
     """
     # Multi-Tenant: Escuela
@@ -4574,7 +4574,7 @@ class ConfiguracionEscuela(models.Model):
         blank=True,
         null=True,
         verbose_name="Logo",
-        help_text="Logo oficial de la instituciÃ³n (tamaÃ±o recomendado: 200x200px)"
+        help_text="Logo oficial de la instituciÃ³n (tamaño recomendado: 200x200px)"
     )
     
     director_nombre = models.CharField(
@@ -4619,8 +4619,8 @@ class ConfiguracionEscuela(models.Model):
         max_length=50,
         blank=True,
         null=True,
-        verbose_name="CÃ³digo del Centro",
-        help_text="CÃ³digo oficial asignado por el MINERD u otra autoridad"
+        verbose_name="Código del Centro",
+        help_text="Código oficial asignado por el MINERD u otra autoridad"
     )
     
     distrito_educativo = models.CharField(
@@ -4644,7 +4644,7 @@ class ConfiguracionEscuela(models.Model):
         blank=True,
         null=True,
         verbose_name="Nivel Educativo",
-        help_text="Ej: Inicial, BÃ¡sica, Media, TÃ©cnico-Profesional"
+        help_text="Ej: Inicial, BÃ¡sica, Media, Técnico-Profesional"
     )
     
     modalidad = models.CharField(
@@ -4652,7 +4652,7 @@ class ConfiguracionEscuela(models.Model):
         blank=True,
         null=True,
         verbose_name="Modalidad",
-        help_text="Ej: General, TÃ©cnico-Profesional, Artes"
+        help_text="Ej: General, Técnico-Profesional, Artes"
     )
     
     horario_atencion = models.CharField(
@@ -4666,16 +4666,16 @@ class ConfiguracionEscuela(models.Model):
     anho_fundacion = models.IntegerField(
         blank=True,
         null=True,
-        verbose_name="AÃ±o de FundaciÃ³n",
-        help_text="AÃ±o en que fue fundada la instituciÃ³n"
+        verbose_name="Año de FundaciÃ³n",
+        help_text="Año en que fue fundada la instituciÃ³n"
     )
     
-    # InformaciÃ³n para reportes
+    # Información para reportes
     pie_pagina_reportes = models.TextField(
         blank=True,
         null=True,
         verbose_name="Pie de PÃ¡gina para Reportes",
-        help_text="Texto que aparecerÃ¡ al pie de los reportes oficiales"
+        help_text="Texto que aparecera¡ al pie de los reportes oficiales"
     )
     
     mostrar_logo_reportes = models.BooleanField(
@@ -4696,14 +4696,14 @@ class ConfiguracionEscuela(models.Model):
     )
     
     class Meta:
-        verbose_name = "ConfiguraciÃ³n de la Escuela"
-        verbose_name_plural = "ConfiguraciÃ³n de la Escuela"
+        verbose_name = "Configuración de la Escuela"
+        verbose_name_plural = "Configuración de la Escuela"
     
     def __str__(self):
-        return self.nombre_escuela or "ConfiguraciÃ³n de la Escuela"
+        return self.nombre_escuela or "Configuración de la Escuela"
     
     def save(self, *args, **kwargs):
-        """Asegurar que solo exista un registro de configuraciÃ³n"""
+        """Asegurar que solo exista un registro de configuración"""
         if not self.pk and ConfiguracionEscuela.objects.exists():
             # Si no tiene pk (es nuevo) y ya existe un registro, usar el existente
             existing = ConfiguracionEscuela.objects.first()
@@ -4712,10 +4712,10 @@ class ConfiguracionEscuela(models.Model):
     
     @classmethod
     def get_configuracion(cls):
-        """Obtener o crear la configuraciÃ³n de la escuela"""
+        """Obtener o crear la configuración de la escuela"""
         config, created = cls.objects.get_or_create(
             pk=1,
-            defaults={'nombre_escuela': 'Mi Escuela'}
+            defaults={'nombre_escuela': 'Sistema de Ventas'}
         )
         return config
 
@@ -4730,9 +4730,9 @@ class IPBlocklist(models.Model):
     """
     TIPO_BLOQUEO_CHOICES = [
         ('MANUAL', 'Bloqueo Manual'),
-        ('AUTO_RATE_LIMIT', 'AutomÃ¡tico - Rate Limit'),
-        ('AUTO_FAILED_LOGIN', 'AutomÃ¡tico - Login Fallido'),
-        ('AUTO_SUSPICIOUS', 'AutomÃ¡tico - Actividad Sospechosa'),
+        ('AUTO_RATE_LIMIT', 'Automatico - Rate Limit'),
+        ('AUTO_FAILED_LOGIN', 'Automatico - Login Fallido'),
+        ('AUTO_SUSPICIOUS', 'Automatico - Actividad Sospechosa'),
     ]
     
     ip_address = models.GenericIPAddressField(unique=True, db_index=True,
@@ -4757,13 +4757,13 @@ class IPBlocklist(models.Model):
                                             verbose_name="Fecha de ExpiraciÃ³n")
     activo = models.BooleanField(default=True, verbose_name="Bloqueo Activo")
     
-    # EstadÃ­sticas
+    # Estadísticas
     intentos_durante_bloqueo = models.IntegerField(default=0,
                                                     verbose_name="Intentos Durante Bloqueo")
     ultima_actividad = models.DateTimeField(auto_now=True,
                                             verbose_name="Ãšltima Actividad")
     
-    # InformaciÃ³n adicional
+    # Información adicional
     pais = models.CharField(max_length=100, blank=True,
                            verbose_name="PaÃ­s de Origen")
     user_agent = models.TextField(blank=True, verbose_name="User Agent")
@@ -4786,7 +4786,7 @@ class IPBlocklist(models.Model):
     
     @classmethod
     def is_blocked(cls, ip_address):
-        """Verifica si una IP estÃ¡ bloqueada y activa"""
+        """Verifica si una IP está bloqueada y activa"""
         now = timezone.now()
         
         # Buscar bloqueo activo
@@ -4858,7 +4858,7 @@ class SecurityAlert(models.Model):
     """
     TIPO_ALERTA_CHOICES = [
         ('BRUTE_FORCE', 'Intento de Fuerza Bruta'),
-        ('MULTIPLE_FAILED_LOGIN', 'MÃºltiples Intentos Fallidos'),
+        ('MULTIPLE_FAILED_LOGIN', 'Múltiples Intentos Fallidos'),
         ('SUSPICIOUS_IP', 'IP Sospechosa'),
         ('UNUSUAL_LOCATION', 'UbicaciÃ³n Inusual'),
         ('UNUSUAL_TIME', 'Hora Inusual'),
@@ -4891,8 +4891,8 @@ class SecurityAlert(models.Model):
     estado = models.CharField(max_length=20, choices=ESTADO_CHOICES,
                              default='PENDIENTE', verbose_name="Estado")
     
-    titulo = models.CharField(max_length=200, verbose_name="TÃ­tulo")
-    descripcion = models.TextField(verbose_name="DescripciÃ³n")
+    titulo = models.CharField(max_length=200, verbose_name="Título")
+    descripcion = models.TextField(verbose_name="Descripción")
     
     # Usuario afectado (si aplica)
     usuario_afectado = models.ForeignKey(
@@ -4944,7 +4944,7 @@ class SecurityAlert(models.Model):
     fecha_email = models.DateTimeField(null=True, blank=True,
                                        verbose_name="Fecha de Email")
     
-    # InformaciÃ³n adicional
+    # Información adicional
     metadata = models.JSONField(default=dict, blank=True,
                                verbose_name="Metadata Adicional")
     

@@ -22,7 +22,7 @@
             {% csrf_token %}
             <input type="hidden" name="curso_id" value="{{ curso_id }}">
 
-            <!-- Campo contraseÃ±a -->
+            <!-- Campo contraseña -->
             <div class="mb-3">
               <label for="password" class="form-label">Confirme su contraseña</label>
               <div class="input-group">
@@ -76,7 +76,7 @@
     })
   })()
 
-  // Mostrar/ocultar contraseÃ±a
+  // Mostrar/ocultar contraseña
   document.getElementById('togglePassword').addEventListener('click', function () {
     const passwordInput = document.getElementById('password');
     const icon = this.querySelector('i');

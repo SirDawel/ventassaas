@@ -20,10 +20,10 @@ Confirmar Eliminacion
                     </div>
                     <form method="post" class="needs-validation" novalidate>
                         {% csrf_token %}
-                        <!-- Campo oculto con el aÃ±o -->
+                        <!-- Campo oculto con el año -->
                         <input type="hidden" name="anho_id" value="{{ anho_id }}">
 
-                        <!-- Campo de contraseÃ±a -->
+                        <!-- Campo de contraseña -->
                         <div class="mb-3">
                             <label for="password" class="form-label">Confirme su contraseña</label>
                             <div class="input-group">

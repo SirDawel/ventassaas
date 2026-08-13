@@ -21,10 +21,10 @@
         </div>
         <div class="card-body">
 
-            <!-- Encabezado con informaciÃ³n del estudiante -->
+            <!-- Encabezado con información del estudiante -->
             <div class="row mb-4">
                 <div class="col-md-6">
-                    <h3 class="h5">InformaciÃ³n del Estudiante</h3>
+                    <h3 class="h5">Información del Estudiante</h3>
                     <p class="mb-1"><strong>Nombre:</strong> {{ estudiante.get_full_name }}</p>
                     <p class="mb-1"><strong>Grado:</strong> {{ estudiante.grado }}</p>
                     <p class="mb-0"><strong>SecciÃ³n:</strong> {{ estudiante.seccion }}</p>
@@ -60,7 +60,7 @@
             </div>
             <!-- Fin encabezado -->
 
-            <!-- Notas por AÃ±o Escolar -->
+            <!-- Notas por Año Escolar -->
                     {% for anho, matriculas in matriculas_por_anho.items %}
                     <div class="card mb-4">
                         <div class="card-header bg-light">
@@ -124,13 +124,13 @@
         </div>
     </div>
 
-    <!-- Forzar salto de pÃ¡gina despuÃ©s de cada estudiante -->
+    <!-- Forzar salto de página después de cada estudiante -->
     <div class="page-break"></div>
     {% endfor %}
 </div>
 
 <style>
-/* Forzar salto de pÃ¡gina al imprimir */
+/* Forzar salto de página al imprimir */
 @media print {
     .page-break {
         page-break-after: always;

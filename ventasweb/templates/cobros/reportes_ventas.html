@@ -320,19 +320,19 @@
                                 <tr>
                                     <td>{{ forloop.counter }}</td>
                                     <td>
-                                        <strong>{{ item.cliente__first_name }} {{ item.cliente__last_name }}</strong>
+                                        <strong>{{ item.factura__cliente__first_name }} {{ item.factura__cliente__last_name }}</strong>
                                     </td>
                                     <td>
-                                        <code>{{ item.cliente__codigo_barras|default:"-" }}</code>
+                                        <code>{{ item.factura__cliente__codigo_barras|default:"-" }}</code>
                                     </td>
                                     <td class="text-center">
                                         <span class="badge bg-info">{{ item.num_facturas }}</span>
                                     </td>
                                     <td class="text-end">
-                                        <strong>RD$ {{ item.total_gastado|unlocalize|floatformat:2|intcomma }}</strong>
+                                        <strong>RD$ {{ item.monto_pagado_total|unlocalize|floatformat:2|intcomma }}</strong>
                                     </td>
                                     <td class="text-end text-muted">
-                                        RD$ {{ item.total_gastado|divide:item.num_facturas|unlocalize|floatformat:2|intcomma }}
+                                        RD$ {{ item.monto_pagado_total|divide:item.num_facturas|unlocalize|floatformat:2|intcomma }}
                                     </td>
                                 </tr>
                                 {% empty %}
@@ -455,7 +455,7 @@
                             <div class="card border-success">
                                 <div class="card-body text-center">
                                     <h6 class="text-muted">{{ metodo.metodo_pago|title }}</h6>
-                                    <h4 class="text-success">RD$ {{ metodo.total|unlocalize|floatformat:2|intcomma }}</h4>
+                                    <h4 class="text-success">RD$ {{ metodo.monto_cobrado|unlocalize|floatformat:2|intcomma }}</h4>
                                     <small class="text-muted">{{ metodo.cantidad }} facturas</small>
                                 </div>
                             </div>
@@ -558,13 +558,13 @@
                                 <tr>
                                     <td>{{ forloop.counter }}</td>
                                     <td>
-                                        <strong>{{ cliente.cliente__first_name }} {{ cliente.cliente__last_name }}</strong>
+                                        <strong>{{ cliente.factura__cliente__first_name }} {{ cliente.factura__cliente__last_name }}</strong>
                                     </td>
                                     <td class="text-center">
                                         <span class="badge bg-primary">{{ cliente.num_compras }}</span>
                                     </td>
                                     <td class="text-end">
-                                        <strong>RD$ {{ cliente.total_gastado|unlocalize|floatformat:2|intcomma }}</strong>
+                                        <strong>RD$ {{ cliente.monto_pagado_total|unlocalize|floatformat:2|intcomma }}</strong>
                                     </td>
                                     <td class="text-end text-muted">
                                         RD$ {{ cliente.ticket_promedio|unlocalize|floatformat:2|intcomma }}
@@ -647,7 +647,7 @@ const ventasChart = new Chart(ctxVentas, {
         }),
         datasets: [{
             label: 'Ventas (RD$)',
-            data: ventasPorDia.map(v => v.total),
+            data: ventasPorDia.map(v => v.monto_cobrado),
             backgroundColor: 'rgba(54, 162, 235, 0.5)',
             borderColor: 'rgba(54, 162, 235, 1)',
             borderWidth: 1
@@ -800,7 +800,7 @@ const diaSemanaChart = new Chart(ctxDiaSemana, {
         labels: [{% for venta in ventas_por_dia_semana %}'{{ venta.nombre_dia }}'{% if not forloop.last %}, {% endif %}{% endfor %}],
         datasets: [{
             label: 'Ventas',
-            data: [{% for venta in ventas_por_dia_semana %}{{ venta.total }}{% if not forloop.last %}, {% endif %}{% endfor %}],
+            data: [{% for venta in ventas_por_dia_semana %}{{ venta.monto_cobrado }}{% if not forloop.last %}, {% endif %}{% endfor %}],
             backgroundColor: 'rgba(153, 102, 255, 0.6)',
             borderColor: 'rgba(153, 102, 255, 1)',
             borderWidth: 1
@@ -840,7 +840,7 @@ const horaChart = new Chart(ctxHora, {
         labels: [{% for venta in ventas_por_hora %}'{{ venta.hora }}:00'{% if not forloop.last %}, {% endif %}{% endfor %}],
         datasets: [{
             label: 'Ventas por Hora',
-            data: [{% for venta in ventas_por_hora %}{{ venta.total }}{% if not forloop.last %}, {% endif %}{% endfor %}],
+            data: [{% for venta in ventas_por_hora %}{{ venta.monto_cobrado }}{% if not forloop.last %}, {% endif %}{% endfor %}],
             backgroundColor: 'rgba(255, 159, 64, 0.2)',
             borderColor: 'rgba(255, 159, 64, 1)',
             borderWidth: 2,
