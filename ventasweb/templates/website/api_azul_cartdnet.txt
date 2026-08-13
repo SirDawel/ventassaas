@@ -1,0 +1,24 @@
+import requests
+
+def procesar_pago_cardnet(monto, numero_tarjeta, expira, cvv, nombre_titular):
+    url = "https://pruebas.cardnet.com.do/servicios/pagos"
+    # Usa el endpoint de producción para producción
+
+    headers = {
+        "Content-Type": "application/json",
+        "Api-Key": "tu_api_key",  # proporcionada por Cardnet
+        "Merchant-Id": "tu_merchant_id"
+    }
+
+    data = {
+        "amount": monto,
+        "currency": "DOP",
+        "card_number": numero_tarjeta,
+        "card_expiry": expira,  # formato MMYY
+        "card_cvv": cvv,
+        "card_holder": nombre_titular,
+        "order_id": "ORD123456"
+    }
+
+    response = requests.post(url, json=data, headers=headers)
+    return response.json()

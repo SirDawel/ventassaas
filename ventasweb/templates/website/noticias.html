@@ -1,0 +1,132 @@
+{% extends 'website/base.html' %}
+{% load static %}
+
+
+{% block title %}
+Nada.
+{% endblock %}
+
+{% block content %}
+<div class="container my-5">
+
+    <!-- Encabezado -->
+    <div class="text-center mb-5">
+        <h1 class="display-4">Noticias del Politecnico Jose Ramon Rodriguez H.</h1>
+        <p class="lead">Mantente al día con los eventos y actividades de nuestra escuela.</p>
+    </div>
+
+    <!-- Slideshow / Carousel -->
+    <div id="noticiasCarousel" class="carousel slide mb-5" data-bs-ride="carousel">
+        <div class="carousel-indicators">
+            <button type="button" data-bs-target="#noticiasCarousel" data-bs-slide-to="0" class="active"
+                aria-current="true" aria-label="Slide 1"></button>
+            <button type="button" data-bs-target="#noticiasCarousel" data-bs-slide-to="1" aria-label="Slide 2"></button>
+            <button type="button" data-bs-target="#noticiasCarousel" data-bs-slide-to="2" aria-label="Slide 3"></button>
+        </div>
+        <div class="carousel-inner">
+            <div class="carousel-item active">
+                <img src="{% static 'img/noticia1.jpeg' %}" class="d-block w-100"
+                    style="height:400px; object-fit: cover;">
+                <div class="carousel-caption d-none d-md-block bg-dark bg-opacity-50 rounded p-2">
+                    <h5>Feria CientÃ­fica 2025</h5>
+                    <p>Descubre los proyectos mÃ¡s innovadores de nuestros estudiantes.</p>
+                </div>
+            </div>
+            <div class="carousel-item">
+                <img src="{% static 'img/noticia2.jpeg' %}" class="d-block w-100"
+                    style="height:400px; object-fit: cover;">
+                <div class="carousel-caption d-none d-md-block bg-dark bg-opacity-50 rounded p-2">
+                    <h5>Competencia Deportiva</h5>
+                    <p>Revive los momentos mÃ¡s emocionantes de la semana deportiva.</p>
+                </div>
+            </div>
+            <div class="carousel-item">
+                <img src="{% static 'img/noticia3.jpeg' %}" class="d-block w-100"
+                    style="height:400px; object-fit: cover;" alt="Noticia 3">
+                <div class="carousel-caption d-none d-md-block bg-dark bg-opacity-50 rounded p-2">
+
+                    <h5>Teatro Escolar</h5>
+                    <p>Los alumnos presentan una obra que refleja la vida en la secundaria.</p>
+                </div>
+            </div>
+        </div>
+        <button class="carousel-control-prev" type="button" data-bs-target="#noticiasCarousel" data-bs-slide="prev">
+            <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+            <span class="visually-hidden">Anterior</span>
+        </button>
+        <button class="carousel-control-next" type="button" data-bs-target="#noticiasCarousel" data-bs-slide="next">
+            <span class="carousel-control-next-icon" aria-hidden="true"></span>
+            <span class="visually-hidden">Siguiente</span>
+        </button>
+    </div>
+
+    <!-- SecciÃ³n de noticias recientes -->
+    <div class="row mb-5">
+        <div class="col-md-4 mb-4">
+            <div class="card h-100 shadow-sm">
+                <img src="{% static 'img/noticia4.jpg' %}" class="card-img-top" alt="Noticia 4">
+                <div class="card-body">
+                    <h5 class="card-title">Taller de RobÃ³tica</h5>
+                    <p class="card-text">Los estudiantes aprenden a construir y programar robots con tecnologÃ­a de
+                        vanguardia.</p>
+                    <a href="#" class="btn btn-primary btn-sm">Leer mÃ¡s</a>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4 mb-4">
+            <div class="card h-100 shadow-sm">
+                <img src="{% static 'img/noticia1.jpg' %}" class="card-img-top" alt="Noticia 5">
+                <div class="card-body">
+                    <h5 class="card-title">CampaÃ±a de Reciclaje</h5>
+                    <p class="card-text">Los alumnos promueven la conciencia ambiental y el cuidado del planeta en la
+                        escuela.</p>
+                    <a href="#" class="btn btn-primary btn-sm">Leer mÃ¡s</a>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4 mb-4">
+            <div class="card h-100 shadow-sm">
+                <img src="{% static 'images/noticia6.jpg' %}" class="card-img-top" alt="Noticia 6">
+                <div class="card-body">
+                    <h5 class="card-title">ExposiciÃ³n de Arte</h5>
+                    <p class="card-text">Los talentos artÃ­sticos de nuestros estudiantes se muestran en esta colorida
+                        exposiciÃ³n.</p>
+                    <a href="#" class="btn btn-primary btn-sm">Leer mÃ¡s</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- CategorÃ­as o eventos prÃ³ximos -->
+    <div class="mb-5">
+        <h3 class="mb-4">PrÃ³ximos Eventos</h3>
+        <ul class="list-group">
+            <li class="list-group-item d-flex justify-content-between align-items-center">
+                GraduaciÃ³n 2025
+                <span class="badge bg-primary rounded-pill">15 Junio</span>
+            </li>
+            <li class="list-group-item d-flex justify-content-between align-items-center">
+                Feria de Ciencias
+                <span class="badge bg-primary rounded-pill">20 Julio</span>
+            </li>
+            <li class="list-group-item d-flex justify-content-between align-items-center">
+                Torneo de MatemÃ¡tica
+                <span class="badge bg-primary rounded-pill">5 Agosto</span>
+            </li>
+        </ul>
+    </div>
+
+</div>
+
+<!-- Footer bÃ¡sico -->
+<footer class="bg-dark text-white py-4 mt-5">
+    <div class="container text-center">
+        <p>&copy; 2025 Escuela Secundaria. Todos los derechos reservados.</p>
+        <p>SÃ­guenos en redes sociales:
+            <a href="#" class="text-white mx-1">Facebook</a> |
+            <a href="#" class="text-white mx-1">Instagram</a> |
+            <a href="#" class="text-white mx-1">Twitter</a>
+        </p>
+    </div>
+</footer>
+{% endblock %}

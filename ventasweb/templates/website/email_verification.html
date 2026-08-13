@@ -1,0 +1,14 @@
+
+{% autoescape off %}
+Hola {{ user.first_name }},
+
+Gracias por registrarte en nuestro sitio.
+
+Por favor, haz clic en el siguiente enlace para activar tu cuenta:
+?? {{ activation_url }}
+
+Si tú no hiciste este registro, puedes ignorar este mensaje.
+
+Atentamente,  
+El equipo de {{ user.get_full_name|default:"Escuela Online" }}
+{% endautoescape %}

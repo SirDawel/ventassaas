@@ -1,0 +1,508 @@
+{% extends 'website/base.html' %}
+{% if not user.is_authenticated %}
+    <script>
+        window.location.href = "{% url 'login' %}";
+    </script>
+{% endif %}
+
+{% load static %}
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+{% block title %}
+{{ nombre_escuela_config|default:"Sistema de Ventas" }} - Dashboard
+{% endblock %}
+
+{% block content %}
+<style>
+    .dashboard-page {
+        background: transparent;
+        padding-bottom: 20px;
+    }
+
+    .dashboard-page h1 {
+        color: #2c3e50;
+        font-weight: 700;
+        margin-bottom: 10px;
+    }
+
+    .dashboard-page .lead {
+        color: #6c757d;
+    }
+
+    /* KPI Cards */
+    .kpi-card {
+        background: white;
+        border-radius: 10px;
+        padding: 25px;
+        box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15);
+        border-left: 4px solid;
+        transition: transform 0.2s;
+        height: 100%;
+    }
+
+    .kpi-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 0.5rem 2rem 0 rgba(58, 59, 69, 0.25);
+    }
+
+    .kpi-card.primary {
+        border-left-color: #4e73df;
+    }
+
+    .kpi-card.success {
+        border-left-color: #1cc88a;
+    }
+
+    .kpi-card.info {
+        border-left-color: #36b9cc;
+    }
+
+    .kpi-card.warning {
+        border-left-color: #f6c23e;
+    }
+
+    .kpi-card .kpi-title {
+        font-size: 0.85rem;
+        color: #858796;
+        text-transform: uppercase;
+        font-weight: 700;
+        margin-bottom: 10px;
+    }
+
+    .kpi-card .kpi-value {
+        font-size: 1.75rem;
+        font-weight: 700;
+        color: #5a5c69;
+    }
+
+    .kpi-card .kpi-icon {
+        font-size: 2.5rem;
+        opacity: 0.3;
+        position: absolute;
+        right: 20px;
+        top: 20px;
+    }
+
+    .kpi-card.primary .kpi-icon {
+        color: #4e73df;
+    }
+
+    .kpi-card.success .kpi-icon {
+        color: #1cc88a;
+    }
+
+    .kpi-card.info .kpi-icon {
+        color: #36b9cc;
+    }
+
+    .kpi-card.warning .kpi-icon {
+        color: #f6c23e;
+    }
+
+    /* Charts Section */
+    .chart-card {
+        background: white;
+        border-radius: 10px;
+        padding: 25px;
+        box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15);
+        margin-bottom: 30px;
+    }
+
+    .chart-card h5 {
+        color: #2c3e50;
+        font-weight: 700;
+        margin-bottom: 20px;
+    }
+
+    /* Products Section */
+    .product-card {
+        background: white;
+        border-radius: 10px;
+        overflow: hidden;
+        box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15);
+        transition: transform 0.2s;
+    }
+
+    .product-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 0.5rem 2rem 0 rgba(58, 59, 69, 0.25);
+    }
+
+    .product-card img {
+        height: 200px;
+        object-fit: cover;
+        width: 100%;
+    }
+
+    .product-card .card-body {
+        padding: 20px;
+    }
+
+    .product-badge {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        background: #1cc88a;
+        color: white;
+        padding: 5px 15px;
+        border-radius: 20px;
+        font-size: 0.8rem;
+        font-weight: 600;
+    }
+
+    /* Activity List */
+    .activity-list {
+        background: white;
+        border-radius: 10px;
+        padding: 25px;
+        box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15);
+    }
+
+    .activity-list h5 {
+        color: #2c3e50;
+        font-weight: 700;
+        margin-bottom: 20px;
+    }
+
+    .activity-item {
+        padding: 15px 0;
+        border-bottom: 1px solid #e3e6f0;
+        display: flex;
+        align-items: center;
+    }
+
+    .activity-item:last-child {
+        border-bottom: none;
+    }
+
+    .activity-icon {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-right: 15px;
+        font-size: 1.2rem;
+    }
+
+    .activity-icon.success {
+        background: #d1f4e0;
+        color: #1cc88a;
+    }
+
+    .activity-icon.primary {
+        background: #d4e3fc;
+        color: #4e73df;
+    }
+
+    .activity-icon.warning {
+        background: #fef4d9;
+        color: #f6c23e;
+    }
+
+    .activity-content {
+        flex: 1;
+    }
+
+    .activity-title {
+        font-weight: 600;
+        color: #2c3e50;
+        margin-bottom: 5px;
+    }
+
+    .activity-time {
+        font-size: 0.85rem;
+        color: #858796;
+    }
+</style>
+
+<!-- Card Principal -->
+<div class="card shadow-sm border-0">
+    <div class="card-header bg-gradient text-white py-3" style="background: linear-gradient(135deg, #4e73df 0%, #224abe 100%);">
+        <h4 class="mb-0 text-center">
+            <i class="fas fa-chart-line me-2"></i>Dashboard de Ventas
+        </h4>
+    </div>
+    <div class="card-body p-4">
+        <div class="dashboard-page">
+            <div class="container">
+                <!-- Header -->
+                <div class="text-center mb-4">
+                    <p class="lead mb-2">{{ nombre_escuela_config|default:"Panel de Control de Ventas" }}</p>
+                    <p class="text-muted">Bienvenido, {{ user.get_full_name|default:user.email }}</p>
+                </div>
+
+                <!-- KPIs Row -->
+        <div class="row mb-4">
+            <div class="col-xl-3 col-md-6 mb-4">
+                <div class="kpi-card primary" style="position: relative;">
+                    <div class="kpi-title">Ventas del Mes</div>
+                    <div class="kpi-value">RD$ 245,580</div>
+                    <i class="fas fa-dollar-sign kpi-icon"></i>
+                    <small class="text-success"><i class="fas fa-arrow-up"></i> 12% vs mes anterior</small>
+                </div>
+            </div>
+
+            <div class="col-xl-3 col-md-6 mb-4">
+                <div class="kpi-card success" style="position: relative;">
+                    <div class="kpi-title">Clientes Activos</div>
+                    <div class="kpi-value">156</div>
+                    <i class="fas fa-users kpi-icon"></i>
+                    <small class="text-success"><i class="fas fa-arrow-up"></i> 8 nuevos esta semana</small>
+                </div>
+            </div>
+
+            <div class="col-xl-3 col-md-6 mb-4">
+                <div class="kpi-card info" style="position: relative;">
+                    <div class="kpi-title">Productos Vendidos</div>
+                    <div class="kpi-value">1,284</div>
+                    <i class="fas fa-shopping-cart kpi-icon"></i>
+                    <small class="text-info"><i class="fas fa-arrow-up"></i> 124 este mes</small>
+                </div>
+            </div>
+
+            <div class="col-xl-3 col-md-6 mb-4">
+                <div class="kpi-card warning" style="position: relative;">
+                    <div class="kpi-title">Pedidos Pendientes</div>
+                    <div class="kpi-value">23</div>
+                    <i class="fas fa-clock kpi-icon"></i>
+                    <small class="text-warning"><i class="fas fa-exclamation-triangle"></i> Requieren atención</small>
+                </div>
+            </div>
+        </div>
+
+        <!-- Charts Row -->
+        <div class="row mb-4">
+            <div class="col-lg-8 mb-4">
+                <div class="chart-card">
+                    <h5><i class="fas fa-chart-area"></i> Tendencia de Ventas (Últimos 6 Meses)</h5>
+                    <canvas id="salesChart" height="80"></canvas>
+                </div>
+            </div>
+
+            <div class="col-lg-4 mb-4">
+                <div class="activity-list">
+                    <h5><i class="fas fa-bell"></i> Actividad Reciente</h5>
+                    
+                    <div class="activity-item">
+                        <div class="activity-icon success">
+                            <i class="fas fa-check"></i>
+                        </div>
+                        <div class="activity-content">
+                            <div class="activity-title">Nueva venta completada</div>
+                            <div class="activity-time">Factura #1234 - RD$ 12,500</div>
+                            <div class="activity-time">Hace 15 minutos</div>
+                        </div>
+                    </div>
+
+                    <div class="activity-item">
+                        <div class="activity-icon primary">
+                            <i class="fas fa-user-plus"></i>
+                        </div>
+                        <div class="activity-content">
+                            <div class="activity-title">Nuevo cliente registrado</div>
+                            <div class="activity-time">Juan Pérez - Comercio Minorista</div>
+                            <div class="activity-time">Hace 1 hora</div>
+                        </div>
+                    </div>
+
+                    <div class="activity-item">
+                        <div class="activity-icon warning">
+                            <i class="fas fa-exclamation"></i>
+                        </div>
+                        <div class="activity-content">
+                            <div class="activity-title">Stock bajo detectado</div>
+                            <div class="activity-time">Producto: Laptop HP - 3 unidades</div>
+                            <div class="activity-time">Hace 2 horas</div>
+                        </div>
+                    </div>
+
+                    <div class="activity-item">
+                        <div class="activity-icon success">
+                            <i class="fas fa-truck"></i>
+                        </div>
+                        <div class="activity-content">
+                            <div class="activity-title">Pedido entregado</div>
+                            <div class="activity-time">Orden #5678 - Cliente VIP</div>
+                            <div class="activity-time">Hace 3 horas</div>
+                        </div>
+                    </div>
+
+                    <div class="activity-item">
+                        <div class="activity-icon primary">
+                            <i class="fas fa-file-invoice"></i>
+                        </div>
+                        <div class="activity-content">
+                            <div class="activity-title">Cotización generada</div>
+                            <div class="activity-time">Cotización #COT-2026-145</div>
+                            <div class="activity-time">Hace 5 horas</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Top Products Section -->
+        <div class="mb-4">
+            <h3 class="mb-4"><i class="fas fa-star"></i> Productos Más Vendidos</h3>
+            <div class="row">
+                <div class="col-md-4 mb-4">
+                    <div class="product-card" style="position: relative;">
+                        <span class="product-badge"><i class="fas fa-fire"></i> TOP 1</span>
+                        <img src="{% static 'img/producto1.jpg' %}" class="card-img-top" alt="Producto 1" 
+                             onerror="this.src='https://via.placeholder.com/300x200?text=Laptop+Empresarial'">
+                        <div class="card-body">
+                            <h5 class="card-title">Laptop HP ProBook 450</h5>
+                            <p class="text-muted mb-2">Categoría: Electrónica</p>
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span class="h4 text-primary mb-0">RD$ 45,000</span>
+                                <span class="badge bg-success">89 vendidas</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-4 mb-4">
+                    <div class="product-card" style="position: relative;">
+                        <span class="product-badge" style="background: #f6c23e;"><i class="fas fa-medal"></i> TOP 2</span>
+                        <img src="{% static 'img/producto2.jpg' %}" class="card-img-top" alt="Producto 2"
+                             onerror="this.src='https://via.placeholder.com/300x200?text=Monitor+4K'">
+                        <div class="card-body">
+                            <h5 class="card-title">Monitor Dell 27" 4K</h5>
+                            <p class="text-muted mb-2">Categoría: Accesorios</p>
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span class="h4 text-primary mb-0">RD$ 18,500</span>
+                                <span class="badge bg-success">67 vendidos</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-4 mb-4">
+                    <div class="product-card" style="position: relative;">
+                        <span class="product-badge" style="background: #e74a3b;"><i class="fas fa-award"></i> TOP 3</span>
+                        <img src="{% static 'img/producto3.jpg' %}" class="card-img-top" alt="Producto 3"
+                             onerror="this.src='https://via.placeholder.com/300x200?text=Impresora+Multifuncional'">
+                        <div class="card-body">
+                            <h5 class="card-title">Impresora Canon MF445DW</h5>
+                            <p class="text-muted mb-2">Categoría: Oficina</p>
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span class="h4 text-primary mb-0">RD$ 22,000</span>
+                                <span class="badge bg-success">54 vendidas</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Upcoming Promotions / Launches -->
+        <div class="mb-5">
+            <h3 class="mb-4"><i class="fas fa-calendar-alt"></i> Próximas Campañas y Lanzamientos</h3>
+            <div class="list-group">
+                <div class="list-group-item d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="mb-1"><i class="fas fa-tags text-danger"></i> Mega Descuento de Verano</h6>
+                        <small class="text-muted">Descuentos de hasta 40% en productos seleccionados</small>
+                    </div>
+                    <span class="badge bg-primary rounded-pill">15 Junio 2026</span>
+                </div>
+                <div class="list-group-item d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="mb-1"><i class="fas fa-rocket text-info"></i> Lanzamiento: Serie Premium XYZ</h6>
+                        <small class="text-muted">Nueva línea de productos de alta gama</small>
+                    </div>
+                    <span class="badge bg-primary rounded-pill">1 Julio 2026</span>
+                </div>
+                <div class="list-group-item d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="mb-1"><i class="fas fa-gift text-success"></i> Programa de Fidelización 2.0</h6>
+                        <small class="text-muted">Nuevos beneficios para clientes frecuentes</small>
+                    </div>
+                    <span class="badge bg-primary rounded-pill">15 Julio 2026</span>
+                </div>
+                <div class="list-group-item d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="mb-1"><i class="fas fa-users text-warning"></i> Capacitación Equipo de Ventas</h6>
+                        <small class="text-muted">Workshop sobre nuevas técnicas de cierre</small>
+                    </div>
+                    <span class="badge bg-primary rounded-pill">10 Agosto 2026</span>
+                </div>
+            </div>
+        </div>
+
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Footer -->
+<footer class="bg-dark text-white py-4 mt-5">
+    <div class="container text-center">
+        <p class="mb-2">
+            <strong>{{ nombre_escuela_config|default:"Sistema de Ventas" }}</strong> - 
+            Gestión integral de ventas y clientes
+        </p>
+        <p class="mb-0">
+            <i class="fas fa-phone"></i> Soporte: (809) 555-0000 |
+            <i class="fas fa-envelope"></i> ventas@empresa.com
+        </p>
+    </div>
+</footer>
+
+<!-- Chart.js for Sales Chart -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    // Sales Chart
+    const ctx = document.getElementById('salesChart');
+    if (ctx) {
+        new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio'],
+                datasets: [{
+                    label: 'Ventas (RD$)',
+                    data: [185000, 198000, 210000, 225000, 238000, 245580],
+                    borderColor: '#4e73df',
+                    backgroundColor: 'rgba(78, 115, 223, 0.1)',
+                    tension: 0.4,
+                    fill: true,
+                    pointRadius: 5,
+                    pointHoverRadius: 7
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                plugins: {
+                    legend: {
+                        display: true,
+                        position: 'top'
+                    },
+                    tooltip: {
+                        mode: 'index',
+                        intersect: false,
+                        callbacks: {
+                            label: function(context) {
+                                return 'Ventas: RD$ ' + context.parsed.y.toLocaleString();
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: false,
+                        ticks: {
+                            callback: function(value) {
+                                return 'RD$ ' + value.toLocaleString();
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+</script>
+{% endblock %}
