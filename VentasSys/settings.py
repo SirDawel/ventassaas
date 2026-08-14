@@ -79,15 +79,17 @@ if not CSRF_TRUSTED_ORIGINS:
     ]
 #https
 #=============================================
-# Informa a Django que Nginx está manejando el SSL/TLS
-SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
-
-# Forzar el uso de cookies seguras en producción
-SESSION_COOKIE_SECURE = True
-CSRF_COOKIE_SECURE = True
-
-# Redirigir cualquier petición HTTP entrante a HTTPS dentro de Django
-SECURE_SSL_REDIRECT = True
+# Configuraciones HTTPS solo en producción
+if not DEBUG or ENVIRONMENT == 'production':
+    # Informa a Django que Nginx está manejando el SSL/TLS
+    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+    
+    # Forzar el uso de cookies seguras en producción
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+    
+    # Redirigir cualquier petición HTTP entrante a HTTPS dentro de Django
+    SECURE_SSL_REDIRECT = True
 # ============================================
 # SESIÓN
 # ============================================
@@ -97,8 +99,6 @@ SECURE_CROSS_ORIGIN_OPENER_POLICY = None
 SESSION_COOKIE_AGE = int(os.getenv('SESSION_COOKIE_AGE', '14400'))  # 4 horas por defecto (fallback)
 SESSION_EXPIRE_AT_BROWSER_CLOSE = os.getenv('SESSION_EXPIRE_AT_BROWSER_CLOSE', 'False') == 'True'
 SESSION_SAVE_EVERY_REQUEST = os.getenv('SESSION_SAVE_EVERY_REQUEST', 'True') == 'True'  # Renovar sesión en cada request
-SESSION_COOKIE_SECURE = False if DEBUG else True  # False en desarrollo
-CSRF_COOKIE_SECURE = False if DEBUG else True  # False en desarrollo
 
 # Tiempos de sesión por rol (en segundos)
 # El middleware RoleBasedSessionMiddleware utilizará estos valores
@@ -322,12 +322,7 @@ FILE_UPLOAD_MAX_MEMORY_SIZE = 10485760  # 10 MB
 # ============================================
 
 if not DEBUG:
-    # HTTPS
-    SECURE_SSL_REDIRECT = True
-    SESSION_COOKIE_SECURE = True
-    CSRF_COOKIE_SECURE = True
-    
-    # HSTS
+    # HSTS (HTTP Strict Transport Security)
     SECURE_HSTS_SECONDS = 31536000  # 1 año
     SECURE_HSTS_INCLUDE_SUBDOMAINS = True
     SECURE_HSTS_PRELOAD = True
