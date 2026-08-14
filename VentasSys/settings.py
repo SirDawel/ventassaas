@@ -81,6 +81,9 @@ if not CSRF_TRUSTED_ORIGINS:
 # ============================================
 # SESIÓN
 # ============================================
+# Desactivar la cabecera Cross-Origin-Opener-Policy
+SECURE_CROSS_ORIGIN_OPENER_POLICY = None
+
 SESSION_COOKIE_AGE = int(os.getenv('SESSION_COOKIE_AGE', '14400'))  # 4 horas por defecto (fallback)
 SESSION_EXPIRE_AT_BROWSER_CLOSE = os.getenv('SESSION_EXPIRE_AT_BROWSER_CLOSE', 'False') == 'True'
 SESSION_SAVE_EVERY_REQUEST = os.getenv('SESSION_SAVE_EVERY_REQUEST', 'True') == 'True'  # Renovar sesión en cada request
@@ -307,6 +310,7 @@ FILE_UPLOAD_MAX_MEMORY_SIZE = 10485760  # 10 MB
 # ============================================
 # CONFIGURACIONES DE SEGURIDAD PARA PRODUCCIÓN
 # ============================================
+
 if not DEBUG:
     # HTTPS
     SECURE_SSL_REDIRECT = True
