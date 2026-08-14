@@ -38,8 +38,8 @@ urlpatterns = [
     path('password_reset/', password_reset_request, name='password_reset'),
     path('reset/<uidb64>/<token>/', password_reset_confirm, name='password_reset_confirm'),
     
-    # Registro de escuelas (multi-tenant)
-    path('registrar-escuela/', views.registrar_escuela, name='registrar_escuela'),
+    # Registro de empresas (multi-tenant)
+    path('registrar-empresa/', views.registrar_empresa, name='registrar_empresa'),
     path('activate-school/<uidb64>/<token>/', views.activate_school, name='activate_school'),
     
     # Páginas principales (dashboard post-login)

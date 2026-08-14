@@ -21,7 +21,7 @@ urlpatterns = [
     # ============================================
     # REGISTRO PÚBLICO DE EMPRESAS (MULTI-TENANT)
     # ============================================
-    path('registrar-escuela/', views.registrar_escuela, name='registrar_escuela'),
+    path('registrar-empresa/', views.registrar_empresa, name='registrar_empresa'),
     
     # ... existing urls ...
     # Reporte general PDF (notas por curso)

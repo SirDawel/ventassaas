@@ -11296,9 +11296,9 @@ def consulta_cuenta(request, pk):
 # REGISTRO PÚBLICO DE ESCUELAS (MULTI-TENANT)
 # ============================================
 
-def registrar_escuela(request):
+def registrar_empresa(request):
     """
-    Vista pública para que nuevas escuelas se registren en el sistema  
+    Vista pública para que nuevas empresas se registren en el sistema  
     Crea un nuevo TENANT (schema PostgreSQL separado) con django-tenants
     No requiere autenticación
     ✅ SEGURIDAD: Rate limiting, CAPTCHA, email confirmation
