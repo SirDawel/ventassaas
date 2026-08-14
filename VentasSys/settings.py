@@ -77,7 +77,17 @@ if not CSRF_TRUSTED_ORIGINS:
             if host not in {'localhost', '127.0.0.1'}
         ],
     ]
+#https
+#=============================================
+# Informa a Django que Nginx está manejando el SSL/TLS
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
+# Forzar el uso de cookies seguras en producción
+SESSION_COOKIE_SECURE = True
+CSRF_COOKIE_SECURE = True
+
+# Redirigir cualquier petición HTTP entrante a HTTPS dentro de Django
+SECURE_SSL_REDIRECT = True
 # ============================================
 # SESIÓN
 # ============================================
