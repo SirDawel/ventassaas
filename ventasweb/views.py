@@ -11733,4 +11733,12 @@ def home_public(request):
     return redirect('login')
 
 
+def custom_404(request, exception=None):
+    """
+    Manejador personalizado de error 404
+    Muestra una página amigable sin exponer las URLs del sistema
+    """
+    return render(request, '404.html', status=404)
+
+
 

@@ -55,6 +55,9 @@ if not SECRET_KEY:
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.getenv('DEBUG', 'True') == 'True'
 
+# No mostrar todas las URLs en errores 404 (incluso en DEBUG mode)
+DEBUG_PROPAGATE_EXCEPTIONS = False
+
 # Hosts permitidos (Multi-Tenant: permitir subdominios)
 ALLOWED_HOSTS = get_env_list('ALLOWED_HOSTS', 'localhost,127.0.0.1,.localhost,.escuelaenlinea.com')
 
@@ -172,6 +175,7 @@ MIDDLEWARE = [
     'ventasweb.security_middleware.SessionSecurityMiddleware',  # Seguridad de sesiones
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'ventasweb.middleware_404.Custom404Middleware',  # Manejador personalizado de 404
 ]
 
 ROOT_URLCONF = 'VentasSys.urls'

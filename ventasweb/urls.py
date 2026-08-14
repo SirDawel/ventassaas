@@ -288,4 +288,7 @@ urlpatterns = [
     
     # Ruta para manejar peticiones huérfanas (evitar 404 en recursos no existentes)
     path('reporte/', views.empty_response, name='empty_reporte'),
-] 
+]
+
+# Manejador personalizado para error 404
+handler404 = 'ventasweb.views.custom_404' 
