@@ -80,7 +80,7 @@ if not CSRF_TRUSTED_ORIGINS:
 #https
 #=============================================
 # Configuraciones HTTPS solo en producción
-if not DEBUG or ENVIRONMENT == 'production':
+if not DEBUG and ENVIRONMENT == 'production':
     # Informa a Django que Nginx está manejando el SSL/TLS
     SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
     
