@@ -23,19 +23,18 @@ git pull
 source .venv/bin/activate
 ```
 
-### Paso 2: Eliminar tenant brevo corrupto
+### Paso 2: Limpiar tenants corruptos (AUTOMÁTICO)
 
 ```bash
-# Listar todos los tenants (opcional, para ver el problema)
-python listar_tenants.py
-
-# Eliminar tenant brevo
-python eliminar_tenant_brevo.py
+# Este script detecta y elimina AUTOMÁTICAMENTE cualquier tenant corrupto
+python limpiar_tenants_corruptos.py
 ```
 
-Cuando te pregunte: `⚠️ ¿Estás seguro de eliminar el tenant 'brevo'? (si/no):`
+Cuando te pregunte: `¿Deseas eliminar estos tenants corruptos? Escribe 'ELIMINAR' para confirmar:`
 
-Escribe: **si**
+Escribe: **ELIMINAR**
+
+**✅ El script encontrará y eliminará automáticamente todos los tenants que no tengan schema en PostgreSQL.**
 
 ### Paso 3: Ejecutar migraciones
 
