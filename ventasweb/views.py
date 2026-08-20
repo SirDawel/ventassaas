@@ -11491,7 +11491,7 @@ def registrar_empresa(request):
             # Dominio para producción (si corresponde)
             if not settings.DEBUG:
                 domain_prod = Domain()
-                domain_prod.domain = f'{nombre_corto}.ventasenlinea.com'
+                domain_prod.domain = f'{nombre_corto}.misventasflash.com'
                 domain_prod.tenant = tenant
                 domain_prod.is_primary = False
                 domain_prod.save()
@@ -11576,7 +11576,7 @@ def registrar_empresa(request):
                 current_site = get_current_site(request)
                 activation_url = f"{request.scheme}://{current_site.domain}/activate-school/{uid}/{tenant.activation_token}/"
                 
-                url_acceso = f'http://{nombre_corto}.localhost:8000' if settings.DEBUG else f'https://{nombre_corto}.ventasenlinea.com'
+                url_acceso = f'http://{nombre_corto}.localhost:8000' if settings.DEBUG else f'https://{nombre_corto}.misventasflash.com'
                 
                 subject = f'💼 Activa tu empresa: {nombre_empresa}'
                 
@@ -11697,11 +11697,11 @@ def registrar_empresa(request):
             )
             
             # Construir URL del subdominio de la empresa
-            url_empresa = f'http://{nombre_corto}.localhost:8000' if settings.DEBUG else f'https://{nombre_corto}.ventasenlinea.com'
+            url_empresa = f'http://{nombre_corto}.localhost:8000' if settings.DEBUG else f'https://{nombre_corto}.misventasflash.com'
             
-            # Redirigir al login del subdominio de la escuela recién creada
+            # Redirigir al login del subdominio de la empresa recién creada
             from django.http import HttpResponseRedirect
-            return HttpResponseRedirect(f'{url_escuela}/login/')
+            return HttpResponseRedirect(f'{url_empresa}/login/')
             
         except Exception as e:
             logger.error(f'Error registrando escuela: {e}', exc_info=True)
