@@ -11696,12 +11696,9 @@ def registrar_empresa(request):
                 f'<br><br>⚠️ <strong>Importante:</strong> Tu empresa estará disponible después de verificar el email.'
             )
             
-            # Construir URL del subdominio de la empresa
-            url_empresa = f'http://{nombre_corto}.localhost:8000' if settings.DEBUG else f'https://{nombre_corto}.misventasflash.com'
-            
-            # Redirigir al login del subdominio de la empresa recién creada
-            from django.http import HttpResponseRedirect
-            return HttpResponseRedirect(f'{url_empresa}/login/')
+            # Redirigir al login público del sistema para evitar errores de DNS/subdominio
+            # recién creados durante la activación inicial.
+            return redirect('login')
             
         except Exception as e:
             logger.error(f'Error registrando escuela: {e}', exc_info=True)
