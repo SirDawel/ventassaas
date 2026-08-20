@@ -59,7 +59,7 @@ DEBUG = os.getenv('DEBUG', 'True') == 'True'
 DEBUG_PROPAGATE_EXCEPTIONS = False
 
 # Hosts permitidos (Multi-Tenant: permitir subdominios)
-ALLOWED_HOSTS = get_env_list('ALLOWED_HOSTS', 'localhost,127.0.0.1,.localhost,.escuelaenlinea.com')
+ALLOWED_HOSTS = get_env_list('ALLOWED_HOSTS', 'localhost,127.0.0.1,.localhost,.misventasflash.com')
 
 # Permitir todos los subdominios en desarrollo
 if DEBUG:

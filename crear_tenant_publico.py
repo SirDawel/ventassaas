@@ -48,7 +48,7 @@ else:
 
 # Para producción (si aplica)
 domain_prod, created = Domain.objects.get_or_create(
-    domain='escuelaenlinea.com',
+    domain='misventasflash.com',
     defaults={
         'tenant': public_tenant,
         'is_primary': False
@@ -56,9 +56,9 @@ domain_prod, created = Domain.objects.get_or_create(
 )
 
 if created:
-    print(f"✅ Dominio escuelaenlinea.com creado para tenant público")
+    print(f"✅ Dominio misventasflash.com creado para tenant público")
 else:
-    print(f"ℹ️ Dominio escuelaenlinea.com ya existe")
+    print(f"ℹ️ Dominio misventasflash.com ya existe")
 
 print("\n✅ Configuración del tenant público completada")
-print("Ahora puedes registrar nuevas escuelas desde http://localhost:8000/registrar-escuela/")
+print("Ahora puedes registrar nuevas empresas desde http://localhost:8000/registrar-empresa/")
