@@ -286,7 +286,7 @@ def activate_school(request, uidb64, token):
         try:
             from django.core.mail import EmailMessage
             
-            url_acceso = f'http://{tenant.schema_name}.localhost:8000' if settings.DEBUG else f'https://{tenant.schema_name}.ventasenlinea.com'
+            url_acceso = f'http://{tenant.schema_name}.localhost:8000' if settings.DEBUG else f'https://{tenant.schema_name}.misventasflash.com'
             
             subject = f'🎉 ¡Bienvenido a Sistema de Ventas, {tenant.nombre}!'
             
@@ -347,7 +347,7 @@ def activate_school(request, uidb64, token):
                     
                     <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #e3e6f0; color: #858796; font-size: 12px; text-align: center;">
                         <p><strong>Sistema de Ventas Online</strong> - Gestión Comercial Profesional</p>
-                        <p>Soporte: soporte@ventasenlinea.com</p>
+                        <p>Soporte: soporte@misventasflash.com</p>
                     </div>
                 </div>
             </body>
@@ -374,7 +374,7 @@ def activate_school(request, uidb64, token):
         )
         
         # Redirigir al login del subdominio de la empresa activada
-        url_acceso = f'http://{tenant.schema_name}.localhost:8000' if settings.DEBUG else f'https://{tenant.schema_name}.ventasenlinea.com'
+        url_acceso = f'http://{tenant.schema_name}.localhost:8000' if settings.DEBUG else f'https://{tenant.schema_name}.misventasflash.com'
         from django.http import HttpResponseRedirect
         return HttpResponseRedirect(f'{url_acceso}/login/')
         
