@@ -1,0 +1,40 @@
+# Systemd service file for Celery Worker
+# /etc/systemd/system/celery-worker.service
+
+[Unit]
+Description=Celery Worker Service
+After=network.target postgresql.service redis.service
+
+[Service]
+Type=forking
+User=ubuntu
+Group=ubuntu
+WorkingDirectory=/var/www/ventas
+Environment="PATH=/var/www/ventas/.venv/bin:/usr/local/bin:/usr/bin:/bin"
+Environment="DJANGO_SETTINGS_MODULE=VentasSys.settings"
+
+# Celery worker command
+ExecStart=/var/www/ventas/.venv/bin/celery -A VentasSys worker \
+    --loglevel=info \
+    --logfile=/var/log/celery/worker.log \
+    --pidfile=/var/run/celery/worker.pid \
+    --detach
+
+ExecStop=/var/www/ventas/.venv/bin/celery -A VentasSys control shutdown
+ExecReload=/bin/kill -s HUP $MAINPID
+
+# Restart policy
+Restart=always
+RestartSec=10s
+
+# Security
+PrivateTmp=true
+NoNewPrivileges=true
+
+# Logging
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=celery-worker
+
+[Install]
+WantedBy=multi-user.target

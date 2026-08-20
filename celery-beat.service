@@ -1,0 +1,40 @@
+# Systemd service file for Celery Beat Scheduler
+# /etc/systemd/system/celery-beat.service
+
+[Unit]
+Description=Celery Beat Scheduler Service
+After=network.target postgresql.service redis.service celery-worker.service
+
+[Service]
+Type=forking
+User=ubuntu
+Group=ubuntu
+WorkingDirectory=/var/www/ventas
+Environment="PATH=/var/www/ventas/.venv/bin:/usr/local/bin:/usr/bin:/bin"
+Environment="DJANGO_SETTINGS_MODULE=VentasSys.settings"
+
+# Celery beat command
+ExecStart=/var/www/ventas/.venv/bin/celery -A VentasSys beat \
+    --loglevel=info \
+    --logfile=/var/log/celery/beat.log \
+    --pidfile=/var/run/celery/beat.pid \
+    --schedule=/var/www/ventas/celerybeat-schedule \
+    --detach
+
+ExecStop=/bin/kill -s TERM $MAINPID
+
+# Restart policy
+Restart=always
+RestartSec=10s
+
+# Security
+PrivateTmp=true
+NoNewPrivileges=true
+
+# Logging
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=celery-beat
+
+[Install]
+WantedBy=multi-user.target
