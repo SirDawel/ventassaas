@@ -5283,43 +5283,6 @@ class TransaccionPOS(models.Model):
     terminal_id = models.CharField(max_length=50)
     monto = models.DecimalField(max_digits=10, decimal_places=2)
     estado = models.CharField(max_length=20)
-    fecha_transaccion = models.DateTimeField(auto_now_add=True)
-    
-    class Meta:
-        verbose_name = "Transacción POS"
-        verbose_name_plural = "Transacciones POS"
-        
-    def __str__(self):
-        return f"{self.transaction_id} - RDmakemigrations{self.monto}"
-
-
-class TerminalEstudiante(models.Model):
-    """Stub temporal para terminales POS"""
-    terminal_id = models.CharField(max_length=50, unique=True)
-    estudiante = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
-    proveedor = models.CharField(max_length=20)
-    activo = models.BooleanField(default=True)
-    fecha_asignacion = models.DateTimeField(auto_now_add=True)
-    
-    class Meta:
-        verbose_name = "Terminal-Estudiante"
-        verbose_name_plural = "Terminales-Estudiantes"
-    
-    def __str__(self):
-        return f"Terminal {self.terminal_id}"
-
-
-# ============================================================================
-# MODELOS POS (Stubs temporales para compatibilidad)
-# ============================================================================
-
-class TransaccionPOS(models.Model):
-    """Stub temporal para transacciones POS"""
-    transaction_id = models.CharField(max_length=100, unique=True)
-    proveedor = models.CharField(max_length=50)
-    terminal_id = models.CharField(max_length=50)
-    monto = models.DecimalField(max_digits=10, decimal_places=2)
-    estado = models.CharField(max_length=20)
     estudiante = models.ForeignKey(CustomUser, on_delete=models.SET_NULL, null=True, blank=True)
     factura_pagada = models.ForeignKey('Factura', on_delete=models.SET_NULL, null=True, blank=True)
     fecha_transaccion = models.DateTimeField(auto_now_add=True)
