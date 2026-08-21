@@ -11696,9 +11696,9 @@ def registrar_empresa(request):
                 f'<br><br>⚠️ <strong>Importante:</strong> Tu empresa estará disponible después de verificar el email.'
             )
             
-            # Redirigir al login público del sistema para evitar errores de DNS/subdominio
-            # recién creados durante la activación inicial.
-            return redirect('login')
+            # Forzar la redirección al login público con ruta explícita para evitar
+            # que la resolución por nombre vuelva a la misma vista del registro.
+            return HttpResponseRedirect('/login/')
             
         except Exception as e:
             logger.error(f'Error registrando escuela: {e}', exc_info=True)
