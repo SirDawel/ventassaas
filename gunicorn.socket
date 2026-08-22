@@ -1,0 +1,10 @@
+[Unit]
+Description=Gunicorn socket
+
+[Socket]
+ListenStream=/run/gunicorn/gunicorn.sock
+SocketUser=www-data
+SocketMode=660
+
+[Install]
+WantedBy=sockets.target
