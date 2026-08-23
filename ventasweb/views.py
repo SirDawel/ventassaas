@@ -11698,7 +11698,7 @@ def registrar_empresa(request):
             
             # Forzar la redirección al login público con ruta explícita para evitar
             # que la resolución por nombre vuelva a la misma vista del registro.
-            return redirect('/login/')
+            return HttpResponseRedirect('/login/')
             
         except Exception as e:
             logger.error(f'Error registrando escuela: {e}', exc_info=True)
