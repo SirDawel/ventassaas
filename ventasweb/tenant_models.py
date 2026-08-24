@@ -58,13 +58,15 @@ class Client(TenantMixin):
         is_new = self.pk is None
         super().save(*args, **kwargs)
         
-        # Asignación automática del subdominio dinámico al crear el tenant
         if is_new:
             subdominio = f"{self.schema_name}.misventasflash.com"
+            # Usar defaults en get_or_create evita errores si el registro fue creado a medias
             Domain.objects.get_or_create(
                 domain=subdominio,
-                tenant=self,
-                is_primary=True
+                defaults={
+                    'tenant': self,
+                    'is_primary': True
+                }
             )
 
     def esta_activa(self):
