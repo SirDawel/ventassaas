@@ -54,19 +54,17 @@ class Client(TenantMixin):
     def __str__(self):
         return self.nombre
 
+    
     def save(self, *args, **kwargs):
         is_new = self.pk is None
         super().save(*args, **kwargs)
         
         if is_new:
             subdominio = f"{self.schema_name}.misventasflash.com"
-            # Usar defaults en get_or_create evita errores si el registro fue creado a medias
+            # Evita duplicados asignando el tenant como default
             Domain.objects.get_or_create(
                 domain=subdominio,
-                defaults={
-                    'tenant': self,
-                    'is_primary': True
-                }
+                defaults={'tenant': self, 'is_primary': True}
             )
 
     def esta_activa(self):
