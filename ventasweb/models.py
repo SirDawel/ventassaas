@@ -54,7 +54,7 @@ class CustomUserManager(BaseUserManager):
 
 from django.contrib.auth.models import BaseUserManager
 from django.db import models
-from django-tenants.models import TenantMixin, DomainMixin
+from django_tenants.models import TenantMixin, DomainMixin
 class Client(TenantMixin):
     nombre = models.CharField(max_length=100)
     # schema_name ya lo hereda de TenantMixin, no necesitas redundarlo a menos que agregues validators custom.
