@@ -52,6 +52,33 @@ class CustomUserManager(BaseUserManager):
 
         return self.create_user(email, password, **extra_fields)
 
+from django.contrib.auth.models import BaseUserManager
+from django.db import models
+from django-tenants.models import TenantMixin, DomainMixin
+class Client(TenantMixin):
+    nombre = models.CharField(max_length=100)
+    # schema_name ya lo hereda de TenantMixin, no necesitas redundarlo a menos que agregues validators custom.
+    
+    # Crea el schema de la base de datos automáticamente al guardar
+    auto_create_schema = True
+
+    def save(self, *args, **kwargs):
+        is_new = self.pk is None
+        super().save(*args, **kwargs)
+        
+        # Genera automáticamente el subdominio si es un cliente nuevo
+        if is_new:
+            subdominio = f"{self.schema_name}.misventasflash.com"
+            Domain.objects.get_or_create(
+                domain=subdominio,
+                tenant=self,
+                is_primary=True
+            )
+
+
+class Domain(DomainMixin):
+    pass
+
 
 
 from django.db import models
@@ -3141,23 +3168,6 @@ class RegistroEscuelaAttempt(models.Model):
             user_agent=user_agent[:500] if user_agent else ''
         )
 
-class Client(TenantMixin):
-    nombre = models.CharField(max_length=100)
-    schema_name = models.CharField(max_length=63, unique=True)
-    # ... tus otros campos de Client ...
-
-    def save(self, *args, **kwargs):
-        is_new = self.pk is None
-        super().save(*args, **kwargs)
-        
-        # Genera automáticamente el subdominio si es un cliente nuevo
-        if is_new:
-            subdominio = f"{self.schema_name}.misventasflash.com"
-            Domain.objects.get_or_create(
-                domain=subdominio,
-                tenant=self,
-                is_primary=True
-            )
 
 class SecurityLog(models.Model):
     """
