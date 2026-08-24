@@ -3141,6 +3141,23 @@ class RegistroEscuelaAttempt(models.Model):
             user_agent=user_agent[:500] if user_agent else ''
         )
 
+class Client(TenantMixin):
+    nombre = models.CharField(max_length=100)
+    schema_name = models.CharField(max_length=63, unique=True)
+    # ... tus otros campos de Client ...
+
+    def save(self, *args, **kwargs):
+        is_new = self.pk is None
+        super().save(*args, **kwargs)
+        
+        # Genera automáticamente el subdominio si es un cliente nuevo
+        if is_new:
+            subdominio = f"{self.schema_name}.misventasflash.com"
+            Domain.objects.get_or_create(
+                domain=subdominio,
+                tenant=self,
+                is_primary=True
+            )
 
 class SecurityLog(models.Model):
     """
@@ -5202,6 +5219,7 @@ class Suscripcion(models.Model):
             'SUSPENDIDA': 'danger',
         }
         return colores.get(self.estado, 'secondary')
+
 
 
 class HistorialPago(models.Model):
