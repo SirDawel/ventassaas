@@ -54,13 +54,8 @@ class Client(TenantMixin):
     def __str__(self):
         return self.nombre
 
-    def save(self, *args, **kwargs):
-        """
-        Guarda el Tenant y delega la creación del esquema en PostgreSQL a django-tenants.
-        La creación de dominios (Domain) se maneja explícitamente en la vista de registro.
-        """
-        super().save(*args, **kwargs)
-        
+    
+
     def esta_activa(self):
         """Verifica si la escuela está activa y no ha expirado"""
         if not self.activo:
