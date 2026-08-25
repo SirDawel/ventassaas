@@ -54,19 +54,13 @@ class Client(TenantMixin):
     def __str__(self):
         return self.nombre
 
-    
     def save(self, *args, **kwargs):
-        is_new = self.pk is None
+        """
+        Guarda el Tenant y delega la creación del esquema en PostgreSQL a django-tenants.
+        La creación de dominios (Domain) se maneja explícitamente en la vista de registro.
+        """
         super().save(*args, **kwargs)
         
-        if is_new:
-            subdominio = f"{self.schema_name}.misventasflash.com"
-            # Evita duplicados asignando el tenant como default
-            Domain.objects.get_or_create(
-                domain=subdominio,
-                defaults={'tenant': self, 'is_primary': True}
-            )
-
     def esta_activa(self):
         """Verifica si la escuela está activa y no ha expirado"""
         if not self.activo:
