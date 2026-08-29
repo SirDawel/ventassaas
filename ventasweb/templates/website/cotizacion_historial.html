@@ -1,0 +1,175 @@
+{% extends 'website/base.html' %}
+{% load static %}
+
+{% block title %}{{ nombre_escuela_config|default:"Mis Ventas Flash" }} - Historial de Cotización{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="h3 mb-0 text-gray-800">
+            <i class="fas fa-history me-2"></i>Historial de Cotización
+        </h1>
+        <a href="{% url 'cotizacion_detalle' cotizacion.id %}" class="btn btn-secondary">
+            <i class="fas fa-arrow-left me-2"></i>Volver
+        </a>
+    </div>
+
+    <!-- Información de la Cotización -->
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">{{ cotizacion.numero_cotizacion }}</h6>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-3">
+                    <strong>Cliente:</strong> {{ cotizacion.cliente.get_full_name }}
+                </div>
+                <div class="col-md-3">
+                    <strong>Estado:</strong>
+                    {% if cotizacion.estado == 'borrador' %}
+                    <span class="badge bg-secondary">Borrador</span>
+                    {% elif cotizacion.estado == 'enviada' %}
+                    <span class="badge bg-warning text-dark">Enviada</span>
+                    {% elif cotizacion.estado == 'aceptada' %}
+                    <span class="badge bg-success">Aceptada</span>
+                    {% elif cotizacion.estado == 'rechazada' %}
+                    <span class="badge bg-danger">Rechazada</span>
+                    {% elif cotizacion.estado == 'convertida' %}
+                    <span class="badge bg-info">Convertida</span>
+                    {% endif %}
+                </div>
+                <div class="col-md-3">
+                    <strong>Total:</strong> RD$ {{ cotizacion.total|floatformat:2 }}
+                </div>
+                <div class="col-md-3">
+                    <strong>Vistas:</strong> {{ cotizacion.veces_vista }}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Timeline de Historial -->
+    <div class="card shadow">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">
+                <i class="fas fa-list me-2"></i>Registro de Actividad
+            </h6>
+        </div>
+        <div class="card-body">
+            {% if historial %}
+            <div class="timeline">
+                {% for evento in historial %}
+                <div class="timeline-item mb-4">
+                    <div class="row">
+                        <div class="col-auto">
+                            <div class="timeline-icon">
+                                {% if evento.tipo_cambio == 'creacion' %}
+                                <i class="fas fa-plus-circle fa-2x text-success"></i>
+                                {% elif evento.tipo_cambio == 'modificacion' %}
+                                <i class="fas fa-edit fa-2x text-warning"></i>
+                                {% elif evento.tipo_cambio == 'cambio_estado' %}
+                                <i class="fas fa-exchange-alt fa-2x text-info"></i>
+                                {% elif evento.tipo_cambio == 'firma' %}
+                                <i class="fas fa-signature fa-2x text-success"></i>
+                                {% elif evento.tipo_cambio == 'conversion' %}
+                                <i class="fas fa-file-invoice fa-2x text-primary"></i>
+                                {% elif evento.tipo_cambio == 'envio' %}
+                                <i class="fas fa-paper-plane fa-2x text-info"></i>
+                                {% elif evento.tipo_cambio == 'vista' %}
+                                <i class="fas fa-eye fa-2x text-secondary"></i>
+                                {% else %}
+                                <i class="fas fa-circle fa-2x text-muted"></i>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="col">
+                            <div class="card">
+                                <div class="card-body">
+                                    <div class="d-flex justify-content-between align-items-start">
+                                        <div>
+                                            <h6 class="mb-1">
+                                                <span class="badge bg-primary me-2">{{ evento.get_tipo_cambio_display }}</span>
+                                                {% if evento.usuario %}
+                                                <small class="text-muted">por {{ evento.usuario.get_full_name }}</small>
+                                                {% endif %}
+                                            </h6>
+                                            <p class="mb-1">{{ evento.descripcion }}</p>
+                                            {% if evento.ip_address %}
+                                            <small class="text-muted">
+                                                <i class="fas fa-network-wired me-1"></i>{{ evento.ip_address }}
+                                            </small>
+                                            {% endif %}
+                                        </div>
+                                        <div class="text-end">
+                                            <small class="text-muted">
+                                                {{ evento.fecha|date:"d/m/Y" }}<br>
+                                                {{ evento.fecha|date:"H:i:s" }}
+                                            </small>
+                                        </div>
+                                    </div>
+                                    
+                                    {% if evento.datos_anteriores or evento.datos_nuevos %}
+                                    <div class="mt-2">
+                                        <button class="btn btn-sm btn-outline-secondary" type="button" 
+                                                data-bs-toggle="collapse" data-bs-target="#detalles-{{ evento.id }}">
+                                            <i class="fas fa-eye me-1"></i>Ver detalles
+                                        </button>
+                                        <div class="collapse mt-2" id="detalles-{{ evento.id }}">
+                                            <div class="row">
+                                                {% if evento.datos_anteriores %}
+                                                <div class="col-md-6">
+                                                    <strong>Antes:</strong>
+                                                    <pre class="bg-light p-2 rounded"><code>{{ evento.datos_anteriores|safe }}</code></pre>
+                                                </div>
+                                                {% endif %}
+                                                {% if evento.datos_nuevos %}
+                                                <div class="col-md-6">
+                                                    <strong>Después:</strong>
+                                                    <pre class="bg-light p-2 rounded"><code>{{ evento.datos_nuevos|safe }}</code></pre>
+                                                </div>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="text-center py-5">
+                <i class="fas fa-history fa-3x text-muted mb-3"></i>
+                <p class="text-muted">No hay historial registrado para esta cotización</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<style>
+.timeline {
+    position: relative;
+    padding-left: 30px;
+}
+
+.timeline::before {
+    content: '';
+    position: absolute;
+    left: 20px;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background: #e0e0e0;
+}
+
+.timeline-icon {
+    position: absolute;
+    left: -10px;
+    background: white;
+    padding: 5px;
+}
+</style>
+{% endblock %}

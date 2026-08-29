@@ -74,12 +74,23 @@ if not CSRF_TRUSTED_ORIGINS:
     CSRF_TRUSTED_ORIGINS = [
         'http://localhost',
         'http://127.0.0.1',
+        'http://localhost:8000',
+        'http://127.0.0.1:8000',
         *[
             f'https://{host}'
             for host in ALLOWED_HOSTS
             if host not in {'localhost', '127.0.0.1'}
         ],
     ]
+
+# Configuración CSRF adicional para desarrollo
+if DEBUG:
+    CSRF_COOKIE_HTTPONLY = False  # Permitir JavaScript acceder al cookie en desarrollo
+    CSRF_COOKIE_SAMESITE = 'Lax'  # Menos restrictivo en desarrollo
+    CSRF_USE_SESSIONS = False  # Usar cookies, no sesiones
+else:
+    CSRF_COOKIE_HTTPONLY = True
+    CSRF_COOKIE_SAMESITE = 'Strict'
 #https
 #=============================================
 # Configuraciones HTTPS solo en producción
@@ -175,6 +186,8 @@ MIDDLEWARE = [
     'ventasweb.security_middleware.SessionSecurityMiddleware',  # Seguridad de sesiones
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    # 'ventasweb.middleware.PlanLimitsMiddleware',  # Límites de planes y suscripción - TEMPORAL
+    # 'ventasweb.middleware.BillingWarningMiddleware',  # Alertas de uso de planes - TEMPORAL
     'ventasweb.middleware_404.Custom404Middleware',  # Manejador personalizado de 404
 ]
 
@@ -454,6 +467,14 @@ STRIPE_CANCEL_URL = os.getenv('STRIPE_CANCEL_URL', 'http://localhost:8000/suscri
 
 # Moneda por defecto
 STRIPE_CURRENCY = os.getenv('STRIPE_CURRENCY', 'usd')
+
+# Mapeo de planes a Price IDs de Stripe
+# Obtener estos IDs en: Dashboard → Products → [producto] → Pricing
+STRIPE_PRICE_IDS = {
+    'basico': os.getenv('STRIPE_PRICE_ID_BASICO', ''),  # $5/mes
+    'plus': os.getenv('STRIPE_PRICE_ID_PLUS', ''),      # $12/mes
+    'pro': os.getenv('STRIPE_PRICE_ID_PRO', ''),        # $25/mes
+}
 
 # Validar configuración de Stripe en producción
 if not DEBUG and not STRIPE_SECRET_KEY:

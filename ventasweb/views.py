@@ -15,7 +15,7 @@ from django.contrib.auth import (
     logout,
     update_session_auth_hash,
 )
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponseRedirect
 from django.utils.http import urlsafe_base64_encode
 from django.utils.encoding import force_bytes
 import uuid
@@ -288,7 +288,7 @@ def activate_school(request, uidb64, token):
             
             url_acceso = f'http://{tenant.schema_name}.localhost:8000' if settings.DEBUG else f'https://{tenant.schema_name}.misventasflash.com'
             
-            subject = f'🎉 ¡Bienvenido a Sistema de Ventas, {tenant.nombre}!'
+            subject = f'🎉 ¡Bienvenido a Mis Ventas Flash, {tenant.nombre}!'
             
             html_message = f"""
             <html>
@@ -346,7 +346,7 @@ def activate_school(request, uidb64, token):
                     </p>
                     
                     <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #e3e6f0; color: #858796; font-size: 12px; text-align: center;">
-                        <p><strong>Sistema de Ventas Online</strong> - Gestión Comercial Profesional</p>
+                        <p><strong>Mis Ventas Flash</strong> - Gestión Comercial Profesional</p>
                         <p>Soporte: soporte@misventasflash.com</p>
                     </div>
                 </div>
@@ -6760,7 +6760,7 @@ def cobros_dashboard(request):
     if anho_escolar:
         total_pagos = Pago.objects.filter(anho_escolar=anho_escolar).count()
     else:
-        total_pagos = Pago.objects.filter(fecha__year=timezone.now().year).count()
+        total_pagos = Pago.objects.filter(fecha_registro__year=timezone.now().year).count()
     
     # Obtener o crear el estudiante genérico "cliente"
     cliente_generico = obtener_o_crear_cliente_generico()
@@ -7656,6 +7656,16 @@ def factura_crear_nueva(request):
             factura.calcular_totales()
             factura.actualizar_estado()
             factura.save()
+            
+            # ============================================
+            # INCREMENTAR CONTADOR DE FACTURAS DEL TENANT
+            # ============================================
+            try:
+                if hasattr(request, 'tenant') and request.tenant:
+                    request.tenant.incrementar_facturas()
+                    print(f"DEBUG - Contador de facturas incrementado: {request.tenant.facturas_mes_actual}/{request.tenant.max_facturas_mes}")
+            except Exception as e:
+                print(f"DEBUG - Error al incrementar contador de facturas: {e}")
 
             # ============================================
             # REGISTRAR PAGO AUTOMÃTICAMENTE si monto_pagado > 0
@@ -11369,17 +11379,18 @@ def registrar_empresa(request):
             # Datos de la empresa
             nombre_empresa = request.POST.get('nombre_empresa')
             nombre_corto = request.POST.get('nombre_corto').lower().strip()
-            email_empresa = request.POST.get('email_empresa')
             telefono_empresa = request.POST.get('telefono_empresa', '')
             direccion_empresa = request.POST.get('direccion_empresa', '')
-            plan = request.POST.get('plan', 'prueba')
-            max_usuarios = int(request.POST.get('max_usuarios', 50))
+            plan = request.POST.get('plan', 'gratis')
             
-            # Datos del administrador
+            # Datos del administrador (usamos el mismo email para empresa y admin)
             admin_nombre = request.POST.get('admin_nombre')
             admin_email = request.POST.get('admin_email')
             admin_password = request.POST.get('admin_password')
             admin_password_confirm = request.POST.get('admin_password_confirm')
+            
+            # Usar el email del admin como email de contacto de la empresa
+            email_empresa = admin_email
             
             # Validaciones
             if admin_password != admin_password_confirm:
@@ -11455,10 +11466,9 @@ def registrar_empresa(request):
                 )
                 return render(request, 'public/registro_escuela.html')
             
-            # Calcular fecha de vencimiento (30 días para prueba)
+            # No establecer fecha de vencimiento para planes permanentes
+            # Los planes de pago se renuevan automáticamente vía Stripe
             fecha_venc = None
-            if plan in ['gratis', 'prueba']:
-                fecha_venc = timezone.now() + timedelta(days=30)
             
             # 🔒 1. Crear el TENANT (Client) - INACTIVO hasta confirmar email
             tenant = Client(
@@ -11468,11 +11478,13 @@ def registrar_empresa(request):
                 email_contacto=email_empresa,
                 telefono=telefono_empresa,
                 direccion=direccion_empresa,
-                plan=plan if plan != 'gratis' else 'prueba',
-                max_usuarios=max_usuarios,
+                plan=plan,  # gratis, basico, plus, pro
                 activo=False,  # 🔒 INACTIVO hasta activación por email
                 fecha_vencimiento=fecha_venc
             )
+            
+            # Configurar límites según el plan seleccionado
+            tenant.configurar_limites_plan()
             
             # 🔒 Generar token de activación
             tenant.activation_token = uuid.uuid4()
@@ -11596,7 +11608,6 @@ def registrar_empresa(request):
                             <p style="margin: 5px 0;"><strong>Nombre:</strong> {nombre_empresa}</p>
                             <p style="margin: 5px 0;"><strong>Subdominio:</strong> {nombre_corto}</p>
                             <p style="margin: 5px 0;"><strong>Plan:</strong> {plan.title()}</p>
-                            <p style="margin: 5px 0;"><strong>Usuarios:</strong> {max_usuarios}</p>
                         </div>
                         
                         <div style="background: #fff3cd; padding: 15px; border-radius: 10px; margin: 20px 0; border-left: 5px solid #f6c23e;">
@@ -11634,7 +11645,7 @@ def registrar_empresa(request):
                         </p>
                         
                         <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #e3e6f0; color: #858796; font-size: 12px;">
-                            <p>Sistema de Ventas Online - Gestión Comercial</p>
+                            <p>Mis Ventas Flash - Gestión Comercial</p>
                             <p>Si el botón no funciona, copia este enlace:<br>
                             <a href="{activation_url}" style="color: #4e73df; word-break: break-all;">{activation_url}</a></p>
                         </div>
@@ -11650,12 +11661,18 @@ def registrar_empresa(request):
                     [email_empresa],
                 )
                 email.content_subtype = 'html'
-                email.send(fail_silently=True)
+                email.send(fail_silently=False)
                 
-                logger.info(f'Email de activación enviado a {email_empresa}')
+                logger.info(f'✅ Email de activación enviado exitosamente a {email_empresa}')
                 
             except Exception as e:
-                logger.error(f'Error enviando email de activación: {e}')
+                logger.error(f'❌ Error enviando email de activación: {e}', exc_info=True)
+                # No detener el registro, pero informar al usuario
+                messages.warning(
+                    request,
+                    f'⚠️ Tu empresa fue registrada, pero hubo un problema enviando el email de activación. '
+                    f'Por favor, contacta al soporte con este código de error: {str(e)[:100]}'
+                )
             
             # 🔒 5. Registrar intento EXITOSO
             RegistroEscuelaAttempt.record_attempt(
@@ -11691,9 +11708,10 @@ def registrar_empresa(request):
             messages.success(
                 request,
                 f'✅ ¡Registro exitoso! Hemos enviado un correo de confirmación a <strong>{email_empresa}</strong>. '
-                f'<br><br>📧 Por favor, revisa tu bandeja de entrada (y spam) y haz clic en el enlace de activación '
-                f'para completar el registro de tu empresa <strong>{nombre_empresa}</strong>. '
-                f'<br><br>⚠️ <strong>Importante:</strong> Tu empresa estará disponible después de verificar el email.'
+                f'<br><br>📧 <strong>IMPORTANTE:</strong> Revisa tu bandeja de entrada <strong>y la carpeta de SPAM/CORREO NO DESEADO</strong>. '
+                f'Haz clic en el enlace de activación para completar el registro de tu empresa <strong>{nombre_empresa}</strong>. '
+                f'<br><br>⚠️ <strong>Nota:</strong> Tu empresa estará disponible después de verificar el email. '
+                f'El enlace de activación es válido por 24 horas.'
             )
             
             # Forzar la redirección al login público con ruta explícita para evitar

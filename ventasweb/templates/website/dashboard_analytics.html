@@ -1,0 +1,528 @@
+{% extends 'website/base.html' %}
+{% if not user.is_authenticated %}
+    <script>
+        window.location.href = "{% url 'login' %}";
+    </script>
+{% endif %}
+
+{% load static %}
+{% load humanize %}
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+{% block title %}
+{{ nombre_escuela_config|default:"Mis Ventas Flash" }} - Dashboard Analytics
+{% endblock %}
+
+{% block content %}
+<style>
+    .dashboard-page {
+        background: transparent;
+        padding-bottom: 20px;
+    }
+
+    .dashboard-page h1 {
+        color: #2c3e50;
+        font-weight: 700;
+        margin-bottom: 10px;
+    }
+
+    .dashboard-page .lead {
+        color: #6c757d;
+    }
+
+    /* KPI Cards */
+    .kpi-card {
+        background: white;
+        border-radius: 10px;
+        padding: 25px;
+        box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15);
+        border-left: 4px solid;
+        transition: transform 0.2s;
+        height: 100%;
+        position: relative;
+    }
+
+    .kpi-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 0.5rem 2rem 0 rgba(58, 59, 69, 0.25);
+    }
+
+    .kpi-card.primary {
+        border-left-color: #4e73df;
+    }
+
+    .kpi-card.success {
+        border-left-color: #1cc88a;
+    }
+
+    .kpi-card.info {
+        border-left-color: #36b9cc;
+    }
+
+    .kpi-card.warning {
+        border-left-color: #f6c23e;
+    }
+
+    .kpi-card .kpi-title {
+        font-size: 0.85rem;
+        color: #858796;
+        text-transform: uppercase;
+        font-weight: 700;
+        margin-bottom: 10px;
+    }
+
+    .kpi-card .kpi-value {
+        font-size: 1.75rem;
+        font-weight: 700;
+        color: #5a5c69;
+    }
+
+    .kpi-card .kpi-icon {
+        font-size: 2.5rem;
+        opacity: 0.3;
+        position: absolute;
+        right: 20px;
+        top: 20px;
+    }
+
+    .kpi-card.primary .kpi-icon {
+        color: #4e73df;
+    }
+
+    .kpi-card.success .kpi-icon {
+        color: #1cc88a;
+    }
+
+    .kpi-card.info .kpi-icon {
+        color: #36b9cc;
+    }
+
+    .kpi-card.warning .kpi-icon {
+        color: #f6c23e;
+    }
+
+    /* Charts Section */
+    .chart-card {
+        background: white;
+        border-radius: 10px;
+        padding: 25px;
+        box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15);
+        margin-bottom: 30px;
+    }
+
+    .chart-card h5 {
+        color: #2c3e50;
+        font-weight: 700;
+        margin-bottom: 20px;
+    }
+
+    /* Activity List */
+    .activity-list {
+        background: white;
+        border-radius: 10px;
+        padding: 25px;
+        box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15);
+        height: 100%;
+    }
+
+    .activity-list h5 {
+        color: #2c3e50;
+        font-weight: 700;
+        margin-bottom: 20px;
+    }
+
+    .activity-item {
+        padding: 15px 0;
+        border-bottom: 1px solid #e3e6f0;
+        display: flex;
+        align-items: center;
+    }
+
+    .activity-item:last-child {
+        border-bottom: none;
+    }
+
+    .activity-icon {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-right: 15px;
+        font-size: 1.2rem;
+    }
+
+    .activity-icon.success {
+        background: #d1f4e0;
+        color: #1cc88a;
+    }
+
+    .activity-icon.primary {
+        background: #d4e3fc;
+        color: #4e73df;
+    }
+
+    .activity-icon.warning {
+        background: #fef4d9;
+        color: #f6c23e;
+    }
+
+    .activity-content {
+        flex: 1;
+    }
+
+    .activity-title {
+        font-weight: 600;
+        color: #2c3e50;
+        margin-bottom: 5px;
+    }
+
+    .activity-time {
+        font-size: 0.85rem;
+        color: #858796;
+    }
+
+    .badge-trend {
+        font-size: 0.75rem;
+        font-weight: 600;
+        padding: 4px 8px;
+        border-radius: 4px;
+    }
+
+    .refresh-btn {
+        background: #4e73df;
+        color: white;
+        border: none;
+        padding: 8px 16px;
+        border-radius: 6px;
+        cursor: pointer;
+        transition: all 0.3s;
+    }
+
+    .refresh-btn:hover {
+        background: #224abe;
+        transform: translateY(-2px);
+    }
+</style>
+
+<!-- Card Principal -->
+<div class="card shadow-sm border-0">
+    <div class="card-header bg-gradient text-white py-3" style="background: linear-gradient(135deg, #4e73df 0%, #224abe 100%);">
+        <div class="d-flex justify-content-between align-items-center">
+            <h4 class="mb-0">
+                <i class="fas fa-chart-line me-2"></i>Dashboard Analytics
+            </h4>
+            <button class="refresh-btn" onclick="location.reload()">
+                <i class="fas fa-sync-alt"></i> Actualizar
+            </button>
+        </div>
+    </div>
+    <div class="card-body p-4">
+        <div class="dashboard-page">
+            <div class="container">
+                <!-- Header -->
+                <div class="text-center mb-4">
+                    <p class="lead mb-2">{{ nombre_escuela_config|default:"Mis Ventas Flash" }}</p>
+                    <p class="text-muted">Bienvenido, {{ user.get_full_name|default:user.email }} - {{ mes_actual }}</p>
+                </div>
+
+                <!-- KPIs Row -->
+                <div class="row mb-4">
+                    <div class="col-xl-3 col-md-6 mb-4">
+                        <div class="kpi-card primary">
+                            <div class="kpi-title">Ventas del Mes</div>
+                            <div class="kpi-value">RD$ {{ ventas_mes_actual|floatformat:2|intcomma }}</div>
+                            <i class="fas fa-dollar-sign kpi-icon"></i>
+                            {% if cambio_ventas > 0 %}
+                                <small class="text-success">
+                                    <i class="fas fa-arrow-up"></i> {{ cambio_ventas|floatformat:1 }}% vs mes anterior
+                                </small>
+                            {% elif cambio_ventas < 0 %}
+                                <small class="text-danger">
+                                    <i class="fas fa-arrow-down"></i> {{ cambio_ventas|floatformat:1 }}% vs mes anterior
+                                </small>
+                            {% else %}
+                                <small class="text-muted">Sin cambios vs mes anterior</small>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <div class="col-xl-3 col-md-6 mb-4">
+                        <div class="kpi-card success">
+                            <div class="kpi-title">Clientes Activos</div>
+                            <div class="kpi-value">{{ clientes_activos }}</div>
+                            <i class="fas fa-users kpi-icon"></i>
+                            <small class="text-success">
+                                <i class="fas fa-user-plus"></i> {{ clientes_nuevos_semana }} nuevos esta semana
+                            </small>
+                        </div>
+                    </div>
+
+                    <div class="col-xl-3 col-md-6 mb-4">
+                        <div class="kpi-card info">
+                            <div class="kpi-title">Productos Vendidos</div>
+                            <div class="kpi-value">{{ productos_vendidos_mes|intcomma }}</div>
+                            <i class="fas fa-shopping-cart kpi-icon"></i>
+                            <small class="text-info">
+                                <i class="fas fa-chart-line"></i> {{ productos_vendidos_total|intcomma }} en total
+                            </small>
+                        </div>
+                    </div>
+
+                    <div class="col-xl-3 col-md-6 mb-4">
+                        <div class="kpi-card warning">
+                            <div class="kpi-title">Facturas Pendientes</div>
+                            <div class="kpi-value">{{ facturas_pendientes }}</div>
+                            <i class="fas fa-clock kpi-icon"></i>
+                            {% if facturas_pendientes > 0 %}
+                                <small class="text-warning">
+                                    <i class="fas fa-exclamation-triangle"></i> Requieren atención
+                                </small>
+                            {% else %}
+                                <small class="text-success">
+                                    <i class="fas fa-check"></i> Todo al día
+                                </small>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Charts Row -->
+                <div class="row mb-4">
+                    <div class="col-lg-8 mb-4">
+                        <div class="chart-card">
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <h5 class="mb-0">
+                                    <i class="fas fa-chart-area"></i> Tendencia de Ventas (Últimos 6 Meses)
+                                </h5>
+                                <span class="badge bg-primary">
+                                    Ticket Promedio: RD$ {{ ticket_promedio|floatformat:2|intcomma }}
+                                </span>
+                            </div>
+                            <canvas id="salesChart" height="80"></canvas>
+                        </div>
+
+                        <!-- Gráfico de Productos Más Vendidos -->
+                        <div class="chart-card">
+                            <h5><i class="fas fa-chart-bar"></i> Top 10 Productos (Últimos 30 Días)</h5>
+                            <canvas id="productsChart" height="80"></canvas>
+                        </div>
+                    </div>
+
+                    <div class="col-lg-4 mb-4">
+                        <div class="activity-list">
+                            <h5><i class="fas fa-bell"></i> Actividad Reciente</h5>
+                            
+                            {% for actividad in actividades %}
+                            <div class="activity-item">
+                                <div class="activity-icon {{ actividad.color }}">
+                                    <i class="fas {{ actividad.icono }}"></i>
+                                </div>
+                                <div class="activity-content">
+                                    <div class="activity-title">{{ actividad.titulo }}</div>
+                                    <div class="activity-time">{{ actividad.descripcion }}</div>
+                                    <div class="activity-time">{{ actividad.tiempo }}</div>
+                                </div>
+                            </div>
+                            {% empty %}
+                            <p class="text-muted text-center py-3">No hay actividad reciente</p>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Top Products Section -->
+                <div class="mb-4">
+                    <h3 class="mb-4"><i class="fas fa-star"></i> Productos Más Vendidos Este Mes</h3>
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>#</th>
+                                    <th>Producto</th>
+                                    <th>Categoría</th>
+                                    <th>Precio Unitario</th>
+                                    <th>Cantidad Vendida</th>
+                                    <th>Ingresos</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for producto in top_productos %}
+                                <tr>
+                                    <td>
+                                        {% if forloop.counter == 1 %}
+                                            <span class="badge bg-warning"><i class="fas fa-trophy"></i> 1</span>
+                                        {% elif forloop.counter == 2 %}
+                                            <span class="badge bg-secondary"><i class="fas fa-medal"></i> 2</span>
+                                        {% elif forloop.counter == 3 %}
+                                            <span class="badge bg-danger"><i class="fas fa-award"></i> 3</span>
+                                        {% else %}
+                                            {{ forloop.counter }}
+                                        {% endif %}
+                                    </td>
+                                    <td><strong>{{ producto.articulo__nombre|default:"Sin nombre" }}</strong></td>
+                                    <td><span class="badge bg-info">{{ producto.articulo__categoria|default:"General" }}</span></td>
+                                    <td>RD$ {{ producto.articulo__precio_venta|floatformat:2|intcomma }}</td>
+                                    <td><span class="badge bg-success">{{ producto.cantidad_vendida }}</span></td>
+                                    <td><strong>RD$ {{ producto.ingresos|floatformat:2|intcomma }}</strong></td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="6" class="text-center text-muted">No hay datos de productos vendidos</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Footer -->
+<footer class="bg-dark text-white py-4 mt-5">
+    <div class="container text-center">
+        <p class="mb-2">
+            <strong>{{ nombre_escuela_config|default:"Mis Ventas Flash" }}</strong> - 
+            Dashboard Analytics con datos en tiempo real
+        </p>
+        <p class="mb-0">
+            <i class="fas fa-sync-alt"></i> Actualizado: <span id="lastUpdate"></span>
+        </p>
+    </div>
+</footer>
+
+<!-- Chart.js for Charts -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    // Mostrar hora de última actualización
+    document.getElementById('lastUpdate').textContent = new Date().toLocaleString('es-DO');
+
+    // ======== Sales Trend Chart ========
+    fetch("{% url 'api_ventas_tendencia' %}")
+        .then(response => response.json())
+        .then(data => {
+            const ctx = document.getElementById('salesChart');
+            if (ctx) {
+                new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: data.labels,
+                        datasets: [{
+                            label: 'Ventas (RD$)',
+                            data: data.data,
+                            borderColor: '#4e73df',
+                            backgroundColor: 'rgba(78, 115, 223, 0.1)',
+                            tension: 0.4,
+                            fill: true,
+                            pointRadius: 5,
+                            pointHoverRadius: 7,
+                            pointBackgroundColor: '#4e73df',
+                            pointBorderColor: '#fff',
+                            pointBorderWidth: 2
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: true,
+                        plugins: {
+                            legend: {
+                                display: true,
+                                position: 'top'
+                            },
+                            tooltip: {
+                                mode: 'index',
+                                intersect: false,
+                                callbacks: {
+                                    label: function(context) {
+                                        return 'Ventas: RD$ ' + context.parsed.y.toLocaleString('es-DO', {
+                                            minimumFractionDigits: 2,
+                                            maximumFractionDigits: 2
+                                        });
+                                    }
+                                }
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: false,
+                                ticks: {
+                                    callback: function(value) {
+                                        return 'RD$ ' + value.toLocaleString('es-DO');
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+        })
+        .catch(error => console.error('Error cargando datos de ventas:', error));
+
+    // ======== Products Chart ========
+    fetch("{% url 'api_productos_chart' %}")
+        .then(response => response.json())
+        .then(data => {
+            const ctx = document.getElementById('productsChart');
+            if (ctx) {
+                new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: data.labels,
+                        datasets: [{
+                            label: 'Cantidad Vendida',
+                            data: data.data,
+                            backgroundColor: [
+                                'rgba(28, 200, 138, 0.8)',
+                                'rgba(54, 185, 204, 0.8)',
+                                'rgba(78, 115, 223, 0.8)',
+                                'rgba(246, 194, 62, 0.8)',
+                                'rgba(231, 74, 59, 0.8)',
+                                'rgba(133, 135, 150, 0.8)',
+                                'rgba(103, 65, 217, 0.8)',
+                                'rgba(255, 99, 132, 0.8)',
+                                'rgba(255, 159, 64, 0.8)',
+                                'rgba(75, 192, 192, 0.8)'
+                            ],
+                            borderWidth: 0
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: true,
+                        plugins: {
+                            legend: {
+                                display: false
+                            },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        return 'Vendidos: ' + context.parsed.y.toLocaleString('es-DO');
+                                    }
+                                }
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                ticks: {
+                                    stepSize: 1
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+        })
+        .catch(error => console.error('Error cargando datos de productos:', error));
+
+    // Auto-refresh cada 5 minutos
+    setTimeout(() => {
+        location.reload();
+    }, 5 * 60 * 1000);
+</script>
+{% endblock %}

@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .header {
+            background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+            border-radius: 10px 10px 0 0;
+        }
+        .content {
+            background: #f8f9fa;
+            padding: 30px;
+            border-radius: 0 0 10px 10px;
+        }
+        .alert {
+            background: #f8d7da;
+            border-left: 4px solid #dc3545;
+            padding: 15px;
+            margin: 20px 0;
+        }
+        .btn {
+            display: inline-block;
+            padding: 12px 30px;
+            background: #dc3545;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+        .stats {
+            background: white;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 15px 0;
+        }
+        .footer {
+            text-align: center;
+            color: #666;
+            margin-top: 30px;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>❌ Error en el Pago</h1>
+    </div>
+    <div class="content">
+        <p>Hola <strong>{{ tenant.nombre }}</strong>,</p>
+        
+        <div class="alert">
+            <strong>¡Atención!</strong> No pudimos procesar tu pago mensual.
+        </div>
+        
+        <div class="stats">
+            <p><strong>Plan:</strong> {{ plan_actual }}</p>
+            <p><strong>Monto:</strong> ${{ precio }}</p>
+            <p><strong>Estado:</strong> ❌ Pago fallido</p>
+        </div>
+        
+        <h3>¿Qué pasó?</h3>
+        <p>El cargo a tu método de pago no pudo ser procesado. Esto puede ocurrir por:</p>
+        <ul>
+            <li>Fondos insuficientes en la tarjeta</li>
+            <li>Tarjeta vencida o bloqueada</li>
+            <li>Límite de crédito alcanzado</li>
+            <li>Problemas de verificación de seguridad</li>
+        </ul>
+        
+        <h3>¿Qué debes hacer?</h3>
+        <p>Por favor, actualiza tu método de pago lo antes posible para evitar la suspensión de tu cuenta.</p>
+        
+        <center>
+            <a href="{{ url_actualizar_pago }}" class="btn">Actualizar Método de Pago</a>
+        </center>
+        
+        <p><strong>Importante:</strong> Si no actualizas tu método de pago, tu cuenta podría ser desactivada en los próximos días.</p>
+        
+        <p class="footer">
+            ¿Necesitas ayuda? Responde a este email o contáctanos en soporte@misventasflash.com<br>
+            Estamos aquí para ayudarte a resolver este problema.
+        </p>
+    </div>
+</body>
+</html>

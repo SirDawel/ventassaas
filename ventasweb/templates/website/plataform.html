@@ -10,7 +10,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 {% block title %}
-{{ nombre_escuela_config|default:"Sistema de Ventas" }} - Dashboard
+{{ nombre_escuela_config|default:"Mis Ventas Flash" }} - Dashboard
 {% endblock %}
 
 {% block content %}
@@ -230,7 +230,7 @@
             <div class="container">
                 <!-- Header -->
                 <div class="text-center mb-4">
-                    <p class="lead mb-2">{{ nombre_escuela_config|default:"Panel de Control de Ventas" }}</p>
+                    <p class="lead mb-2">{{ nombre_escuela_config|default:"Mis Ventas Flash" }}</p>
                     <p class="text-muted">Bienvenido, {{ user.get_full_name|default:user.email }}</p>
                 </div>
 
@@ -269,6 +269,51 @@
                     <div class="kpi-value">23</div>
                     <i class="fas fa-clock kpi-icon"></i>
                     <small class="text-warning"><i class="fas fa-exclamation-triangle"></i> Requieren atención</small>
+                </div>
+            </div>
+        </div>
+
+        <!-- Accesos Rápidos -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card shadow">
+                    <div class="card-header py-3">
+                        <h6 class="m-0 font-weight-bold text-primary">
+                            <i class="fas fa-bolt me-2"></i>Accesos Rápidos
+                        </h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="row text-center">
+                            <div class="col-md-3 mb-3 mb-md-0">
+                                <a href="{% url 'cotizacion_crear' %}" class="btn btn-light w-100 py-3 shadow-sm">
+                                    <i class="fas fa-file-invoice fa-2x text-info mb-2 d-block"></i>
+                                    <span class="d-block fw-bold">Nueva Cotización</span>
+                                    <small class="text-muted">Crear presupuesto</small>
+                                </a>
+                            </div>
+                            <div class="col-md-3 mb-3 mb-md-0">
+                                <a href="{% url 'cotizaciones_lista' %}" class="btn btn-light w-100 py-3 shadow-sm">
+                                    <i class="fas fa-list fa-2x text-primary mb-2 d-block"></i>
+                                    <span class="d-block fw-bold">Ver Cotizaciones</span>
+                                    <small class="text-muted">Gestionar propuestas</small>
+                                </a>
+                            </div>
+                            <div class="col-md-3 mb-3 mb-md-0">
+                                <a href="/plantillas/" class="btn btn-light w-100 py-3 shadow-sm">
+                                    <i class="fas fa-copy fa-2x text-success mb-2 d-block"></i>
+                                    <span class="d-block fw-bold">Plantillas</span>
+                                    <small class="text-muted">Cotizaciones predefinidas</small>
+                                </a>
+                            </div>
+                            <div class="col-md-3">
+                                <a href="{% url 'cobros_dashboard' %}" class="btn btn-light w-100 py-3 shadow-sm">
+                                    <i class="fas fa-cash-register fa-2x text-warning mb-2 d-block"></i>
+                                    <span class="d-block fw-bold">Cobros</span>
+                                    <small class="text-muted">Registrar pagos</small>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -442,7 +487,7 @@
 <footer class="bg-dark text-white py-4 mt-5">
     <div class="container text-center">
         <p class="mb-2">
-            <strong>{{ nombre_escuela_config|default:"Sistema de Ventas" }}</strong> - 
+            <strong>{{ nombre_escuela_config|default:"Mis Ventas Flash" }}</strong> - 
             Gestión integral de ventas y clientes
         </p>
         <p class="mb-0">

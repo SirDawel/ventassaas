@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cotización {{ cotizacion.numero_cotizacion }} - Mis Ventas Flash</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px 0;
+        }
+
+        .cotizacion-container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+
+        .header-section {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .content-section {
+            padding: 30px;
+        }
+
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .info-card {
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border-left: 4px solid #667eea;
+        }
+
+        .info-label {
+            font-weight: 600;
+            color: #6c757d;
+            font-size: 0.9rem;
+            margin-bottom: 5px;
+        }
+
+        .info-value {
+            color: #212529;
+            font-size: 1.1rem;
+        }
+
+        .signature-section {
+            margin-top: 40px;
+            padding: 30px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            border: 2px dashed #667eea;
+        }
+
+        #signature-canvas {
+            border: 2px solid #dee2e6;
+            border-radius: 8px;
+            background: white;
+            cursor: crosshair;
+            touch-action: none;
+        }
+
+        .btn-primary-custom {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            padding: 12px 30px;
+            font-weight: 600;
+        }
+
+        .btn-primary-custom:hover {
+            background: linear-gradient(135deg, #5568d3 0%, #63398d 100%);
+        }
+
+        .alert-vencida {
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+
+        .firma-guardada {
+            border: 2px solid #28a745;
+            border-radius: 8px;
+            padding: 10px;
+            background: #d4edda;
+        }
+    </style>
+</head>
+<body>
+    <div class="cotizacion-container">
+        <!-- Header -->
+        <div class="header-section">
+            <h1 class="mb-2"><i class="fas fa-file-invoice"></i> Cotización</h1>
+            <h2 class="h3">{{ cotizacion.numero_cotizacion }}</h2>
+            <p class="mb-0">{{ cotizacion.fecha_emision|date:"d/m/Y" }}</p>
+        </div>
+
+        <!-- Content -->
+        <div class="content-section">
+            <!-- Alertas -->
+            {% if esta_vencida %}
+            <div class="alert alert-danger alert-vencida mb-4">
+                <i class="fas fa-exclamation-triangle me-2"></i>
+                <strong>Esta cotización ha vencido</strong> (válida hasta {{ cotizacion.fecha_vencimiento|date:"d/m/Y" }})
+            </div>
+            {% endif %}
+
+            {% if cotizacion.firma_cliente %}
+            <div class="alert alert-success mb-4">
+                <i class="fas fa-check-circle me-2"></i>
+                <strong>Cotización firmada</strong> el {{ cotizacion.firma_fecha|date:"d/m/Y H:i" }}
+            </div>
+            {% endif %}
+
+            <!-- Información General -->
+            <div class="info-grid">
+                <div class="info-card">
+                    <div class="info-label"><i class="fas fa-user me-2"></i>Cliente</div>
+                    <div class="info-value">{{ cotizacion.cliente.get_full_name }}</div>
+                </div>
+                {% if cotizacion.vendedor %}
+                <div class="info-card">
+                    <div class="info-label"><i class="fas fa-user-tie me-2"></i>Vendedor</div>
+                    <div class="info-value">{{ cotizacion.vendedor.get_full_name }}</div>
+                </div>
+                {% endif %}
+                <div class="info-card">
+                    <div class="info-label"><i class="fas fa-calendar me-2"></i>Válida Hasta</div>
+                    <div class="info-value">{{ cotizacion.fecha_vencimiento|date:"d/m/Y" }}</div>
+                </div>
+                <div class="info-card">
+                    <div class="info-label"><i class="fas fa-info-circle me-2"></i>Estado</div>
+                    <div class="info-value">
+                        {% if cotizacion.estado == 'enviada' %}
+                        <span class="badge bg-warning text-dark">Pendiente</span>
+                        {% elif cotizacion.estado == 'aceptada' %}
+                        <span class="badge bg-success">Aceptada</span>
+                        {% elif cotizacion.estado == 'rechazada' %}
+                        <span class="badge bg-danger">Rechazada</span>
+                        {% elif cotizacion.estado == 'convertida' %}
+                        <span class="badge bg-info">Convertida a Factura</span>
+                        {% else %}
+                        <span class="badge bg-secondary">{{ cotizacion.get_estado_display }}</span>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Detalles -->
+            <h3 class="h5 mb-3"><i class="fas fa-list me-2"></i>Detalles de la Cotización</h3>
+            <div class="table-responsive mb-4">
+                <table class="table table-hover">
+                    <thead class="table-light">
+                        <tr>
+                            <th>#</th>
+                            <th>Descripción</th>
+                            <th class="text-end">Cantidad</th>
+                            <th class="text-end">Precio Unit.</th>
+                            <th class="text-end">Total</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for detalle in detalles %}
+                        <tr>
+                            <td>{{ forloop.counter }}</td>
+                            <td>{{ detalle.descripcion }}</td>
+                            <td class="text-end">{{ detalle.cantidad|floatformat:2 }}</td>
+                            <td class="text-end">RD$ {{ detalle.precio_unitario|floatformat:2 }}</td>
+                            <td class="text-end">RD$ {{ detalle.get_total|floatformat:2 }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                    <tfoot>
+                        <tr>
+                            <td colspan="4" class="text-end"><strong>Subtotal:</strong></td>
+                            <td class="text-end">RD$ {{ cotizacion.subtotal|floatformat:2 }}</td>
+                        </tr>
+                        {% if cotizacion.descuento > 0 %}
+                        <tr>
+                            <td colspan="4" class="text-end"><strong>Descuento:</strong></td>
+                            <td class="text-end text-danger">- RD$ {{ cotizacion.descuento|floatformat:2 }}</td>
+                        </tr>
+                        {% endif %}
+                        <tr>
+                            <td colspan="4" class="text-end"><strong>ITBIS:</strong></td>
+                            <td class="text-end">RD$ {{ cotizacion.impuesto|floatformat:2 }}</td>
+                        </tr>
+                        <tr class="table-primary">
+                            <td colspan="4" class="text-end"><strong>TOTAL:</strong></td>
+                            <td class="text-end"><strong>RD$ {{ cotizacion.total|floatformat:2 }}</strong></td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+
+            <!-- Observaciones -->
+            {% if cotizacion.observaciones %}
+            <div class="alert alert-info">
+                <h5 class="alert-heading"><i class="fas fa-comment me-2"></i>Observaciones</h5>
+                <p class="mb-0">{{ cotizacion.observaciones|linebreaks }}</p>
+            </div>
+            {% endif %}
+
+            <!-- Términos y Condiciones -->
+            {% if cotizacion.terminos_condiciones %}
+            <div class="alert alert-secondary">
+                <h5 class="alert-heading"><i class="fas fa-file-contract me-2"></i>Términos y Condiciones</h5>
+                <p class="mb-0 small">{{ cotizacion.terminos_condiciones|linebreaks }}</p>
+            </div>
+            {% endif %}
+
+            <!-- Firma Digital -->
+            {% if puede_firmar and not esta_vencida %}
+            <div class="signature-section" id="signature-section">
+                <h4 class="text-center mb-4">
+                    <i class="fas fa-signature me-2"></i>Firmar Cotización
+                </h4>
+                <p class="text-center text-muted mb-4">
+                    Al firmar esta cotización, usted acepta los términos y condiciones establecidos.
+                </p>
+                
+                <div class="text-center mb-3">
+                    <canvas id="signature-canvas" width="600" height="200"></canvas>
+                </div>
+
+                <div class="text-center">
+                    <button id="btn-clear" class="btn btn-outline-secondary me-2">
+                        <i class="fas fa-eraser me-2"></i>Limpiar
+                    </button>
+                    <button id="btn-sign" class="btn btn-primary-custom">
+                        <i class="fas fa-check-circle me-2"></i>Firmar y Aceptar
+                    </button>
+                </div>
+            </div>
+            {% elif cotizacion.firma_cliente %}
+            <div class="signature-section">
+                <h4 class="text-center mb-3">
+                    <i class="fas fa-check-circle text-success me-2"></i>Firma del Cliente
+                </h4>
+                <div class="text-center">
+                    <img src="{{ cotizacion.firma_cliente }}" alt="Firma" class="firma-guardada" style="max-width: 400px;">
+                    <p class="text-muted mt-2 mb-0">
+                        Firmado el {{ cotizacion.firma_fecha|date:"d/m/Y" }} a las {{ cotizacion.firma_fecha|date:"H:i" }}
+                    </p>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    {% if puede_firmar and not esta_vencida %}
+    <script>
+    // Canvas de firma
+    const canvas = document.getElementById('signature-canvas');
+    const ctx = canvas.getContext('2d');
+    let isDrawing = false;
+    let hasSignature = false;
+
+    // Configurar canvas
+    ctx.strokeStyle = '#000';
+    ctx.lineWidth = 2;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+
+    // Eventos de mouse
+    canvas.addEventListener('mousedown', startDrawing);
+    canvas.addEventListener('mousemove', draw);
+    canvas.addEventListener('mouseup', stopDrawing);
+    canvas.addEventListener('mouseout', stopDrawing);
+
+    // Eventos táctiles
+    canvas.addEventListener('touchstart', handleTouch);
+    canvas.addEventListener('touchmove', handleTouch);
+    canvas.addEventListener('touchend', stopDrawing);
+
+    function startDrawing(e) {
+        isDrawing = true;
+        const pos = getMousePos(canvas, e);
+        ctx.beginPath();
+        ctx.moveTo(pos.x, pos.y);
+    }
+
+    function draw(e) {
+        if (!isDrawing) return;
+        hasSignature = true;
+        const pos = getMousePos(canvas, e);
+        ctx.lineTo(pos.x, pos.y);
+        ctx.stroke();
+    }
+
+    function stopDrawing() {
+        isDrawing = false;
+    }
+
+    function handleTouch(e) {
+        e.preventDefault();
+        const touch = e.touches[0];
+        const mouseEvent = new MouseEvent(e.type === 'touchstart' ? 'mousedown' : e.type === 'touchmove' ? 'mousemove' : 'mouseup', {
+            clientX: touch.clientX,
+            clientY: touch.clientY
+        });
+        canvas.dispatchEvent(mouseEvent);
+    }
+
+    function getMousePos(canvas, e) {
+        const rect = canvas.getBoundingClientRect();
+        return {
+            x: e.clientX - rect.left,
+            y: e.clientY - rect.top
+        };
+    }
+
+    // Botón limpiar
+    document.getElementById('btn-clear').addEventListener('click', function() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        hasSignature = false;
+    });
+
+    // Botón firmar
+    document.getElementById('btn-sign').addEventListener('click', function() {
+        if (!hasSignature) {
+            alert('Por favor, firme en el recuadro antes de continuar.');
+            return;
+        }
+
+        if (!confirm('¿Está seguro de firmar y aceptar esta cotización?')) {
+            return;
+        }
+
+        const btn = this;
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Guardando...';
+
+        // Obtener firma en base64
+        const signatureData = canvas.toDataURL('image/png');
+
+        // Enviar al servidor
+        fetch('/cotizaciones/firmar/{{ cotizacion.token_publico }}/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                firma: signatureData
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('¡Cotización firmada exitosamente!');
+                location.reload();
+            } else {
+                alert('Error: ' + data.error);
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-check-circle me-2"></i>Firmar y Aceptar';
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error al guardar la firma. Por favor, intente nuevamente.');
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fas fa-check-circle me-2"></i>Firmar y Aceptar';
+        });
+    });
+    </script>
+    {% endif %}
+</body>
+</html>

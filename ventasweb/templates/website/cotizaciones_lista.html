@@ -1,0 +1,264 @@
+{% extends 'website/base.html' %}
+{% load static %}
+{% load humanize %}
+
+{% block title %}{{ nombre_escuela_config|default:"Mis Ventas Flash" }} - Cotizaciones{% endblock %}
+
+{% block content %}
+<style>
+    .cotizaciones-page {
+        background: transparent;
+        padding-bottom: 20px;
+    }
+
+    .stats-card {
+        background: white;
+        border-radius: 10px;
+        padding: 20px;
+        box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15);
+        border-left: 4px solid;
+        transition: transform 0.2s;
+        height: 100%;
+    }
+
+    .stats-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 0.5rem 2rem 0 rgba(58, 59, 69, 0.25);
+    }
+
+    .stats-card.primary {
+        border-left-color: #4e73df;
+    }
+
+    .stats-card.success {
+        border-left-color: #1cc88a;
+    }
+
+    .stats-card.info {
+        border-left-color: #36b9cc;
+    }
+
+    .stats-card.warning {
+        border-left-color: #f6c23e;
+    }
+
+    .table-cotizaciones {
+        background: white;
+        border-radius: 10px;
+        padding: 20px;
+        box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15);
+    }
+
+    .badge-estado {
+        padding: 0.5em 1em;
+        font-size: 0.85rem;
+        font-weight: 600;
+    }
+
+    .btn-action {
+        padding: 0.375rem 0.75rem;
+        font-size: 0.875rem;
+    }
+
+    .filter-section {
+        background: white;
+        border-radius: 10px;
+        padding: 20px;
+        margin-bottom: 20px;
+        box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15);
+    }
+</style>
+
+<div class="cotizaciones-page">
+    <div class="container-fluid">
+        <!-- Header -->
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div>
+                <h1 class="h3 mb-0 text-gray-800">
+                    <i class="fas fa-file-invoice me-2"></i>Sistema de Cotizaciones
+                </h1>
+                <p class="text-muted mb-0">Gestiona cotizaciones y conviértelas en facturas</p>
+            </div>
+            <a href="{% url 'cotizacion_crear' %}" class="btn btn-primary">
+                <i class="fas fa-plus me-2"></i>Nueva Cotizacion
+            </a>
+        </div>
+
+        <!-- Estadísticas -->
+        <div class="row g-3 mb-4">
+            <div class="col-xl-3 col-md-6">
+                <div class="stats-card primary">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <div class="text-xs text-uppercase text-primary fw-bold mb-1">Total Cotizaciones</div>
+                            <div class="h5 mb-0 fw-bold text-gray-800">{{ total_cotizaciones }}</div>
+                        </div>
+                        <div class="fa-2x text-primary opacity-25">
+                            <i class="fas fa-file-alt"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-xl-3 col-md-6">
+                <div class="stats-card warning">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <div class="text-xs text-uppercase text-warning fw-bold mb-1">Pendientes</div>
+                            <div class="h5 mb-0 fw-bold text-gray-800">{{ cotizaciones_pendientes }}</div>
+                        </div>
+                        <div class="fa-2x text-warning opacity-25">
+                            <i class="fas fa-clock"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-xl-3 col-md-6">
+                <div class="stats-card success">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <div class="text-xs text-uppercase text-success fw-bold mb-1">Aceptadas</div>
+                            <div class="h5 mb-0 fw-bold text-gray-800">{{ cotizaciones_aceptadas }}</div>
+                        </div>
+                        <div class="fa-2x text-success opacity-25">
+                            <i class="fas fa-check-circle"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-xl-3 col-md-6">
+                <div class="stats-card info">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <div class="text-xs text-uppercase text-info fw-bold mb-1">Monto Total</div>
+                            <div class="h5 mb-0 fw-bold text-gray-800">RD$ {{ monto_total|floatformat:2|intcomma }}</div>
+                        </div>
+                        <div class="fa-2x text-info opacity-25">
+                            <i class="fas fa-dollar-sign"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Filtros -->
+        <div class="filter-section">
+            <form method="get" class="row g-3">
+                <div class="col-md-3">
+                    <label class="form-label">Estado</label>
+                    <select name="estado" class="form-select">
+                        <option value="">Todos</option>
+                        <option value="borrador" {% if estado_actual == 'borrador' %}selected{% endif %}>Borrador</option>
+                        <option value="enviada" {% if estado_actual == 'enviada' %}selected{% endif %}>Enviada</option>
+                        <option value="aceptada" {% if estado_actual == 'aceptada' %}selected{% endif %}>Aceptada</option>
+                        <option value="rechazada" {% if estado_actual == 'rechazada' %}selected{% endif %}>Rechazada</option>
+                        <option value="convertida" {% if estado_actual == 'convertida' %}selected{% endif %}>Convertida</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Cliente</label>
+                    <select name="cliente" class="form-select">
+                        <option value="">Todos</option>
+                        {% for cliente in clientes %}
+                        <option value="{{ cliente.id }}" {% if cliente_actual|stringformat:"s" == cliente.id|stringformat:"s" %}selected{% endif %}>
+                            {{ cliente.get_full_name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Desde</label>
+                    <input type="date" name="fecha_desde" class="form-control">
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Hasta</label>
+                    <input type="date" name="fecha_hasta" class="form-control">
+                </div>
+                <div class="col-md-2 d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="fas fa-filter me-2"></i>Filtrar
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Tabla de Cotizaciones -->
+        <div class="table-cotizaciones">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Número</th>
+                            <th>Cliente</th>
+                            <th>Vendedor</th>
+                            <th>Fecha Emisión</th>
+                            <th>Vencimiento</th>
+                            <th>Total</th>
+                            <th>Estado</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for cotizacion in cotizaciones %}
+                        <tr>
+                            <td>
+                                <strong>{{ cotizacion.numero_cotizacion }}</strong>
+                            </td>
+                            <td>{{ cotizacion.cliente.get_full_name }}</td>
+                            <td>{{ cotizacion.vendedor.get_full_name|default:"-" }}</td>
+                            <td>{{ cotizacion.fecha_emision|date:"d/m/Y" }}</td>
+                            <td>
+                                {{ cotizacion.fecha_vencimiento|date:"d/m/Y" }}
+                                {% if cotizacion.esta_vencida %}
+                                <span class="badge bg-danger ms-2">Vencida</span>
+                                {% endif %}
+                            </td>
+                            <td><strong>RD$ {{ cotizacion.total|floatformat:2|intcomma }}</strong></td>
+                            <td>
+                                {% if cotizacion.estado == 'borrador' %}
+                                <span class="badge badge-estado bg-secondary">Borrador</span>
+                                {% elif cotizacion.estado == 'enviada' %}
+                                <span class="badge badge-estado bg-warning text-dark">Enviada</span>
+                                {% elif cotizacion.estado == 'aceptada' %}
+                                <span class="badge badge-estado bg-success">Aceptada</span>
+                                {% elif cotizacion.estado == 'rechazada' %}
+                                <span class="badge badge-estado bg-danger">Rechazada</span>
+                                {% elif cotizacion.estado == 'convertida' %}
+                                <span class="badge badge-estado bg-info">Convertida</span>
+                                {% elif cotizacion.estado == 'vencida' %}
+                                <span class="badge badge-estado bg-dark">Vencida</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div class="btn-group" role="group">
+                                    <a href="{% url 'cotizacion_detalle' cotizacion.id %}" class="btn btn-sm btn-outline-primary btn-action" title="Ver detalle">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                    {% if cotizacion.puede_convertir_a_factura %}
+                                    <a href="{% url 'cotizacion_convertir_factura' cotizacion.id %}" class="btn btn-sm btn-outline-success btn-action" title="Convertir a factura">
+                                        <i class="fas fa-exchange-alt"></i>
+                                    </a>
+                                    {% endif %}
+                                </div>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="8" class="text-center py-5">
+                                <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
+                                <p class="text-muted">No hay cotizaciones registradas</p>
+                                <a href="{% url 'cotizacion_crear' %}" class="btn btn-primary">
+                                    <i class="fas fa-plus me-2"></i>Crear Primera Cotización
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,297 @@
+{% extends "cssbase.html" %}
+{% load static %}
+
+{% block title %}Mi Plan y Uso - {{ request.tenant.nombre }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <div class="row mb-4">
+        <div class="col-12">
+            <h2><i class="fas fa-crown"></i> Mi Plan de Suscripción</h2>
+            <p class="text-muted">{{ request.tenant.nombre }}</p>
+        </div>
+    </div>
+
+    <!-- Información del Plan -->
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <h5 class="card-title">
+                        <i class="fas fa-star text-warning"></i> 
+                        Plan Actual: <strong>{{ info_plan.plan }}</strong>
+                    </h5>
+                    <hr>
+                    <div class="row">
+                        <div class="col-6">
+                            <p class="mb-2"><strong>Precio:</strong></p>
+                            <h3 class="text-primary">{{ info_plan.precio }}</h3>
+                        </div>
+                        <div class="col-6">
+                            <p class="mb-2"><strong>Estado:</strong></p>
+                            {% if info_plan.activo %}
+                                <span class="badge bg-success p-2">✓ Activo</span>
+                            {% else %}
+                                <span class="badge bg-danger p-2">✗ Inactivo</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% if info_plan.proximo_pago %}
+                    <div class="alert alert-info mt-3 mb-0">
+                        <i class="fas fa-calendar-alt"></i> 
+                        <strong>Próximo pago:</strong> {{ info_plan.proximo_pago|date:"d/m/Y" }}
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6">
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <h5 class="card-title">
+                        <i class="fas fa-gift"></i> Características Incluidas
+                    </h5>
+                    <hr>
+                    <ul class="list-unstyled">
+                        <li class="mb-2">
+                            <i class="fas fa-users text-primary"></i> 
+                            <strong>Usuarios:</strong> Hasta {{ request.tenant.max_usuarios }}
+                        </li>
+                        <li class="mb-2">
+                            <i class="fas fa-receipt text-success"></i> 
+                            <strong>Facturas/mes:</strong> 
+                            {% if request.tenant.max_facturas_mes >= 99999 %}
+                                Ilimitadas
+                            {% else %}
+                                Hasta {{ request.tenant.max_facturas_mes }}
+                            {% endif %}
+                        </li>
+                        <li class="mb-2">
+                            <i class="fas fa-store text-info"></i> 
+                            <strong>Sucursales:</strong> Hasta {{ request.tenant.max_sucursales }}
+                        </li>
+                        <li class="mb-2">
+                            {% if request.tenant.reportes_avanzados %}
+                                <i class="fas fa-check-circle text-success"></i>
+                            {% else %}
+                                <i class="fas fa-times-circle text-muted"></i>
+                            {% endif %}
+                            Reportes Avanzados
+                        </li>
+                        <li class="mb-2">
+                            {% if request.tenant.facturacion_electronica %}
+                                <i class="fas fa-check-circle text-success"></i>
+                            {% else %}
+                                <i class="fas fa-times-circle text-muted"></i>
+                            {% endif %}
+                            Facturación Electrónica
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Uso Actual -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <h4 class="mb-3"><i class="fas fa-chart-bar"></i> Uso del Mes Actual</h4>
+        </div>
+
+        <!-- Usuarios -->
+        <div class="col-md-4 mb-3">
+            <div class="card shadow-sm h-100">
+                <div class="card-body">
+                    <h6 class="card-subtitle mb-3 text-muted">
+                        <i class="fas fa-users"></i> Usuarios Activos
+                    </h6>
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <span>{{ info_plan.usuarios }}</span>
+                        <span class="badge {% if porcentaje_usuarios >= 90 %}bg-danger{% elif porcentaje_usuarios >= 80 %}bg-warning{% else %}bg-success{% endif %}">
+                            {{ porcentaje_usuarios|floatformat:0 }}%
+                        </span>
+                    </div>
+                    <div class="progress" style="height: 25px;">
+                        <div class="progress-bar {% if porcentaje_usuarios >= 90 %}bg-danger{% elif porcentaje_usuarios >= 80 %}bg-warning{% else %}bg-success{% endif %}" 
+                             role="progressbar" 
+                             style="width: {{ porcentaje_usuarios }}%"
+                             aria-valuenow="{{ porcentaje_usuarios }}" 
+                             aria-valuemin="0" 
+                             aria-valuemax="100">
+                            {{ porcentaje_usuarios|floatformat:0 }}%
+                        </div>
+                    </div>
+                    {% if porcentaje_usuarios >= 80 %}
+                    <small class="text-warning mt-2 d-block">
+                        <i class="fas fa-exclamation-triangle"></i> 
+                        Cerca del límite
+                    </small>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Facturas -->
+        <div class="col-md-4 mb-3">
+            <div class="card shadow-sm h-100">
+                <div class="card-body">
+                    <h6 class="card-subtitle mb-3 text-muted">
+                        <i class="fas fa-receipt"></i> Facturas Este Mes
+                    </h6>
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <span>{{ info_plan.facturas_mes }}</span>
+                        {% if porcentaje_facturas > 0 %}
+                        <span class="badge {% if porcentaje_facturas >= 90 %}bg-danger{% elif porcentaje_facturas >= 80 %}bg-warning{% else %}bg-info{% endif %}">
+                            {{ porcentaje_facturas|floatformat:0 }}%
+                        </span>
+                        {% else %}
+                        <span class="badge bg-success">Ilimitadas</span>
+                        {% endif %}
+                    </div>
+                    <div class="progress" style="height: 25px;">
+                        {% if porcentaje_facturas > 0 %}
+                        <div class="progress-bar {% if porcentaje_facturas >= 90 %}bg-danger{% elif porcentaje_facturas >= 80 %}bg-warning{% else %}bg-info{% endif %}" 
+                             role="progressbar" 
+                             style="width: {{ porcentaje_facturas }}%"
+                             aria-valuenow="{{ porcentaje_facturas }}" 
+                             aria-valuemin="0" 
+                             aria-valuemax="100">
+                            {{ porcentaje_facturas|floatformat:0 }}%
+                        </div>
+                        {% else %}
+                        <div class="progress-bar bg-success" 
+                             role="progressbar" 
+                             style="width: 100%">
+                            ∞
+                        </div>
+                        {% endif %}
+                    </div>
+                    {% if porcentaje_facturas >= 80 and porcentaje_facturas < 100 %}
+                    <small class="text-warning mt-2 d-block">
+                        <i class="fas fa-exclamation-triangle"></i> 
+                        Cerca del límite
+                    </small>
+                    {% elif porcentaje_facturas >= 100 %}
+                    <small class="text-danger mt-2 d-block">
+                        <i class="fas fa-ban"></i> 
+                        Límite alcanzado
+                    </small>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Sucursales -->
+        <div class="col-md-4 mb-3">
+            <div class="card shadow-sm h-100">
+                <div class="card-body">
+                    <h6 class="card-subtitle mb-3 text-muted">
+                        <i class="fas fa-store"></i> Sucursales Permitidas
+                    </h6>
+                    <div class="text-center py-3">
+                        <h2 class="text-primary mb-0">{{ request.tenant.max_sucursales }}</h2>
+                        <p class="text-muted mb-0">sucursales</p>
+                    </div>
+                    <div class="alert alert-info mb-0 mt-3">
+                        <small>
+                            <i class="fas fa-info-circle"></i>
+                            Puedes gestionar hasta {{ request.tenant.max_sucursales }} sucursales
+                        </small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Acciones -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <h5 class="card-title mb-4">
+                        <i class="fas fa-rocket"></i> ¿Necesitas Más?
+                    </h5>
+                    <div class="row">
+                        <div class="col-md-8">
+                            <p class="mb-3">
+                                Si tu negocio está creciendo y necesitas más usuarios, facturas o características,
+                                actualiza tu plan para desbloquear todo el potencial.
+                            </p>
+                            <ul class="list-unstyled mb-0">
+                                <li class="mb-2">
+                                    <i class="fas fa-check text-success"></i>
+                                    Más usuarios y facturas ilimitadas
+                                </li>
+                                <li class="mb-2">
+                                    <i class="fas fa-check text-success"></i>
+                                    Reportes avanzados y análisis detallados
+                                </li>
+                                <li class="mb-2">
+                                    <i class="fas fa-check text-success"></i>
+                                    Soporte prioritario 24/7
+                                </li>
+                            </ul>
+                        </div>
+                        <div class="col-md-4 text-center">
+                            <a href="{% url 'planes_pricing' %}" class="btn btn-primary btn-lg mb-2">
+                                <i class="fas fa-arrow-up"></i>
+                                Ver Planes
+                            </a>
+                            <br>
+                            <a href="mailto:soporte@misventasflash.com" class="btn btn-outline-secondary">
+                                <i class="fas fa-envelope"></i>
+                                Contactar Soporte
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Historial de Facturación (opcional) -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <h5 class="card-title">
+                        <i class="fas fa-history"></i> Información de Cuenta
+                    </h5>
+                    <hr>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <p><strong>Creado:</strong> {{ request.tenant.fecha_creacion|date:"d/m/Y" }}</p>
+                            {% if request.tenant.fecha_vencimiento %}
+                            <p><strong>Vence:</strong> {{ request.tenant.fecha_vencimiento|date:"d/m/Y" }}</p>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-6">
+                            <p><strong>Email de contacto:</strong> {{ request.tenant.email_contacto }}</p>
+                            {% if request.tenant.telefono %}
+                            <p><strong>Teléfono:</strong> {{ request.tenant.telefono }}</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.card {
+    transition: transform 0.2s;
+}
+.card:hover {
+    transform: translateY(-5px);
+}
+.progress {
+    border-radius: 10px;
+    overflow: hidden;
+}
+.progress-bar {
+    transition: width 0.6s ease;
+}
+</style>
+{% endblock %}

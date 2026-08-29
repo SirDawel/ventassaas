@@ -5,7 +5,7 @@ from .models import ConfiguracionEscuela
 
 def school_configuration(request):
     """Expose school configuration values to all templates safely."""
-    default_name = "Mi Empresa"
+    default_name = "Mis Ventas Flash"
 
     try:
         config = ConfiguracionEscuela.get_configuracion()

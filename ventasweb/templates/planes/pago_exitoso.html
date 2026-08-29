@@ -1,0 +1,109 @@
+{% extends "cssbase.html" %}
+{% load static %}
+
+{% block title %}¡Pago Exitoso! - {{ request.tenant.nombre }}{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow-lg border-success">
+                <div class="card-body text-center p-5">
+                    <div class="success-icon mb-4">
+                        <i class="fas fa-check-circle text-success" style="font-size: 6rem;"></i>
+                    </div>
+                    
+                    <h1 class="text-success mb-3">¡Pago Procesado Exitosamente!</h1>
+                    
+                    <p class="lead mb-4">
+                        Tu suscripción ha sido activada correctamente.
+                    </p>
+                    
+                    <div class="alert alert-success mb-4">
+                        <i class="fas fa-info-circle"></i>
+                        <strong>Confirmación enviada:</strong> Recibirás un email de confirmación con los detalles de tu suscripción.
+                    </div>
+                    
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <div class="card bg-light">
+                                <div class="card-body">
+                                    <h5 class="card-title"><i class="fas fa-crown text-warning"></i> Tu Plan</h5>
+                                    <h3 class="text-primary">{{ request.tenant.get_plan_display }}</h3>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card bg-light">
+                                <div class="card-body">
+                                    <h5 class="card-title"><i class="fas fa-dollar-sign text-success"></i> Precio</h5>
+                                    <h3 class="text-success">${{ request.tenant.precio_mensual }}/mes</h3>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <h5 class="mb-3">¿Qué sigue?</h5>
+                        <ul class="list-unstyled text-start">
+                            <li class="mb-2">
+                                <i class="fas fa-check text-success"></i>
+                                Ya puedes usar todas las características de tu plan
+                            </li>
+                            <li class="mb-2">
+                                <i class="fas fa-check text-success"></i>
+                                Tu suscripción se renovará automáticamente cada mes
+                            </li>
+                            <li class="mb-2">
+                                <i class="fas fa-check text-success"></i>
+                                Puedes cancelar en cualquier momento desde tu panel
+                            </li>
+                        </ul>
+                    </div>
+                    
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-center">
+                        <a href="{% url 'mi_plan' %}" class="btn btn-success btn-lg">
+                            <i class="fas fa-chart-line"></i>
+                            Ver Mi Panel
+                        </a>
+                        <a href="{% url 'plataform' %}" class="btn btn-primary btn-lg">
+                            <i class="fas fa-home"></i>
+                            Ir al Dashboard
+                        </a>
+                    </div>
+                    
+                    <hr class="my-4">
+                    
+                    <p class="text-muted small mb-0">
+                        <i class="fas fa-question-circle"></i>
+                        ¿Tienes preguntas? <a href="mailto:soporte@misventasflash.com">Contáctanos</a>
+                    </p>
+                    
+                    {% if session_id %}
+                    <p class="text-muted small mt-2">
+                        ID de sesión: <code>{{ session_id }}</code>
+                    </p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.success-icon i {
+    animation: scaleIn 0.5s ease-out;
+}
+
+@keyframes scaleIn {
+    from {
+        transform: scale(0);
+        opacity: 0;
+    }
+    to {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+</style>
+{% endblock %}

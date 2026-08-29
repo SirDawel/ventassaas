@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+            border-radius: 10px 10px 0 0;
+        }
+        .content {
+            background: #f8f9fa;
+            padding: 30px;
+            border-radius: 0 0 10px 10px;
+        }
+        .alert {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 15px;
+            margin: 20px 0;
+        }
+        .btn {
+            display: inline-block;
+            padding: 12px 30px;
+            background: #667eea;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+        .stats {
+            background: white;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 15px 0;
+        }
+        .progress-bar {
+            background: #e9ecef;
+            height: 30px;
+            border-radius: 15px;
+            overflow: hidden;
+            margin: 10px 0;
+        }
+        .progress-fill {
+            background: #ffc107;
+            height: 100%;
+            text-align: center;
+            color: white;
+            font-weight: bold;
+            line-height: 30px;
+        }
+        .footer {
+            text-align: center;
+            color: #666;
+            margin-top: 30px;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>⚠️ Uso Alto de {{ tipo|title }}</h1>
+    </div>
+    <div class="content">
+        <p>Hola <strong>{{ tenant.nombre }}</strong>,</p>
+        
+        <div class="alert">
+            <strong>¡Aviso!</strong> Estás cerca del límite de {{ tipo }} de tu plan.
+        </div>
+        
+        <div class="stats">
+            <p><strong>Plan actual:</strong> {{ plan_actual }}</p>
+            <p><strong>Uso actual:</strong></p>
+            <div class="progress-bar">
+                <div class="progress-fill" style="width: {{ porcentaje }}%">
+                    {{ porcentaje|floatformat:0 }}%
+                </div>
+            </div>
+        </div>
+        
+        <p>Has utilizado más del <strong>{{ porcentaje|floatformat:0 }}%</strong> de tu cuota mensual de {{ tipo }}.</p>
+        
+        <h3>Recomendaciones:</h3>
+        <ul>
+            <li>Considera actualizar tu plan para evitar interrupciones</li>
+            <li>Revisa tu uso actual en el panel de control</li>
+            <li>Contacta con nuestro equipo para soluciones personalizadas</li>
+        </ul>
+        
+        <center>
+            <a href="{{ url_upgrade }}" class="btn">Actualizar Plan</a>
+        </center>
+        
+        <p class="footer">
+            ¿Tienes preguntas? Responde a este email o contáctanos en soporte@misventasflash.com
+        </p>
+    </div>
+</body>
+</html>

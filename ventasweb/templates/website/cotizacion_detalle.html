@@ -1,0 +1,327 @@
+{% extends 'website/base.html' %}
+{% load static %}
+{% load humanize %}
+
+{% block title %}{{ nombre_escuela_config|default:"Mis Ventas Flash" }} - Cotización {{ cotizacion.numero_cotizacion }}{% endblock %}
+
+{% block content %}
+<style>
+    .cotizacion-detalle {
+        background: white;
+        border-radius: 10px;
+        padding: 30px;
+        box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15);
+        max-width: 1000px;
+        margin: 0 auto;
+    }
+
+    .cotizacion-header {
+        border-bottom: 2px solid #4e73df;
+        padding-bottom: 20px;
+        margin-bottom: 30px;
+    }
+
+    .info-section {
+        margin-bottom: 30px;
+    }
+
+    .info-label {
+        font-weight: 600;
+        color: #5a5c69;
+        margin-bottom: 5px;
+    }
+
+    .info-value {
+        color: #858796;
+    }
+
+    .table-detalles {
+        margin-bottom: 30px;
+    }
+
+    .totales-section {
+        background: #f8f9fc;
+        border-radius: 8px;
+        padding: 20px;
+        margin-bottom: 20px;
+    }
+
+    .badge-estado {
+        padding: 0.5em 1em;
+        font-size: 1rem;
+    }
+
+    .btn-action {
+        margin-right: 10px;
+        margin-bottom: 10px;
+    }
+</style>
+
+<div class="container-fluid py-4">
+    <div class="cotizacion-detalle">
+        <!-- Header -->
+        <div class="cotizacion-header">
+            <div class="d-flex justify-content-between align-items-start mb-3">
+                <div>
+                    <h1 class="h3 mb-2 text-gray-800">
+                        Cotización {{ cotizacion.numero_cotizacion }}
+                    </h1>
+                    <p class="text-muted mb-0">{{ cotizacion.fecha_emision|date:"d/m/Y H:i" }}</p>
+                </div>
+                <div>
+                    {% if cotizacion.estado == 'borrador' %}
+                    <span class="badge badge-estado bg-secondary">Borrador</span>
+                    {% elif cotizacion.estado == 'enviada' %}
+                    <span class="badge badge-estado bg-warning text-dark">Enviada</span>
+                    {% elif cotizacion.estado == 'aceptada' %}
+                    <span class="badge badge-estado bg-success">Aceptada</span>
+                    {% elif cotizacion.estado == 'rechazada' %}
+                    <span class="badge badge-estado bg-danger">Rechazada</span>
+                    {% elif cotizacion.estado == 'convertida' %}
+                    <span class="badge badge-estado bg-info">Convertida</span>
+                    {% elif cotizacion.estado == 'vencida' %}
+                    <span class="badge badge-estado bg-dark">Vencida</span>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Información del Cliente -->
+            <div class="row">
+                <div class="col-md-6 info-section">
+                    <div class="info-label">Cliente</div>
+                    <div class="info-value">
+                        <strong>{{ cotizacion.cliente.get_full_name }}</strong><br>
+                        {{ cotizacion.cliente.email }}<br>
+                        {% if cotizacion.cliente.telefono %}{{ cotizacion.cliente.telefono }}{% endif %}
+                    </div>
+                </div>
+                <div class="col-md-6 info-section">
+                    <div class="info-label">Vendedor</div>
+                    <div class="info-value">
+                        {% if cotizacion.vendedor %}
+                            <strong>{{ cotizacion.vendedor.get_full_name }}</strong><br>
+                            {{ cotizacion.vendedor.email }}
+                        {% else %}
+                            <span class="text-muted">Sin vendedor asignado</span>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-md-6 info-section">
+                    <div class="info-label">Fecha de Vencimiento</div>
+                    <div class="info-value">
+                        {{ cotizacion.fecha_vencimiento|date:"d/m/Y" }}
+                        {% if cotizacion.esta_vencida %}
+                        <span class="badge bg-danger ms-2">Vencida</span>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="col-md-6 info-section">
+                    <div class="info-label">Creado por</div>
+                    <div class="info-value">
+                        {% if cotizacion.creado_por %}
+                            {{ cotizacion.creado_por.get_full_name }}
+                        {% else %}
+                            <span class="text-muted">Sistema</span>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Detalles/Items -->
+        <div class="table-detalles">
+            <h5 class="mb-3">Detalles de la Cotización</h5>
+            <div class="table-responsive">
+                <table class="table table-bordered">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Descripción</th>
+                            <th class="text-center">Cantidad</th>
+                            <th class="text-end">Precio Unit.</th>
+                            <th class="text-end">Subtotal</th>
+                            <th class="text-end">Descuento</th>
+                            <th class="text-end">Total</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for detalle in detalles %}
+                        <tr>
+                            <td>
+                                {{ detalle.descripcion }}
+                                {% if detalle.articulo %}
+                                <br><small class="text-muted">Código: {{ detalle.articulo.codigo|default:"-" }}</small>
+                                {% endif %}
+                            </td>
+                            <td class="text-center">{{ detalle.cantidad }}</td>
+                            <td class="text-end">RD$ {{ detalle.precio_unitario|floatformat:2|intcomma }}</td>
+                            <td class="text-end">RD$ {{ detalle.get_subtotal|floatformat:2|intcomma }}</td>
+                            <td class="text-end">RD$ {{ detalle.descuento|floatformat:2|intcomma }}</td>
+                            <td class="text-end"><strong>RD$ {{ detalle.get_total|floatformat:2|intcomma }}</strong></td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Totales -->
+        <div class="totales-section">
+            <div class="row">
+                <div class="col-md-6">
+                    {% if cotizacion.observaciones %}
+                    <div class="mb-3">
+                        <div class="info-label">Observaciones</div>
+                        <div class="info-value">{{ cotizacion.observaciones }}</div>
+                    </div>
+                    {% endif %}
+                    {% if cotizacion.notas_internas %}
+                    <div class="mb-3">
+                        <div class="info-label">Notas Internas</div>
+                        <div class="info-value">{{ cotizacion.notas_internas }}</div>
+                    </div>
+                    {% endif %}
+                    {% if cotizacion.terminos_condiciones %}
+                    <div class="mb-3">
+                        <div class="info-label">Términos y Condiciones</div>
+                        <div class="info-value">{{ cotizacion.terminos_condiciones }}</div>
+                    </div>
+                    {% endif %}
+                </div>
+                <div class="col-md-6">
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>Subtotal:</span>
+                        <strong>RD$ {{ cotizacion.subtotal|floatformat:2|intcomma }}</strong>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>Descuento:</span>
+                        <strong>RD$ {{ cotizacion.descuento|floatformat:2|intcomma }}</strong>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>ITBIS:</span>
+                        <strong>RD$ {{ cotizacion.impuesto|floatformat:2|intcomma }}</strong>
+                    </div>
+                    <hr>
+                    <div class="d-flex justify-content-between">
+                        <span class="h5">TOTAL:</span>
+                        <strong class="h5 text-primary">RD$ {{ cotizacion.total|floatformat:2|intcomma }}</strong>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Información de Conversión -->
+        {% if cotizacion.factura_generada %}
+        <div class="alert alert-info">
+            <i class="fas fa-info-circle me-2"></i>
+            Esta cotización fue convertida en la factura 
+            <a href="{% url 'detalle_factura' cotizacion.factura_generada.id %}" class="alert-link">
+                {{ cotizacion.factura_generada.numero_factura }}
+            </a>
+        </div>
+        {% endif %}
+
+        <!-- Acciones -->
+        <div class="d-flex justify-content-between align-items-center mt-4 flex-wrap">
+            <div>
+                <a href="{% url 'cotizaciones_lista' %}" class="btn btn-secondary btn-action">
+                    <i class="fas fa-arrow-left me-2"></i>Volver a la Lista
+                </a>
+                <a href="{% url 'cotizacion_generar_pdf' cotizacion.id %}" class="btn btn-info btn-action" target="_blank">
+                    <i class="fas fa-file-pdf me-2"></i>Descargar PDF
+                </a>
+                <button id="btn-whatsapp" class="btn btn-success btn-action" data-cotizacion-id="{{ cotizacion.id }}">
+                    <i class="fab fa-whatsapp me-2"></i>Enviar por WhatsApp
+                </button>
+                <a href="{% url 'cotizacion_historial' cotizacion.id %}" class="btn btn-outline-secondary btn-action">
+                    <i class="fas fa-history me-2"></i>Ver Historial
+                </a>
+            </div>
+            <div>
+                {% if cotizacion.puede_convertir_a_factura and not cotizacion.factura_generada %}
+                <a href="{% url 'cotizacion_convertir_factura' cotizacion.id %}" class="btn btn-success btn-action" 
+                   onclick="return confirm('¿Está seguro de convertir esta cotización en factura?');">
+                    <i class="fas fa-exchange-alt me-2"></i>Convertir a Factura
+                </a>
+                {% endif %}
+
+                {% if cotizacion.estado == 'borrador' %}
+                <form method="post" action="{% url 'cotizacion_cambiar_estado' cotizacion.id %}" style="display: inline;">
+                    {% csrf_token %}
+                    <input type="hidden" name="estado" value="enviada">
+                    <button type="submit" class="btn btn-primary btn-action">
+                        <i class="fas fa-paper-plane me-2"></i>Marcar como Enviada
+                    </button>
+                </form>
+                {% endif %}
+
+                {% if cotizacion.estado == 'enviada' %}
+                <form method="post" action="{% url 'cotizacion_cambiar_estado' cotizacion.id %}" style="display: inline;">
+                    {% csrf_token %}
+                    <input type="hidden" name="estado" value="aceptada">
+                    <button type="submit" class="btn btn-success btn-action">
+                        <i class="fas fa-check me-2"></i>Marcar como Aceptada
+                    </button>
+                </form>
+                <form method="post" action="{% url 'cotizacion_cambiar_estado' cotizacion.id %}" style="display: inline;">
+                    {% csrf_token %}
+                    <input type="hidden" name="estado" value="rechazada">
+                    <button type="submit" class="btn btn-danger btn-action">
+                        <i class="fas fa-times me-2"></i>Marcar como Rechazada
+                    </button>
+                </form>
+                {% endif %}
+
+                {% if cotizacion.estado == 'borrador' %}
+                <a href="{% url 'cotizacion_eliminar' cotizacion.id %}" class="btn btn-danger btn-action"
+                   onclick="return confirm('¿Está seguro de eliminar esta cotización?');">
+                    <i class="fas fa-trash me-2"></i>Eliminar
+                </a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Botón de WhatsApp
+document.getElementById('btn-whatsapp').addEventListener('click', function() {
+    const cotizacionId = this.dataset.cotizacionId;
+    const btn = this;
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Preparando...';
+    
+    fetch(`/cotizaciones/${cotizacionId}/whatsapp/`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Abrir WhatsApp en nueva pestaña
+                window.open(data.whatsapp_url, '_blank');
+                btn.innerHTML = '<i class="fab fa-whatsapp me-2"></i>Enviado';
+                btn.classList.remove('btn-success');
+                btn.classList.add('btn-outline-success');
+                
+                // Restaurar después de 2 segundos
+                setTimeout(() => {
+                    btn.innerHTML = '<i class="fab fa-whatsapp me-2"></i>Enviar por WhatsApp';
+                    btn.classList.remove('btn-outline-success');
+                    btn.classList.add('btn-success');
+                    btn.disabled = false;
+                }, 2000);
+            } else {
+                alert('Error al preparar mensaje de WhatsApp');
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fab fa-whatsapp me-2"></i>Enviar por WhatsApp';
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error al preparar mensaje de WhatsApp');
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fab fa-whatsapp me-2"></i>Enviar por WhatsApp';
+        });
+});
+</script>
+{% endblock %}

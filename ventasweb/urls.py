@@ -8,15 +8,48 @@ from . import views_pagos_estudiante as views_pagos
 from . import views_pos
 from . import views_importar_csv
 from . import views_suscripcion
+from . import views_planes  # Vistas de planes y billing
+from . import views_stripe  # Integración de Stripe
+from . import views_dashboard  # Dashboard analytics con datos reales
+from . import views_cotizaciones  # Sistema de cotizaciones
 
 urlpatterns = [
     # ============================================
     # PÁGINAS PRINCIPALES
     # ============================================
-    path('plataform', views.plataform, name='plataform'),
+    path('plataform', views_dashboard.dashboard_analytics, name='plataform'),  # Dashboard mejorado con datos reales
     path('index/', views.index, name='index'),
     path('base/', views.base, name='base'),
     path('noticias/', views.noticias, name='noticias'),
+    
+    # ============================================
+    # DASHBOARD ANALYTICS - APIs para gráficos dinámicos
+    # ============================================
+    path('api/ventas/tendencia/', views_dashboard.api_ventas_tendencia, name='api_ventas_tendencia'),
+    path('api/productos/chart/', views_dashboard.api_productos_chart, name='api_productos_chart'),
+    path('api/ventas/hoy/', views_dashboard.api_ventas_hoy, name='api_ventas_hoy'),
+    
+    # ============================================
+    # SISTEMA DE COTIZACIONES
+    # ============================================
+    path('cotizaciones/', views_cotizaciones.cotizaciones_lista, name='cotizaciones_lista'),
+    path('cotizaciones/crear/', views_cotizaciones.cotizacion_crear, name='cotizacion_crear'),
+    path('cotizaciones/<int:cotizacion_id>/', views_cotizaciones.cotizacion_detalle, name='cotizacion_detalle'),
+    path('cotizaciones/<int:cotizacion_id>/convertir/', views_cotizaciones.cotizacion_convertir_factura, name='cotizacion_convertir_factura'),
+    path('cotizaciones/<int:cotizacion_id>/estado/', views_cotizaciones.cotizacion_cambiar_estado, name='cotizacion_cambiar_estado'),
+    path('cotizaciones/<int:cotizacion_id>/eliminar/', views_cotizaciones.cotizacion_eliminar, name='cotizacion_eliminar'),
+    
+    # Nuevas funcionalidades avanzadas
+    path('cotizaciones/<int:cotizacion_id>/pdf/', views_cotizaciones.cotizacion_generar_pdf, name='cotizacion_generar_pdf'),
+    path('cotizaciones/<int:cotizacion_id>/whatsapp/', views_cotizaciones.cotizacion_enviar_whatsapp, name='cotizacion_enviar_whatsapp'),
+    path('cotizaciones/<int:cotizacion_id>/historial/', views_cotizaciones.cotizacion_historial, name='cotizacion_historial'),
+    path('cotizaciones/ver/<str:token>/', views_cotizaciones.cotizacion_publica, name='cotizacion_publica'),
+    path('cotizaciones/firmar/<str:token>/', views_cotizaciones.cotizacion_firmar, name='cotizacion_firmar'),
+    
+    # Plantillas de cotización
+    path('plantillas/', views_cotizaciones.plantillas_lista, name='plantillas_lista'),
+    path('plantillas/crear/', views_cotizaciones.plantilla_crear, name='plantilla_crear'),
+    path('plantillas/<int:plantilla_id>/usar/', views_cotizaciones.cotizacion_desde_plantilla, name='cotizacion_desde_plantilla'),
     
     # ============================================
     # REGISTRO PÚBLICO DE EMPRESAS (MULTI-TENANT)
@@ -285,6 +318,20 @@ urlpatterns = [
     
     # Webhook de Stripe
     path('webhooks/stripe/', views_suscripcion.stripe_webhook, name='stripe_webhook'),
+    
+    # ============================================
+    # URLs para Sistema de Planes y Billing
+    # ============================================
+    path('planes/mi-plan/', views_planes.mi_plan, name='mi_plan'),
+    path('planes/pricing/', views_planes.planes_pricing, name='planes_pricing'),
+    path('planes/cambiar/', views_planes.cambiar_plan, name='cambiar_plan'),
+    path('planes/api/uso/', views_planes.uso_api, name='uso_api'),
+    
+    # Stripe Checkout y Webhooks
+    path('planes/checkout/<str:plan_nombre>/', views_stripe.checkout_plan, name='checkout_plan'),
+    path('planes/pago-exitoso/', views_stripe.pago_exitoso, name='stripe_pago_exitoso'),
+    path('planes/cancelar-suscripcion/', views_stripe.cancelar_suscripcion, name='cancelar_suscripcion'),
+    path('webhooks/stripe-billing/', views_stripe.stripe_webhook, name='stripe_webhook_billing'),
     
     # Ruta para manejar peticiones huérfanas (evitar 404 en recursos no existentes)
     path('reporte/', views.empty_response, name='empty_reporte'),

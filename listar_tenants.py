@@ -39,12 +39,12 @@ def listar_tenants():
     
     for tenant in tenants:
         dominios = [d.domain for d in tenant.domains.all()]
-        activo = "✅ Activo" if tenant.is_active else "❌ Inactivo"
+        activo = "✅ Activo" if tenant.activo else "❌ Inactivo"
         print(f"\nSchema: {tenant.schema_name}")
         print(f"  Nombre: {tenant.nombre}")
         print(f"  Estado: {activo}")
         print(f"  Dominios: {', '.join(dominios)}")
-        print(f"  Creado: {tenant.created}")
+        print(f"  Creado: {tenant.fecha_creacion}")
     
     # Verificar schemas en PostgreSQL
     print("\n" + "=" * 80)

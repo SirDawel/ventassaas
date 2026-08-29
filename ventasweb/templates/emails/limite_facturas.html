@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+            border-radius: 10px 10px 0 0;
+        }
+        .content {
+            background: #f8f9fa;
+            padding: 30px;
+            border-radius: 0 0 10px 10px;
+        }
+        .alert {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 15px;
+            margin: 20px 0;
+        }
+        .btn {
+            display: inline-block;
+            padding: 12px 30px;
+            background: #667eea;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+        .stats {
+            background: white;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 15px 0;
+        }
+        .footer {
+            text-align: center;
+            color: #666;
+            margin-top: 30px;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>⚠️ Límite de Facturas Alcanzado</h1>
+    </div>
+    <div class="content">
+        <p>Hola <strong>{{ tenant.nombre }}</strong>,</p>
+        
+        <div class="alert">
+            <strong>¡Atención!</strong> Has alcanzado el límite de facturas de tu plan actual.
+        </div>
+        
+        <div class="stats">
+            <p><strong>Plan actual:</strong> {{ plan_actual }}</p>
+            <p><strong>Límite mensual:</strong> {{ limite }} facturas</p>
+            <p><strong>Estado:</strong> Límite alcanzado</p>
+        </div>
+        
+        <p>No podrás crear más facturas este mes a menos que actualices tu plan.</p>
+        
+        <h3>¿Qué puedes hacer?</h3>
+        <ul>
+            <li><strong>Actualizar tu plan</strong> para obtener más facturas</li>
+            <li>Esperar hasta el próximo mes (se reinicia automáticamente)</li>
+            <li>Contactar con soporte para opciones personalizadas</li>
+        </ul>
+        
+        <center>
+            <a href="{{ url_upgrade }}" class="btn">Ver Planes Disponibles</a>
+        </center>
+        
+        <p class="footer">
+            ¿Tienes preguntas? Responde a este email o contáctanos en soporte@misventasflash.com
+        </p>
+    </div>
+</body>
+</html>

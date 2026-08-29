@@ -1,0 +1,290 @@
+{% extends 'website/base.html' %}
+{% load static %}
+
+{% block title %}{{ nombre_escuela_config|default:"Mis Ventas Flash" }} - Nueva Cotización{% endblock %}
+
+{% block content %}
+<style>
+    .form-container {
+        background: white;
+        border-radius: 10px;
+        padding: 30px;
+        box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15);
+        max-width: 1200px;
+        margin: 0 auto;
+    }
+
+    .section-title {
+        font-size: 1.1rem;
+        font-weight: 600;
+        color: #4e73df;
+        border-bottom: 2px solid #4e73df;
+        padding-bottom: 10px;
+        margin-bottom: 20px;
+    }
+
+    .detalle-item {
+        background: #f8f9fc;
+        border-radius: 8px;
+        padding: 15px;
+        margin-bottom: 15px;
+        border: 1px solid #e3e6f0;
+    }
+
+    .btn-remove-item {
+        background: #e74a3b;
+        border: none;
+        color: white;
+        padding: 0.375rem 0.75rem;
+        border-radius: 5px;
+        cursor: pointer;
+    }
+
+    .btn-remove-item:hover {
+        background: #c82333;
+    }
+
+    .total-section {
+        background: #f8f9fc;
+        border-radius: 8px;
+        padding: 20px;
+        margin-top: 20px;
+    }
+</style>
+
+<div class="container-fluid py-4">
+    <div class="form-container">
+        <!-- Header -->
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div>
+                <h1 class="h3 mb-0 text-gray-800">
+                    <i class="fas fa-file-invoice me-2"></i>Nueva Cotización
+                </h1>
+                <p class="text-muted mb-0">Complete los datos para crear una cotización</p>
+            </div>
+            <a href="{% url 'cotizaciones_lista' %}" class="btn btn-secondary">
+                <i class="fas fa-arrow-left me-2"></i>Volver
+            </a>
+        </div>
+
+        <form method="post" id="formCotizacion">
+            {% csrf_token %}
+
+            <!-- Información del Cliente -->
+            <div class="section-title">
+                <i class="fas fa-user me-2"></i>Información del Cliente
+            </div>
+            <div class="row mb-4">
+                <div class="col-md-6">
+                    <label class="form-label">Cliente <span class="text-danger">*</span></label>
+                    <select name="cliente" class="form-select" required>
+                        <option value="">Seleccione un cliente</option>
+                        {% for cliente in clientes %}
+                        <option value="{{ cliente.id }}">{{ cliente.get_full_name }} - {{ cliente.email }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Vendedor</label>
+                    <select name="vendedor" class="form-select">
+                        <option value="">Sin vendedor asignado</option>
+                        {% for vendedor in vendedores %}
+                        <option value="{{ vendedor.id }}">{{ vendedor.get_full_name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+
+            <!-- Fechas -->
+            <div class="section-title">
+                <i class="fas fa-calendar me-2"></i>Fechas
+            </div>
+            <div class="row mb-4">
+                <div class="col-md-6">
+                    <label class="form-label">Fecha de Vencimiento <span class="text-danger">*</span></label>
+                    <input type="date" name="fecha_vencimiento" class="form-control" value="{{ fecha_vencimiento_default }}" required>
+                    <small class="form-text text-muted">Fecha hasta la cual es válida la cotización</small>
+                </div>
+            </div>
+
+            <!-- Detalles/Items -->
+            <div class="section-title">
+                <i class="fas fa-list me-2"></i>Detalles de la Cotización
+            </div>
+            <div id="detalles-container">
+                <!-- Items se agregarán aquí dinámicamente -->
+            </div>
+            <button type="button" class="btn btn-outline-primary mb-4" onclick="agregarDetalle()">
+                <i class="fas fa-plus me-2"></i>Agregar Item
+            </button>
+
+            <!-- Totales -->
+            <div class="total-section">
+                <div class="row">
+                    <div class="col-md-8">
+                        <div class="mb-3">
+                            <label class="form-label">Observaciones para el Cliente</label>
+                            <textarea name="observaciones" class="form-control" rows="3" placeholder="Notas que verá el cliente..."></textarea>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Notas Internas</label>
+                            <textarea name="notas_internas" class="form-control" rows="2" placeholder="Notas solo para uso interno..."></textarea>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="mb-2">
+                            <label class="form-label">ITBIS (%)</label>
+                            <input type="number" name="impuesto_porcentaje" class="form-control" value="18" step="0.01" min="0" max="100" onchange="calcularTotales()">
+                        </div>
+                        <hr>
+                        <div class="d-flex justify-content-between mb-2">
+                            <span>Subtotal:</span>
+                            <strong id="subtotal-display">RD$ 0.00</strong>
+                        </div>
+                        <div class="d-flex justify-content-between mb-2">
+                            <span>Descuento:</span>
+                            <strong id="descuento-display">RD$ 0.00</strong>
+                        </div>
+                        <div class="d-flex justify-content-between mb-2">
+                            <span>ITBIS:</span>
+                            <strong id="impuesto-display">RD$ 0.00</strong>
+                        </div>
+                        <hr>
+                        <div class="d-flex justify-content-between">
+                            <span class="h5">TOTAL:</span>
+                            <strong class="h5 text-primary" id="total-display">RD$ 0.00</strong>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Términos y Condiciones -->
+            <div class="mt-4">
+                <label class="form-label">Términos y Condiciones</label>
+                <textarea name="terminos_condiciones" class="form-control" rows="3" placeholder="Términos y condiciones de la cotización..."></textarea>
+            </div>
+
+            <!-- Botones -->
+            <div class="d-flex justify-content-end mt-4 gap-2">
+                <a href="{% url 'cotizaciones_lista' %}" class="btn btn-secondary">
+                    <i class="fas fa-times me-2"></i>Cancelar
+                </a>
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-save me-2"></i>Guardar Cotización
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+let contadorDetalles = 0;
+const articulos = {{ articulos|safe }};
+
+function agregarDetalle() {
+    contadorDetalles++;
+    const html = `
+        <div class="detalle-item" id="detalle-${contadorDetalles}">
+            <div class="row">
+                <div class="col-md-4">
+                    <label class="form-label">Artículo (opcional)</label>
+                    <select name="articulo_id[]" class="form-select" onchange="seleccionarArticulo(this, ${contadorDetalles})">
+                        <option value="">Personalizado</option>
+                        {% for articulo in articulos %}
+                        <option value="{{ articulo.id }}" data-precio="{{ articulo.precio_venta }}" data-nombre="{{ articulo.nombre }}">
+                            {{ articulo.nombre }} - RD$ {{ articulo.precio_venta }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Descripción *</label>
+                    <input type="text" name="descripcion[]" class="form-control" required placeholder="Descripción del producto/servicio">
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Cantidad *</label>
+                    <input type="number" name="cantidad[]" class="form-control" value="1" step="0.01" min="0.01" required onchange="calcularTotales()">
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Precio Unit. *</label>
+                    <input type="number" name="precio_unitario[]" class="form-control" value="0" step="0.01" min="0" required onchange="calcularTotales()">
+                </div>
+            </div>
+            <div class="row mt-2">
+                <div class="col-md-10">
+                    <label class="form-label">Descuento (RD$)</label>
+                    <input type="number" name="descuento[]" class="form-control" value="0" step="0.01" min="0" onchange="calcularTotales()">
+                </div>
+                <div class="col-md-2 d-flex align-items-end">
+                    <button type="button" class="btn-remove-item w-100" onclick="eliminarDetalle(${contadorDetalles})">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    `;
+    document.getElementById('detalles-container').insertAdjacentHTML('beforeend', html);
+    calcularTotales();
+}
+
+function seleccionarArticulo(select, detalleId) {
+    const option = select.options[select.selectedIndex];
+    if (option.value) {
+        const precio = option.dataset.precio;
+        const nombre = option.dataset.nombre;
+        const detalle = document.getElementById(`detalle-${detalleId}`);
+        detalle.querySelector('input[name="descripcion[]"]').value = nombre;
+        detalle.querySelector('input[name="precio_unitario[]"]').value = precio;
+        calcularTotales();
+    }
+}
+
+function eliminarDetalle(id) {
+    document.getElementById(`detalle-${id}`).remove();
+    calcularTotales();
+}
+
+function calcularTotales() {
+    let subtotal = 0;
+    let descuentoTotal = 0;
+    
+    const cantidades = document.querySelectorAll('input[name="cantidad[]"]');
+    const precios = document.querySelectorAll('input[name="precio_unitario[]"]');
+    const descuentos = document.querySelectorAll('input[name="descuento[]"]');
+    
+    for (let i = 0; i < cantidades.length; i++) {
+        const cantidad = parseFloat(cantidades[i].value) || 0;
+        const precio = parseFloat(precios[i].value) || 0;
+        const descuento = parseFloat(descuentos[i].value) || 0;
+        
+        subtotal += cantidad * precio;
+        descuentoTotal += descuento;
+    }
+    
+    const impuestoPorcentaje = parseFloat(document.querySelector('input[name="impuesto_porcentaje"]').value) || 0;
+    const baseImponible = subtotal - descuentoTotal;
+    const impuesto = baseImponible * (impuestoPorcentaje / 100);
+    const total = baseImponible + impuesto;
+    
+    document.getElementById('subtotal-display').textContent = `RD$ ${subtotal.toFixed(2)}`;
+    document.getElementById('descuento-display').textContent = `RD$ ${descuentoTotal.toFixed(2)}`;
+    document.getElementById('impuesto-display').textContent = `RD$ ${impuesto.toFixed(2)}`;
+    document.getElementById('total-display').textContent = `RD$ ${total.toFixed(2)}`;
+}
+
+// Agregar primer detalle al cargar
+document.addEventListener('DOMContentLoaded', function() {
+    agregarDetalle();
+});
+
+// Validar antes de enviar
+document.getElementById('formCotizacion').addEventListener('submit', function(e) {
+    const detalles = document.querySelectorAll('.detalle-item');
+    if (detalles.length === 0) {
+        e.preventDefault();
+        alert('Debe agregar al menos un item a la cotización');
+        return false;
+    }
+});
+</script>
+{% endblock %}

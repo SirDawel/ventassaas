@@ -42,8 +42,8 @@ urlpatterns = [
     path('registrar-empresa/', views.registrar_empresa, name='registrar_empresa'),
     path('activate-school/<uidb64>/<token>/', views.activate_school, name='activate_school'),
     
-    # Páginas principales (dashboard post-login)
-    path('plataform', views.plataform, name='plataform'),
+    # Páginas principales - Solo para schema público
+    # NOTA: /plataform está disponible SOLO en tenants (no en público)
     path('index/', views.index, name='index'),
     path('base/', views.base, name='base'),
     path("anhoescolar/", crear_ano_escolar, name="anhoescolar"),
@@ -96,8 +96,12 @@ urlpatterns = [
     path('materias/eliminar/<int:pk>/', views.eliminar_materia, name='eliminar_materia'),
     path('materias/confirmar-eliminar/<int:pk>/', views.confirmar_eliminar_materia, name='confirmar_eliminar_materia'),
     
-    # Incluir todas las demás URLs de ventasweb para que funcionen en el schema público también
-    path('', include('ventasweb.urls')),
+    # ============================================
+    # IMPORTANTE: NO incluir ventasweb.urls aquí
+    # El schema público solo debe tener rutas de registro/landing
+    # Todas las funcionalidades operativas van en los TENANTS
+    # ============================================
+    # path('', include('ventasweb.urls')),  # DESHABILITADO - Solo para tenants
 ]
 
 # Servir archivos estáticos y media en desarrollo

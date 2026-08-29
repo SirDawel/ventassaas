@@ -54,3 +54,168 @@ class RoleBasedSessionMiddleware(MiddlewareMixin):
         
         response = self.get_response(request)
         return response
+
+
+# ==============================================================================
+# Middlewares para Sistema de Planes y Billing
+# ==============================================================================
+
+from django.http import JsonResponse
+from django.shortcuts import render
+from django.urls import resolve
+from ventasweb import notifications
+
+
+class PlanLimitsMiddleware:
+    """
+    Middleware que verifica los límites del plan antes de permitir acciones
+    """
+    
+    def __init__(self, get_response):
+        self.get_response = get_response
+        
+        # URLs que crean facturas (agregar más según tu app)
+        self.factura_urls = [
+            'ventasweb:crear_factura',
+            'ventasweb:registrar_venta',
+            'ventasweb:pos_crear_venta',
+        ]
+        
+        # URLs que crean usuarios
+        self.usuario_urls = [
+            'ventasweb:crear_usuario',
+            'ventasweb:registro_usuario',
+        ]
+    
+    def __call__(self, request):
+        # Obtener tenant actual
+        if hasattr(request, 'tenant') and request.tenant and not request.tenant.schema_name == 'public':
+            tenant = request.tenant
+            
+            # Verificar si el tenant está activo
+            if not tenant.esta_activa():
+                if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                    return JsonResponse({
+                        'error': 'Suscripción expirada',
+                        'message': 'Tu plan ha expirado. Por favor renueva tu suscripción.',
+                        'plan': tenant.plan,
+                        'fecha_vencimiento': tenant.fecha_vencimiento.isoformat() if tenant.fecha_vencimiento else None
+                    }, status=403)
+                
+                return render(request, 'errors/plan_expirado.html', {
+                    'tenant': tenant,
+                    'plan': tenant.get_info_plan()
+                }, status=403)
+            
+            # Obtener la URL actual
+            try:
+                url_name = resolve(request.path_info).url_name
+                
+                # Verificar límite de facturas
+                if url_name in self.factura_urls and request.method == 'POST':
+                    if not tenant.puede_crear_factura():
+                        # Enviar notificación por email
+                        try:
+                            notifications.notificar_limite_facturas(tenant)
+                        except Exception as e:
+                            print(f"ERROR enviando notificación de límite de facturas: {e}")
+                        
+                        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                            return JsonResponse({
+                                'error': 'Límite alcanzado',
+                                'message': f'Has alcanzado el límite de {tenant.max_facturas_mes} facturas para tu plan {tenant.get_plan_display()}.',
+                                'facturas_usadas': tenant.contar_facturas_mes(),
+                                'facturas_max': tenant.max_facturas_mes,
+                                'sugerencia': 'Actualiza tu plan para crear más facturas.'
+                            }, status=403)
+                        
+                        return render(request, 'errors/limite_facturas.html', {
+                            'tenant': tenant,
+                            'plan': tenant.get_info_plan()
+                        }, status=403)
+                
+                # Verificar límite de usuarios
+                if url_name in self.usuario_urls and request.method == 'POST':
+                    if not tenant.puede_agregar_usuarios():
+                        # Enviar notificación por email
+                        try:
+                            notifications.notificar_limite_usuarios(tenant)
+                        except Exception as e:
+                            print(f"ERROR enviando notificación de límite de usuarios: {e}")
+                        
+                        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                            return JsonResponse({
+                                'error': 'Límite alcanzado',
+                                'message': f'Has alcanzado el límite de {tenant.max_usuarios} usuarios para tu plan {tenant.get_plan_display()}.',
+                                'usuarios_actuales': tenant.contar_usuarios(),
+                                'usuarios_max': tenant.max_usuarios,
+                                'sugerencia': 'Actualiza tu plan para agregar más usuarios.'
+                            }, status=403)
+                        
+                        return render(request, 'errors/limite_usuarios.html', {
+                            'tenant': tenant,
+                            'plan': tenant.get_info_plan()
+                        }, status=403)
+                        
+            except Exception:
+                pass  # Si no se puede resolver la URL, continuar normalmente
+        
+        response = self.get_response(request)
+        return response
+
+
+class BillingWarningMiddleware:
+    """
+    Middleware que muestra alertas cuando se acerca a límites del plan
+    """
+    
+    def __init__(self, get_response):
+        self.get_response = get_response
+    
+    def __call__(self, request):
+        response = self.get_response(request)
+        
+        # Solo para requests HTML (no AJAX ni API)
+        if hasattr(request, 'tenant') and request.tenant and not request.tenant.schema_name == 'public':
+            if 'text/html' in response.get('Content-Type', ''):
+                tenant = request.tenant
+                
+                # Verificar alertas
+                alertas = []
+                
+                # Alerta de usuarios
+                porcentaje_usuarios = tenant.get_porcentaje_uso_usuarios()
+                if porcentaje_usuarios >= 80:
+                    alertas.append({
+                        'tipo': 'warning' if porcentaje_usuarios < 100 else 'danger',
+                        'mensaje': f'Estás usando {tenant.contar_usuarios()} de {tenant.max_usuarios} usuarios disponibles.'
+                    })
+                
+                # Alerta de facturas
+                porcentaje_facturas = tenant.get_porcentaje_uso_facturas()
+                if porcentaje_facturas >= 80 and tenant.max_facturas_mes < 99999:
+                    alertas.append({
+                        'tipo': 'warning' if porcentaje_facturas < 100 else 'danger',
+                        'mensaje': f'Has usado {tenant.contar_facturas_mes()} de {tenant.max_facturas_mes} facturas este mes.'
+                    })
+                
+                # Alerta de vencimiento
+                if tenant.fecha_vencimiento:
+                    from django.utils import timezone
+                    from datetime import timedelta
+                    
+                    dias_restantes = (tenant.fecha_vencimiento - timezone.now()).days
+                    if 0 < dias_restantes <= 7:
+                        alertas.append({
+                            'tipo': 'danger',
+                            'mensaje': f'Tu plan vence en {dias_restantes} días. Renueva para no perder acceso.'
+                        })
+                
+                # Agregar alertas al contexto de la respuesta
+                if alertas and hasattr(request, '_messages'):
+                    from django.contrib import messages
+                    for alerta in alertas:
+                        nivel = messages.WARNING if alerta['tipo'] == 'warning' else messages.ERROR
+                        messages.add_message(request, nivel, alerta['mensaje'])
+        
+        return response

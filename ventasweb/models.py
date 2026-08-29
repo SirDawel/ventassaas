@@ -4714,7 +4714,7 @@ class ConfiguracionEscuela(models.Model):
         """Obtener o crear la configuración de la escuela"""
         config, created = cls.objects.get_or_create(
             pk=1,
-            defaults={'nombre_escuela': 'Sistema de Ventas'}
+            defaults={'nombre_escuela': 'Mis Ventas Flash'}
         )
         return config
 
@@ -5034,6 +5034,265 @@ Por favor, revisa el panel de administración para más detalles.
             import logging
             logger = logging.getLogger(__name__)
             logger.error(f"Error enviando email de alerta: {str(e)}")
+
+
+# ============================================================================
+# SISTEMA DE COTIZACIONES
+# ============================================================================
+
+class Cotizacion(models.Model):
+    """Cotización/Presupuesto para convertir en factura"""
+    ESTADO_CHOICES = [
+        ('borrador', 'Borrador'),
+        ('enviada', 'Enviada al Cliente'),
+        ('aceptada', 'Aceptada'),
+        ('rechazada', 'Rechazada'),
+        ('convertida', 'Convertida a Factura'),
+        ('vencida', 'Vencida'),
+    ]
+    
+    # Información básica
+    numero_cotizacion = models.CharField(max_length=50, unique=True, db_index=True)
+    cliente = models.ForeignKey(
+        CustomUser,
+        on_delete=models.PROTECT,
+        related_name='cotizaciones_cliente',
+        limit_choices_to={'rol': 'Cliente'},
+        verbose_name="Cliente"
+    )
+    vendedor = models.ForeignKey(
+        CustomUser,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='cotizaciones_vendedor',
+        limit_choices_to={'rol': 'Vendedor'},
+        verbose_name="Vendedor"
+    )
+    
+    # Fechas
+    fecha_emision = models.DateTimeField(auto_now_add=True)
+    fecha_vencimiento = models.DateField(help_text="Fecha hasta la cual es válida la cotización")
+    
+    # Montos
+    subtotal = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    descuento = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    impuesto = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    total = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    
+    # Estado
+    estado = models.CharField(max_length=20, choices=ESTADO_CHOICES, default='borrador', db_index=True)
+    
+    # Información adicional
+    observaciones = models.TextField(blank=True, null=True, help_text="Notas para el cliente")
+    notas_internas = models.TextField(blank=True, null=True, help_text="Notas solo para uso interno")
+    terminos_condiciones = models.TextField(blank=True, null=True, help_text="Términos y condiciones de la cotización")
+    
+    # Relación con factura
+    factura_generada = models.ForeignKey(
+        'Factura',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='cotizacion_origen'
+    )
+    
+    # Firma digital del cliente
+    firma_cliente = models.TextField(blank=True, null=True, help_text="Firma digital del cliente en base64")
+    firma_fecha = models.DateTimeField(blank=True, null=True, help_text="Fecha y hora de firma")
+    firma_ip = models.GenericIPAddressField(blank=True, null=True, help_text="IP desde donde se firmó")
+    
+    # URL pública para compartir
+    token_publico = models.CharField(max_length=100, unique=True, blank=True, null=True, db_index=True)
+    
+    # Seguimiento
+    ultimo_recordatorio = models.DateTimeField(blank=True, null=True)
+    veces_vista = models.IntegerField(default=0, help_text="Número de veces que se ha visto")
+    
+    # Auditoría
+    creado_por = models.ForeignKey(
+        CustomUser,
+        on_delete=models.SET_NULL,
+        null=True,
+        related_name='cotizaciones_creadas'
+    )
+    fecha_creacion = models.DateTimeField(auto_now_add=True)
+    actualizado = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        verbose_name = "Cotización"
+        verbose_name_plural = "Cotizaciones"
+        ordering = ['-fecha_emision']
+        indexes = [
+            models.Index(fields=['numero_cotizacion']),
+            models.Index(fields=['cliente']),
+            models.Index(fields=['estado']),
+            models.Index(fields=['fecha_emision']),
+        ]
+    
+    def __str__(self):
+        return f"Cotización {self.numero_cotizacion} - {self.cliente.get_full_name()}"
+    
+    def esta_vencida(self):
+        """Verifica si la cotización está vencida"""
+        from datetime import date
+        return date.today() > self.fecha_vencimiento and self.estado not in ['convertida', 'aceptada']
+    
+    def puede_convertir_a_factura(self):
+        """Verifica si la cotización puede convertirse en factura"""
+        return self.estado in ['borrador', 'enviada', 'aceptada'] and not self.esta_vencida()
+    
+    def save(self, *args, **kwargs):
+        # Generar número de cotización si no existe
+        if not self.numero_cotizacion:
+            from datetime import datetime
+            timestamp = datetime.now().strftime('%Y%m%d%H%M%S')
+            ultimo = Cotizacion.objects.filter(numero_cotizacion__startswith='COT-').count()
+            self.numero_cotizacion = f"COT-{timestamp}-{ultimo + 1:05d}"
+        
+        # Generar token público si no existe
+        if not self.token_publico:
+            import secrets
+            self.token_publico = secrets.token_urlsafe(32)
+        
+        super().save(*args, **kwargs)
+    
+    def firmar(self, firma_base64, ip_address=None):
+        """Registra la firma digital del cliente"""
+        from django.utils import timezone
+        self.firma_cliente = firma_base64
+        self.firma_fecha = timezone.now()
+        self.firma_ip = ip_address
+        if self.estado == 'enviada':
+            self.estado = 'aceptada'
+        self.save()
+    
+    def get_url_publica(self, request=None):
+        """Obtiene la URL pública para compartir la cotización"""
+        if request:
+            from django.urls import reverse
+            path = reverse('cotizacion_publica', args=[self.token_publico])
+            return request.build_absolute_uri(path)
+        return f"/cotizaciones/ver/{self.token_publico}/"
+
+
+class DetalleCotizacion(models.Model):
+    """Detalle de items/conceptos de una cotización"""
+    
+    cotizacion = models.ForeignKey(Cotizacion, on_delete=models.CASCADE, related_name='detalles')
+    articulo = models.ForeignKey(
+        'Articulo',
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name='detalles_cotizacion',
+        help_text='Artículo del inventario (si aplica)'
+    )
+    
+    # Información del item
+    descripcion = models.CharField(max_length=255, help_text="Descripción del concepto")
+    cantidad = models.DecimalField(max_digits=10, decimal_places=2, default=1)
+    precio_unitario = models.DecimalField(max_digits=10, decimal_places=2)
+    descuento = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    
+    class Meta:
+        verbose_name = "Detalle de Cotización"
+        verbose_name_plural = "Detalles de Cotización"
+    
+    def __str__(self):
+        return f"{self.descripcion} - {self.cotizacion.numero_cotizacion}"
+    
+    def get_subtotal(self):
+        """Calcula el subtotal sin descuento"""
+        return self.cantidad * self.precio_unitario
+    
+    def get_total(self):
+        """Calcula el total con descuento"""
+        return self.get_subtotal() - self.descuento
+
+
+class PlantillaCotizacion(models.Model):
+    """Plantillas predefinidas para cotizaciones frecuentes"""
+    
+    nombre = models.CharField(max_length=200, help_text="Nombre de la plantilla")
+    descripcion = models.TextField(blank=True, null=True)
+    
+    # Configuración por defecto
+    dias_vencimiento = models.IntegerField(default=30, help_text="Días de validez de la cotización")
+    terminos_condiciones = models.TextField(blank=True, null=True)
+    observaciones = models.TextField(blank=True, null=True)
+    
+    activa = models.BooleanField(default=True)
+    creado_por = models.ForeignKey(CustomUser, on_delete=models.SET_NULL, null=True)
+    fecha_creacion = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        verbose_name = "Plantilla de Cotización"
+        verbose_name_plural = "Plantillas de Cotización"
+        ordering = ['nombre']
+    
+    def __str__(self):
+        return self.nombre
+
+
+class DetallePlantillaCotizacion(models.Model):
+    """Items predefinidos en una plantilla de cotización"""
+    
+    plantilla = models.ForeignKey(PlantillaCotizacion, on_delete=models.CASCADE, related_name='items')
+    articulo = models.ForeignKey(
+        'Articulo',
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True
+    )
+    descripcion = models.CharField(max_length=255)
+    cantidad = models.DecimalField(max_digits=10, decimal_places=2, default=1)
+    precio_unitario = models.DecimalField(max_digits=10, decimal_places=2)
+    descuento = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    orden = models.IntegerField(default=0, help_text="Orden de aparición")
+    
+    class Meta:
+        verbose_name = "Detalle de Plantilla"
+        verbose_name_plural = "Detalles de Plantilla"
+        ordering = ['orden']
+    
+    def __str__(self):
+        return f"{self.descripcion} - {self.plantilla.nombre}"
+
+
+class HistorialCotizacion(models.Model):
+    """Registro de cambios en cotizaciones para audit trail"""
+    
+    TIPO_CAMBIO_CHOICES = [
+        ('creacion', 'Creación'),
+        ('modificacion', 'Modificación'),
+        ('cambio_estado', 'Cambio de Estado'),
+        ('firma', 'Firma del Cliente'),
+        ('conversion', 'Conversión a Factura'),
+        ('envio', 'Envío al Cliente'),
+        ('vista', 'Vista por Cliente'),
+    ]
+    
+    cotizacion = models.ForeignKey(Cotizacion, on_delete=models.CASCADE, related_name='historial')
+    tipo_cambio = models.CharField(max_length=20, choices=TIPO_CAMBIO_CHOICES)
+    descripcion = models.TextField(help_text="Descripción del cambio realizado")
+    
+    # Datos anteriores (JSON)
+    datos_anteriores = models.JSONField(blank=True, null=True)
+    datos_nuevos = models.JSONField(blank=True, null=True)
+    
+    # Auditoría
+    usuario = models.ForeignKey(CustomUser, on_delete=models.SET_NULL, null=True, blank=True)
+    fecha = models.DateTimeField(auto_now_add=True)
+    ip_address = models.GenericIPAddressField(blank=True, null=True)
+    
+    class Meta:
+        verbose_name = "Historial de Cotización"
+        verbose_name_plural = "Historiales de Cotizaciones"
+        ordering = ['-fecha']
+    
+    def __str__(self):
+        return f"{self.cotizacion.numero_cotizacion} - {self.get_tipo_cambio_display()} - {self.fecha.strftime('%Y-%m-%d %H:%M')}"
 
 
 # ============================================================================

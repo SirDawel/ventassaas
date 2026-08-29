@@ -1,0 +1,265 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Planes y Precios - MisVentasFlash</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 40px 0;
+        }
+        .pricing-header {
+            text-align: center;
+            color: white;
+            margin-bottom: 50px;
+        }
+        .pricing-header h1 {
+            font-size: 3rem;
+            font-weight: bold;
+            margin-bottom: 20px;
+        }
+        .pricing-card {
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            margin-bottom: 30px;
+            transition: transform 0.3s, box-shadow 0.3s;
+            height: 100%;
+            position: relative;
+        }
+        .pricing-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+        }
+        .pricing-card.destacado {
+            border: 3px solid #28a745;
+            transform: scale(1.05);
+        }
+        .pricing-card.destacado .badge-destacado {
+            position: absolute;
+            top: -15px;
+            right: 20px;
+            background: #28a745;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 20px;
+            font-weight: bold;
+        }
+        .plan-nombre {
+            font-size: 1.8rem;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        .plan-precio {
+            font-size: 3rem;
+            font-weight: bold;
+            color: #667eea;
+            margin-bottom: 5px;
+        }
+        .plan-periodo {
+            color: #666;
+            margin-bottom: 20px;
+        }
+        .caracteristicas-list {
+            list-style: none;
+            padding: 0;
+            margin-bottom: 30px;
+        }
+        .caracteristicas-list li {
+            padding: 10px 0;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        .caracteristicas-list li:last-child {
+            border-bottom: none;
+        }
+        .caracteristicas-list .incluido {
+            color: #28a745;
+        }
+        .caracteristicas-list .no-incluido {
+            color: #dc3545;
+            text-decoration: line-through;
+        }
+        .btn-plan {
+            width: 100%;
+            padding: 15px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            border-radius: 10px;
+            transition: all 0.3s;
+        }
+        .btn-plan:hover {
+            transform: scale(1.05);
+        }
+        .faq-section {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            margin-top: 50px;
+        }
+        .plan-actual-badge {
+            background: #ffc107;
+            color: #000;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            font-weight: bold;
+            display: inline-block;
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="pricing-header">
+            <h1><i class="fas fa-crown"></i> Planes y Precios</h1>
+            <p class="lead">Elige el plan perfecto para tu negocio. Sin sorpresas, sin costos ocultos.</p>
+        </div>
+
+        <!-- Planes -->
+        <div class="row">
+            {% for plan in planes %}
+            <div class="col-lg-3 col-md-6 mb-4">
+                <div class="pricing-card {% if plan.destacado %}destacado{% endif %}">
+                    {% if plan.destacado %}
+                    <span class="badge-destacado">
+                        <i class="fas fa-star"></i> POPULAR
+                    </span>
+                    {% endif %}
+
+                    {% if plan_actual == plan.nombre|lower %}
+                    <span class="plan-actual-badge">
+                        <i class="fas fa-check-circle"></i> Tu Plan Actual
+                    </span>
+                    {% endif %}
+
+                    <div class="text-center">
+                        <h3 class="plan-nombre text-{{ plan.color }}">
+                            {{ plan.nombre }}
+                        </h3>
+                        <div class="plan-precio">{{ plan.precio }}</div>
+                        <div class="plan-periodo">{{ plan.periodo }}</div>
+                    </div>
+
+                    <hr>
+
+                    <ul class="caracteristicas-list">
+                        {% for caracteristica in plan.caracteristicas %}
+                        <li class="incluido">
+                            <i class="fas fa-check-circle"></i> 
+                            {{ caracteristica }}
+                        </li>
+                        {% endfor %}
+                        {% for no_incluye in plan.no_incluye %}
+                        <li class="no-incluido">
+                            <i class="fas fa-times-circle"></i> 
+                            {{ no_incluye }}
+                        </li>
+                        {% endfor %}
+                    </ul>
+
+                    {% if user.is_authenticated %}
+                        {% if plan_actual == plan.nombre|lower %}
+                        <a href="{% url 'mi_plan' %}" class="btn btn-outline-{{ plan.color }} btn-plan">
+                            <i class="fas fa-chart-line"></i> Ver Mi Uso
+                        </a>
+                        {% else %}
+                        <button onclick="cambiarPlan('{{ plan.nombre|lower }}')" class="btn btn-{{ plan.color }} btn-plan">
+                            <i class="fas fa-arrow-up"></i> Actualizar
+                        </button>
+                        {% endif %}
+                    {% else %}
+                    <a href="/register/" class="btn btn-{{ plan.color }} btn-plan">
+                        <i class="fas fa-rocket"></i> Comenzar
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+
+        <!-- FAQ Section -->
+        <div class="faq-section">
+            <h2 class="text-center mb-4">
+                <i class="fas fa-question-circle"></i> Preguntas Frecuentes
+            </h2>
+            
+            <div class="row">
+                <div class="col-md-6">
+                    <h5><i class="fas fa-check"></i> ¿Puedo cambiar de plan en cualquier momento?</h5>
+                    <p>Sí, puedes actualizar o degradar tu plan cuando lo necesites. Los cambios se aplican inmediatamente.</p>
+                    
+                    <h5 class="mt-4"><i class="fas fa-check"></i> ¿Qué pasa si supero mi límite de facturas?</h5>
+                    <p>El sistema te bloqueará temporalmente. Puedes actualizar tu plan para continuar o esperar al próximo mes.</p>
+                </div>
+                <div class="col-md-6">
+                    <h5><i class="fas fa-check"></i> ¿Hay costos adicionales?</h5>
+                    <p>No. El precio que ves es lo que pagas. Sin cargos ocultos ni sorpresas.</p>
+                    
+                    <h5 class="mt-4"><i class="fas fa-check"></i> ¿Ofrecen soporte técnico?</h5>
+                    <p>Todos los planes incluyen soporte por email. Los planes Plus y Pro tienen soporte prioritario.</p>
+                </div>
+            </div>
+
+            <div class="text-center mt-4">
+                <a href="mailto:soporte@misventasflash.com" class="btn btn-primary btn-lg">
+                    <i class="fas fa-envelope"></i> Contactar Soporte
+                </a>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="text-center mt-5">
+            <p class="text-white">
+                <a href="/" class="text-white"><i class="fas fa-home"></i> Volver al Inicio</a> |
+                <a href="/contacto/" class="text-white"><i class="fas fa-envelope"></i> Contacto</a>
+            </p>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    {% if user.is_authenticated %}
+    <script>
+        function cambiarPlan(plan) {
+            if (!confirm('¿Estás seguro de que quieres cambiar a este plan?')) {
+                return;
+            }
+
+            // Obtener el CSRF token
+            const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+
+            fetch('/planes/cambiar/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'X-CSRFToken': csrftoken
+                },
+                body: `plan=${plan}`
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert('¡Plan actualizado exitosamente!');
+                    location.reload();
+                } else {
+                    alert('Error: ' + (data.error || 'No se pudo cambiar el plan'));
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Error al cambiar el plan');
+            });
+        }
+    </script>
+    <form style="display: none;">
+        {% csrf_token %}
+    </form>
+    {% endif %}
+</body>
+</html>
