@@ -44,7 +44,6 @@ urlpatterns = [
     
     # Páginas principales - Solo para schema público
     # NOTA: /plataform está disponible SOLO en tenants (no en público)
-    path('index/', views.index, name='index'),
     path('base/', views.base, name='base'),
     path("anhoescolar/", crear_ano_escolar, name="anhoescolar"),
     

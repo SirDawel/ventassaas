@@ -69,10 +69,6 @@ def base(request):
     return render(request, 'website/base.html')
 
 
-def index(request):
-    return render(request, 'website/index.html')
-
-
 def resetpass(request):
     return render(request, 'website/password_reset.html')
 
