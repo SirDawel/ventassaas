@@ -41,6 +41,8 @@ TENANT_URLCONF = 'ventasweb.urls_tenants'
 TENANT_MODEL = "ventasweb.Client"
 TENANT_DOMAIN_MODEL = "ventasweb.Domain"
 
+
+
 # ============================================
 # SEGURIDAD
 # ============================================
@@ -195,6 +197,9 @@ MIDDLEWARE = [
 ROOT_URLCONF = 'VentasSys.urls'
 PUBLIC_SCHEMA_URLCONF = 'VentasSys.urls_public'  # URLs para public schema (registro, login)
 
+ROOT_URLCONF = 'VentasSys.urls'             # URLs del dominio principal (public)
+PUBLIC_SCHEMA_URLCONF = 'VentasSys.urls'      # O según tu estructura
+TENANT_URLCONF = 'ventasweb.urls_tenants'     # URLs de los subdominios
 # Database routers for multi-tenancy
 DATABASE_ROUTERS = [
     'django_tenants.routers.TenantSyncRouter',
