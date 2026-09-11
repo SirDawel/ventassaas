@@ -110,22 +110,28 @@ def planes_disponibles(request):
         # Obtener suscripción actual
         suscripcion_actual = Suscripcion.objects.filter(tenant=tenant).first()
         
-        # Obtener todos los planes
-        planes = Plan.objects.filter(activo=True).order_by('orden')
-        
-        # Volver al schema del tenant
+        # Obtener todos los planes y convertirlos a lista
+        planes = list(Plan.objects.filter(activo=True).order_by('orden'))
+
+        # Volver al schema del tenant para contar usuarios
         connection.set_schema(schema_actual)
-        
-        # Contar usuarios actuales
         total_usuarios = CustomUser.objects.filter(is_active=True).count()
+
+        # Volver al schema público para renderizar (necesario para acceder a relaciones de Plan)
+        connection.set_schema(get_public_schema_name())
         
         context = {
             'suscripcion_actual': suscripcion_actual,
             'planes': planes,
             'total_usuarios': total_usuarios,
         }
-        
-        return render(request, 'suscripcion/planes.html', context)
+
+        response = render(request, 'suscripcion/planes.html', context)
+
+        # Volver al schema original después de renderizar
+        connection.set_schema(schema_actual)
+
+        return response
         
     except Exception as e:
         connection.set_schema(schema_actual)

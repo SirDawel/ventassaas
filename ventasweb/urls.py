@@ -17,6 +17,7 @@ urlpatterns = [
     # ============================================
     # PÁGINAS PRINCIPALES
     # ============================================
+    path('login/', views.login_view, name='login'),
     path('plataform', views_dashboard.dashboard_analytics, name='plataform'),  # Dashboard mejorado con datos reales
     path('base/', views.base, name='base'),
     path('noticias/', views.noticias, name='noticias'),

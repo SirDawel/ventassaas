@@ -37,6 +37,7 @@ def get_env_list(name, default=''):
 # ============================================
 # DJANGO-TENANTS CONFIGURATION
 # ============================================
+TENANT_URLCONF = 'ventasweb.urls_tenants'
 TENANT_MODEL = "ventasweb.Client"
 TENANT_DOMAIN_MODEL = "ventasweb.Domain"
 
