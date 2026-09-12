@@ -35,7 +35,15 @@ if [ "${WAIT_FOR_DB:-1}" = "1" ]; then
 fi
 
 if [ "${RUN_MIGRATIONS:-0}" = "1" ]; then
-  python manage.py migrate_schemas --noinput
+  MIGRATION_EXECUTOR="${TENANT_MIGRATION_EXECUTOR:-multiprocessing}"
+  case "$MIGRATION_EXECUTOR" in
+    standard|multiprocessing) ;;
+    *)
+      echo "Executor inválido: $MIGRATION_EXECUTOR. Usando multiprocessing."
+      MIGRATION_EXECUTOR="multiprocessing"
+      ;;
+  esac
+  python manage.py migrate_schemas --noinput --executor="$MIGRATION_EXECUTOR"
 fi
 
 if [ "${RUN_COLLECTSTATIC:-1}" = "1" ]; then
