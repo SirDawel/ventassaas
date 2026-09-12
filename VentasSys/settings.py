@@ -40,6 +40,8 @@ def get_env_list(name, default=''):
 TENANT_URLCONF = 'ventasweb.urls_tenants'
 TENANT_MODEL = "ventasweb.Client"
 TENANT_DOMAIN_MODEL = "ventasweb.Domain"
+TENANT_MIGRATION_EXECUTOR = 'multiprocessing'
+
 
 
 
