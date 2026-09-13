@@ -26,16 +26,13 @@ from ventasweb.views_health import health_check
 urlpatterns = [
     # Health check para AWS ECS
     path('health/', health_check, name='health_check'),
-    path('admin/', admin.site.urls),
-    path('login/', views.login_view, name='login'),
-    path('logout/', views.logout_view, name='logout'),
-    path('', views.login_view, name='index'),
+    
     path('admin/', admin.site.urls),
     # Redirigir raíz directamente a login
-    #path("", RedirectView.as_view(url='/login/', permanent=False), name="root_redirect"),
-    #path("login/", login_view, name="login"),
-    #path("anhoescolar/", crear_ano_escolar, name="anhoescolar"),
-    #path("logout/", views.logout_view, name="logout"),
+    path("", RedirectView.as_view(url='/login/', permanent=False), name="root_redirect"),
+    path("login/", login_view, name="login"),
+    path("anhoescolar/", crear_ano_escolar, name="anhoescolar"),
+    path("logout/", views.logout_view, name="logout"),
     
     # para resetear contrasena
     path("resetpass/", views.resetpass, name="resetpass"),
