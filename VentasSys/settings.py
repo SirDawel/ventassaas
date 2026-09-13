@@ -10,11 +10,9 @@ https://docs.djangoproject.com/en/5.1/topics/settings/
 For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.1/ref/settings/
 """
-
 import os
 from pathlib import Path
 
-# IMPORTANTE: Fix de encoding para Windows - DEBE IR ANTES de cualquier otra cosa
 try:
     from . import encoding_fix
 except ImportError:
@@ -197,7 +195,7 @@ MIDDLEWARE = [
 ]
 
 ROOT_URLCONF = 'VentasSys.urls'
-PUBLIC_SCHEMA_URLCONF = 'VentasSys.urls_public'  # URLs para public schema (registro, login)
+PUBLIC_SCHEMA_URLCONF = 'VentasSys.urls'
 
 TENANT_URLCONF = 'VentasSys.urls'            # URLs de los subdominios
 # Database routers for multi-tenancy
