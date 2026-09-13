@@ -68,15 +68,15 @@ ALLOWED_HOSTS = get_env_list('ALLOWED_HOSTS', 'localhost,127.0.0.1,.localhost,.m
 if DEBUG:
     ALLOWED_HOSTS += ['.localhost', '*.localhost', '127.0.0.1']
     # --- CONFIGURACIÓN DE PRODUCCIÓN Y TENANTS ---
-SHOW_PUBLIC_IF_NO_TENANT_FOUND = True
+    SHOW_PUBLIC_IF_NO_TENANT_FOUND = True
 
-ALLOWED_HOSTS = [
-    'misventasflash.com',
-    'www.misventasflash.com',
-    'localhost',
-    '127.0.0.1',
-    '.misventasflash.com',
-]
+    ALLOWED_HOSTS = [
+        'misventasflash.com',
+        'www.misventasflash.com',
+        'localhost',
+        '127.0.0.1',
+        '.misventasflash.com',
+    ]
 
 # Asegurar que el dominio del tenant sea extraído correctamente de las cabeceras HTTP
 USE_X_FORWARDED_HOST = True
