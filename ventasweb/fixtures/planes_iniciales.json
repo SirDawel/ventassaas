@@ -1,0 +1,70 @@
+[
+  {
+    "model": "ventasweb.plan",
+    "pk": 1,
+    "fields": {
+      "nombre": "Plan Básico",
+      "tipo": "BASICO",
+      "precio_mensual": 29.00,
+      "precio_anual": 290.00,
+      "max_usuarios": 50,
+      "max_estudiantes": 200,
+      "descripcion": "Ideal para escuelas pequeñas con hasta 50 usuarios. Incluye funcionalidades esenciales.",
+      "permite_reportes_avanzados": false,
+      "permite_integracion_api": false,
+      "permite_multiples_sedes": false,
+      "soporte_prioritario": false
+    }
+  },
+  {
+    "model": "ventasweb.plan",
+    "pk": 2,
+    "fields": {
+      "nombre": "Plan Estándar",
+      "tipo": "ESTANDAR",
+      "precio_mensual": 79.00,
+      "precio_anual": 790.00,
+      "max_usuarios": 200,
+      "max_estudiantes": 800,
+      "descripcion": "Para escuelas medianas con hasta 200 usuarios. Incluye reportes avanzados.",
+      "permite_reportes_avanzados": true,
+      "permite_integracion_api": false,
+      "permite_multiples_sedes": false,
+      "soporte_prioritario": false
+    }
+  },
+  {
+    "model": "ventasweb.plan",
+    "pk": 3,
+    "fields": {
+      "nombre": "Plan Profesional",
+      "tipo": "PROFESIONAL",
+      "precio_mensual": 149.00,
+      "precio_anual": 1490.00,
+      "max_usuarios": 500,
+      "max_estudiantes": 2000,
+      "descripcion": "Para escuelas grandes con hasta 500 usuarios. Incluye API y múltiples sedes.",
+      "permite_reportes_avanzados": true,
+      "permite_integracion_api": true,
+      "permite_multiples_sedes": true,
+      "soporte_prioritario": false
+    }
+  },
+  {
+    "model": "ventasweb.plan",
+    "pk": 4,
+    "fields": {
+      "nombre": "Plan Empresarial",
+      "tipo": "EMPRESARIAL",
+      "precio_mensual": 299.00,
+      "precio_anual": 2990.00,
+      "max_usuarios": 999999,
+      "max_estudiantes": 999999,
+      "descripcion": "Sin límites de usuarios. Todas las funcionalidades con soporte prioritario.",
+      "permite_reportes_avanzados": true,
+      "permite_integracion_api": true,
+      "permite_multiples_sedes": true,
+      "soporte_prioritario": true
+    }
+  }
+]
