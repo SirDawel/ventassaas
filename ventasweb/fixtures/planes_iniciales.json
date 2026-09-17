@@ -13,7 +13,9 @@
       "permite_reportes_avanzados": false,
       "permite_integracion_api": false,
       "permite_multiples_sedes": false,
-      "soporte_prioritario": false
+      "soporte_prioritario": false,
+      "created_at": "2026-01-01T00:00:00Z",
+      "updated_at": "2026-01-01T00:00:00Z"
     }
   },
   {
@@ -30,7 +32,9 @@
       "permite_reportes_avanzados": true,
       "permite_integracion_api": false,
       "permite_multiples_sedes": false,
-      "soporte_prioritario": false
+      "soporte_prioritario": false,
+      "created_at": "2026-01-01T00:00:00Z",
+      "updated_at": "2026-01-01T00:00:00Z"
     }
   },
   {
@@ -47,7 +51,9 @@
       "permite_reportes_avanzados": true,
       "permite_integracion_api": true,
       "permite_multiples_sedes": true,
-      "soporte_prioritario": false
+      "soporte_prioritario": false,
+      "created_at": "2026-01-01T00:00:00Z",
+      "updated_at": "2026-01-01T00:00:00Z"
     }
   },
   {
@@ -64,7 +70,9 @@
       "permite_reportes_avanzados": true,
       "permite_integracion_api": true,
       "permite_multiples_sedes": true,
-      "soporte_prioritario": true
+      "soporte_prioritario": true,
+      "created_at": "2026-01-01T00:00:00Z",
+      "updated_at": "2026-01-01T00:00:00Z"
     }
   }
 ]
